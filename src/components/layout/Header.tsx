@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useCurrency } from '@/hooks/useCurrency';
@@ -10,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Globe, DollarSign, LogOut, User } from 'lucide-react';
+import { Globe, DollarSign, LogOut, User, Plus } from 'lucide-react';
 import logoImage from '@/assets/rivvlock-logo.png';
 
 export const Header = () => {
@@ -18,6 +19,7 @@ export const Header = () => {
   const { languages, switchLanguage, currentLanguageInfo } = useLanguage();
   const { currencies, switchCurrency, currency } = useCurrency();
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     await logout();
@@ -39,8 +41,19 @@ export const Header = () => {
             </h1>
           </div>
 
-          {/* Language & Currency Switchers + User Menu */}
+          {/* Language & Currency Switchers + New Transaction + User Menu */}
           <div className="flex items-center gap-2">
+            {/* New Transaction Button - only show if authenticated */}
+            {user && (
+              <Button 
+                className="gradient-primary text-white"
+                size="sm"
+                onClick={() => navigate('/create-transaction')}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle transaction
+              </Button>
+            )}
             {/* Language Switcher */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -79,36 +79,54 @@ export type Database = {
       }
       transactions: {
         Row: {
+          buyer_id: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
           id: string
+          link_expires_at: string | null
+          payment_blocked_at: string | null
+          payment_deadline: string | null
+          payment_method: string | null
           price: number
           service_date: string | null
+          shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          buyer_id?: string | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           description?: string | null
           id?: string
+          link_expires_at?: string | null
+          payment_blocked_at?: string | null
+          payment_deadline?: string | null
+          payment_method?: string | null
           price: number
           service_date?: string | null
+          shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          buyer_id?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
           id?: string
+          link_expires_at?: string | null
+          payment_blocked_at?: string | null
+          payment_deadline?: string | null
+          payment_method?: string | null
           price?: number
           service_date?: string | null
+          shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           title?: string
           updated_at?: string

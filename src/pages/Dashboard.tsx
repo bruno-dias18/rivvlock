@@ -7,68 +7,33 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
+import { useTransactions } from '@/hooks/useTransactions';
 import { 
   CreditCard, 
   TrendingUp, 
   Users, 
   Clock,
   Plus,
-  ArrowUpRight
+  ArrowUpRight,
+  AlertTriangle
 } from 'lucide-react';
-
-// Mock data for demonstration
-const mockTransactions = [
-  {
-    id: '1',
-    title: 'Consultation IT',
-    description: 'Services de consultation technique',
-    amount: 2500,
-    currency: 'EUR' as const,
-    serviceDate: '2024-01-15',
-    status: 'validated' as const,
-  },
-  {
-    id: '2',
-    title: 'Formation React',
-    description: 'Formation développement web',
-    amount: 1800,
-    currency: 'CHF' as const,
-    serviceDate: '2024-01-20',
-    status: 'pending' as const,
-  },
-  {
-    id: '3',
-    title: 'Audit sécurité',
-    description: 'Audit de sécurité informatique',
-    amount: 3200,
-    currency: 'EUR' as const,
-    serviceDate: '2024-01-10',
-    status: 'disputed' as const,
-  },
-];
-
-const mockStats = {
-  totalTransactions: 12,
-  totalVolume: 28500,
-  pendingTransactions: 3,
-  completedTransactions: 8,
-};
 
 export const Dashboard = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { transactions, stats, loading: transactionsLoading, getPaymentCountdown } = useTransactions();
   const navigate = useNavigate();
 
   // Redirect to auth if not logged in
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       navigate('/auth');
     }
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
 
   // Show loading state while checking auth
-  if (loading) {
+  if (authLoading || transactionsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -85,23 +50,23 @@ export const Dashboard = () => {
   }
 
   const getStatusBadge = (status: string) => {
-    const variants = {
-      pending: 'default',
-      validated: 'default',
-      paid: 'secondary',
-      disputed: 'destructive',
-    } as const;
-
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
-      validated: 'bg-green-100 text-green-800',
       paid: 'bg-blue-100 text-blue-800',
+      completed: 'bg-green-100 text-green-800',
       disputed: 'bg-red-100 text-red-800',
+    };
+
+    const labels = {
+      pending: 'En attente',
+      paid: 'Payé',
+      completed: 'Terminé',
+      disputed: 'Litigieux',
     };
 
     return (
       <Badge className={colors[status as keyof typeof colors]}>
-        {t(`transactions.${status}`)}
+        {labels[status as keyof typeof labels]}
       </Badge>
     );
   };
@@ -119,9 +84,12 @@ export const Dashboard = () => {
               Gérez vos transactions escrow en toute sécurité
             </p>
           </div>
-          <Button className="gradient-primary text-white">
+          <Button 
+            className="gradient-primary text-white"
+            onClick={() => navigate('/create-transaction')}
+          >
             <Plus className="w-4 h-4 mr-2" />
-            {t('transactions.new')}
+            Nouvelle transaction
           </Button>
         </div>
 
@@ -134,7 +102,7 @@ export const Dashboard = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Total Transactions
                   </p>
-                  <p className="text-2xl font-bold">{mockStats.totalTransactions}</p>
+                  <p className="text-2xl font-bold">{stats.totalTransactions}</p>
                 </div>
                 <CreditCard className="w-8 h-8 text-primary" />
               </div>
@@ -148,7 +116,7 @@ export const Dashboard = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Volume Total
                   </p>
-                  <p className="text-2xl font-bold">{formatAmount(mockStats.totalVolume)}</p>
+                  <p className="text-2xl font-bold">{formatAmount(stats.totalVolume)}</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-success" />
               </div>
@@ -162,7 +130,7 @@ export const Dashboard = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     En Attente
                   </p>
-                  <p className="text-2xl font-bold">{mockStats.pendingTransactions}</p>
+                  <p className="text-2xl font-bold">{stats.pendingTransactions}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
               </div>
@@ -174,9 +142,9 @@ export const Dashboard = () => {
               <div className="flex items-center justify-between w-full">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
-                    Terminées
+                    Payées
                   </p>
-                  <p className="text-2xl font-bold">{mockStats.completedTransactions}</p>
+                  <p className="text-2xl font-bold">{stats.paidTransactions}</p>
                 </div>
                 <Users className="w-8 h-8 text-blue-500" />
               </div>
@@ -191,10 +159,14 @@ export const Dashboard = () => {
               <div>
                 <CardTitle>{t('dashboard.transactions')}</CardTitle>
                 <CardDescription>
-                  Vos transactions récentes
+                  {transactions.length === 0 ? 'Aucune transaction pour le moment' : 'Vos transactions récentes'}
                 </CardDescription>
               </div>
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/transactions')}
+              >
                 Voir tout
                 <ArrowUpRight className="w-4 h-4 ml-2" />
               </Button>
@@ -202,30 +174,61 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-medium">{transaction.title}</h3>
-                      {getStatusBadge(transaction.status)}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {transaction.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Service: {new Date(transaction.serviceDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-lg">
-                      {formatAmount(transaction.amount, transaction.currency)}
-                    </p>
+              {transactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-muted-foreground">
+                    <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Aucune transaction créée</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => navigate('/create-transaction')}
+                    >
+                      Créer votre première transaction
+                    </Button>
                   </div>
                 </div>
-              ))}
+              ) : (
+                transactions.slice(0, 5).map((transaction) => {
+                  const countdown = getPaymentCountdown(transaction);
+                  return (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <h3 className="font-medium">{transaction.title}</h3>
+                          {getStatusBadge(transaction.status)}
+                          {countdown && (
+                            <Badge variant="outline" className="text-xs">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {countdown}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {transaction.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Service: {new Date(transaction.service_date).toLocaleDateString()}
+                        </p>
+                        {countdown && countdown.includes('Expiré') && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-destructive">
+                            <AlertTriangle className="w-3 h-3" />
+                            <span>Délai de paiement expiré</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg">
+                          {formatAmount(transaction.price, transaction.currency)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>
