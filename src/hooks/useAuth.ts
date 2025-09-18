@@ -111,7 +111,24 @@ export const useAuth = () => {
         email: userData.email,
         password: userData.password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: redirectUrl,
+          data: {
+            user_type: userData.userType,
+            country: userData.country,
+            first_name: userData.firstName,
+            last_name: userData.lastName,
+            phone: userData.phone,
+            address: userData.address,
+            company_name: userData.companyName,
+            siret_uid: userData.siretUid,
+            company_address: userData.companyAddress,
+            iban: userData.iban,
+            avs_number: userData.avsNumber,
+            tva_rate: userData.tvaRate?.toString(),
+            vat_rate: (userData.userType === 'company' 
+              ? (userData.country === 'FR' ? '20.0' : '8.1')
+              : undefined)
+          }
         }
       });
 
@@ -128,44 +145,7 @@ export const useAuth = () => {
         return { error };
       }
 
-      // Only create profile if user signup was successful and user is confirmed
-      if (data.user && !data.user.email_confirmed_at) {
-        // For unconfirmed users, we'll create the profile when they confirm their email
-        return { data, error: null };
-      }
-
-      if (data.user && data.user.email_confirmed_at) {
-        // User is confirmed, create profile
-        const profileData = {
-          user_id: data.user.id,
-          user_type: userData.userType,
-          country: userData.country,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          phone: userData.phone,
-          address: userData.address,
-          company_name: userData.companyName,
-          siret_uid: userData.siretUid,
-          company_address: userData.companyAddress,
-          iban: userData.iban,
-          avs_number: userData.avsNumber,
-          tva_rate: userData.tvaRate,
-          vat_rate: userData.userType === 'company' 
-            ? (userData.country === 'FR' ? 20.0 : 8.1)
-            : undefined,
-          verified: false
-        };
-
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([profileData]);
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          return { error: profileError };
-        }
-      }
-
+      // Profile will be automatically created by the database trigger
       return { data, error: null };
     } finally {
       setLoading(false);
