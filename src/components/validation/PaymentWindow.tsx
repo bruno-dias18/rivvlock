@@ -16,7 +16,8 @@ import {
   CheckCircle,
   MessageSquare,
   Users,
-  Building2
+  Building2,
+  Lock
 } from 'lucide-react';
 
 interface PaymentWindowProps {
