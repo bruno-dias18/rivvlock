@@ -35,10 +35,13 @@ export const useAuth = () => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         if (session?.user) {
-          await fetchUserProfile(session.user.id);
+          // Defer profile fetching to avoid deadlock
+          setTimeout(() => {
+            fetchUserProfile(session.user.id, session.user.email || '');
+          }, 0);
         } else {
           setUser(null);
         }
@@ -50,7 +53,7 @@ export const useAuth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
-        fetchUserProfile(session.user.id);
+        fetchUserProfile(session.user.id, session.user.email || '');
       } else {
         setLoading(false);
       }
@@ -59,15 +62,15 @@ export const useAuth = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId: string, userEmail: string) => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -75,7 +78,7 @@ export const useAuth = () => {
       if (profile) {
         setUser({
           id: profile.user_id,
-          email: session?.user?.email || '',
+          email: userEmail,
           type: profile.user_type,
           country: profile.country,
           verified: profile.verified
@@ -113,11 +116,26 @@ export const useAuth = () => {
       });
 
       if (error) {
+        // Handle specific error types
+        if (error.message.includes('User already registered')) {
+          return { error: { ...error, message: 'Cette adresse e-mail est déjà utilisée. Essayez de vous connecter.' } };
+        }
+        if (error.message.includes('For security purposes')) {
+          const match = error.message.match(/(\d+)\s+seconds?/);
+          const seconds = match ? match[1] : '60';
+          return { error: { ...error, message: `Pour des raisons de sécurité, veuillez attendre ${seconds} secondes avant de réessayer.` } };
+        }
         return { error };
       }
 
-      if (data.user) {
-        // Create user profile
+      // Only create profile if user signup was successful and user is confirmed
+      if (data.user && !data.user.email_confirmed_at) {
+        // For unconfirmed users, we'll create the profile when they confirm their email
+        return { data, error: null };
+      }
+
+      if (data.user && data.user.email_confirmed_at) {
+        // User is confirmed, create profile
         const profileData = {
           user_id: data.user.id,
           user_type: userData.userType,

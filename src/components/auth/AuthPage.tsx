@@ -78,12 +78,25 @@ export const AuthPage = () => {
 
     const { error } = await login(loginData.email, loginData.password);
     if (error) {
+      let errorMessage = error.message;
+      
+      // Handle specific error cases
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Identifiants incorrects. Vérifiez votre email et mot de passe.';
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Veuillez confirmer votre email avant de vous connecter.';
+      }
+      
       toast({
         variant: "destructive",
         title: t('auth.error'),
-        description: error.message
+        description: errorMessage
       });
     } else {
+      toast({
+        title: t('auth.success'),
+        description: 'Connexion réussie !'
+      });
       navigate('/');
     }
   };
@@ -103,10 +116,28 @@ export const AuthPage = () => {
 
     const { error } = await register(registerData);
     if (error) {
+      let errorMessage = error.message;
+      
+      // Handle specific errors
+      if (error.message.includes('déjà utilisée')) {
+        errorMessage = 'Cette adresse e-mail est déjà utilisée. Essayez de vous connecter.';
+        toast({
+          variant: "destructive",
+          title: 'Compte existant',
+          description: errorMessage
+        });
+        // Switch to login and prefill email
+        setIsLogin(true);
+        setLoginData(prev => ({ ...prev, email: registerData.email }));
+        return;
+      } else if (error.message.includes('sécurité')) {
+        errorMessage = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: t('auth.error'),
-        description: error.message
+        description: errorMessage
       });
     } else {
       toast({
