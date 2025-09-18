@@ -57,7 +57,7 @@ export const useTransactions = () => {
   );
 
   // Ensure transactions is always an array
-  const transactions = transactionsData || [];
+  const transactions: Transaction[] = Array.isArray(transactionsData) ? transactionsData : [];
 
   // Calculate stats from transactions
   const stats: TransactionStats = {
