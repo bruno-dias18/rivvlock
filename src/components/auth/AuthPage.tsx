@@ -97,7 +97,7 @@ export const AuthPage = () => {
         title: t('auth.success'),
         description: 'Connexion réussie !'
       });
-      navigate('/');
+      navigate('/dashboard');
     }
   };
 
