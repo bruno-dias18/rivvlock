@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   User, 
   MapPin, 
@@ -18,42 +22,164 @@ import {
   Building, 
   CreditCard,
   Settings,
-  Shield
+  Shield,
+  Loader2
 } from 'lucide-react';
 
-// Mock user data
-const mockUser = {
-  id: '1',
-  type: 'company' as const,
-  country: 'FR' as const,
-  email: 'contact@techsolutions.fr',
-  phone: '+33 1 23 45 67 89',
-  // Company fields
-  companyName: 'Tech Solutions SARL',
-  siret: '12345678901234',
-  iban: 'FR14 2004 1010 0505 0001 3M02 606',
-  headquarters: '123 Rue de la Technologie, 75001 Paris',
-  // Individual fields would be: firstName, lastName, address
-  createdAt: '2024-01-15',
-  verified: true,
-};
+interface UserProfile {
+  user_id: string;
+  user_type: 'individual' | 'company' | 'independent';
+  country: 'FR' | 'CH';
+  verified: boolean;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  address?: string;
+  company_name?: string;
+  siret_uid?: string;
+  company_address?: string;
+  iban?: string;
+  avs_number?: string;
+  tva_rate?: number;
+  vat_rate?: number;
+  created_at: string;
+}
 
 export const Profile = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
   const { languages, switchLanguage, currentLanguageInfo } = useLanguage();
   const { currencies, switchCurrency, currency } = useCurrency();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState(mockUser);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    console.log('Saving profile data:', formData);
-    setIsEditing(false);
-    // TODO: Implement profile update with Supabase
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de charger le profil"
+          });
+          return;
+        }
+
+        setProfile(data);
+      } catch (error) {
+        console.error('Error:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, toast]);
+
+  const handleSave = async () => {
+    if (!profile || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone,
+          address: profile.address,
+          company_name: profile.company_name,
+          siret_uid: profile.siret_uid,
+          company_address: profile.company_address,
+          iban: profile.iban,
+          avs_number: profile.avs_number,
+          tva_rate: profile.tva_rate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Succès",
+        description: "Profil mis à jour avec succès"
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de mettre à jour le profil"
+      });
+    }
+  };
+
+  const updateProfile = (updates: Partial<UserProfile>) => {
+    if (profile) {
+      setProfile({ ...profile, ...updates });
+    }
   };
 
   const getVATRate = (country: 'FR' | 'CH') => {
     return country === 'FR' ? '20%' : '8.1%';
   };
+
+  if (authLoading || loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Chargement du profil...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p className="text-muted-foreground">Aucun profil trouvé</p>
+            <Button onClick={() => navigate('/dashboard')} className="mt-4">
+              Retour au tableau de bord
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -69,7 +195,7 @@ export const Profile = () => {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {mockUser.verified && (
+            {profile.verified && (
               <Badge className="bg-green-100 text-green-800">
                 <Shield className="w-3 h-3 mr-1" />
                 Vérifié
@@ -90,38 +216,39 @@ export const Profile = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {mockUser.type === 'company' ? (
+                  {profile.user_type === 'company' ? (
                     <Building className="w-5 h-5" />
                   ) : (
                     <User className="w-5 h-5" />
                   )}
-                  Informations {mockUser.type === 'company' ? 'Entreprise' : 'Personnelles'}
+                  Informations {profile.user_type === 'company' ? 'Entreprise' : 
+                    profile.user_type === 'independent' ? 'Indépendant' : 'Personnelles'}
                 </CardTitle>
                 <CardDescription>
                   Données fiscales et informations légales
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {mockUser.type === 'company' ? (
+                {profile.user_type === 'company' ? (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="companyName">{t('user.companyName')}</Label>
                         <Input
                           id="companyName"
-                          value={formData.companyName}
-                          onChange={(e) => setFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                          value={profile.company_name || ''}
+                          onChange={(e) => updateProfile({ company_name: e.target.value })}
                           disabled={!isEditing}
                         />
                       </div>
                       <div>
                         <Label htmlFor="siret">
-                          {mockUser.country === 'FR' ? t('user.siret') : t('user.uid')}
+                          {profile.country === 'FR' ? t('user.siret') : t('user.uid')}
                         </Label>
                         <Input
                           id="siret"
-                          value={formData.siret}
-                          onChange={(e) => setFormData(prev => ({ ...prev, siret: e.target.value }))}
+                          value={profile.siret_uid || ''}
+                          onChange={(e) => updateProfile({ siret_uid: e.target.value })}
                           disabled={!isEditing}
                         />
                       </div>
@@ -130,8 +257,8 @@ export const Profile = () => {
                       <Label htmlFor="headquarters">{t('user.headquarters')}</Label>
                       <Input
                         id="headquarters"
-                        value={formData.headquarters}
-                        onChange={(e) => setFormData(prev => ({ ...prev, headquarters: e.target.value }))}
+                        value={profile.company_address || ''}
+                        onChange={(e) => updateProfile({ company_address: e.target.value })}
                         disabled={!isEditing}
                       />
                     </div>
@@ -140,14 +267,14 @@ export const Profile = () => {
                         <Label htmlFor="iban">{t('user.iban')}</Label>
                         <Input
                           id="iban"
-                          value={formData.iban}
-                          onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value }))}
+                          value={profile.iban || ''}
+                          onChange={(e) => updateProfile({ iban: e.target.value })}
                           disabled={!isEditing}
                         />
                       </div>
                       <div>
-                        <Label>{t('user.vat')} ({getVATRate(mockUser.country)})</Label>
-                        <Input disabled value={getVATRate(mockUser.country)} />
+                        <Label>{t('user.vat')} ({getVATRate(profile.country)})</Label>
+                        <Input disabled value={`${profile.vat_rate || getVATRate(profile.country)}`} />
                       </div>
                     </div>
                   </>
@@ -158,16 +285,18 @@ export const Profile = () => {
                         <Label htmlFor="firstName">{t('user.firstName')}</Label>
                         <Input
                           id="firstName"
+                          value={profile.first_name || ''}
+                          onChange={(e) => updateProfile({ first_name: e.target.value })}
                           disabled={!isEditing}
-                          placeholder="Jean"
                         />
                       </div>
                       <div>
                         <Label htmlFor="lastName">{t('user.lastName')}</Label>
                         <Input
                           id="lastName"
+                          value={profile.last_name || ''}
+                          onChange={(e) => updateProfile({ last_name: e.target.value })}
                           disabled={!isEditing}
-                          placeholder="Dupont"
                         />
                       </div>
                     </div>
@@ -175,11 +304,43 @@ export const Profile = () => {
                       <Label htmlFor="address">{t('common.address')}</Label>
                       <Input
                         id="address"
+                        value={profile.address || ''}
+                        onChange={(e) => updateProfile({ address: e.target.value })}
                         disabled={!isEditing}
-                        placeholder="123 Rue de la Paix, 75001 Paris"
                       />
                     </div>
                   </>
+                )}
+
+                {/* Independent specific fields for Switzerland */}
+                {profile.user_type === 'independent' && profile.country === 'CH' && (
+                  <div className="space-y-4 border-t pt-4">
+                    <h4 className="font-medium text-sm text-muted-foreground">Informations spécifiques - Indépendant (CH)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="avs">{t('user.avsOptional')}</Label>
+                        <Input
+                          id="avs"
+                          value={profile.avs_number || ''}
+                          onChange={(e) => updateProfile({ avs_number: e.target.value })}
+                          disabled={!isEditing}
+                          placeholder="756.1234.5678.90"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tvaRate">{t('user.vatOptional')} (8.1%)</Label>
+                        <Input
+                          id="tvaRate"
+                          type="number"
+                          step="0.1"
+                          value={profile.tva_rate || ''}
+                          onChange={(e) => updateProfile({ tva_rate: parseFloat(e.target.value) || undefined })}
+                          disabled={!isEditing}
+                          placeholder="8.1"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 <Separator />
@@ -189,11 +350,10 @@ export const Profile = () => {
                     <Label htmlFor="email">{t('common.email')}</Label>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-muted-foreground" />
-                      <Input
+                    <Input
                         id="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                        disabled={!isEditing}
+                        value={user?.email || ''}
+                        disabled={true}
                       />
                     </div>
                   </div>
@@ -203,8 +363,8 @@ export const Profile = () => {
                       <Phone className="w-4 h-4 text-muted-foreground" />
                       <Input
                         id="phone"
-                        value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        value={profile.phone || ''}
+                        onChange={(e) => updateProfile({ phone: e.target.value })}
                         disabled={!isEditing}
                       />
                     </div>
@@ -272,7 +432,7 @@ export const Profile = () => {
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {mockUser.country === 'FR' ? '🇫🇷 France' : '🇨🇭 Suisse'}
+                      {profile.country === 'FR' ? '🇫🇷 France' : '🇨🇭 Suisse'}
                     </span>
                   </div>
                 </div>
@@ -282,7 +442,7 @@ export const Profile = () => {
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-muted-foreground" />
                     <span className="text-sm">
-                      {new Date(mockUser.createdAt).toLocaleDateString()}
+                      {new Date(profile.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
