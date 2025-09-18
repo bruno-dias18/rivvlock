@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Elements } from '@stripe/react-stripe-js';
 import { 
   CreditCard, 
   Smartphone, 
@@ -9,17 +10,25 @@ import {
   ExternalLink, 
   Clock, 
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  MessageSquare,
+  Users
 } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { stripePromise } from '@/lib/stripe';
+import { StripePaymentForm, AlternativePaymentMethods } from '@/components/escrow/StripePaymentForm';
+import { TransactionChat } from '@/components/escrow/TransactionChat';
+import { ValidationButtons } from '@/components/escrow/ValidationButtons';
+import { DisputeForm } from '@/components/escrow/DisputeForm';
 
 interface Transaction {
   id: string;
@@ -34,6 +43,12 @@ interface Transaction {
   buyer_id: string | null;
   payment_method: string | null;
   payment_blocked_at: string | null;
+  stripe_payment_intent_id: string | null;
+  seller_validated: boolean;
+  buyer_validated: boolean;
+  validation_deadline: string | null;
+  funds_released: boolean;
+  dispute_id: string | null;
 }
 
 export const PaymentLink = () => {
@@ -42,11 +57,11 @@ export const PaymentLink = () => {
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState('');
   const [isExpired, setIsExpired] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showStripeForm, setShowStripeForm] = useState(false);
   const { formatAmount } = useCurrency();
   const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -135,87 +150,46 @@ export const PaymentLink = () => {
     }
   };
 
-  const handlePaymentMethod = (method: string) => {
-    setSelectedPaymentMethod(method);
-    setShowPaymentDialog(true);
-  };
+  const handleStripePayment = async () => {
+    if (!transaction || !user) return;
 
-  const processPayment = async () => {
-    if (!transaction || !selectedPaymentMethod) return;
-
-    setIsProcessingPayment(true);
-    
     try {
-      // Mock payment processing - simulate delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const { error } = await supabase
-        .from('transactions')
-        .update({ 
-          status: 'paid',
-          payment_method: selectedPaymentMethod,
-          payment_blocked_at: new Date().toISOString()
-        })
-        .eq('id', transaction.id);
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: {
+          transactionId: transaction.id,
+          paymentMethod: 'stripe'
+        }
+      });
 
       if (error) throw error;
 
-      // Mock notifications
-      console.log('📧 EMAIL: Payment blocked successfully!');
-      console.log('📱 SMS: Funds secured for transaction', transaction.title);
+      setClientSecret(data.clientSecret);
+      setShowStripeForm(true);
 
-      toast({
-        title: 'Paiement bloqué !',
-        description: 'Les fonds ont été sécurisés. Le vendeur sera notifié.',
-      });
-
-      setShowPaymentDialog(false);
-      fetchTransaction(); // Refresh transaction data
-
+      // Update transaction with buyer_id if not set
+      if (!transaction.buyer_id) {
+        await supabase
+          .from('transactions')
+          .update({ buyer_id: user.id })
+          .eq('id', transaction.id);
+      }
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('Error creating payment intent:', error);
       toast({
         variant: 'destructive',
-        title: 'Erreur de paiement',
-        description: 'Impossible de traiter le paiement. Veuillez réessayer.',
+        title: 'Erreur',
+        description: 'Impossible de créer l\'intention de paiement.',
       });
-    } finally {
-      setIsProcessingPayment(false);
     }
   };
 
-  const getPaymentMethods = () => [
-    {
-      id: 'card',
-      name: 'Carte bancaire',
-      icon: <CreditCard className="w-5 h-5" />,
-      description: 'Visa, Mastercard, American Express'
-    },
-    {
-      id: 'stripe',
-      name: 'Stripe Payment',
-      icon: <ExternalLink className="w-5 h-5" />,
-      description: 'Paiement sécurisé via Stripe'
-    },
-    {
-      id: 'bank_transfer',
-      name: 'Virement bancaire',
-      icon: <CreditCard className="w-5 h-5" />,
-      description: 'Virement SEPA ou Swift'
-    },
-    {
-      id: 'twint',
-      name: 'Twint',
-      icon: <Smartphone className="w-5 h-5" />,
-      description: 'Paiement mobile suisse'
-    },
-    {
-      id: 'qr_code',
-      name: 'QR Code',
-      icon: <QrCode className="w-5 h-5" />,
-      description: 'Scan pour payer'
-    }
-  ];
+  const refreshTransaction = () => {
+    fetchTransaction();
+  };
+
+  // Check user access
+  const isParticipant = user && (user.id === transaction?.user_id || user.id === transaction?.buyer_id);
+  const canPay = !isExpired && transaction && transaction.status === 'pending' && !transaction.payment_blocked_at;
 
   if (loading) {
     return (
@@ -246,22 +220,33 @@ export const PaymentLink = () => {
     );
   }
 
-  const canPay = !isExpired && transaction.status === 'pending' && !transaction.payment_blocked_at;
-
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Transaction Details */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl gradient-text">{transaction.title}</CardTitle>
-              <Badge variant={transaction.status === 'paid' ? 'default' : 'secondary'}>
-                {transaction.status === 'paid' ? 'Payé' : 'En attente'}
-              </Badge>
+              <div className="flex gap-2">
+                <Badge variant={
+                  transaction.status === 'completed' ? 'default' :
+                  transaction.status === 'paid' ? 'secondary' :
+                  transaction.status === 'disputed' ? 'destructive' : 'outline'
+                }>
+                  {transaction.status === 'completed' ? 'Terminé' :
+                   transaction.status === 'paid' ? 'Fonds bloqués' :
+                   transaction.status === 'disputed' ? 'En litige' : 'En attente'}
+                </Badge>
+                {transaction.funds_released && (
+                  <Badge variant="default" className="bg-green-600">
+                    Fonds libérés
+                  </Badge>
+                )}
+              </div>
             </div>
             <CardDescription>
-              Transaction sécurisée via RIVVLOCK Escrow
+              Transaction sécurisée via RIVVLOCK Escrow • Frais de service : 5%
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -276,6 +261,11 @@ export const PaymentLink = () => {
                 <p className="text-2xl font-bold gradient-text">
                   {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')}
                 </p>
+                {transaction.status === 'paid' && (
+                  <p className="text-sm text-muted-foreground">
+                    Vendeur recevra : {formatAmount(transaction.price * 0.95, transaction.currency as 'EUR' | 'CHF')}
+                  </p>
+                )}
               </div>
               <div>
                 <h3 className="font-medium mb-1">Date de service</h3>
@@ -284,132 +274,227 @@ export const PaymentLink = () => {
                 </p>
               </div>
             </div>
+
+            {/* Participants */}
+            {(transaction.buyer_id || isParticipant) && (
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4" />
+                  <h3 className="font-medium">Participants</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Vendeur : </span>
+                    <span>{user?.id === transaction.user_id ? 'Vous' : 'Autre partie'}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Acheteur : </span>
+                    <span>
+                      {transaction.buyer_id 
+                        ? (user?.id === transaction.buyer_id ? 'Vous' : 'Autre partie')
+                        : 'En attente'
+                      }
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Payment Status */}
-        {transaction.status === 'paid' ? (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Paiement effectué</strong> - Les fonds ont été bloqués avec succès le{' '}
-              {transaction.payment_blocked_at && format(new Date(transaction.payment_blocked_at), 'PPP à HH:mm', { locale: fr })}
-              {transaction.payment_method && ` via ${transaction.payment_method}`}.
-            </AlertDescription>
-          </Alert>
-        ) : (
+        {/* Main Content - Different views based on transaction status and user access */}
+        {!user ? (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                Délai de paiement
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isExpired ? (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Délai expiré</strong> - Le paiement devait être effectué avant la veille de la date de service.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span>Temps restant :</span>
-                    <Badge variant="outline" className="font-mono text-lg">
-                      {countdown}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Paiement à effectuer avant le{' '}
-                    {format(new Date(transaction.payment_deadline), 'PPP à HH:mm', { locale: fr })}
-                  </p>
-                </div>
-              )}
+            <CardContent className="text-center py-8">
+              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Connexion requise</h2>
+              <p className="text-muted-foreground mb-4">
+                Vous devez vous connecter pour accéder à cette transaction.
+              </p>
+              <Button onClick={() => navigate('/auth')}>
+                Se connecter
+              </Button>
             </CardContent>
           </Card>
-        )}
+        ) : transaction.status === 'pending' ? (
+          // Payment phase
+          <>
+            {/* Payment Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Délai de paiement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isExpired ? (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      <strong>Délai expiré</strong> - Le paiement devait être effectué avant la veille de la date de service.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span>Temps restant :</span>
+                      <Badge variant="outline" className="font-mono text-lg">
+                        {countdown}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Paiement à effectuer avant le{' '}
+                      {format(new Date(transaction.payment_deadline), 'PPP à HH:mm', { locale: fr })}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Payment Methods */}
-        {canPay && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bloquer les fonds</CardTitle>
-              <CardDescription>
-                Choisissez votre méthode de paiement pour sécuriser cette transaction.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3">
-                {getPaymentMethods().map((method) => (
-                  <Button
-                    key={method.id}
-                    variant="outline"
-                    className="justify-start h-auto p-4"
-                    onClick={() => handlePaymentMethod(method.id)}
-                  >
-                    <div className="flex items-center gap-3">
-                      {method.icon}
-                      <div className="text-left">
-                        <div className="font-medium">{method.name}</div>
-                        <div className="text-sm text-muted-foreground">{method.description}</div>
+            {/* Payment Methods */}
+            {canPay && (
+              <Tabs defaultValue="stripe" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="stripe">Paiement par carte</TabsTrigger>
+                  <TabsTrigger value="alternative">Autres méthodes</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="stripe" className="space-y-4">
+                  {showStripeForm && clientSecret ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripePaymentForm
+                        transaction={transaction}
+                        clientSecret={clientSecret}
+                        onSuccess={refreshTransaction}
+                      />
+                    </Elements>
+                  ) : (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Paiement sécurisé</CardTitle>
+                        <CardDescription>
+                          Bloquez {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} de manière sécurisée
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button 
+                          onClick={handleStripePayment}
+                          className="w-full gradient-primary text-white"
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Continuer avec Stripe
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="alternative">
+                  <AlternativePaymentMethods transaction={transaction} />
+                </TabsContent>
+              </Tabs>
+            )}
+          </>
+        ) : (
+          // Post-payment phase (paid, completed, disputed)
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+              <TabsTrigger value="chat">
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Chat
+              </TabsTrigger>
+              <TabsTrigger value="validation">Validation</TabsTrigger>
+              <TabsTrigger value="dispute">Litige</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4">
+              {/* Payment Status */}
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Paiement effectué</strong> - Les fonds ont été bloqués avec succès le{' '}
+                  {transaction.payment_blocked_at && format(new Date(transaction.payment_blocked_at), 'PPP à HH:mm', { locale: fr })}
+                  {transaction.payment_method && ` via ${transaction.payment_method}`}.
+                </AlertDescription>
+              </Alert>
+
+              {/* Validation Status Overview */}
+              {transaction.validation_deadline && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Statut de validation</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <p className="text-sm font-medium mb-1">Vendeur</p>
+                        <Badge variant={transaction.seller_validated ? 'default' : 'secondary'}>
+                          {transaction.seller_validated ? 'Validé ✓' : 'En attente'}
+                        </Badge>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-medium mb-1">Acheteur</p>
+                        <Badge variant={transaction.buyer_validated ? 'default' : 'secondary'}>
+                          {transaction.buyer_validated ? 'Validé ✓' : 'En attente'}
+                        </Badge>
                       </div>
                     </div>
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                    
+                    {transaction.funds_released && (
+                      <Alert>
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          <strong>Fonds libérés !</strong> La transaction a été complétée avec succès.
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
 
-        {/* Payment Processing Dialog */}
-        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirmer le paiement</DialogTitle>
-              <DialogDescription>
-                Vous allez bloquer {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} via{' '}
-                {getPaymentMethods().find(m => m.id === selectedPaymentMethod)?.name}.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              {selectedPaymentMethod === 'qr_code' && (
-                <div className="text-center p-8 bg-accent rounded-lg">
-                  <QrCode className="w-24 h-24 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">QR Code Placeholder</p>
-                </div>
+            <TabsContent value="chat">
+              <TransactionChat
+                transactionId={transaction.id}
+                sellerId={transaction.user_id}
+                buyerId={transaction.buyer_id}
+              />
+            </TabsContent>
+
+            <TabsContent value="validation">
+              <ValidationButtons
+                transaction={transaction}
+                onValidationUpdate={refreshTransaction}
+              />
+            </TabsContent>
+
+            <TabsContent value="dispute">
+              {transaction.dispute_id ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-red-600">Litige en cours</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Un litige est en cours d'examen par notre équipe d'arbitrage. 
+                        Vous recevrez une réponse sous 48h.
+                      </AlertDescription>
+                    </Alert>
+                  </CardContent>
+                </Card>
+              ) : (
+                <DisputeForm
+                  transactionId={transaction.id}
+                  onDisputeCreated={refreshTransaction}
+                />
               )}
-              
-              {selectedPaymentMethod === 'stripe' && (
-                <div className="p-4 bg-accent rounded-lg">
-                  <p className="text-sm text-muted-foreground text-center">
-                    Redirection vers Stripe... (Mock)
-                  </p>
-                </div>
-              )}
-              
-              <div className="flex gap-3">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowPaymentDialog(false)}
-                  className="flex-1"
-                  disabled={isProcessingPayment}
-                >
-                  Annuler
-                </Button>
-                <Button 
-                  onClick={processPayment} 
-                  className="flex-1 gradient-primary text-white"
-                  disabled={isProcessingPayment}
-                >
-                  {isProcessingPayment ? 'Traitement...' : 'Confirmer le paiement'}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </Layout>
   );

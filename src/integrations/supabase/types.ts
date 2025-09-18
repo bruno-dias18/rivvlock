@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      disputes: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          description: string
+          id: string
+          reporter_id: string
+          status: string | null
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          reporter_id: string
+          status?: string | null
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          reporter_id?: string
+          status?: string | null
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+          transaction_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          transaction_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -80,59 +153,85 @@ export type Database = {
       transactions: {
         Row: {
           buyer_id: string | null
+          buyer_validated: boolean | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
+          dispute_id: string | null
+          funds_released: boolean | null
           id: string
           link_expires_at: string | null
           payment_blocked_at: string | null
           payment_deadline: string | null
           payment_method: string | null
           price: number
+          seller_validated: boolean | null
           service_date: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id: string | null
           title: string
           updated_at: string
           user_id: string
+          validation_deadline: string | null
         }
         Insert: {
           buyer_id?: string | null
+          buyer_validated?: boolean | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           description?: string | null
+          dispute_id?: string | null
+          funds_released?: boolean | null
           id?: string
           link_expires_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
           price: number
+          seller_validated?: boolean | null
           service_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id?: string | null
           title: string
           updated_at?: string
           user_id: string
+          validation_deadline?: string | null
         }
         Update: {
           buyer_id?: string | null
+          buyer_validated?: boolean | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
+          dispute_id?: string | null
+          funds_released?: boolean | null
           id?: string
           link_expires_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
           price?: number
+          seller_validated?: boolean | null
           service_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+          validation_deadline?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
