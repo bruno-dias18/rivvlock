@@ -30,6 +30,7 @@
   "user": {
     "individual": "Privatperson",
     "company": "Unternehmen",
+    "independent": "Selbständig",
     "profile": "Profil",
     "firstName": "Vorname",
     "lastName": "Nachname",
@@ -38,7 +39,10 @@
     "uid": "UID",
     "vat": "MwSt",
     "iban": "IBAN",
-    "headquarters": "Hauptsitz"
+    "headquarters": "Hauptsitz",
+    "avs": "AHV-Nummer",
+    "avsOptional": "AHV-Nummer (optional)",
+    "vatOptional": "MwSt (optional)"
   },
   "auth": {
     "welcome": "Willkommen bei RIVVLOCK",

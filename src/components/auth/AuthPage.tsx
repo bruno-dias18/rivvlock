@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import logoImage from '@/assets/rivvlock-logo.png';
 
 export type Country = 'FR' | 'CH';
-export type UserType = 'individual' | 'company';
+export type UserType = 'individual' | 'company' | 'independent';
 
 interface AuthFormData {
   country: Country;
@@ -30,6 +30,9 @@ interface AuthFormData {
   uid?: string;
   iban?: string;
   headquarters?: string;
+  // Independent fields (CH only)
+  avs?: string;
+  vatNumber?: string;
   acceptTerms: boolean;
 }
 
@@ -51,7 +54,16 @@ export const AuthPage = () => {
   };
 
   const updateFormData = (updates: Partial<AuthFormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // Reset userType to individual if switching from CH to FR and was independent
+      if (updates.country === 'FR' && prev.userType === 'independent') {
+        newData.userType = 'individual';
+      }
+      
+      return newData;
+    });
   };
 
   const getTaxRate = (country: Country) => {
@@ -116,7 +128,7 @@ export const AuthPage = () => {
                     <RadioGroup
                       value={formData.userType}
                       onValueChange={(value: UserType) => updateFormData({ userType: value })}
-                      className="grid grid-cols-2 gap-4"
+                      className="grid grid-cols-1 gap-4"
                     >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="individual" id="individual" />
@@ -130,11 +142,20 @@ export const AuthPage = () => {
                           {t('user.company')}
                         </Label>
                       </div>
+                      {/* Independent option only for Switzerland */}
+                      {formData.country === 'CH' && (
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="independent" id="independent" />
+                          <Label htmlFor="independent" className="cursor-pointer">
+                            {t('user.independent')}
+                          </Label>
+                        </div>
+                      )}
                     </RadioGroup>
                   </div>
 
                   {/* Dynamic Fields Based on User Type */}
-                  {formData.userType === 'individual' ? (
+                  {formData.userType === 'individual' || formData.userType === 'independent' ? (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="firstName">{t('user.firstName')}</Label>
@@ -180,6 +201,32 @@ export const AuthPage = () => {
                         <div>
                           <Label>{t('user.vat')} ({getTaxRate(formData.country)})</Label>
                           <Input disabled value={getTaxRate(formData.country)} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Independent-specific fields for Switzerland */}
+                  {formData.userType === 'independent' && formData.country === 'CH' && (
+                    <div className="space-y-3 border-t pt-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label htmlFor="avs">{t('user.avsOptional')}</Label>
+                          <Input
+                            id="avs"
+                            value={formData.avs || ''}
+                            onChange={(e) => updateFormData({ avs: e.target.value })}
+                            placeholder="756.1234.5678.90"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="vatNumber">{t('user.vatOptional')} (8.1%)</Label>
+                          <Input
+                            id="vatNumber"
+                            value={formData.vatNumber || ''}
+                            onChange={(e) => updateFormData({ vatNumber: e.target.value })}
+                            placeholder="CHE-123.456.789"
+                          />
                         </div>
                       </div>
                     </div>

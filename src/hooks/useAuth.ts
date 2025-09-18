@@ -6,7 +6,7 @@ import { useState } from 'react';
 interface User {
   id: string;
   email: string;
-  type: 'individual' | 'company';
+  type: 'individual' | 'company' | 'independent';
   country: 'FR' | 'CH';
   verified: boolean;
 }
