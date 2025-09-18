@@ -1,0 +1,91 @@
+{
+  "common": {
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "logout": "Déconnexion",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "email": "Email",
+    "password": "Mot de passe",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "country": "Pays",
+    "currency": "Devise"
+  },
+  "countries": {
+    "france": "France",
+    "switzerland": "Suisse"
+  },
+  "currencies": {
+    "eur": "EUR",
+    "chf": "CHF"
+  },
+  "user": {
+    "individual": "Particulier",
+    "company": "Entreprise",
+    "profile": "Profil",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "companyName": "Raison sociale",
+    "siret": "SIRET",
+    "uid": "UID",
+    "vat": "TVA",
+    "iban": "IBAN",
+    "headquarters": "Siège social"
+  },
+  "auth": {
+    "welcome": "Bienvenue sur RIVVLOCK",
+    "subtitle": "Transactions escrow sécurisées",
+    "selectCountry": "Sélectionnez votre pays",
+    "selectUserType": "Type de compte",
+    "terms": "J'accepte les CGU",
+    "termsText": "Factures valides sans signature",
+    "createAccount": "Créer un compte",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "noAccount": "Pas de compte ?",
+    "forgotPassword": "Mot de passe oublié ?"
+  },
+  "dashboard": {
+    "welcome": "Tableau de bord",
+    "transactions": "Transactions",
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "history": "Historique",
+    "stats": "Statistiques"
+  },
+  "transactions": {
+    "title": "Titre",
+    "description": "Description",
+    "amount": "Montant",
+    "currency": "Devise",
+    "serviceDate": "Date de service",
+    "status": "Statut",
+    "pending": "En attente",
+    "paid": "Payée",
+    "validated": "Validée",
+    "disputed": "Contestée",
+    "new": "Nouvelle transaction",
+    "details": "Détails"
+  },
+  "admin": {
+    "dashboard": "Administration",
+    "users": "Utilisateurs",
+    "transactions": "Transactions",
+    "volume": "Volume",
+    "conversion": "Conversion",
+    "export": "Exporter CSV"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "transactions": "Transactions",
+    "profile": "Profil",
+    "admin": "Admin"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "common": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "email": "Email",
+    "password": "Password",
+    "phone": "Phone",
+    "address": "Address",
+    "country": "Country",
+    "currency": "Currency"
+  },
+  "countries": {
+    "france": "France",
+    "switzerland": "Switzerland"
+  },
+  "currencies": {
+    "eur": "EUR",
+    "chf": "CHF"
+  },
+  "user": {
+    "individual": "Individual",
+    "company": "Company",
+    "profile": "Profile",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "companyName": "Company Name",
+    "siret": "SIRET",
+    "uid": "UID",
+    "vat": "VAT",
+    "iban": "IBAN",
+    "headquarters": "Headquarters"
+  },
+  "auth": {
+    "welcome": "Welcome to RIVVLOCK",
+    "subtitle": "Secure escrow transactions",
+    "selectCountry": "Select your country",
+    "selectUserType": "Account type",
+    "terms": "I accept the Terms & Conditions",
+    "termsText": "Invoices valid without signature",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "noAccount": "No account?",
+    "forgotPassword": "Forgot password?"
+  },
+  "dashboard": {
+    "welcome": "Dashboard",
+    "transactions": "Transactions",
+    "profile": "Profile",
+    "settings": "Settings",
+    "history": "History",
+    "stats": "Statistics"
+  },
+  "transactions": {
+    "title": "Title",
+    "description": "Description",
+    "amount": "Amount",
+    "currency": "Currency",
+    "serviceDate": "Service Date",
+    "status": "Status",
+    "pending": "Pending",
+    "paid": "Paid",
+    "validated": "Validated",
+    "disputed": "Disputed",
+    "new": "New transaction",
+    "details": "Details"
+  },
+  "admin": {
+    "dashboard": "Administration",
+    "users": "Users",
+    "transactions": "Transactions",
+    "volume": "Volume",
+    "conversion": "Conversion",
+    "export": "Export CSV"
+  },
+  "navigation": {
+    "home": "Home",
+    "transactions": "Transactions",
+    "profile": "Profile",
+    "admin": "Admin"
+  }
+}

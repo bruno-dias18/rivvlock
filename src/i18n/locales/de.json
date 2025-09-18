@@ -1,0 +1,91 @@
+{
+  "common": {
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "logout": "Abmelden",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "phone": "Telefon",
+    "address": "Adresse",
+    "country": "Land",
+    "currency": "Währung"
+  },
+  "countries": {
+    "france": "Frankreich",
+    "switzerland": "Schweiz"
+  },
+  "currencies": {
+    "eur": "EUR",
+    "chf": "CHF"
+  },
+  "user": {
+    "individual": "Privatperson",
+    "company": "Unternehmen",
+    "profile": "Profil",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "companyName": "Firmenname",
+    "siret": "SIRET",
+    "uid": "UID",
+    "vat": "MwSt",
+    "iban": "IBAN",
+    "headquarters": "Hauptsitz"
+  },
+  "auth": {
+    "welcome": "Willkommen bei RIVVLOCK",
+    "subtitle": "Sichere Escrow-Transaktionen",
+    "selectCountry": "Wählen Sie Ihr Land",
+    "selectUserType": "Kontotyp",
+    "terms": "Ich akzeptiere die AGB",
+    "termsText": "Rechnungen gültig ohne Unterschrift",
+    "createAccount": "Konto erstellen",
+    "alreadyHaveAccount": "Bereits ein Konto?",
+    "noAccount": "Kein Konto?",
+    "forgotPassword": "Passwort vergessen?"
+  },
+  "dashboard": {
+    "welcome": "Dashboard",
+    "transactions": "Transaktionen",
+    "profile": "Profil",
+    "settings": "Einstellungen",
+    "history": "Verlauf",
+    "stats": "Statistiken"
+  },
+  "transactions": {
+    "title": "Titel",
+    "description": "Beschreibung",
+    "amount": "Betrag",
+    "currency": "Währung",
+    "serviceDate": "Servicedatum",
+    "status": "Status",
+    "pending": "Ausstehend",
+    "paid": "Bezahlt",
+    "validated": "Validiert",
+    "disputed": "Streitig",
+    "new": "Neue Transaktion",
+    "details": "Details"
+  },
+  "admin": {
+    "dashboard": "Verwaltung",
+    "users": "Benutzer",
+    "transactions": "Transaktionen",
+    "volume": "Volumen",
+    "conversion": "Konversion",
+    "export": "CSV exportieren"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "transactions": "Transaktionen",
+    "profile": "Profil",
+    "admin": "Admin"
+  }
+}

@@ -2,41 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* RIVVLOCK Design System - Inspired by Twint.ch
+All colors MUST be HSL. Color palette: #F7F7F7 (background), #007BFF (primary blue), #28A745 (success green)
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* RIVVLOCK Brand Colors */
+    --background: 0 0% 96.9%; /* #F7F7F7 */
+    --foreground: 217 32% 17%; /* Dark text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%; /* White cards */
+    --card-foreground: 217 32% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 217 32% 17%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary Blue #007BFF */
+    --primary: 210 100% 50%; /* #007BFF */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 210 100% 45%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Success Green #28A745 */
+    --success: 134 61% 41%; /* #28A745 */
+    --success-foreground: 0 0% 100%;
+    --success-hover: 134 61% 36%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --secondary: 210 14% 89%;
+    --secondary-foreground: 217 32% 17%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 14% 93%;
+    --muted-foreground: 217 13% 47%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 210 14% 89%;
+    --accent-foreground: 217 32% 17%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    --border: 210 14% 89%;
+    --input: 210 14% 89%;
+    --ring: 210 100% 50%;
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -56,41 +66,46 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 217 32% 12%; /* Darker version for dark mode */
+    --foreground: 0 0% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 217 32% 15%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 217 32% 15%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 210 100% 60%; /* Lighter blue for dark mode */
+    --primary-foreground: 217 32% 12%;
+    --primary-hover: 210 100% 55%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --success: 134 61% 51%; /* Lighter green for dark mode */
+    --success-foreground: 217 32% 12%;
+    --success-hover: 134 61% 46%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --secondary: 217 32% 18%;
+    --secondary-foreground: 0 0% 98%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 217 32% 18%;
+    --muted-foreground: 210 14% 71%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 217 32% 18%;
+    --accent-foreground: 0 0% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 217 32% 18%;
+    --input: 217 32% 18%;
+    --ring: 210 100% 60%;
+    --sidebar-background: 217 32% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 210 100% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 217 32% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 217 32% 15%;
+    --sidebar-ring: 210 100% 60%;
   }
 }
 
@@ -100,6 +115,55 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  }
+
+  /* RIVVLOCK Utilities */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-hover)) 100%);
+  }
+
+  .gradient-success {
+    background: linear-gradient(135deg, hsl(var(--success)) 0%, hsl(var(--success-hover)) 100%);
+  }
+
+  .shadow-rivv {
+    box-shadow: 0 4px 12px -2px rgba(0, 123, 255, 0.15);
+  }
+
+  .shadow-success {
+    box-shadow: 0 4px 12px -2px rgba(40, 167, 69, 0.15);
+  }
+
+  /* PWA Styles */
+  .bottom-tab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: hsl(var(--card));
+    border-top: 1px solid hsl(var(--border));
+    backdrop-filter: blur(20px);
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
   }
 }
