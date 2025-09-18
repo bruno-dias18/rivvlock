@@ -54,7 +54,7 @@ export const useRealTimeStats = () => {
       
       const pendingTransactions = transactions?.filter(t => t.status === 'pending').length || 0;
       const paidTransactions = transactions?.filter(t => t.status === 'paid').length || 0;
-      const completedTransactions = transactions?.filter(t => t.status === 'completed').length || 0;
+      const completedTransactions = transactions?.filter(t => t.status === 'validated').length || 0;
       
       // Get disputes count
       const { data: disputes, error: disputesError } = await supabase

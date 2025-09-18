@@ -13,6 +13,11 @@ interface InvoiceData {
   created_at: string;
   updated_at: string;
   status: string;
+  user_id: string;
+  buyer_id?: string;
+  seller_validated?: boolean;
+  buyer_validated?: boolean;
+  funds_released?: boolean;
   buyer_profile?: {
     first_name?: string;
     last_name?: string;

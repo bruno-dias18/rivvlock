@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Clock, Download } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Download, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -168,6 +168,9 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
         ...transaction,
         seller_profile: sellerProfile,
         buyer_profile: buyerProfile,
+        created_at: new Date().toISOString(), // Use current date as fallback
+        updated_at: new Date().toISOString(), // Use current date as fallback
+        description: transaction.title, // Use title as description fallback
       };
 
       generateInvoicePDF(invoiceData);
