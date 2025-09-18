@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTransactions } from '@/hooks/useTransactions';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { 
   Plus, 
   Search, 
@@ -16,78 +21,24 @@ import {
   XCircle,
   AlertTriangle,
   Eye,
-  CreditCard
+  CreditCard,
+  ExternalLink
 } from 'lucide-react';
 
-// Mock transactions data
-const mockTransactions = [
-  {
-    id: 'TX001',
-    title: 'Consultation IT - Mise en place infrastructure cloud',
-    description: 'Services de consultation technique pour migration AWS',
-    amount: 2500,
-    currency: 'EUR' as const,
-    serviceDate: '2024-01-15T10:00:00Z',
-    status: 'validated' as const,
-    createdAt: '2024-01-10T14:30:00Z',
-    client: 'Innovation Labs SA',
-  },
-  {
-    id: 'TX002',
-    title: 'Formation React Advanced',
-    description: 'Formation développement web avancé sur 3 jours',
-    amount: 1800,
-    currency: 'CHF' as const,
-    serviceDate: '2024-01-20T09:00:00Z',
-    status: 'pending' as const,
-    createdAt: '2024-01-12T16:15:00Z',
-    client: 'Tech Academy',
-  },
-  {
-    id: 'TX003',
-    title: 'Audit sécurité informatique complet',
-    description: 'Audit de sécurité et recommandations',
-    amount: 3200,
-    currency: 'EUR' as const,
-    serviceDate: '2024-01-10T14:00:00Z',
-    status: 'disputed' as const,
-    createdAt: '2024-01-08T11:20:00Z',
-    client: 'SecureCorp',
-  },
-  {
-    id: 'TX004',
-    title: 'Développement application mobile',
-    description: 'Application React Native pour gestion commandes',
-    amount: 5500,
-    currency: 'EUR' as const,
-    serviceDate: '2024-02-01T10:00:00Z',
-    status: 'paid' as const,
-    createdAt: '2024-01-05T09:45:00Z',
-    client: 'Retail Solutions',
-  },
-  {
-    id: 'TX005',
-    title: 'Maintenance serveurs',
-    description: 'Maintenance mensuelle infrastructure serveurs',
-    amount: 800,
-    currency: 'CHF' as const,
-    serviceDate: '2024-01-25T08:00:00Z',
-    status: 'pending' as const,
-    createdAt: '2024-01-20T13:00:00Z',
-    client: 'Alpine Systems',
-  },
-];
+// Remove mock transactions data - now using real data from useTransactions hook
 
 export const Transactions = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { transactions, loading, error, refreshTransactions } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const filteredTransactions = mockTransactions.filter(transaction => {
+  const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.client.toLowerCase().includes(searchTerm.toLowerCase());
+                         transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
     
@@ -123,11 +74,11 @@ export const Transactions = () => {
 
   const getStatusCounts = () => {
     return {
-      all: mockTransactions.length,
-      pending: mockTransactions.filter(t => t.status === 'pending').length,
-      validated: mockTransactions.filter(t => t.status === 'validated').length,
-      paid: mockTransactions.filter(t => t.status === 'paid').length,
-      disputed: mockTransactions.filter(t => t.status === 'disputed').length,
+      all: transactions.length,
+      pending: transactions.filter(t => t.status === 'pending').length,
+      paid: transactions.filter(t => t.status === 'paid').length,
+      completed: transactions.filter(t => t.status === 'completed').length,
+      disputed: transactions.filter(t => t.status === 'disputed').length,
     };
   };
 
@@ -146,7 +97,10 @@ export const Transactions = () => {
               Gérez toutes vos transactions escrow
             </p>
           </div>
-          <Button className="gradient-primary text-white">
+          <Button 
+            className="gradient-primary text-white"
+            onClick={() => navigate('/create-transaction')}
+          >
             <Plus className="w-4 h-4 mr-2" />
             {t('transactions.new')}
           </Button>
@@ -157,8 +111,8 @@ export const Transactions = () => {
           {[
             { key: 'all', label: 'Total', count: statusCounts.all, color: 'text-gray-600' },
             { key: 'pending', label: t('transactions.pending'), count: statusCounts.pending, color: 'text-yellow-600' },
-            { key: 'validated', label: t('transactions.validated'), count: statusCounts.validated, color: 'text-green-600' },
             { key: 'paid', label: t('transactions.paid'), count: statusCounts.paid, color: 'text-blue-600' },
+            { key: 'completed', label: 'Complétées', count: statusCounts.completed, color: 'text-green-600' },
             { key: 'disputed', label: t('transactions.disputed'), count: statusCounts.disputed, color: 'text-red-600' },
           ].map((stat) => (
             <Card 
@@ -204,8 +158,8 @@ export const Transactions = () => {
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="pending">{t('transactions.pending')}</SelectItem>
-                    <SelectItem value="validated">{t('transactions.validated')}</SelectItem>
                     <SelectItem value="paid">{t('transactions.paid')}</SelectItem>
+                    <SelectItem value="completed">Complétées</SelectItem>
                     <SelectItem value="disputed">{t('transactions.disputed')}</SelectItem>
                   </SelectContent>
                 </Select>
@@ -216,84 +170,114 @@ export const Transactions = () => {
 
         {/* Transactions List */}
         <div className="space-y-4">
-          {filteredTransactions.map((transaction) => {
-            const statusConfig = getStatusConfig(transaction.status);
-            const StatusIcon = statusConfig.icon;
-            
-            return (
-              <Card key={transaction.id} className="hover:shadow-md transition-all duration-200">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 space-y-3">
-                      {/* Header */}
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-semibold text-lg">{transaction.title}</h3>
-                            <Badge className={statusConfig.badge}>
-                              <StatusIcon className="w-3 h-3 mr-1" />
-                              {t(`transactions.${transaction.status}`)}
-                            </Badge>
+          {loading ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p>Chargement des transactions...</p>
+              </CardContent>
+            </Card>
+          ) : error ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
+                <p className="text-red-600 mb-4">{error}</p>
+                <Button onClick={() => refreshTransactions()}>Réessayer</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            filteredTransactions.map((transaction) => {
+              const statusConfig = getStatusConfig(transaction.status);
+              const StatusIcon = statusConfig.icon;
+              
+              return (
+                <Card key={transaction.id} className="hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-3">
+                        {/* Header */}
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-semibold text-lg">{transaction.title}</h3>
+                              <Badge className={statusConfig.badge}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {t(`transactions.${transaction.status}`)}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              ID: {transaction.id.substring(0, 8).toUpperCase()}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            ID: {transaction.id}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-foreground">
-                            {formatAmount(transaction.amount, transaction.currency)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {transaction.currency}
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-foreground">
+                              {formatAmount(transaction.price, transaction.currency)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {transaction.currency}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Description */}
-                      <p className="text-muted-foreground">
-                        {transaction.description}
-                      </p>
+                        {/* Description */}
+                        <p className="text-muted-foreground">
+                          {transaction.description}
+                        </p>
 
-                      {/* Details */}
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        <div>
-                          <strong>Client:</strong> {transaction.client}
+                        {/* Details */}
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <div>
+                            <strong>Service:</strong> {format(new Date(transaction.service_date), 'PPP', { locale: fr })}
+                          </div>
+                          <div>
+                            <strong>Créé:</strong> {format(new Date(transaction.created_at), 'PPP', { locale: fr })}
+                          </div>
+                          {transaction.payment_deadline && (
+                            <div>
+                              <strong>Paiement avant:</strong> {format(new Date(transaction.payment_deadline), 'PPP', { locale: fr })}
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <strong>Service:</strong> {new Date(transaction.serviceDate).toLocaleDateString()}
-                        </div>
-                        <div>
-                          <strong>Créé:</strong> {new Date(transaction.createdAt).toLocaleDateString()}
-                        </div>
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex gap-2 pt-2">
-                        <Button variant="outline" size="sm">
-                          <Eye className="w-4 h-4 mr-2" />
-                          {t('transactions.details')}
-                        </Button>
-                        {transaction.status === 'pending' && (
-                          <Button size="sm" className="gradient-success text-white">
-                            Valider
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              if (transaction.shared_link_token) {
+                                window.open(`/payment/${transaction.shared_link_token}`, '_blank');
+                              }
+                            }}
+                          >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Voir détails
                           </Button>
-                        )}
-                        {transaction.status === 'disputed' && (
-                          <Button size="sm" variant="destructive">
-                            Résoudre le litige
-                          </Button>
-                        )}
+                          {transaction.status === 'pending' && (
+                            <Button 
+                              size="sm" 
+                              className="gradient-success text-white"
+                              onClick={() => {
+                                if (transaction.shared_link_token) {
+                                  window.open(`/payment/${transaction.shared_link_token}`, '_blank');
+                                }
+                              }}
+                            >
+                              Accéder au paiement
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         {/* Empty State */}
-        {filteredTransactions.length === 0 && (
+        {!loading && !error && filteredTransactions.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">
               <div className="text-muted-foreground">
@@ -307,6 +291,15 @@ export const Transactions = () => {
                     : 'Créez votre première transaction pour commencer'
                   }
                 </p>
+                {!searchTerm && statusFilter === 'all' && (
+                  <Button 
+                    className="mt-4 gradient-primary text-white"
+                    onClick={() => navigate('/create-transaction')}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Créer une transaction
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

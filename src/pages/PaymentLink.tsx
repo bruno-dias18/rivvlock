@@ -28,6 +28,7 @@ import { stripePromise } from '@/lib/stripe';
 import { StripePaymentForm, AlternativePaymentMethods } from '@/components/escrow/StripePaymentForm';
 import { TransactionChat } from '@/components/escrow/TransactionChat';
 import { ValidationButtons } from '@/components/escrow/ValidationButtons';
+import { PaymentWindow } from '@/components/validation/PaymentWindow';
 import { DisputeForm } from '@/components/escrow/DisputeForm';
 
 interface Transaction {

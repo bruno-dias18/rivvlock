@@ -64,7 +64,7 @@ export const useTransactions = () => {
     totalTransactions: transactions.length,
     totalVolume: transactions.reduce((sum, t) => sum + t.price, 0),
     pendingTransactions: transactions.filter(t => t.status === 'pending').length,
-    completedTransactions: transactions.filter(t => t.status === 'completed').length,
+          completedTransactions: transactions.filter(t => t.status === 'completed').length,
     paidTransactions: transactions.filter(t => t.status === 'paid').length,
   };
 
