@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Home, CreditCard, User, Settings } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Home, CreditCard, User } from 'lucide-react';
 
 interface TabItem {
   path: string;
@@ -29,11 +30,6 @@ export const BottomTabBar = () => {
       path: '/profile',
       label: t('navigation.profile'),
       icon: <User className="w-5 h-5" />
-    },
-    {
-      path: '/admin',
-      label: t('navigation.admin'),
-      icon: <Settings className="w-5 h-5" />
     }
   ];
 

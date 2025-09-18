@@ -18,13 +18,14 @@ import {
   Plus,
   ArrowUpRight,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Settings
 } from 'lucide-react';
 
 export const Dashboard = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAdmin } = useAuth();
   const { transactions, stats, loading: transactionsLoading, getPaymentCountdown } = useTransactions();
   const navigate = useNavigate();
 
@@ -95,18 +96,35 @@ export const Dashboard = () => {
               </p>
             </div>
           </div>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Button 
-              className="gradient-primary text-white"
-              onClick={() => navigate('/create-transaction')}
+          <div className="flex gap-3">
+            {isAdmin && (
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate('/admin')}
+                  className="border-primary text-primary hover:bg-primary hover:text-white"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Admin Panel
+                </Button>
+              </motion.div>
+            )}
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Nouvelle transaction
-            </Button>
-          </motion.div>
+              <Button 
+                className="gradient-primary text-white"
+                onClick={() => navigate('/create-transaction')}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouvelle transaction
+              </Button>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Real-time indicator */}

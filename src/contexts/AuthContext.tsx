@@ -8,6 +8,7 @@ export interface UserProfile {
   type: 'individual' | 'company' | 'independent';
   country: 'FR' | 'CH';
   verified: boolean;
+  isAdmin: boolean;
 }
 
 export interface RegisterData {
@@ -31,6 +32,7 @@ interface AuthContextValue {
   user: UserProfile | null;
   session: Session | null;
   loading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<{ error: any | null }>;
   register: (data: RegisterData) => Promise<{ error: any | null; data?: any }>;
   logout: () => Promise<{ error: any | null }>;
@@ -40,6 +42,7 @@ const defaultValue: AuthContextValue = {
   user: null,
   session: null,
   loading: true,
+  isAdmin: false,
   async login() { return { error: null }; },
   async register() { return { error: null }; },
   async logout() { return { error: null }; },
@@ -81,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (userId: string, userEmail: string) => {
     try {
+      // Fetch user profile
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -92,6 +96,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // Check if user is admin
+      const { data: isAdminResult, error: adminError } = await supabase
+        .rpc('is_admin', { check_user_id: userId });
+
+      if (adminError) {
+        console.error('Error checking admin status:', adminError);
+      }
+
+      const isAdmin = isAdminResult || userEmail === 'bruno-dias@outlook.com';
+
       if (profile) {
         setUser({
           id: profile.user_id,
@@ -99,10 +113,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           type: profile.user_type,
           country: profile.country,
           verified: profile.verified,
+          isAdmin,
         });
       } else {
         // Fallback minimal user when profile not yet created
-        setUser({ id: userId, email: userEmail, type: 'individual', country: 'FR', verified: false });
+        setUser({ 
+          id: userId, 
+          email: userEmail, 
+          type: 'individual', 
+          country: 'FR', 
+          verified: false,
+          isAdmin
+        });
       }
     } catch (e) {
       console.error('Error fetching user profile:', e);
@@ -164,7 +186,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const value = useMemo(() => ({ user, session, loading, login, register, logout }), [user, session, loading]);
+  const value = useMemo(() => ({ 
+    user, 
+    session, 
+    loading, 
+    isAdmin: user?.isAdmin || false,
+    login, 
+    register, 
+    logout 
+  }), [user, session, loading]);
 
   return (
     <AuthContext.Provider value={value}>

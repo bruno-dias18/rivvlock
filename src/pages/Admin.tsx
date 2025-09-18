@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { AdminRoute } from '@/components/auth/AdminRoute';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,8 @@ export const Admin = () => {
   const { stats, refreshStats } = useRealTimeStats();
 
   return (
-    <Layout>
+    <AdminRoute>
+      <Layout>
       <div className="space-y-6">
         {/* Admin Header */}
         <div className="flex items-center justify-between">
@@ -318,6 +320,7 @@ export const Admin = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
+      </Layout>
+    </AdminRoute>
   );
 };
