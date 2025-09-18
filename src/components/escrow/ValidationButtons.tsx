@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, Lock, AlertTriangle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -8,8 +8,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useCurrency } from '@/hooks/useCurrency';
+import { LockAnimation } from '@/components/ui/lock-animation';
+import { generateInvoicePDF } from '@/components/invoice/InvoiceGenerator';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { motion } from 'framer-motion';
 
 interface ValidationButtonsProps {
   transaction: {
@@ -125,6 +128,15 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
         description: `${formatAmount(transaction.price * 0.95, transaction.currency as 'EUR' | 'CHF')} transférés au vendeur (5% de frais prélevés).`,
       });
 
+      // Auto-generate PDF invoice after funds release
+      setTimeout(() => {
+        handleDownloadInvoice();
+        toast({
+          title: '📄 Facture générée',
+          description: 'La facture PDF a été générée automatiquement.',
+        });
+      }, 2000);
+
       onValidationUpdate();
     } catch (error) {
       console.error('Error releasing funds:', error);
@@ -135,6 +147,37 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      // Fetch user profiles for invoice
+      const userIds = [transaction.user_id];
+      if (transaction.buyer_id) userIds.push(transaction.buyer_id);
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+      const sellerProfile = profiles?.find(p => p.user_id === transaction.user_id);
+      const buyerProfile = profiles?.find(p => p.user_id === transaction.buyer_id);
+
+      const invoiceData = {
+        ...transaction,
+        seller_profile: sellerProfile,
+        buyer_profile: buyerProfile,
+      };
+
+      generateInvoicePDF(invoiceData);
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible de générer la facture.',
+      });
     }
   };
 
@@ -151,22 +194,50 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
 
   if (transaction.funds_released) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-green-600">
-            <CheckCircle className="w-5 h-5" />
-            Transaction terminée
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              Les fonds ont été libérés avec succès. Transaction complétée !
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-600">
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <CheckCircle className="w-5 h-5" />
+              </motion.div>
+              Transaction terminée
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                Les fonds ont été libérés avec succès. Transaction complétée !
+              </AlertDescription>
+            </Alert>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleDownloadInvoice}
+                className="flex-1 gradient-primary text-white"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Télécharger la facture PDF
+              </Button>
+            </div>
+            
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <div className="w-12 h-12 mx-auto mb-2 text-green-600">🔓</div>
+              <p className="text-sm text-green-700">
+                Fonds déverrouillés et transférés !
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
@@ -265,9 +336,9 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
                 <Button
                   onClick={handleReleaseFunds}
                   disabled={isProcessing}
-                  className="w-full gradient-primary text-white text-lg py-6 animate-pulse"
+                  className="w-full gradient-primary text-white text-lg py-6"
                 >
-                  <Lock className="w-6 h-6 mr-2 animate-bounce" />
+                  <LockAnimation isLocked={false} size="sm" className="mr-2" />
                   🔓 Libérer les fonds
                 </Button>
                 <p className="text-sm text-muted-foreground">

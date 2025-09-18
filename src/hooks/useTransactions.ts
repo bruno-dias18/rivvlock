@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useOfflineCache } from './useOfflineCache';
 
 export interface Transaction {
   id: string;
@@ -29,27 +30,19 @@ export interface TransactionStats {
 }
 
 export const useTransactions = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [stats, setStats] = useState<TransactionStats>({
-    totalTransactions: 0,
-    totalVolume: 0,
-    pendingTransactions: 0,
-    completedTransactions: 0,
-    paidTransactions: 0,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const fetchTransactions = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
+  // Use offline cache for transactions
+  const {
+    data: transactions = [],
+    loading,
+    error,
+    isOffline,
+    refetch
+  } = useOfflineCache<Transaction[]>(
+    user ? `transactions_${user.id}` : 'transactions_guest',
+    async () => {
+      if (!user) return [];
 
       const { data, error: fetchError } = await supabase
         .from('transactions')
@@ -58,27 +51,47 @@ export const useTransactions = () => {
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
+      return data as Transaction[];
+    },
+    2 * 60 * 1000 // 2 minutes cache
+  );
 
-      const transactionData = data as Transaction[];
-      setTransactions(transactionData);
-
-      // Calculate stats
-      const stats: TransactionStats = {
-        totalTransactions: transactionData.length,
-        totalVolume: transactionData.reduce((sum, t) => sum + t.price, 0),
-        pendingTransactions: transactionData.filter(t => t.status === 'pending').length,
-        completedTransactions: transactionData.filter(t => t.status === 'completed').length,
-        paidTransactions: transactionData.filter(t => t.status === 'paid').length,
-      };
-      setStats(stats);
-
-    } catch (error) {
-      console.error('Error fetching transactions:', error);
-      setError('Erreur lors du chargement des transactions');
-    } finally {
-      setLoading(false);
-    }
+  // Calculate stats from transactions
+  const stats: TransactionStats = {
+    totalTransactions: transactions.length,
+    totalVolume: transactions.reduce((sum, t) => sum + t.price, 0),
+    pendingTransactions: transactions.filter(t => t.status === 'pending').length,
+    completedTransactions: transactions.filter(t => t.status === 'completed').length,
+    paidTransactions: transactions.filter(t => t.status === 'paid').length,
   };
+
+  // Real-time subscription for updates
+  useEffect(() => {
+    if (!user || isOffline) return;
+
+    const channel = supabase
+      .channel('transactions_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Real-time transaction update:', payload);
+          refetch(); // Refetch data when changes occur
+        }
+      )
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isOffline, refetch]);
 
   const getPaymentCountdown = (transaction: Transaction): string | null => {
     if (!transaction.payment_deadline || transaction.status !== 'pending') return null;
@@ -104,45 +117,14 @@ export const useTransactions = () => {
     }
   };
 
-  const refreshTransactions = () => {
-    fetchTransactions();
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-  }, [user]);
-
-  // Set up real-time subscription for transaction updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('transactions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchTransactions();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   return {
     transactions,
     stats,
     loading,
-    error,
-    refreshTransactions,
+    error: error || (isOffline && transactions.length === 0 ? 'Mode hors ligne - données non disponibles' : null),
+    isOffline,
+    refreshTransactions: refetch,
     getPaymentCountdown,
   };
 };

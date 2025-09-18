@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
+import { RivvlockLogo } from '@/components/ui/lock-animation';
+import { motion } from 'framer-motion';
 import { 
   CreditCard, 
   TrendingUp, 
@@ -15,7 +17,8 @@ import {
   Clock,
   Plus,
   ArrowUpRight,
-  AlertTriangle
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 
 export const Dashboard = () => {
@@ -75,81 +78,106 @@ export const Dashboard = () => {
     <Layout>
       <div className="space-y-6">
         {/* Welcome Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {t('dashboard.welcome')}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gérez vos transactions escrow en toute sécurité
-            </p>
+        <motion.div 
+          className="flex items-center justify-between"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-center gap-4">
+            <RivvlockLogo />
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {t('dashboard.welcome')}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Gérez vos transactions escrow en toute sécurité
+              </p>
+            </div>
           </div>
-          <Button 
-            className="gradient-primary text-white"
-            onClick={() => navigate('/create-transaction')}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Nouvelle transaction
-          </Button>
-        </div>
+            <Button 
+              className="gradient-primary text-white"
+              onClick={() => navigate('/create-transaction')}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle transaction
+            </Button>
+          </motion.div>
+        </motion.div>
+
+        {/* Real-time indicator */}
+        <motion.div 
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Données synchronisées en temps réel</span>
+        </motion.div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Total Transactions
-                  </p>
-                  <p className="text-2xl font-bold">{stats.totalTransactions}</p>
-                </div>
-                <CreditCard className="w-8 h-8 text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Volume Total
-                  </p>
-                  <p className="text-2xl font-bold">{formatAmount(stats.totalVolume)}</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-success" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    En Attente
-                  </p>
-                  <p className="text-2xl font-bold">{stats.pendingTransactions}</p>
-                </div>
-                <Clock className="w-8 h-8 text-yellow-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex items-center p-6">
-              <div className="flex items-center justify-between w-full">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Payées
-                  </p>
-                  <p className="text-2xl font-bold">{stats.paidTransactions}</p>
-                </div>
-                <Users className="w-8 h-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
+          {[
+            {
+              title: "Total Transactions",
+              value: stats.totalTransactions,
+              icon: CreditCard,
+              color: "text-primary",
+              delay: 0.1
+            },
+            {
+              title: "Volume Total",
+              value: formatAmount(stats.totalVolume),
+              icon: TrendingUp,
+              color: "text-success",
+              delay: 0.2
+            },
+            {
+              title: "En Attente",
+              value: stats.pendingTransactions,
+              icon: Clock,
+              color: "text-yellow-500",
+              delay: 0.3
+            },
+            {
+              title: "Payées",
+              value: stats.paidTransactions,
+              icon: Users,
+              color: "text-blue-500",
+              delay: 0.4
+            }
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: stat.delay, duration: 0.5 }}
+            >
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="flex items-center p-6">
+                  <div className="flex items-center justify-between w-full">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {stat.title}
+                      </p>
+                      <motion.p 
+                        className="text-2xl font-bold"
+                        animate={{ scale: [1, 1.02, 1] }}
+                        transition={{ duration: 2, repeat: Infinity, delay: stat.delay }}
+                      >
+                        {stat.value}
+                      </motion.p>
+                    </div>
+                    <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
         </div>
 
         {/* Recent Transactions */}

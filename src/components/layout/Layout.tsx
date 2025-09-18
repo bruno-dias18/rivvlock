@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Header } from './Header';
 import { BottomTabBar } from './BottomTabBar';
+import { OfflineIndicator } from './OfflineIndicator';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -11,14 +12,12 @@ interface LayoutProps {
 export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
+      <OfflineIndicator />
       <Header />
-      <main className={cn(
-        "container mx-auto px-4 py-6",
-        showBottomNav ? "pb-20" : "pb-6"
-      )}>
+      <main className="container mx-auto px-4 pt-20 pb-20 max-w-7xl">
         {children}
       </main>
-      {showBottomNav && <BottomTabBar />}
+      <BottomTabBar />
     </div>
   );
 };
