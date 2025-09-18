@@ -21,7 +21,7 @@ export const CSVExporter = ({ className }: CSVExporterProps) => {
       });
 
       // Fetch all transactions with related data
-      const { data: transactions, error: transactionsError } = await supabase
+      const { data: transactionsData, error: transactionsError } = await supabase
         .from('transactions')
         .select(`
           *,
@@ -30,6 +30,9 @@ export const CSVExporter = ({ className }: CSVExporterProps) => {
         .order('created_at', { ascending: false });
 
       if (transactionsError) throw transactionsError;
+
+      // Ensure transactions is always an array
+      const transactions = transactionsData || [];
 
       // Get user profiles for seller/buyer names
       const userIds = new Set<string>();
@@ -52,7 +55,7 @@ export const CSVExporter = ({ className }: CSVExporterProps) => {
       });
 
       // Transform data for CSV
-      const csvData = transactions?.map(tx => {
+      const csvData = transactions.map(tx => {
         const sellerProfile = profileMap.get(tx.user_id);
         const buyerProfile = profileMap.get(tx.buyer_id);
         

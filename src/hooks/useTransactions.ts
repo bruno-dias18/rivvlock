@@ -34,7 +34,7 @@ export const useTransactions = () => {
 
   // Use offline cache for transactions
   const {
-    data: transactions = [],
+    data: transactionsData,
     loading,
     error,
     isOffline,
@@ -55,6 +55,9 @@ export const useTransactions = () => {
     },
     2 * 60 * 1000 // 2 minutes cache
   );
+
+  // Ensure transactions is always an array
+  const transactions = transactionsData || [];
 
   // Calculate stats from transactions
   const stats: TransactionStats = {

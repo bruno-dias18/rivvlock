@@ -36,25 +36,27 @@ export const useRealTimeStats = () => {
     try {
       setStats(prev => ({ ...prev, loading: true, error: null }));
 
-      // Get all transactions
       const { data: transactions, error: transactionsError } = await supabase
         .from('transactions')
         .select('*');
 
       if (transactionsError) throw transactionsError;
 
+      // Ensure transactions is always an array
+      const transactionsList = transactions || [];
+
       // Get current month start
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
       // Calculate stats
-      const totalTransactions = transactions?.length || 0;
-      const totalVolume = transactions?.reduce((sum, t) => sum + Number(t.price), 0) || 0;
+      const totalTransactions = transactionsList.length;
+      const totalVolume = transactionsList.reduce((sum, t) => sum + Number(t.price), 0);
       const totalFees = totalVolume * 0.05; // 5% platform fee
       
-      const pendingTransactions = transactions?.filter(t => t.status === 'pending').length || 0;
-      const paidTransactions = transactions?.filter(t => t.status === 'paid').length || 0;
-      const completedTransactions = transactions?.filter(t => t.status === 'validated').length || 0;
+      const pendingTransactions = transactionsList.filter(t => t.status === 'pending').length;
+      const paidTransactions = transactionsList.filter(t => t.status === 'paid').length;
+      const completedTransactions = transactionsList.filter(t => t.status === 'validated').length;
       
       // Get disputes count
       const { data: disputes, error: disputesError } = await supabase
@@ -71,9 +73,9 @@ export const useRealTimeStats = () => {
         : 0;
 
       // Monthly stats
-      const monthlyTxs = transactions?.filter(t => 
+      const monthlyTxs = transactionsList.filter(t => 
         new Date(t.created_at) >= monthStart
-      ) || [];
+      );
       const monthlyVolume = monthlyTxs.reduce((sum, t) => sum + Number(t.price), 0);
       const monthlyTransactions = monthlyTxs.length;
 
