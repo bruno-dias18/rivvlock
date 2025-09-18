@@ -51,10 +51,16 @@
     "selectUserType": "Type de compte",
     "terms": "J'accepte les CGU",
     "termsText": "Factures valides sans signature",
+    "acceptTerms": "J'accepte les conditions générales",
     "createAccount": "Créer un compte",
     "alreadyHaveAccount": "Déjà un compte ?",
     "noAccount": "Pas de compte ?",
-    "forgotPassword": "Mot de passe oublié ?"
+    "forgotPassword": "Mot de passe oublié ?",
+    "confirmPassword": "Confirmer le mot de passe",
+    "error": "Erreur",
+    "success": "Succès",
+    "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
+    "checkEmailForConfirmation": "Vérifiez votre email pour confirmer votre inscription"
   },
   "dashboard": {
     "welcome": "Tableau de bord",

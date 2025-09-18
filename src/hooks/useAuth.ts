@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-// Mock auth hook for demo purposes
-// TODO: Replace with real Supabase auth once connected
-
-interface User {
+interface UserProfile {
   id: string;
   email: string;
   type: 'individual' | 'company' | 'independent';
@@ -11,56 +10,162 @@ interface User {
   verified: boolean;
 }
 
+interface RegisterData {
+  email: string;
+  password: string;
+  userType: 'individual' | 'company' | 'independent';
+  country: 'FR' | 'CH';
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  companyName?: string;
+  siretUid?: string;
+  companyAddress?: string;
+  iban?: string;
+  avsNumber?: string;
+  tvaRate?: number;
+}
+
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>({
-    id: '1',
-    email: 'demo@rivvlock.com',
-    type: 'company',
-    country: 'FR',
-    verified: true
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          await fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setUser({
+          id: profile.user_id,
+          email: session?.user?.email || '',
+          type: profile.user_type,
+          country: profile.country,
+          verified: profile.verified
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Mock login - in real app, use Supabase auth
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUser({
-        id: '1',
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        type: 'company',
-        country: 'FR',
-        verified: true
+        password,
       });
+      return { error };
     } finally {
       setLoading(false);
     }
   };
 
-  const register = async (userData: any) => {
+  const register = async (userData: RegisterData) => {
     setLoading(true);
     try {
-      // Mock registration - in real app, use Supabase auth
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setUser({
-        id: '1',
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
-        type: userData.userType,
-        country: userData.country,
-        verified: false
+        password: userData.password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
+
+      if (error) {
+        return { error };
+      }
+
+      if (data.user) {
+        // Create user profile
+        const profileData = {
+          user_id: data.user.id,
+          user_type: userData.userType,
+          country: userData.country,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          phone: userData.phone,
+          address: userData.address,
+          company_name: userData.companyName,
+          siret_uid: userData.siretUid,
+          company_address: userData.companyAddress,
+          iban: userData.iban,
+          avs_number: userData.avsNumber,
+          tva_rate: userData.tvaRate,
+          vat_rate: userData.userType === 'company' 
+            ? (userData.country === 'FR' ? 20.0 : 8.1)
+            : undefined,
+          verified: false
+        };
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([profileData]);
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          return { error: profileError };
+        }
+      }
+
+      return { data, error: null };
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setUser(null);
+      setSession(null);
+    }
+    return { error };
   };
 
   return {
     user,
+    session,
     loading,
     login,
     register,

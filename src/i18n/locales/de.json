@@ -51,10 +51,16 @@
     "selectUserType": "Kontotyp",
     "terms": "Ich akzeptiere die AGB",
     "termsText": "Rechnungen gültig ohne Unterschrift",
+    "acceptTerms": "Ich akzeptiere die Geschäftsbedingungen",
     "createAccount": "Konto erstellen",
     "alreadyHaveAccount": "Bereits ein Konto?",
     "noAccount": "Kein Konto?",
-    "forgotPassword": "Passwort vergessen?"
+    "forgotPassword": "Passwort vergessen?",
+    "confirmPassword": "Passwort bestätigen",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
+    "checkEmailForConfirmation": "Überprüfen Sie Ihre E-Mail, um Ihre Registrierung zu bestätigen"
   },
   "dashboard": {
     "welcome": "Dashboard",

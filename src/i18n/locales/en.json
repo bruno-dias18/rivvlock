@@ -51,10 +51,16 @@
     "selectUserType": "Account type",
     "terms": "I accept the Terms & Conditions",
     "termsText": "Invoices valid without signature",
+    "acceptTerms": "I accept the terms and conditions",
     "createAccount": "Create account",
     "alreadyHaveAccount": "Already have an account?",
     "noAccount": "No account?",
-    "forgotPassword": "Forgot password?"
+    "forgotPassword": "Forgot password?",
+    "confirmPassword": "Confirm password",
+    "error": "Error",
+    "success": "Success",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "checkEmailForConfirmation": "Check your email to confirm your registration"
   },
   "dashboard": {
     "welcome": "Dashboard",

@@ -2,19 +2,26 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/hooks/useLanguage';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { Globe, DollarSign } from 'lucide-react';
+import { Globe, DollarSign, LogOut, User } from 'lucide-react';
 import logoImage from '@/assets/rivvlock-logo.png';
 
 export const Header = () => {
   const { t } = useTranslation();
   const { languages, switchLanguage, currentLanguageInfo } = useLanguage();
   const { currencies, switchCurrency, currency } = useCurrency();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-40">
@@ -32,7 +39,7 @@ export const Header = () => {
             </h1>
           </div>
 
-          {/* Language & Currency Switchers */}
+          {/* Language & Currency Switchers + User Menu */}
           <div className="flex items-center gap-2">
             {/* Language Switcher */}
             <DropdownMenu>
@@ -74,6 +81,29 @@ export const Header = () => {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* User Menu - only show if authenticated */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="w-4 h-4" />
+                    {user.email}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem disabled>
+                    <User className="w-4 h-4 mr-2" />
+                    {t('user.profile')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    {t('common.logout')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
