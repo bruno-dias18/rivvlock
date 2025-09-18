@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
+import { useInvoiceGeneration } from '@/hooks/useInvoiceGeneration';
 import { RivvlockLogo } from '@/components/ui/lock-animation';
 import { motion } from 'framer-motion';
 import { 
@@ -19,8 +20,10 @@ import {
   ArrowUpRight,
   AlertTriangle,
   RefreshCw,
-  Settings
+  Settings,
+  FileText
 } from 'lucide-react';
+import { InvoiceSection } from '@/components/invoice/InvoiceSection';
 
 export const Dashboard = () => {
   const { t } = useTranslation();
@@ -28,6 +31,9 @@ export const Dashboard = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { transactions, stats, loading: transactionsLoading, getPaymentCountdown } = useTransactions();
   const navigate = useNavigate();
+  
+  // Enable automatic invoice generation
+  useInvoiceGeneration();
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -197,6 +203,9 @@ export const Dashboard = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Invoices Section */}
+        <InvoiceSection />
 
         {/* Recent Transactions */}
         <Card>
