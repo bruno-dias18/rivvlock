@@ -20,10 +20,24 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Verify environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    
+    if (!supabaseUrl || !supabaseKey || !stripeKey) {
+      logStep("ERROR - Missing environment variables", { 
+        hasSupabaseUrl: !!supabaseUrl, 
+        hasSupabaseKey: !!supabaseKey, 
+        hasStripeKey: !!stripeKey 
+      });
+      throw new Error("Missing required environment variables");
+    }
+
     // Initialize Supabase client
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      supabaseUrl,
+      supabaseKey,
       { auth: { persistSession: false } }
     );
 
@@ -79,7 +93,7 @@ serve(async (req) => {
     }
 
     // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2025-08-27.basil",
     });
 
@@ -152,7 +166,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       stripe_account_id: account.id,
       account_status: 'pending',
-      onboarding_url: `https://connect.stripe.com/express/oauth/authorize?redirect_uri=${req.headers.get("origin")}/stripe/connect&client_id=${account.id}`,
+      onboarding_url: `https://connect.stripe.com/express/oauth/authorize?redirect_uri=${req.headers.get("origin") || "http://localhost:3000"}/stripe/connect&client_id=${account.id}`,
       existing: false
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
