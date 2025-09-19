@@ -322,10 +322,10 @@ export const Admin = () => {
                       </Badge>
                       <div>
                         <p className="font-medium">
-                          Tx #{transaction.id.slice(0, 8)} : {transaction.title}
+                          Tx #{transaction.id.slice(0, 8)} : {transaction.title}, {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')}, status: {transaction.status}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {getDisplayName(transaction)} • {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} • {getActivityAction(transaction)}
+                          {getDisplayName(transaction)} • créé le {new Date(transaction.created_at).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                     </div>
