@@ -74,27 +74,66 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
   useEffect(() => {
     fetchRecentTransactions();
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('admin_transactions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions'
-        },
-        (payload) => {
-          console.log('Transaction change detected:', payload);
-          fetchRecentTransactions();
-        }
-      )
-      .subscribe();
+    // Set up real-time subscription for admin users or regular users
+    let channel;
+    let resubscribeTimer;
+    
+    const subscribeToTransactions = () => {
+      console.log('Setting up transactions subscription...');
+      
+      channel = supabase
+        .channel('admin_transactions_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'transactions'
+          },
+          (payload) => {
+            console.log('Transaction change detected:', payload);
+            fetchRecentTransactions();
+          }
+        )
+        .subscribe((status, err) => {
+          console.log('Real-time subscription status:', status);
+          if (err) {
+            console.error('Subscription error:', err);
+          }
+          
+          if (status === 'CLOSED') {
+            console.log('Subscription closed, attempting to resubscribe in 3 seconds...');
+            resubscribeTimer = setTimeout(() => {
+              subscribeToTransactions();
+            }, 3000);
+          }
+        });
+    };
+
+    subscribeToTransactions();
+
+    // Fallback polling for admin view every 5 seconds if subscription fails
+    let pollInterval;
+    if (isAdminView) {
+      pollInterval = setInterval(() => {
+        console.log('Polling transactions fallback...');
+        fetchRecentTransactions();
+      }, 5000);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) {
+        console.log('Cleaning up subscription...');
+        supabase.removeChannel(channel);
+      }
+      if (resubscribeTimer) {
+        clearTimeout(resubscribeTimer);
+      }
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
     };
-  }, []);
+  }, [isAdminView]);
 
   const getDisplayName = (transaction: RecentTransaction) => {
     if (transaction.profiles?.company_name) {
