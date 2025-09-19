@@ -60,6 +60,7 @@ export const PaymentLink = () => {
   const [isExpired, setIsExpired] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showStripeForm, setShowStripeForm] = useState(false);
+  const [joiningTransaction, setJoiningTransaction] = useState(false);
   const { formatAmount } = useCurrency();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -72,6 +73,14 @@ export const PaymentLink = () => {
     }
     fetchTransaction();
   }, [token]);
+
+  // Automatically join transaction if user is authenticated but not assigned as buyer
+  useEffect(() => {
+    if (user && transaction && !transaction.buyer_id && !joiningTransaction) {
+      console.log('🔄 [PAYMENT-LINK] User authenticated but not assigned as buyer, auto-joining...');
+      joinTransaction();
+    }
+  }, [user, transaction, joiningTransaction]);
 
   useEffect(() => {
     if (transaction?.payment_deadline) {
@@ -217,6 +226,50 @@ export const PaymentLink = () => {
     }
   };
 
+  const joinTransaction = async () => {
+    if (!transaction || !user || !token) return;
+
+    setJoiningTransaction(true);
+    console.log('🔄 [PAYMENT-LINK] Joining transaction:', transaction.id);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('join-transaction', {
+        body: {
+          transaction_id: transaction.id,
+          token: token
+        }
+      });
+
+      if (error) {
+        console.error('❌ [PAYMENT-LINK] Join transaction error:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Erreur lors de la jointure de la transaction');
+      }
+
+      console.log('✅ [PAYMENT-LINK] Successfully joined transaction');
+      
+      toast({
+        title: 'Transaction rejointe',
+        description: 'Vous pouvez maintenant procéder au paiement.'
+      });
+
+      // Refresh transaction data to get updated buyer_id
+      await fetchTransaction();
+    } catch (error: any) {
+      console.error('❌ [PAYMENT-LINK] Error joining transaction:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: error.message || 'Impossible de rejoindre la transaction.'
+      });
+    } finally {
+      setJoiningTransaction(false);
+    }
+  };
+
   const refreshTransaction = () => {
     fetchTransaction();
   };
@@ -353,14 +406,26 @@ export const PaymentLink = () => {
         ) : !transaction.buyer_id ? (
           <Card>
             <CardContent className="text-center py-8">
-              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Rejoignez d'abord la transaction</h2>
-              <p className="text-muted-foreground mb-4">
-                Vous devez d'abord rejoindre cette transaction avant de pouvoir payer.
-              </p>
-              <Button onClick={() => navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)}>
-                Rejoindre la transaction
-              </Button>
+              {joiningTransaction ? (
+                <>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                  <h2 className="text-xl font-semibold mb-2">Jointure en cours...</h2>
+                  <p className="text-muted-foreground">
+                    Vous êtes en train de joindre cette transaction.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h2 className="text-xl font-semibold mb-2">Rejoignez d'abord la transaction</h2>
+                  <p className="text-muted-foreground mb-4">
+                    Vous devez d'abord rejoindre cette transaction avant de pouvoir payer.
+                  </p>
+                  <Button onClick={joinTransaction} disabled={joiningTransaction}>
+                    Rejoindre la transaction
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         ) : transaction.buyer_id !== user.id ? (
