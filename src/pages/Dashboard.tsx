@@ -2,9 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { CompletionSummary } from '@/components/status/CompletionSummary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
@@ -21,7 +24,9 @@ import {
   AlertTriangle,
   RefreshCw,
   Settings,
-  FileText
+  FileText,
+  CheckCircle,
+  TestTube
 } from 'lucide-react';
 import { InvoiceSection } from '@/components/invoice/InvoiceSection';
 
@@ -141,6 +146,18 @@ export const Dashboard = () => {
         >
           <RefreshCw className="w-4 h-4" />
           <span>Données synchronisées en temps réel</span>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <QuickActions />
+
+        {/* Completion Summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          <CompletionSummary />
         </motion.div>
 
         {/* Stats Cards */}
