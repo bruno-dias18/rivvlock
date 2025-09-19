@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import { Dashboard } from "./pages/Dashboard";
 import { CreateTransaction } from "./pages/CreateTransaction";
 import { PaymentLink } from "./pages/PaymentLink";
+import { JoinTransaction } from "./pages/JoinTransaction";
 import { Transactions } from "./pages/Transactions";
 import { Profile } from "./pages/Profile";
 import { Admin } from "./pages/Admin";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/create-transaction" element={<CreateTransaction />} />
+            <Route path="/join-transaction/:token" element={<JoinTransaction />} />
             <Route path="/payment/:token" element={<PaymentLink />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/profile" element={<Profile />} />

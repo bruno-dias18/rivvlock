@@ -86,8 +86,10 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${window.location.origin}/payment/${token}`;
+      const shareableLink = `${window.location.origin}/join-transaction/${token}`;
       setGeneratedLink(shareableLink);
+      
+      console.log('Test: CreateTransaction - Generated join link:', shareableLink);
 
       toast({
         title: 'Transaction créée !',

@@ -89,40 +89,38 @@ export const PaymentLink = () => {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          profiles!transactions_user_id_fkey(first_name, last_name, company_name, user_type)
+        `)
         .eq('shared_link_token', token)
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
-
-      if (!data) {
-        toast({
-          variant: 'destructive',
-          title: 'Lien invalide',
-          description: 'Ce lien de paiement n\'existe pas ou a expiré.',
-        });
-        navigate('/');
-        return;
-      }
-
+      
+      console.log('Test: PaymentLink - Transaction loaded:', data);
+      console.log('Test: PaymentLink - Current user:', user?.id);
+      console.log('Test: PaymentLink - Buyer assigned:', data.buyer_id);
+      
       setTransaction(data);
-      updateCountdown();
+      updateCountdown(data);
     } catch (error) {
       console.error('Error fetching transaction:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
-        description: 'Impossible de charger les détails de la transaction.',
+        description: 'Transaction non trouvée ou lien invalide',
       });
+      navigate('/');
     } finally {
       setLoading(false);
     }
   };
 
-  const updateCountdown = () => {
-    if (!transaction?.payment_deadline) return;
+  const updateCountdown = (txData = transaction) => {
+    if (!txData?.payment_deadline) return;
 
-    const deadline = new Date(transaction.payment_deadline);
+    const deadline = new Date(txData.payment_deadline);
     const now = new Date();
     
     if (now > deadline) {
@@ -147,11 +145,6 @@ export const PaymentLink = () => {
     const totalHours = differenceInHours(deadline, now);
     if (totalHours <= 24 && totalHours > 0) {
       console.log('Test: PaymentWindow - Payment deadline in less than 24 hours!');
-      toast({
-        variant: 'destructive',
-        title: '⚠️ Attention - Délai de paiement',
-        description: `Plus que ${Math.floor(totalHours)}h pour effectuer le paiement !`,
-      });
     }
   };
 
@@ -314,10 +307,36 @@ export const PaymentLink = () => {
               <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">Connexion requise</h2>
               <p className="text-muted-foreground mb-4">
-                Vous devez vous connecter pour accéder à cette transaction.
+                Vous devez être connecté pour accéder à cette transaction.
               </p>
-              <Button onClick={() => navigate('/auth')}>
-                Se connecter
+              <Button onClick={() => navigate(`/join-transaction/${token}`)}>
+                Rejoindre la transaction
+              </Button>
+            </CardContent>
+          </Card>
+        ) : !transaction.buyer_id ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Rejoignez d'abord la transaction</h2>
+              <p className="text-muted-foreground mb-4">
+                Vous devez d'abord rejoindre cette transaction avant de pouvoir payer.
+              </p>
+              <Button onClick={() => navigate(`/join-transaction/${token}`)}>
+                Rejoindre la transaction
+              </Button>
+            </CardContent>
+          </Card>
+        ) : transaction.buyer_id !== user.id ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <h2 className="text-xl font-semibold mb-2">Accès non autorisé</h2>
+              <p className="text-muted-foreground mb-4">
+                Cette transaction est assignée à un autre utilisateur.
+              </p>
+              <Button onClick={() => navigate('/')} variant="outline">
+                Retour à l'accueil
               </Button>
             </CardContent>
           </Card>
