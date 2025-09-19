@@ -228,7 +228,7 @@ export const StripeEscrowTest = () => {
 
       // Note: We won't actually capture in test mode, but verify the function exists
       const { error: captureTestError } = await supabase.functions.invoke('capture-payment', {
-        body: { transaction_id: transaction.id }
+        body: { transactionId: transaction.id }
       });
 
       if (captureTestError && captureTestError.message.includes('Both parties must validate')) {
@@ -262,7 +262,9 @@ export const StripeEscrowTest = () => {
         step: 'Erreur',
         status: 'error',
         message: 'Échec du test Stripe Escrow',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error 
+          ? { name: error.name, message: error.message, stack: error.stack }
+          : { error }
       });
       
       toast({
