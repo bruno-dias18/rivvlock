@@ -10,7 +10,7 @@ export interface Transaction {
   price: number;
   currency: 'EUR' | 'CHF';
   service_date: string;
-  status: 'pending' | 'paid' | 'completed' | 'disputed';
+  status: 'pending' | 'paid' | 'validated' | 'disputed';
   created_at: string;
   updated_at: string;
   user_id: string;
@@ -64,7 +64,7 @@ export const useTransactions = () => {
     totalTransactions: transactions.length,
     totalVolume: transactions.reduce((sum, t) => sum + t.price, 0),
     pendingTransactions: transactions.filter(t => t.status === 'pending').length,
-          completedTransactions: transactions.filter(t => t.status === 'completed').length,
+          completedTransactions: transactions.filter(t => t.status === 'validated').length,
     paidTransactions: transactions.filter(t => t.status === 'paid').length,
   };
 

@@ -146,8 +146,12 @@ export const PaymentLink = () => {
     // Show 24h warning
     const totalHours = differenceInHours(deadline, now);
     if (totalHours <= 24 && totalHours > 0) {
-      console.log('⚠️ ALERT: Payment deadline in less than 24 hours!');
-      // Mock notification - in real app this would trigger email/SMS
+      console.log('Test: PaymentWindow - Payment deadline in less than 24 hours!');
+      toast({
+        variant: 'destructive',
+        title: '⚠️ Attention - Délai de paiement',
+        description: `Plus que ${Math.floor(totalHours)}h pour effectuer le paiement !`,
+      });
     }
   };
 
@@ -231,12 +235,12 @@ export const PaymentLink = () => {
               <CardTitle className="text-2xl gradient-text">{transaction.title}</CardTitle>
               <div className="flex gap-2">
                 <Badge variant={
-                  transaction.status === 'completed' ? 'default' :
+                  transaction.status === 'validated' ? 'default' :
                   transaction.status === 'paid' ? 'secondary' :
                   transaction.status === 'disputed' ? 'destructive' : 'outline'
                 }>
-                  {transaction.status === 'completed' ? 'Terminé' :
-                   transaction.status === 'paid' ? 'Fonds bloqués' :
+                   {transaction.status === 'validated' ? 'Terminé' :
+                    transaction.status === 'paid' ? 'Fonds bloqués' :
                    transaction.status === 'disputed' ? 'En litige' : 'En attente'}
                 </Badge>
                 {transaction.funds_released && (

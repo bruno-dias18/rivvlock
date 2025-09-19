@@ -57,9 +57,13 @@ export const CreateTransaction = () => {
       const linkExpiresAt = new Date();
       linkExpiresAt.setDate(linkExpiresAt.getDate() + 30); // Link expires in 30 days
 
-      // Calculate payment deadline (7 days before service date)
+      // Calculate payment deadline (day before service date)
       const paymentDeadline = new Date(data.serviceDate);
       paymentDeadline.setDate(paymentDeadline.getDate() - 1); // Day before service date
+      paymentDeadline.setHours(23, 59, 59, 999); // End of day before service date
+      
+      console.log('Test: CreateTransaction - Service date:', data.serviceDate);
+      console.log('Test: CreateTransaction - Payment deadline:', paymentDeadline);
       
       const { data: transaction, error } = await supabase
         .from('transactions')

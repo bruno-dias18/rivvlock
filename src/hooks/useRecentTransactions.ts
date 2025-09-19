@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface RecentTransaction {
@@ -21,7 +21,8 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecentTransactions = async () => {
+  const fetchRecentTransactions = useCallback(async () => {
+    console.log('Test: useRecentTransactions - Fetching transactions, isAdminView:', isAdminView);
     try {
       setLoading(true);
       
@@ -43,6 +44,8 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
 
       if (queryError) throw queryError;
       
+      console.log('Test: useRecentTransactions - Query result:', data?.length || 0, 'transactions');
+      
       // Get user profiles for these transactions
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(t => t.user_id))];
@@ -57,6 +60,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
           profiles: profiles?.find(p => p.user_id === transaction.user_id) || null
         }));
         
+        console.log('Test: useRecentTransactions - Final transactions with profiles:', transactionsWithProfiles);
         setTransactions(transactionsWithProfiles);
       } else {
         setTransactions([]);
@@ -64,12 +68,12 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
       
       setError(null);
     } catch (err) {
-      console.error('Error fetching recent transactions:', err);
+      console.error('Test: useRecentTransactions - Error fetching recent transactions:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAdminView]);
 
   useEffect(() => {
     fetchRecentTransactions();
@@ -133,7 +137,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
         clearInterval(pollInterval);
       }
     };
-  }, [isAdminView]);
+  }, [isAdminView, fetchRecentTransactions]);
 
   const getDisplayName = (transaction: RecentTransaction) => {
     if (transaction.profiles?.company_name) {
@@ -149,7 +153,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'completed':
+      case 'validated':
         return 'default' as const;
       case 'disputed':
         return 'destructive' as const;
@@ -166,7 +170,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
         return 'En attente';
       case 'paid':
         return 'Payé';
-      case 'completed':
+      case 'validated':
         return 'Complété';
       case 'disputed':
         return 'Litige';
@@ -181,7 +185,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
         return 'Transaction créée';
       case 'paid':
         return 'Paiement effectué';
-      case 'completed':
+      case 'validated':
         return 'Transaction validée';
       case 'disputed':
         return 'Litige ouvert';

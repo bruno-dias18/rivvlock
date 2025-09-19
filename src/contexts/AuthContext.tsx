@@ -83,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchUserProfile = async (userId: string, userEmail: string) => {
+    console.log('Test: AuthContext - Fetching profile for user:', userId, userEmail);
     try {
       // Fetch user profile
       const { data: profile, error } = await supabase
@@ -92,42 +93,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Test: AuthContext - Error fetching profile:', error);
         return;
       }
+      
+      console.log('Test: AuthContext - Profile data:', profile);
 
       // Check if user is admin
       const { data: isAdminResult, error: adminError } = await supabase
         .rpc('is_admin', { check_user_id: userId });
 
       if (adminError) {
-        console.error('Error checking admin status:', adminError);
+        console.error('Test: AuthContext - Error checking admin status:', adminError);
       }
 
       const isAdmin = isAdminResult || userEmail === 'bruno-dias@outlook.com';
+      console.log('Test: AuthContext - Is admin check:', isAdmin, 'for email:', userEmail);
 
       if (profile) {
-        setUser({
+        const userProfile = {
           id: profile.user_id,
           email: userEmail,
           type: profile.user_type,
           country: profile.country,
           verified: profile.verified,
           isAdmin,
-        });
+        };
+        console.log('Test: AuthContext - Setting user profile:', userProfile);
+        setUser(userProfile);
       } else {
         // Fallback minimal user when profile not yet created
-        setUser({ 
+        const fallbackUser = { 
           id: userId, 
           email: userEmail, 
-          type: 'individual', 
-          country: 'FR', 
+          type: 'individual' as const, 
+          country: 'FR' as const, 
           verified: false,
           isAdmin
-        });
+        };
+        console.log('Test: AuthContext - Using fallback user:', fallbackUser);
+        setUser(fallbackUser);
       }
     } catch (e) {
-      console.error('Error fetching user profile:', e);
+      console.error('Test: AuthContext - Error fetching user profile:', e);
     } finally {
       setLoading(false);
     }

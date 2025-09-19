@@ -13,6 +13,7 @@ import { Transactions } from "./pages/Transactions";
 import { Profile } from "./pages/Profile";
 import { Admin } from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import { TestPage } from "./components/test/TestPage";
 import "./i18n/config";
 import { AuthProvider } from "@/contexts/AuthContext";
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/test" element={<TestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

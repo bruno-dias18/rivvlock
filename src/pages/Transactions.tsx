@@ -77,7 +77,7 @@ export const Transactions = () => {
       all: transactions.length,
       pending: transactions.filter(t => t.status === 'pending').length,
       paid: transactions.filter(t => t.status === 'paid').length,
-      completed: transactions.filter(t => t.status === 'completed').length,
+      validated: transactions.filter(t => t.status === 'validated').length,
       disputed: transactions.filter(t => t.status === 'disputed').length,
     };
   };
@@ -112,7 +112,7 @@ export const Transactions = () => {
             { key: 'all', label: 'Total', count: statusCounts.all, color: 'text-gray-600' },
             { key: 'pending', label: t('transactions.pending'), count: statusCounts.pending, color: 'text-yellow-600' },
             { key: 'paid', label: t('transactions.paid'), count: statusCounts.paid, color: 'text-blue-600' },
-            { key: 'completed', label: 'Complétées', count: statusCounts.completed, color: 'text-green-600' },
+            { key: 'validated', label: 'Complétées', count: statusCounts.validated, color: 'text-green-600' },
             { key: 'disputed', label: t('transactions.disputed'), count: statusCounts.disputed, color: 'text-red-600' },
           ].map((stat) => (
             <Card 
@@ -159,7 +159,7 @@ export const Transactions = () => {
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="pending">{t('transactions.pending')}</SelectItem>
                     <SelectItem value="paid">{t('transactions.paid')}</SelectItem>
-                    <SelectItem value="completed">Complétées</SelectItem>
+                    <SelectItem value="validated">Complétées</SelectItem>
                     <SelectItem value="disputed">{t('transactions.disputed')}</SelectItem>
                   </SelectContent>
                 </Select>
