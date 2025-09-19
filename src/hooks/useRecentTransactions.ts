@@ -16,7 +16,7 @@ export interface RecentTransaction {
   } | null;
 }
 
-export const useRecentTransactions = () => {
+export const useRecentTransactions = (isAdminView: boolean = false) => {
   const [transactions, setTransactions] = useState<RecentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +24,8 @@ export const useRecentTransactions = () => {
   const fetchRecentTransactions = async () => {
     try {
       setLoading(true);
+      
+      // Base query - same for both admin and regular users since RLS handles access
       const { data, error: queryError } = await supabase
         .from('transactions')
         .select(`

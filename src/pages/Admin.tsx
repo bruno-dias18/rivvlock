@@ -29,7 +29,7 @@ export const Admin = () => {
     getStatusBadgeVariant,
     getActivityAction,
     formatTimeAgo
-  } = useRecentTransactions();
+  } = useRecentTransactions(true);
 
   return (
     <AdminRoute>
