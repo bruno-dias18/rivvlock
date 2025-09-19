@@ -219,12 +219,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout: AuthContextValue['logout'] = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
+    try {
+      // Force cleanup of client-side session data
       setUser(null);
       setSession(null);
+      
+      // Clear localStorage auth data
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Attempt to logout from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      // Force redirect to auth page regardless of error
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 100);
+      
+      return { error: null };
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Force logout even on error
+      setUser(null);
+      setSession(null);
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 100);
+      return { error: null };
     }
-    return { error };
   };
 
   const value = useMemo(() => ({ 

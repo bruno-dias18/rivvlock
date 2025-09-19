@@ -8,6 +8,7 @@ import { useRealTimeStats } from '@/hooks/useRealTimeStats';
 import { useRecentTransactions } from '@/hooks/useRecentTransactions';
 import { CSVExporter } from '@/components/export/CSVExporter';
 import { SecurityDashboard } from '@/components/security/SecurityDashboard';
+import { UserCleanup } from '@/components/admin/UserCleanup';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
@@ -48,6 +49,9 @@ export const Admin = () => {
           </div>
           <CSVExporter />
         </div>
+
+        {/* User Cleanup */}
+        <UserCleanup />
 
         {/* Security Dashboard */}
         <SecurityDashboard />
