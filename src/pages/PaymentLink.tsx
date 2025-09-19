@@ -207,7 +207,7 @@ export const PaymentLink = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
-        body: { transactionId: transaction.id }
+        body: { transactionId: transaction.id, transactionToken: token }
       });
 
       if (error) throw error;

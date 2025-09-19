@@ -27,6 +27,12 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
+    // Create admin client using service role key for database queries
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     // Retrieve authenticated user
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
@@ -35,7 +41,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { transactionId } = await req.json();
+    const { transactionId, transactionToken } = await req.json();
     if (!transactionId) throw new Error("Transaction ID is required");
 
     // Initialize Stripe
@@ -45,14 +51,15 @@ serve(async (req) => {
 
     logStep("Fetching transaction details", { transactionId });
 
-    // Get transaction details
-    const { data: transaction, error: transactionError } = await supabaseClient
+    // Get transaction details using admin client
+    const { data: transaction, error: transactionError } = await supabaseAdmin
       .from('transactions')
-      .select('id, title, description, price, currency, user_id, buyer_id, status')
+      .select('id, title, description, price, currency, user_id, buyer_id, status, shared_link_token')
       .eq('id', transactionId)
       .single();
 
     if (transactionError || !transaction) {
+      logStep("Transaction query error", { error: transactionError, transactionId });
       throw new Error("Transaction not found");
     }
 
@@ -99,8 +106,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-link/${req.headers.get("referer")?.split('/').pop()}?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/payment-link/${req.headers.get("referer")?.split('/').pop()}?payment=cancelled`,
+      success_url: `${req.headers.get("origin")}/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
+      cancel_url: `${req.headers.get("origin")}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: transactionId,
         user_id: user.id,
@@ -118,8 +125,8 @@ serve(async (req) => {
 
     logStep("Stripe Checkout session created", { sessionId: session.id, url: session.url });
 
-    // Update transaction with Stripe session info
-    const { error: updateError } = await supabaseClient
+    // Update transaction with Stripe session info using admin client
+    const { error: updateError } = await supabaseAdmin
       .from('transactions')
       .update({ 
         stripe_payment_intent_id: session.payment_intent as string,
