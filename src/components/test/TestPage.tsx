@@ -5,6 +5,7 @@ import { StripeEscrowTest } from './StripeEscrowTest';
 import { BugFixTest } from './BugFixTest';
 import { ImplementationReport } from '../reports/ImplementationReport';
 import { UserTestingGuide } from '../guides/UserTestingGuide';
+import { SecurityReport } from '../security/SecurityReport';
 
 export const TestPage = () => {
   return (
@@ -22,6 +23,9 @@ export const TestPage = () => {
         
         {/* Implementation Report */}
         <ImplementationReport />
+        
+        {/* Security Report */}
+        <SecurityReport />
         
         {/* Automated Tests */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
