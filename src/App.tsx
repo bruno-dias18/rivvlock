@@ -33,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/create-transaction" element={<CreateTransaction />} />
             <Route path="/join-transaction/:token" element={<JoinTransaction />} />
+            <Route path="/payment-link/:token" element={<PaymentLink />} />
             <Route path="/payment/:token" element={<PaymentLink />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/profile" element={<Profile />} />

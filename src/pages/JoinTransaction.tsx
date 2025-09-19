@@ -90,7 +90,7 @@ export const JoinTransaction = () => {
 
     // Check if already joined
     if (transaction.buyer_id === user.id) {
-      navigate(`/payment/${token}`);
+      navigate(`/payment-link/${token}`);
       return;
     }
 
@@ -112,7 +112,7 @@ export const JoinTransaction = () => {
       });
 
       // Redirect to payment page
-      navigate(`/payment/${token}`);
+      navigate(`/payment-link/${token}`);
     } catch (error) {
       console.error('Error joining transaction:', error);
       toast({
@@ -183,7 +183,7 @@ export const JoinTransaction = () => {
 
   // If user is already buyer, redirect to payment
   if (user && transaction.buyer_id === user.id) {
-    navigate(`/payment/${token}`);
+    navigate(`/payment-link/${token}`);
     return null;
   }
 
