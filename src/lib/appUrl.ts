@@ -1,8 +1,8 @@
 // Centralized base URL for shareable links
-// Force RIVVLOCK domain for all shareable links
-const RIVVLOCK_DOMAIN = 'https://app.rivvlock.com';
+// Use the correct Lovable project domain
+const LOVABLE_DOMAIN = 'https://rivv-secure-escrow.lovable.app';
 
 export function getAppBaseUrl(): string {
-  // Always return RIVVLOCK domain for consistency
-  return RIVVLOCK_DOMAIN;
+  // Always return the correct Lovable domain
+  return LOVABLE_DOMAIN;
 }
