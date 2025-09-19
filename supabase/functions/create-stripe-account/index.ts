@@ -63,15 +63,8 @@ serve(async (req) => {
     if (profileError) throw new Error(`Profile not found: ${profileError.message}`);
     logStep("Profile found", { userType: profile.user_type, country: profile.country });
 
-    // Check if user is eligible for Stripe Connect (business or self-employed)
-    if (profile.user_type === 'individual') {
-      return new Response(JSON.stringify({ 
-        error: 'Stripe Connect is only available for business and self-employed users' 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
+    // Eligibility: allow both business and individual accounts
+    logStep("Eligibility check passed", { userType: profile.user_type });
 
     // Check if Stripe account already exists
     const { data: existingAccount } = await supabaseClient
@@ -163,10 +156,19 @@ serve(async (req) => {
       details: { stripe_account_id: account.id, user_type: profile.user_type }
     });
 
+    // Create an account onboarding link
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const accountLink = await stripe.accountLinks.create({
+      account: account.id,
+      refresh_url: `${origin}/stripe/connect?refresh=true`,
+      return_url: `${origin}/stripe/connect?status=returned`,
+      type: 'account_onboarding',
+    });
+
     return new Response(JSON.stringify({
       stripe_account_id: account.id,
       account_status: 'pending',
-      onboarding_url: `https://connect.stripe.com/express/oauth/authorize?redirect_uri=${req.headers.get("origin") || "http://localhost:3000"}/stripe/connect&client_id=${account.id}`,
+      onboarding_url: accountLink.url,
       existing: false
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
