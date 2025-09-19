@@ -1,13 +1,10 @@
 // Centralized base URL for shareable links
-// Use the correct Lovable project domain
-const LOVABLE_DOMAIN = 'https://cfd5feba-e675-4ca7-b281-9639755fdc6f.lovableproject.com';
+// IMPORTANT: Always use the preview domain that works correctly
+// DO NOT CHANGE THIS - the lovableproject.com domain doesn't work
+const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
 
 export function getAppBaseUrl(): string {
-  // Prefer current origin in preview/prod to avoid 404s; fallback to canonical domain
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    console.log('🌐 [APP-URL] Using current origin:', window.location.origin);
-    return window.location.origin;
-  }
-  console.log('🌐 [APP-URL] Using fallback domain:', LOVABLE_DOMAIN);
-  return LOVABLE_DOMAIN;
+  // Always return the working domain to prevent link generation issues
+  console.log('🌐 [APP-URL] Using working domain:', WORKING_DOMAIN);
+  return WORKING_DOMAIN;
 }
