@@ -152,6 +152,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          acceptance_terms: boolean | null
           address: string | null
           avs_number: string | null
           company_address: string | null
@@ -159,10 +160,10 @@ export type Database = {
           country: Database["public"]["Enums"]["country_code"]
           created_at: string
           first_name: string | null
-          iban: string | null
           id: string
           last_name: string | null
           phone: string | null
+          registration_complete: boolean | null
           siret_uid: string | null
           stripe_customer_id: string | null
           tva_rate: number | null
@@ -173,6 +174,7 @@ export type Database = {
           verified: boolean
         }
         Insert: {
+          acceptance_terms?: boolean | null
           address?: string | null
           avs_number?: string | null
           company_address?: string | null
@@ -180,10 +182,10 @@ export type Database = {
           country: Database["public"]["Enums"]["country_code"]
           created_at?: string
           first_name?: string | null
-          iban?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
+          registration_complete?: boolean | null
           siret_uid?: string | null
           stripe_customer_id?: string | null
           tva_rate?: number | null
@@ -194,6 +196,7 @@ export type Database = {
           verified?: boolean
         }
         Update: {
+          acceptance_terms?: boolean | null
           address?: string | null
           avs_number?: string | null
           company_address?: string | null
@@ -201,10 +204,10 @@ export type Database = {
           country?: Database["public"]["Enums"]["country_code"]
           created_at?: string
           first_name?: string | null
-          iban?: string | null
           id?: string
           last_name?: string | null
           phone?: string | null
+          registration_complete?: boolean | null
           siret_uid?: string | null
           stripe_customer_id?: string | null
           tva_rate?: number | null
@@ -213,6 +216,45 @@ export type Database = {
           user_type?: Database["public"]["Enums"]["user_type"]
           vat_rate?: number | null
           verified?: boolean
+        }
+        Relationships: []
+      }
+      stripe_accounts: {
+        Row: {
+          account_status: string | null
+          charges_enabled: boolean | null
+          country: string
+          created_at: string
+          details_submitted: boolean | null
+          id: string
+          payouts_enabled: boolean | null
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: string | null
+          charges_enabled?: boolean | null
+          country: string
+          created_at?: string
+          details_submitted?: boolean | null
+          id?: string
+          payouts_enabled?: boolean | null
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: string | null
+          charges_enabled?: boolean | null
+          country?: string
+          created_at?: string
+          details_submitted?: boolean | null
+          id?: string
+          payouts_enabled?: boolean | null
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -230,9 +272,11 @@ export type Database = {
           payment_blocked_at: string | null
           payment_deadline: string | null
           payment_method: string | null
+          payment_window_hours: number | null
           price: number
           seller_validated: boolean | null
           service_date: string | null
+          shared_link_expires_at: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id: string | null
@@ -254,9 +298,11 @@ export type Database = {
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
+          payment_window_hours?: number | null
           price: number
           seller_validated?: boolean | null
           service_date?: string | null
+          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
@@ -278,9 +324,11 @@ export type Database = {
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
+          payment_window_hours?: number | null
           price?: number
           seller_validated?: boolean | null
           service_date?: string | null
+          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
@@ -311,6 +359,10 @@ export type Database = {
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
+      }
+      log_security_event: {
+        Args: { details?: Json; event_type: string }
+        Returns: undefined
       }
     }
     Enums: {
