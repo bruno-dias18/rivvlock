@@ -40,8 +40,17 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Create payment intent with manual capture (escrow)
-    const paymentIntent = await stripe.paymentIntents.create({
+    // Get user profile to check for existing Stripe customer
+    const { data: profile, error: profileError } = await supabaseClient
+      .from("profiles")
+      .select("stripe_customer_id, first_name, last_name")
+      .eq("user_id", transaction.user_id)
+      .single();
+
+    console.log("Profile found:", profile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
+
+    // Prepare payment intent data
+    const paymentIntentData: any = {
       amount: Math.round(transaction.price * 100), // Convert to cents
       currency: transaction.currency.toLowerCase(),
       capture_method: 'manual', // This is key for escrow - we capture later
@@ -54,7 +63,16 @@ serve(async (req) => {
       automatic_payment_methods: {
         enabled: true,
       },
-    });
+    };
+
+    // Use existing Stripe customer if available
+    if (profile?.stripe_customer_id) {
+      paymentIntentData.customer = profile.stripe_customer_id;
+      console.log("Using existing Stripe customer:", profile.stripe_customer_id);
+    }
+
+    // Create payment intent with manual capture (escrow)
+    const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
     console.log("Payment intent created:", paymentIntent.id);
 

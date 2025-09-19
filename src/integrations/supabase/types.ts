@@ -128,6 +128,7 @@ export type Database = {
           last_name: string | null
           phone: string | null
           siret_uid: string | null
+          stripe_customer_id: string | null
           tva_rate: number | null
           updated_at: string
           user_id: string
@@ -148,6 +149,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           siret_uid?: string | null
+          stripe_customer_id?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id: string
@@ -168,6 +170,7 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           siret_uid?: string | null
+          stripe_customer_id?: string | null
           tva_rate?: number | null
           updated_at?: string
           user_id?: string

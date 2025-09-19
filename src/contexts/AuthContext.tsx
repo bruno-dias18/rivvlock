@@ -121,6 +121,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
         console.log('Test: AuthContext - Setting user profile:', userProfile);
         setUser(userProfile);
+
+        // Automatically create Stripe customer if not exists
+        if (!profile.stripe_customer_id) {
+          console.log('Test: AuthContext - Creating Stripe customer for user:', userId);
+          setTimeout(() => {
+            createStripeCustomer(userId, userEmail, profile);
+          }, 0);
+        }
       } else {
         // Fallback minimal user when profile not yet created
         const fallbackUser = { 
@@ -138,6 +146,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Test: AuthContext - Error fetching user profile:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createStripeCustomer = async (userId: string, email: string, profileData: any) => {
+    try {
+      console.log('Test: AuthContext - Calling create-stripe-customer for:', email);
+      const { data, error } = await supabase.functions.invoke('create-stripe-customer', {
+        body: {
+          user_id: userId,
+          email: email,
+          profile_data: profileData
+        }
+      });
+
+      if (error) {
+        console.error('Test: AuthContext - Error creating Stripe customer:', error);
+      } else {
+        console.log('Test: AuthContext - Stripe customer created:', data?.stripe_customer_id);
+      }
+    } catch (error) {
+      console.error('Test: AuthContext - Exception creating Stripe customer:', error);
     }
   };
 
