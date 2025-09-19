@@ -86,7 +86,18 @@ export const PaymentLink = () => {
   const fetchTransaction = async () => {
     if (!token) return;
 
+    console.log('🔍 DEBUG: PaymentLink - Token reçu:', token);
+    console.log('🔍 DEBUG: PaymentLink - URL actuelle:', window.location.href);
+
     try {
+      // First, let's check all transactions to see what tokens exist
+      const { data: allTransactions, error: debugError } = await supabase
+        .from('transactions')
+        .select('id, title, shared_link_token')
+        .limit(5);
+      
+      console.log('🔍 DEBUG: Tous les tokens disponibles:', allTransactions);
+
       const { data, error } = await supabase
         .from('transactions')
         .select(`
@@ -96,16 +107,19 @@ export const PaymentLink = () => {
         .eq('shared_link_token', token)
         .single();
 
+      console.log('🔍 DEBUG: Résultat de la requête avec token:', { data, error });
+
       if (error) throw error;
       
-      console.log('Test: PaymentLink - Transaction loaded:', data);
-      console.log('Test: PaymentLink - Current user:', user?.id);
-      console.log('Test: PaymentLink - Buyer assigned:', data.buyer_id);
+      console.log('✅ SUCCESS: PaymentLink - Transaction loaded:', data);
+      console.log('👤 DEBUG: PaymentLink - Current user:', user?.id);
+      console.log('🛒 DEBUG: PaymentLink - Buyer assigned:', data.buyer_id);
       
       setTransaction(data);
       updateCountdown(data);
     } catch (error) {
-      console.error('Error fetching transaction:', error);
+      console.error('❌ ERROR: PaymentLink - Error fetching transaction:', error);
+      console.log('🔍 DEBUG: PaymentLink - Token recherché:', token);
       toast({
         variant: 'destructive',
         title: 'Erreur',
