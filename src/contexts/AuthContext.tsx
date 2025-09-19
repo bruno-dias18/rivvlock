@@ -220,20 +220,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout: AuthContextValue['logout'] = async () => {
     try {
-      // Force cleanup of client-side session data
+      // Force cleanup of client-side session data first
       setUser(null);
       setSession(null);
       
-      // Clear localStorage auth data
-      localStorage.removeItem('supabase.auth.token');
+      // Clear all Supabase localStorage keys aggressively
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.startsWith('supabase.auth.'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      // Attempt to logout from Supabase
-      const { error } = await supabase.auth.signOut();
+      // Try local signout first to avoid 403 errors
+      await supabase.auth.signOut({ scope: 'local' });
       
-      // Force redirect to auth page regardless of error
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 100);
+      // Force redirect to auth page
+      window.location.replace('/auth');
       
       return { error: null };
     } catch (error) {
@@ -241,9 +246,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Force logout even on error
       setUser(null);
       setSession(null);
-      setTimeout(() => {
-        window.location.href = '/auth';
-      }, 100);
+      
+      // Clear localStorage keys even if signOut fails
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.startsWith('supabase.auth.'))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      window.location.replace('/auth');
       return { error: null };
     }
   };
