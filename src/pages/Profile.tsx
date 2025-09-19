@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   ExternalLink
 } from 'lucide-react';
+import { ParticipantsList } from '@/components/participants/ParticipantsList';
 
 interface UserProfile {
   user_id: string;
@@ -488,6 +489,22 @@ export const Profile = () => {
             </Card>
           </div>
         </div>
+
+        {/* Partners Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Mes Partenaires
+            </CardTitle>
+            <CardDescription>
+              Acheteurs et vendeurs avec qui vous avez effectué des transactions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ParticipantsList />
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

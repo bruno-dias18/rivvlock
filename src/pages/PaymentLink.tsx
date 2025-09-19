@@ -63,6 +63,8 @@ export const PaymentLink = () => {
   const [showStripeForm, setShowStripeForm] = useState(false);
   const [joiningTransaction, setJoiningTransaction] = useState(false);
   const [redirectingToStripe, setRedirectingToStripe] = useState(false);
+  const [sellerDisplayName, setSellerDisplayName] = useState<string | null>(null);
+  const [buyerDisplayName, setBuyerDisplayName] = useState<string | null>(null);
   const { formatAmount } = useCurrency();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -122,6 +124,39 @@ export const PaymentLink = () => {
       console.log('🛒 [PAYMENT-LINK] Buyer assigned:', transactionData.buyer_id);
 
       setTransaction(transactionData);
+      
+      // Fetch seller profile
+      if (transactionData.user_id) {
+        const { data: sellerProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, company_name, user_type')
+          .eq('user_id', transactionData.user_id)
+          .maybeSingle();
+          
+        if (sellerProfile) {
+          const displayName = sellerProfile.user_type === 'company' && sellerProfile.company_name
+            ? sellerProfile.company_name
+            : `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim();
+          setSellerDisplayName(displayName || null);
+        }
+      }
+      
+      // Fetch buyer profile if exists
+      if (transactionData.buyer_id) {
+        const { data: buyerProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, company_name, user_type')
+          .eq('user_id', transactionData.buyer_id)
+          .maybeSingle();
+          
+        if (buyerProfile) {
+          const displayName = buyerProfile.user_type === 'company' && buyerProfile.company_name
+            ? buyerProfile.company_name
+            : `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim();
+          setBuyerDisplayName(displayName || null);
+        }
+      }
+      
       updateCountdown(transactionData);
     } catch (error: any) {
       console.error('❌ [PAYMENT-LINK] Erreur lors de la récupération de la transaction:', error);
@@ -393,13 +428,13 @@ export const PaymentLink = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Vendeur : </span>
-                    <span>{user?.id === transaction.user_id ? 'Vous' : 'Autre partie'}</span>
+                    <span>{user?.id === transaction.user_id ? 'Vous' : sellerDisplayName || 'Autre partie'}</span>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Acheteur : </span>
                     <span>
                       {transaction.buyer_id 
-                        ? (user?.id === transaction.buyer_id ? 'Vous' : 'Autre partie')
+                        ? (user?.id === transaction.buyer_id ? 'Vous' : buyerDisplayName || 'Autre partie')
                         : 'En attente'
                       }
                     </span>
