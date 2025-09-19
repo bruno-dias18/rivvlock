@@ -193,6 +193,30 @@ export const PaymentLink = () => {
     }
   };
 
+  const handleStripeCheckout = async () => {
+    if (!transaction || !user) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
+        body: { transactionId: transaction.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.sessionUrl) {
+        // Open Stripe Checkout in new tab
+        window.open(data.sessionUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible de créer la session de paiement.',
+      });
+    }
+  };
+
   const refreshTransaction = () => {
     fetchTransaction();
   };
@@ -397,33 +421,51 @@ export const PaymentLink = () => {
                 </TabsList>
                 
                 <TabsContent value="stripe" className="space-y-4">
-                  {showStripeForm && clientSecret ? (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <StripePaymentForm
-                        transaction={transaction}
-                        clientSecret={clientSecret}
-                        onSuccess={refreshTransaction}
-                      />
-                    </Elements>
-                  ) : (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Paiement sécurisé</CardTitle>
-                        <CardDescription>
-                          Bloquez {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} de manière sécurisée
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Paiement sécurisé</CardTitle>
+                      <CardDescription>
+                        Bloquez {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} de manière sécurisée
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Button 
+                        onClick={handleStripeCheckout}
+                        className="w-full gradient-primary text-white"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Payer sur la page Stripe (recommandé)
+                      </Button>
+                      
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">ou</span>
+                        </div>
+                      </div>
+
+                      {showStripeForm && clientSecret ? (
+                        <Elements stripe={stripePromise} options={{ clientSecret }}>
+                          <StripePaymentForm
+                            transaction={transaction}
+                            clientSecret={clientSecret}
+                            onSuccess={refreshTransaction}
+                          />
+                        </Elements>
+                      ) : (
                         <Button 
                           onClick={handleStripePayment}
-                          className="w-full gradient-primary text-white"
+                          variant="outline"
+                          className="w-full"
                         >
                           <CreditCard className="w-4 h-4 mr-2" />
-                          Continuer avec Stripe
+                          Paiement intégré
                         </Button>
-                      </CardContent>
-                    </Card>
-                  )}
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
                 
                 <TabsContent value="alternative">

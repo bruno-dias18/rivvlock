@@ -46,7 +46,14 @@ serve(async (req) => {
         link_expires_at,
         payment_deadline,
         created_at,
-        profiles:user_id(first_name, last_name, company_name)
+        payment_method,
+        payment_blocked_at,
+        stripe_payment_intent_id,
+        seller_validated,
+        buyer_validated,
+        validation_deadline,
+        funds_released,
+        dispute_id
       `)
       .eq('shared_link_token', token)
       .single();
