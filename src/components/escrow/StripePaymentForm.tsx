@@ -14,6 +14,8 @@ interface StripePaymentFormProps {
     title: string;
     price: number;
     currency: string;
+    user_id: string;
+    buyer_id: string | null;
   };
   clientSecret: string;
   onSuccess: () => void;
@@ -47,6 +49,11 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
         setPaymentError(error.message || 'Une erreur est survenue lors du paiement');
       } else if (paymentIntent && paymentIntent.status === 'requires_capture') {
         // Payment authorized successfully for escrow
+        console.log('Test: PaymentLink - Payment authorized successfully');
+        console.log('Test: PaymentLink - Payment Intent ID:', paymentIntent.id);
+        console.log('Test: PaymentLink - Amount:', paymentIntent.amount, 'Currency:', paymentIntent.currency);
+        
+        // Update transaction status to 'paid'
         const { error: updateError } = await supabase
           .from('transactions')
           .update({ 
@@ -57,23 +64,31 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
           .eq('id', transaction.id);
 
         if (updateError) {
-          console.error('Error updating transaction:', updateError);
+          console.error('Error updating transaction status:', updateError);
+          throw updateError;
         }
 
-        // Send notifications
-        await supabase.functions.invoke('send-notifications', {
-          body: {
-            type: 'payment_authorized',
-            transactionId: transaction.id,
-            message: `Paiement autorisé pour ${transaction.title}`,
-            recipients: ['seller', 'buyer']
-          }
-        });
+        console.log('Test: PaymentLink - Transaction status updated to "paid"');
 
         toast({
-          title: 'Fonds bloqués avec succès !',
-          description: 'Le paiement a été autorisé. Les fonds seront libérés après validation mutuelle.',
+          title: '✅ Paiement autorisé !',
+          description: `${formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} bloqués en escrow. Fonds libérés après validation mutuelle.`,
         });
+
+        // Trigger notifications (optional, non-critical)
+        try {
+          await supabase.functions.invoke('send-notifications', {
+            body: {
+              type: 'payment_authorized',
+              transactionId: transaction.id,
+              amount: transaction.price,
+              currency: transaction.currency
+            }
+          });
+          console.log('Test: PaymentLink - Notifications sent');
+        } catch (notificationError) {
+          console.error('Notification error (non-critical):', notificationError);
+        }
 
         onSuccess();
       }
