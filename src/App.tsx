@@ -12,6 +12,7 @@ import { PaymentLink } from "./pages/PaymentLink";
 import { JoinTransaction } from "./pages/JoinTransaction";
 import { Transactions } from "./pages/Transactions";
 import { Profile } from "./pages/Profile";
+import { Security } from "./pages/Security";
 import { Admin } from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import { TestPage } from "./components/test/TestPage";
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/payment/:token" element={<PaymentLink />} />
             <Route path="/transactions" element={<Transactions />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/security" element={<Security />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/test" element={<TestPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +24,9 @@ import {
   CreditCard,
   Settings,
   Shield,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 
 interface UserProfile {
@@ -209,6 +212,23 @@ export const Profile = () => {
             </Button>
           </div>
         </div>
+
+        {/* Security Warning */}
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Security Alert: Improve Password Protection</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>Your account security could be improved. Leaked password protection is currently disabled, which means you can set passwords that have been compromised in data breaches.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.open('https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection', '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Enable in Auth Settings
+            </Button>
+          </AlertDescription>
+        </Alert>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Profile Information */}
