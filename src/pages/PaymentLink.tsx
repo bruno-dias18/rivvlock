@@ -119,42 +119,51 @@ export const PaymentLink = () => {
       }
 
       const transactionData = data.transaction;
+      const sellerProfile = data.seller_profile;
+      const buyerProfile = data.buyer_profile;
+      
       console.log('✅ [PAYMENT-LINK] Transaction trouvée:', transactionData);
       console.log('👤 [PAYMENT-LINK] Current user:', user?.id);
       console.log('🛒 [PAYMENT-LINK] Buyer assigned:', transactionData.buyer_id);
 
       setTransaction(transactionData);
       
-      // Fetch seller profile
-      if (transactionData.user_id) {
-        const { data: sellerProfile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, company_name, user_type')
-          .eq('user_id', transactionData.user_id)
-          .maybeSingle();
-          
-        if (sellerProfile) {
-          const displayName = sellerProfile.user_type === 'company' && sellerProfile.company_name
-            ? sellerProfile.company_name
-            : `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim();
-          setSellerDisplayName(displayName || null);
+      // Generate seller display name with fallback logic
+      if (sellerProfile) {
+        let displayName = '';
+        
+        if (sellerProfile.user_type === 'company' && sellerProfile.company_name?.trim()) {
+          displayName = sellerProfile.company_name.trim();
+        } else if (sellerProfile.first_name?.trim() || sellerProfile.last_name?.trim()) {
+          const firstName = sellerProfile.first_name?.trim() || '';
+          const lastName = sellerProfile.last_name?.trim() || '';
+          displayName = `${firstName} ${lastName}`.trim();
+        } else if (sellerProfile.email) {
+          displayName = sellerProfile.email;
+        } else {
+          displayName = 'Utilisateur';
         }
+        
+        setSellerDisplayName(displayName);
       }
       
-      // Fetch buyer profile if exists
-      if (transactionData.buyer_id) {
-        const { data: buyerProfile } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, company_name, user_type')
-          .eq('user_id', transactionData.buyer_id)
-          .maybeSingle();
-          
-        if (buyerProfile) {
-          const displayName = buyerProfile.user_type === 'company' && buyerProfile.company_name
-            ? buyerProfile.company_name
-            : `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim();
-          setBuyerDisplayName(displayName || null);
+      // Generate buyer display name with same fallback logic
+      if (buyerProfile) {
+        let displayName = '';
+        
+        if (buyerProfile.user_type === 'company' && buyerProfile.company_name?.trim()) {
+          displayName = buyerProfile.company_name.trim();
+        } else if (buyerProfile.first_name?.trim() || buyerProfile.last_name?.trim()) {
+          const firstName = buyerProfile.first_name?.trim() || '';
+          const lastName = buyerProfile.last_name?.trim() || '';
+          displayName = `${firstName} ${lastName}`.trim();
+        } else if (buyerProfile.email) {
+          displayName = buyerProfile.email;
+        } else {
+          displayName = 'Utilisateur';
         }
+        
+        setBuyerDisplayName(displayName);
       }
       
       updateCountdown(transactionData);

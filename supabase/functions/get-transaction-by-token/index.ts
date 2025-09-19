@@ -85,10 +85,52 @@ serve(async (req) => {
 
     console.log('✅ [GET-TRANSACTION] Transaction found:', transaction.id);
 
+    // Fetch seller profile and email
+    let sellerProfile = null;
+    if (transaction.user_id) {
+      const { data: profileData } = await adminClient
+        .from('profiles')
+        .select('first_name, last_name, company_name, user_type')
+        .eq('user_id', transaction.user_id)
+        .maybeSingle();
+      
+      const { data: userData } = await adminClient
+        .auth.admin.getUserById(transaction.user_id);
+        
+      if (profileData && userData.user) {
+        sellerProfile = {
+          ...profileData,
+          email: userData.user.email
+        };
+      }
+    }
+
+    // Fetch buyer profile and email if buyer exists
+    let buyerProfile = null;
+    if (transaction.buyer_id) {
+      const { data: profileData } = await adminClient
+        .from('profiles')
+        .select('first_name, last_name, company_name, user_type')
+        .eq('user_id', transaction.buyer_id)
+        .maybeSingle();
+        
+      const { data: userData } = await adminClient
+        .auth.admin.getUserById(transaction.buyer_id);
+        
+      if (profileData && userData.user) {
+        buyerProfile = {
+          ...profileData,
+          email: userData.user.email
+        };
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        transaction: transaction
+        transaction: transaction,
+        seller_profile: sellerProfile,
+        buyer_profile: buyerProfile
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
