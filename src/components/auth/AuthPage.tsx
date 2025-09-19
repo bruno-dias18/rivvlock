@@ -105,7 +105,7 @@ export const AuthPage = () => {
         title: t('auth.success'),
         description: 'Connexion réussie !'
       });
-      navigate('/dashboard');
+      // Don't force navigate here - let useEffect handle redirection
     }
   };
 

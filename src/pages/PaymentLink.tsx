@@ -345,7 +345,7 @@ export const PaymentLink = () => {
               <p className="text-muted-foreground mb-4">
                 Vous devez être connecté pour accéder à cette transaction.
               </p>
-              <Button onClick={() => navigate(`/join-transaction/${token}`)}>
+              <Button onClick={() => navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)}>
                 Rejoindre la transaction
               </Button>
             </CardContent>
@@ -358,7 +358,7 @@ export const PaymentLink = () => {
               <p className="text-muted-foreground mb-4">
                 Vous devez d'abord rejoindre cette transaction avant de pouvoir payer.
               </p>
-              <Button onClick={() => navigate(`/join-transaction/${token}`)}>
+              <Button onClick={() => navigate(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`)}>
                 Rejoindre la transaction
               </Button>
             </CardContent>
