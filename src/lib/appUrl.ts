@@ -1,7 +1,16 @@
 // Centralized base URL for shareable links
-// Lovable does not support VITE_* env vars at runtime, so we hardcode the production domain
-const APP_BASE_URL = 'https://app.rivvlock.com';
+// Use production domain when deployed there, otherwise use current origin (preview/local)
+const PROD_DOMAIN = 'app.rivvlock.com';
 
 export function getAppBaseUrl(): string {
-  return APP_BASE_URL;
+  try {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      const origin = window.location.origin;
+      if (host.endsWith('lovableproject.com') || host === 'localhost' || host.endsWith('.local')) {
+        return origin;
+      }
+    }
+  } catch {}
+  return `https://${PROD_DOMAIN}`;
 }

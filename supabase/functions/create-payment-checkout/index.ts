@@ -106,8 +106,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `https://app.rivvlock.com/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
-      cancel_url: `https://app.rivvlock.com/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
+      success_url: `${req.headers.get("origin")}/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
+      cancel_url: `${req.headers.get("origin")}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: transactionId,
         user_id: user.id,
