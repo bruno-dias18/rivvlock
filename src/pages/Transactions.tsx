@@ -43,7 +43,7 @@ export const Transactions = () => {
 
   const copyInvitationLink = async (token: string) => {
     try {
-      const invitationLink = `${getAppBaseUrl()}/join-transaction/${token}`;
+      const invitationLink = `${getAppBaseUrl()}/payment-link/${token}`;
       await navigator.clipboard.writeText(invitationLink);
       toast({
         title: "Lien copié !",
