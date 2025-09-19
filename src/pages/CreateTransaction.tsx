@@ -86,7 +86,7 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${window.location.origin}/payment-link/${token}`;
+      const shareableLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/payment-link/${token}`;
       setGeneratedLink(shareableLink);
       
       console.log('Test: CreateTransaction - Generated payment link:', shareableLink);
