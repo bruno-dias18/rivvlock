@@ -21,7 +21,24 @@ serve(async (req) => {
   try {
     const { transactionId, paymentMethod } = await req.json();
     
-    console.log("Creating payment intent for transaction:", transactionId);
+    console.log("🔍 DEBUG: Creating payment intent for transaction:", transactionId);
+    
+    // Get user from auth header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("❌ ERROR: No authorization header provided");
+      throw new Error("Authentication required");
+    }
+    
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      console.error("❌ ERROR: Invalid user token:", userError);
+      throw new Error("Invalid authentication token");
+    }
+    
+    console.log("✅ SUCCESS: User authenticated:", userData.user.id);
 
     // Get transaction details
     const { data: transaction, error: transactionError } = await supabaseClient
