@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAppBaseUrl } from '@/lib/appUrl';
 import type { Session } from '@supabase/supabase-js';
 
 export interface UserProfile {
@@ -84,7 +85,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const fetchUserProfile = async (userId: string, userEmail: string) => {
-    console.log('Test: AuthContext - Fetching profile for user:', userId, userEmail);
     try {
       // Fetch user profile
       const { data: profile, error } = await supabase
@@ -94,22 +94,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .maybeSingle();
 
       if (error) {
-        console.error('Test: AuthContext - Error fetching profile:', error);
+        console.error('Error fetching profile:', error);
         return;
       }
-      
-      console.log('Test: AuthContext - Profile data:', profile);
 
       // Check if user is admin
       const { data: isAdminResult, error: adminError } = await supabase
         .rpc('is_admin', { check_user_id: userId });
 
       if (adminError) {
-        console.error('Test: AuthContext - Error checking admin status:', adminError);
+        console.error('Error checking admin status:', adminError);
       }
 
       const isAdmin = isAdminResult || userEmail === 'bruno-dias@outlook.com';
-      console.log('Test: AuthContext - Is admin check:', isAdmin, 'for email:', userEmail);
 
       if (profile) {
         const userProfile = {
@@ -120,12 +117,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           verified: profile.verified,
           isAdmin,
         };
-        console.log('Test: AuthContext - Setting user profile:', userProfile);
         setUser(userProfile);
 
         // Automatically create Stripe customer if not exists and not already creating
         if (!profile.stripe_customer_id && !creatingStripeCustomer) {
-          console.log('Test: AuthContext - Need to create Stripe customer for user:', userId);
           setCreatingStripeCustomer(true);
           setTimeout(() => {
             createStripeCustomer(userId, userEmail, profile);
@@ -141,11 +136,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           verified: false,
           isAdmin
         };
-        console.log('Test: AuthContext - Using fallback user:', fallbackUser);
         setUser(fallbackUser);
       }
     } catch (e) {
-      console.error('Test: AuthContext - Error fetching user profile:', e);
+      console.error('Error fetching user profile:', e);
     } finally {
       setLoading(false);
     }
@@ -153,7 +147,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createStripeCustomer = async (userId: string, email: string, profileData: any) => {
     try {
-      console.log('Test: AuthContext - Calling create-stripe-customer for:', email);
       const { data, error } = await supabase.functions.invoke('create-stripe-customer', {
         body: {
           user_id: userId,
@@ -163,12 +156,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error) {
-        console.error('Test: AuthContext - Error creating Stripe customer:', error);
-      } else {
-        console.log('Test: AuthContext - Stripe customer created:', data?.stripe_customer_id);
+        console.error('Error creating Stripe customer:', error);
       }
     } catch (error) {
-      console.error('Test: AuthContext - Exception creating Stripe customer:', error);
+      console.error('Exception creating Stripe customer:', error);
     } finally {
       setCreatingStripeCustomer(false);
     }
@@ -187,12 +178,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register: AuthContextValue['register'] = async (userData) => {
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/`;
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: `${getAppBaseUrl()}/`,
           data: {
             user_type: userData.userType,
             country: userData.country,

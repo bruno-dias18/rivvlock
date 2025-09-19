@@ -22,7 +22,6 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecentTransactions = useCallback(async () => {
-    console.log('Test: useRecentTransactions - Fetching transactions, isAdminView:', isAdminView);
     try {
       setLoading(true);
       
@@ -44,8 +43,6 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
 
       if (queryError) throw queryError;
       
-      console.log('Test: useRecentTransactions - Query result:', data?.length || 0, 'transactions');
-      
       // Get user profiles for these transactions
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map(t => t.user_id))];
@@ -60,7 +57,6 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
           profiles: profiles?.find(p => p.user_id === transaction.user_id) || null
         }));
         
-        console.log('Test: useRecentTransactions - Final transactions with profiles:', transactionsWithProfiles);
         setTransactions(transactionsWithProfiles);
       } else {
         setTransactions([]);
@@ -68,7 +64,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
       
       setError(null);
     } catch (err) {
-      console.error('Test: useRecentTransactions - Error fetching recent transactions:', err);
+      console.error('Error fetching recent transactions:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
@@ -171,7 +167,7 @@ export const useRecentTransactions = (isAdminView: boolean = false) => {
       case 'paid':
         return 'Payé';
       case 'validated':
-        return 'Complété';
+        return 'Validé';
       case 'disputed':
         return 'Litige';
       default:

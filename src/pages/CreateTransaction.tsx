@@ -63,9 +63,6 @@ export const CreateTransaction = () => {
       paymentDeadline.setDate(paymentDeadline.getDate() - 1); // Day before service date
       paymentDeadline.setHours(23, 59, 59, 999); // End of day before service date
       
-      console.log('Test: CreateTransaction - Service date:', data.serviceDate);
-      console.log('Test: CreateTransaction - Payment deadline:', paymentDeadline);
-      
       const { data: transaction, error } = await supabase
         .from('transactions')
         .insert([
@@ -89,8 +86,6 @@ export const CreateTransaction = () => {
 
       const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}`;
       setGeneratedLink(shareableLink);
-      
-      console.log('Test: CreateTransaction - Generated payment link:', shareableLink);
 
       toast({
         title: 'Transaction créée !',

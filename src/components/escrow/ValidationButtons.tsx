@@ -54,7 +54,6 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
     
     const deadline = new Date(transaction.validation_deadline);
     const now = new Date();
-    console.log('Test: ValidationButtons - Checking validation deadline:', deadline, 'vs now:', now);
     
     if (now > deadline) return 'Expiré';
 

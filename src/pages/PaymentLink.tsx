@@ -165,7 +165,7 @@ export const PaymentLink = () => {
     // Show 24h warning
     const totalHours = differenceInHours(deadline, now);
     if (totalHours <= 24 && totalHours > 0) {
-      console.log('Test: PaymentWindow - Payment deadline in less than 24 hours!');
+      // Critical deadline - could add special handling here if needed
     }
   };
 

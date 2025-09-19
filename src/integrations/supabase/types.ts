@@ -117,7 +117,7 @@ export type Database = {
       profile_audit_log: {
         Row: {
           action: string
-          changed_by: string
+          changed_by: string | null
           changed_fields: Json | null
           created_at: string | null
           id: string
@@ -128,7 +128,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          changed_by: string
+          changed_by?: string | null
           changed_fields?: Json | null
           created_at?: string | null
           id?: string
@@ -139,7 +139,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          changed_by?: string
+          changed_by?: string | null
           changed_fields?: Json | null
           created_at?: string | null
           id?: string

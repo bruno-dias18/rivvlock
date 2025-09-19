@@ -78,11 +78,11 @@ serve(async (req) => {
 
     console.log("✅ [CAPTURE-PAYMENT] Payment captured:", capturedIntent.id, "Amount:", capturedIntent.amount / 100, transaction.currency);
 
-    // Update transaction status (using admin client)
+    // Update transaction status to validated (using admin client)
     const { error: updateError } = await adminClient
       .from("transactions")
       .update({ 
-        status: 'completed',
+        status: 'validated',
         funds_released: true,
         updated_at: new Date().toISOString()
       })
