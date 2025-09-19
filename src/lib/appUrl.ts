@@ -1,14 +1,7 @@
-/**
- * Gets the base URL for the application
- * Prioritizes VITE_APP_URL (production domain) over window.location.origin
- * This ensures that generated links always point to the production app
- */
+// Centralized base URL for shareable links
+// Lovable does not support VITE_* env vars at runtime, so we hardcode the production domain
+const APP_BASE_URL = 'https://app.rivvlock.com';
+
 export function getAppBaseUrl(): string {
-  // Always use the production URL if available
-  if (import.meta.env.VITE_APP_URL) {
-    return import.meta.env.VITE_APP_URL;
-  }
-  
-  // Fallback to current origin (for development)
-  return window.location.origin;
+  return APP_BASE_URL;
 }

@@ -39,8 +39,13 @@ export const JoinTransaction = () => {
   }, [token]);
 
   const fetchTransaction = async () => {
-    if (!token) {
+    if (!token || token === ':token') {
       setLoading(false);
+      toast({
+        variant: 'destructive',
+        title: 'Lien invalide',
+        description: 'Le lien utilisé est un exemple (/:token). Utilisez un lien réel généré par l’application.'
+      });
       return;
     }
 
