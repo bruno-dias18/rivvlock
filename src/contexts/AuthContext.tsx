@@ -193,7 +193,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             company_name: userData.companyName,
             siret_uid: userData.siretUid,
             company_address: userData.companyAddress,
-            iban: userData.iban,
             avs_number: userData.avsNumber,
             tva_rate: userData.tvaRate?.toString(),
             vat_rate: (userData.userType === 'company' 
