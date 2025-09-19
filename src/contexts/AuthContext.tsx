@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creatingStripeCustomer, setCreatingStripeCustomer] = useState(false);
 
   useEffect(() => {
     // 1) Listen first
@@ -122,9 +123,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Test: AuthContext - Setting user profile:', userProfile);
         setUser(userProfile);
 
-        // Automatically create Stripe customer if not exists
-        if (!profile.stripe_customer_id) {
-          console.log('Test: AuthContext - Creating Stripe customer for user:', userId);
+        // Automatically create Stripe customer if not exists and not already creating
+        if (!profile.stripe_customer_id && !creatingStripeCustomer) {
+          console.log('Test: AuthContext - Need to create Stripe customer for user:', userId);
+          setCreatingStripeCustomer(true);
           setTimeout(() => {
             createStripeCustomer(userId, userEmail, profile);
           }, 0);
@@ -167,6 +169,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error) {
       console.error('Test: AuthContext - Exception creating Stripe customer:', error);
+    } finally {
+      setCreatingStripeCustomer(false);
     }
   };
 
