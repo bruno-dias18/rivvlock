@@ -42,7 +42,7 @@ export const Transactions = () => {
 
   const copyInvitationLink = async (token: string) => {
     try {
-      const invitationLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/join-transaction/${token}`;
+      const invitationLink = `${window.location.origin}/join-transaction/${token}`;
       await navigator.clipboard.writeText(invitationLink);
       toast({
         title: "Lien copié !",
@@ -267,7 +267,7 @@ export const Transactions = () => {
                             size="sm"
                             onClick={() => {
                               if (transaction.shared_link_token) {
-                                const detailsLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/join-transaction/${transaction.shared_link_token}`;
+                                const detailsLink = `${window.location.origin}/join-transaction/${transaction.shared_link_token}`;
                                 window.open(detailsLink, '_blank');
                               }
                             }}
@@ -292,7 +292,7 @@ export const Transactions = () => {
                               className="gradient-success text-white"
                               onClick={() => {
                                 if (transaction.shared_link_token) {
-                                  const paymentLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/payment-link/${transaction.shared_link_token}`;
+                                  const paymentLink = `${window.location.origin}/payment-link/${transaction.shared_link_token}`;
                                   window.open(paymentLink, '_blank');
                                 }
                               }}
