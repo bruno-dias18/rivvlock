@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { format, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Elements } from '@stripe/react-stripe-js';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   CreditCard, 
   Smartphone, 
@@ -61,10 +62,12 @@ export const PaymentLink = () => {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showStripeForm, setShowStripeForm] = useState(false);
   const [joiningTransaction, setJoiningTransaction] = useState(false);
+  const [redirectingToStripe, setRedirectingToStripe] = useState(false);
   const { formatAmount } = useCurrency();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!token) {
@@ -206,6 +209,16 @@ export const PaymentLink = () => {
     if (!transaction || !user) return;
 
     try {
+      setRedirectingToStripe(true);
+      
+      // Show informative message for mobile users
+      if (isMobile) {
+        toast({
+          title: 'Redirection en cours',
+          description: 'Vous allez être redirigé vers Stripe pour effectuer le paiement.',
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
         body: { transactionId: transaction.id, transactionToken: token }
       });
@@ -213,8 +226,13 @@ export const PaymentLink = () => {
       if (error) throw error;
 
       if (data.success && data.sessionUrl) {
-        // Open Stripe Checkout in new tab
-        window.open(data.sessionUrl, '_blank');
+        if (isMobile) {
+          // On mobile: redirect in same tab to avoid popup blocking
+          window.location.href = data.sessionUrl;
+        } else {
+          // On desktop: open in new tab (current behavior)
+          window.open(data.sessionUrl, '_blank');
+        }
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
@@ -223,6 +241,9 @@ export const PaymentLink = () => {
         title: 'Erreur',
         description: 'Impossible de créer la session de paiement.',
       });
+    } finally {
+      // Reset loading state after a delay to handle page navigation on mobile
+      setTimeout(() => setRedirectingToStripe(false), 2000);
     }
   };
 
@@ -512,9 +533,19 @@ export const PaymentLink = () => {
                           onClick={handleStripeCheckout}
                           className="w-full gradient-primary text-white text-lg py-6"
                           size="lg"
+                          disabled={redirectingToStripe}
                         >
-                          <ExternalLink className="w-5 h-5 mr-2" />
-                          Payer avec Stripe (recommandé)
+                          {redirectingToStripe ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/30 border-t-white mr-2"></div>
+                              {isMobile ? 'Redirection...' : 'Ouverture...'}
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLink className="w-5 h-5 mr-2" />
+                              Payer avec Stripe (recommandé)
+                            </>
+                          )}
                         </Button>
                         
                         <div className="relative">
