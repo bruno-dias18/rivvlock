@@ -449,8 +449,11 @@ export const PaymentLink = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  Délai de paiement
+                  💳 Phase de paiement sécurisé
                 </CardTitle>
+                <CardDescription>
+                  Effectuez le paiement pour bloquer les fonds de façon sécurisée
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {isExpired ? (
@@ -461,17 +464,25 @@ export const PaymentLink = () => {
                     </AlertDescription>
                   </Alert>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span>Temps restant :</span>
-                      <Badge variant="outline" className="font-mono text-lg">
-                        {countdown}
-                      </Badge>
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-semibold text-blue-800 dark:text-blue-400">⏰ Temps restant</h3>
+                          <Badge variant="outline" className="font-mono text-lg mt-1">
+                            {countdown}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            Paiement avant le
+                          </p>
+                          <p className="font-semibold text-blue-800 dark:text-blue-400">
+                            {format(new Date(transaction.payment_deadline), 'PPP à HH:mm', { locale: fr })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Paiement à effectuer avant le{' '}
-                      {format(new Date(transaction.payment_deadline), 'PPP à HH:mm', { locale: fr })}
-                    </p>
                   </div>
                 )}
               </CardContent>
@@ -479,119 +490,140 @@ export const PaymentLink = () => {
 
             {/* Payment Methods */}
             {canPay && (
-              <Tabs defaultValue="stripe" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="stripe">Paiement par carte</TabsTrigger>
-                  <TabsTrigger value="alternative">Autres méthodes</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="stripe" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Paiement sécurisé</CardTitle>
-                      <CardDescription>
-                        Bloquez {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} de manière sécurisée
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <Button 
-                        onClick={handleStripeCheckout}
-                        className="w-full gradient-primary text-white"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Payer sur la page Stripe (recommandé)
-                      </Button>
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">ou</span>
-                        </div>
-                      </div>
-
-                      {showStripeForm && clientSecret ? (
-                        <Elements stripe={stripePromise} options={{ clientSecret }}>
-                          <StripePaymentForm
-                            transaction={transaction}
-                            clientSecret={clientSecret}
-                            onSuccess={refreshTransaction}
-                          />
-                        </Elements>
-                      ) : (
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+                <CardHeader>
+                  <CardTitle className="text-center text-xl gradient-text">
+                    🚀 Procéder au paiement
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    Choisissez votre méthode de paiement préférée pour bloquer {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} de manière sécurisée
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="stripe" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="stripe">💳 Paiement par carte</TabsTrigger>
+                      <TabsTrigger value="alternative">🏦 Autres méthodes</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="stripe" className="space-y-4">
+                      <div className="space-y-3">
                         <Button 
-                          onClick={handleStripePayment}
-                          variant="outline"
-                          className="w-full"
+                          onClick={handleStripeCheckout}
+                          className="w-full gradient-primary text-white text-lg py-6"
+                          size="lg"
                         >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Paiement intégré
+                          <ExternalLink className="w-5 h-5 mr-2" />
+                          Payer avec Stripe (recommandé)
                         </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                <TabsContent value="alternative">
-                  <AlternativePaymentMethods transaction={transaction} />
-                </TabsContent>
-              </Tabs>
+                        
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">ou</span>
+                          </div>
+                        </div>
+
+                        {showStripeForm && clientSecret ? (
+                          <Elements stripe={stripePromise} options={{ clientSecret }}>
+                            <StripePaymentForm
+                              transaction={transaction}
+                              clientSecret={clientSecret}
+                              onSuccess={refreshTransaction}
+                            />
+                          </Elements>
+                        ) : (
+                          <Button 
+                            onClick={handleStripePayment}
+                            variant="outline"
+                            className="w-full py-4"
+                            size="lg"
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Formulaire de paiement intégré
+                          </Button>
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="alternative">
+                      <AlternativePaymentMethods transaction={transaction} />
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             )}
           </>
         ) : (
           // Post-payment phase (paid, completed, disputed)
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs defaultValue={transaction.funds_released ? "overview" : "validation"} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+              <TabsTrigger value="overview">📋 Vue d'ensemble</TabsTrigger>
               <TabsTrigger value="chat">
                 <MessageSquare className="w-4 h-4 mr-1" />
-                Chat
+                💬 Chat
               </TabsTrigger>
-              <TabsTrigger value="validation">Validation</TabsTrigger>
-              <TabsTrigger value="dispute">Litige</TabsTrigger>
+              <TabsTrigger value="validation" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 font-semibold">
+                ✅ Valider le travail
+              </TabsTrigger>
+              <TabsTrigger value="dispute">⚠️ Litige</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
-              {/* Payment Status */}
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
+              {/* Payment Success Banner */}
+              <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
                 <AlertDescription>
-                  <strong>Paiement effectué</strong> - Les fonds ont été bloqués avec succès le{' '}
+                  <strong>🎉 Paiement effectué avec succès !</strong> Les fonds ont été bloqués de façon sécurisée le{' '}
                   {transaction.payment_blocked_at && format(new Date(transaction.payment_blocked_at), 'PPP à HH:mm', { locale: fr })}
                   {transaction.payment_method && ` via ${transaction.payment_method}`}.
+                  <br />
+                  <span className="text-sm text-green-700 dark:text-green-300 mt-1 block">
+                    💡 Rendez-vous dans l'onglet "Valider le travail" pour débloquer les fonds une fois le service terminé.
+                  </span>
                 </AlertDescription>
               </Alert>
 
               {/* Validation Status Overview */}
               {transaction.validation_deadline && (
-                <Card>
+                <Card className="border-2 border-orange-200 dark:border-orange-800 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-950/20 dark:to-yellow-950/20">
                   <CardHeader>
-                    <CardTitle>Statut de validation</CardTitle>
+                    <CardTitle className="text-orange-800 dark:text-orange-400">🔄 Statut de validation mutuelle</CardTitle>
+                    <CardDescription>
+                      Les deux parties doivent valider le travail pour libérer les fonds
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <p className="text-sm font-medium mb-1">Vendeur</p>
-                        <Badge variant={transaction.seller_validated ? 'default' : 'secondary'}>
-                          {transaction.seller_validated ? 'Validé ✓' : 'En attente'}
+                      <div className="text-center p-4 border rounded-lg bg-white/50 dark:bg-black/20">
+                        <p className="text-sm font-medium mb-2">👨‍💼 Vendeur</p>
+                        <Badge variant={transaction.seller_validated ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+                          {transaction.seller_validated ? '✅ Validé' : '⏳ En attente'}
                         </Badge>
                       </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium mb-1">Acheteur</p>
-                        <Badge variant={transaction.buyer_validated ? 'default' : 'secondary'}>
-                          {transaction.buyer_validated ? 'Validé ✓' : 'En attente'}
+                      <div className="text-center p-4 border rounded-lg bg-white/50 dark:bg-black/20">
+                        <p className="text-sm font-medium mb-2">👤 Acheteur</p>
+                        <Badge variant={transaction.buyer_validated ? 'default' : 'secondary'} className="text-sm px-3 py-1">
+                          {transaction.buyer_validated ? '✅ Validé' : '⏳ En attente'}
                         </Badge>
                       </div>
                     </div>
                     
-                    {transaction.funds_released && (
-                      <Alert>
-                        <CheckCircle className="h-4 w-4" />
+                    {transaction.funds_released ? (
+                      <Alert className="border-green-200 bg-green-50 dark:bg-green-950/20">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertDescription>
-                          <strong>Fonds libérés !</strong> La transaction a été complétée avec succès.
+                          <strong>🎉 Fonds libérés avec succès !</strong> La transaction a été complétée. Le vendeur va recevoir les fonds.
                         </AlertDescription>
                       </Alert>
+                    ) : (
+                      <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          💡 Une fois que les deux parties ont validé, vous pourrez libérer les fonds dans l'onglet "Valider le travail"
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -607,10 +639,22 @@ export const PaymentLink = () => {
             </TabsContent>
 
             <TabsContent value="validation">
-              <ValidationButtons
-                transaction={transaction}
-                onValidationUpdate={refreshTransaction}
-              />
+              <Card className="border-2 border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
+                <CardHeader>
+                  <CardTitle className="text-green-800 dark:text-green-400 text-xl text-center">
+                    ✅ Validation du travail
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    Cette étape permet de valider que le travail a été correctement effectué et de libérer les fonds
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ValidationButtons
+                    transaction={transaction}
+                    onValidationUpdate={refreshTransaction}
+                  />
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="dispute">

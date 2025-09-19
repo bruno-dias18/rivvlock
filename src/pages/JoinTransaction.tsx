@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Clock, Shield, Users, CreditCard } from 'lucide-react';
+import { Clock, Shield, Users, CreditCard, AlertTriangle } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -163,17 +163,45 @@ export const JoinTransaction = () => {
         <div className="max-w-2xl mx-auto space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-2xl text-destructive">Transaction non trouvée</CardTitle>
+              <CardTitle className="text-2xl text-destructive flex items-center gap-2">
+                <AlertTriangle className="w-6 h-6" />
+                Transaction non trouvée
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p>Cette transaction n'existe pas ou le lien a expiré.</p>
-              <Button 
-                onClick={() => navigate('/')} 
-                className="mt-4"
-                variant="outline"
-              >
-                Retour à l'accueil
-              </Button>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                <h3 className="font-semibold text-orange-800 dark:text-orange-400 mb-2">
+                  🔗 Lien invalide ou expiré
+                </h3>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Cette transaction n'existe pas, le lien a expiré, ou vous n'avez pas les autorisations nécessaires pour y accéder.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-medium">Que faire maintenant ?</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Vérifiez que le lien est correct et complet</li>
+                  <li>• Contactez la personne qui vous a envoyé le lien</li>
+                  <li>• Demandez un nouveau lien de paiement</li>
+                </ul>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => navigate('/')} 
+                  className="flex-1"
+                  variant="outline"
+                >
+                  Retour à l'accueil
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  className="flex-1 gradient-primary text-white"
+                >
+                  Réessayer
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -191,9 +219,9 @@ export const JoinTransaction = () => {
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold gradient-text">Rejoindre la transaction</h1>
+          <h1 className="text-3xl font-bold gradient-text">Connexion RIVVLOCK</h1>
           <p className="text-muted-foreground mt-1">
-            Vous avez été invité à participer à une transaction sécurisée
+            Connectez-vous pour accéder à cette transaction sécurisée
           </p>
         </div>
 
@@ -273,32 +301,55 @@ export const JoinTransaction = () => {
             <div className="space-y-3">
               {!user ? (
                 <div className="text-center space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Vous devez être connecté pour rejoindre cette transaction
-                  </p>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">
+                      🔐 Connexion RIVVLOCK requise
+                    </h3>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Pour accéder à cette transaction sécurisée, vous devez vous connecter ou créer un compte RIVVLOCK.
+                    </p>
+                  </div>
                   <Button 
                     onClick={() => navigate(`/auth?redirect=/join-transaction/${token}`)} 
                     className="w-full gradient-primary text-white"
+                    size="lg"
                   >
                     <Users className="w-4 h-4 mr-2" />
-                    Se connecter ou créer un compte
+                    Se connecter à RIVVLOCK
                   </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Nouveau chez RIVVLOCK ? Un compte sera créé automatiquement.
+                  </p>
                 </div>
               ) : (
-                <Button 
-                  onClick={handleJoinTransaction}
-                  disabled={isJoining}
-                  className="w-full gradient-primary text-white"
-                >
-                  {isJoining ? (
-                    'Connexion en cours...'
-                  ) : (
-                    <>
-                      <Users className="w-4 h-4 mr-2" />
-                      Rejoindre et procéder au paiement
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-3">
+                  <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
+                    <h3 className="font-semibold text-green-800 dark:text-green-400 mb-2">
+                      ✅ Connecté à RIVVLOCK
+                    </h3>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Vous pouvez maintenant procéder au paiement sécurisé.
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleJoinTransaction}
+                    disabled={isJoining}
+                    className="w-full gradient-primary text-white"
+                    size="lg"
+                  >
+                    {isJoining ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Préparation du paiement...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Procéder au paiement
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
               
               <Button 
