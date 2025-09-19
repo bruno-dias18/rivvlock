@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { TestRunner } from './TestRunner';
 import { InvitationLinkTest } from './InvitationLinkTest';
 import { StripeEscrowTest } from './StripeEscrowTest';
+import { StripeAccountTest } from './StripeAccountTest';
 import { BugFixTest } from './BugFixTest';
 import { ImplementationReport } from '../reports/ImplementationReport';
 import { UserTestingGuide } from '../guides/UserTestingGuide';
@@ -31,6 +32,7 @@ export const TestPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <InvitationLinkTest />
           <StripeEscrowTest />
+          <StripeAccountTest />
           <BugFixTest />
           <TestRunner />
         </div>
