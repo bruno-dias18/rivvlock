@@ -35,8 +35,13 @@ export const JoinTransaction = () => {
   const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
+    // Redirection automatique vers la page de paiement complète
+    if (token && token !== ':token') {
+      navigate(`/payment-link/${token}`, { replace: true });
+      return;
+    }
     fetchTransaction();
-  }, [token]);
+  }, [token, navigate]);
 
   const fetchTransaction = async () => {
     if (!token || token === ':token') {
