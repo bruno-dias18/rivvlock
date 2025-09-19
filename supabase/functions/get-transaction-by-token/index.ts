@@ -63,10 +63,23 @@ serve(async (req) => {
       throw new Error('Transaction non trouvée ou token invalide');
     }
 
-    // Check if link is expired
+    // Check if link is expired with detailed logging
     const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
-    if (expiresAt && new Date(expiresAt) < new Date()) {
-      console.error('❌ [GET-TRANSACTION] Link expired');
+    const now = new Date();
+    const expirationDate = expiresAt ? new Date(expiresAt) : null;
+    
+    console.log('🕒 [GET-TRANSACTION] Expiration check:', {
+      expiresAt,
+      now: now.toISOString(),
+      expirationDate: expirationDate?.toISOString(),
+      isExpired: expirationDate ? expirationDate < now : false
+    });
+    
+    if (expirationDate && expirationDate < now) {
+      console.error('❌ [GET-TRANSACTION] Link expired:', {
+        expirationDate: expirationDate.toISOString(),
+        currentTime: now.toISOString()
+      });
       throw new Error('Le lien d\'invitation a expiré');
     }
 
