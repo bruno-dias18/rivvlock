@@ -22,8 +22,11 @@ import {
   AlertTriangle,
   Eye,
   CreditCard,
-  ExternalLink
+  ExternalLink,
+  Link,
+  Copy
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
@@ -35,6 +38,24 @@ export const Transactions = () => {
   const { transactions, loading, error, refreshTransactions } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const { toast } = useToast();
+
+  const copyInvitationLink = async (token: string) => {
+    try {
+      const invitationLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/payment-link/${token}`;
+      await navigator.clipboard.writeText(invitationLink);
+      toast({
+        title: "Lien copié !",
+        description: "Le lien d'invitation a été copié dans le presse-papiers.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -246,23 +267,37 @@ export const Transactions = () => {
                             size="sm"
                             onClick={() => {
                               if (transaction.shared_link_token) {
-                                window.open(`/payment/${transaction.shared_link_token}`, '_blank');
+                                const detailsLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/payment-link/${transaction.shared_link_token}`;
+                                window.open(detailsLink, '_blank');
                               }
                             }}
                           >
-                            <ExternalLink className="w-4 h-4 mr-2" />
+                            <Eye className="w-4 h-4 mr-2" />
                             Voir détails
                           </Button>
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => copyInvitationLink(transaction.shared_link_token)}
+                            disabled={!transaction.shared_link_token}
+                          >
+                            <Link className="w-4 h-4 mr-2" />
+                            Copier le lien
+                          </Button>
+
                           {transaction.status === 'pending' && (
                             <Button 
                               size="sm" 
                               className="gradient-success text-white"
                               onClick={() => {
                                 if (transaction.shared_link_token) {
-                                  window.open(`/payment/${transaction.shared_link_token}`, '_blank');
+                                  const paymentLink = `${import.meta.env.VITE_APP_URL || window.location.origin}/payment-link/${transaction.shared_link_token}`;
+                                  window.open(paymentLink, '_blank');
                                 }
                               }}
                             >
+                              <CreditCard className="w-4 h-4 mr-2" />
                               Accéder au paiement
                             </Button>
                           )}
