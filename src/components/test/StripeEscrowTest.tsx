@@ -112,9 +112,30 @@ export const StripeEscrowTest = () => {
         }
       });
 
-      // Step 2: Test Payment Intent Creation
+      // Step 2: Assign buyer BEFORE creating Payment Intent
       addResult({
-        step: '2. Payment Intent',
+        step: '2. Assign Buyer',
+        status: 'pending',
+        message: "Assignation d'un buyer à la transaction..."
+      });
+
+      const { error: assignError } = await supabase
+        .from('transactions')
+        .update({ buyer_id: user.id }) // Dans ce test on s'assigne comme buyer
+        .eq('id', transaction.id);
+
+      if (assignError) throw assignError;
+
+      addResult({
+        step: '2. Assign Buyer',
+        status: 'success',
+        message: 'Buyer assigné à la transaction (simulé)',
+        details: { buyerId: 'current-user (test simulation)' }
+      });
+
+      // Step 3: Create Payment Intent (now that buyer is set)
+      addResult({
+        step: '3. Payment Intent',
         status: 'pending',
         message: 'Création du Payment Intent Stripe...'
       });
@@ -132,7 +153,7 @@ export const StripeEscrowTest = () => {
       setTransactionData({ ...testData });
 
       addResult({
-        step: '2. Payment Intent',
+        step: '3. Payment Intent',
         status: 'success',
         message: 'Payment Intent créé avec capture_method: manual',
         details: {
@@ -140,27 +161,6 @@ export const StripeEscrowTest = () => {
           clientSecret: paymentData.clientSecret.substring(0, 30) + '...',
           captureMethod: 'manual'
         }
-      });
-
-      // Step 3: Simulate buyer assignment
-      addResult({
-        step: '3. Assign Buyer',
-        status: 'pending',
-        message: 'Assignation d\'un buyer à la transaction...'
-      });
-
-      const { error: assignError } = await supabase
-        .from('transactions')
-        .update({ buyer_id: user.id }) // In real scenario, this would be a different user
-        .eq('id', transaction.id);
-
-      if (assignError) throw assignError;
-
-      addResult({
-        step: '3. Assign Buyer',
-        status: 'success',
-        message: 'Buyer assigné à la transaction (simulé)',
-        details: { buyerId: 'current-user (test simulation)' }
       });
 
       // Step 4: Test transaction fetch with buyer
