@@ -120,7 +120,6 @@ export const Profile = () => {
           company_name: profile.company_name,
           siret_uid: profile.siret_uid,
           company_address: profile.company_address,
-          iban: profile.iban,
           avs_number: profile.avs_number,
           tva_rate: profile.tva_rate,
           updated_at: new Date().toISOString()
@@ -284,17 +283,17 @@ export const Profile = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="iban">{t('user.iban')}</Label>
-                        <Input
-                          id="iban"
-                          value={profile.iban || ''}
-                          onChange={(e) => updateProfile({ iban: e.target.value })}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                      <div>
                         <Label>{t('user.vat')} ({getVATRate(profile.country)})</Label>
                         <Input disabled value={`${profile.vat_rate || getVATRate(profile.country)}`} />
+                      </div>
+                      <div>
+                        <Alert className="border-primary bg-primary/5">
+                          <Shield className="h-4 w-4" />
+                          <AlertDescription>
+                            <strong>Banking via Stripe Connect</strong>
+                            <p className="text-sm mt-1">Your banking information is securely managed through Stripe Connect for maximum security. No sensitive data is stored in our system.</p>
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     </div>
                   </>

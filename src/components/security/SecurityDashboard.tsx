@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Shield, ShieldAlert, ShieldCheck, Eye, EyeOff, AlertTriangle, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { SecurityScanner } from './SecurityScanner';
 
 interface AuditLogEntry {
   id: string;
@@ -227,6 +228,9 @@ export const SecurityDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Security Scanner */}
+      <SecurityScanner />
     </div>
   );
 };
