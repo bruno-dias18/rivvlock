@@ -45,24 +45,26 @@ export const JoinTransaction = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('shared_link_token', token)
-        .single();
+      console.log('🔍 [JOIN-TRANSACTION-UI] Fetching transaction with token');
+      
+      // Use the public edge function to fetch transaction data
+      const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
+        body: { token }
+      });
 
-      if (error) throw error;
-
-      // Check link expiration
-      if (data.link_expires_at && new Date(data.link_expires_at) < new Date()) {
-        console.log('Test: JoinTransaction - Link expired:', data.link_expires_at);
-        throw new Error('Le lien d\'invitation a expiré');
+      if (error) {
+        console.error('❌ [JOIN-TRANSACTION-UI] Edge function error:', error);
+        throw error;
       }
 
-      setTransaction(data);
-      console.log('Test: JoinTransaction - Transaction loaded:', data);
+      if (!data.success || !data.transaction) {
+        throw new Error('Transaction non trouvée ou token invalide');
+      }
+
+      setTransaction(data.transaction);
+      console.log('✅ [JOIN-TRANSACTION-UI] Transaction loaded:', data.transaction);
     } catch (error) {
-      console.error('Error fetching transaction:', error);
+      console.error('❌ [JOIN-TRANSACTION-UI] Error fetching transaction:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -103,7 +105,7 @@ export const JoinTransaction = () => {
 
       if (error) throw error;
 
-      console.log('Test: JoinTransaction - Successfully joined transaction');
+      console.log('✅ [JOIN-TRANSACTION-UI] Successfully joined transaction');
       toast({
         title: 'Transaction rejointe !',
         description: 'Vous pouvez maintenant procéder au paiement sécurisé.'

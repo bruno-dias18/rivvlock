@@ -49,26 +49,25 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
         setPaymentError(error.message || 'Une erreur est survenue lors du paiement');
       } else if (paymentIntent && paymentIntent.status === 'requires_capture') {
         // Payment authorized successfully for escrow
-        console.log('Test: PaymentLink - Payment authorized successfully');
-        console.log('Test: PaymentLink - Payment Intent ID:', paymentIntent.id);
-        console.log('Test: PaymentLink - Amount:', paymentIntent.amount, 'Currency:', paymentIntent.currency);
+        console.log('✅ [STRIPE-PAYMENT] Payment authorized successfully');
+        console.log('✅ [STRIPE-PAYMENT] Payment Intent ID:', paymentIntent.id);
+        console.log('✅ [STRIPE-PAYMENT] Amount:', paymentIntent.amount, 'Currency:', paymentIntent.currency);
         
-        // Update transaction status to 'paid'
-        const { error: updateError } = await supabase
-          .from('transactions')
-          .update({ 
-            status: 'paid',
-            payment_blocked_at: new Date().toISOString(),
-            validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-          })
-          .eq('id', transaction.id);
+        // Update transaction status using mark-payment-authorized edge function
+        const { data: markResult, error: markError } = await supabase.functions.invoke('mark-payment-authorized', {
+          body: {
+            transactionId: transaction.id,
+            paymentIntentId: paymentIntent.id
+          }
+        });
 
-        if (updateError) {
-          console.error('Error updating transaction status:', updateError);
-          throw updateError;
+        if (markError) {
+          console.error('❌ [STRIPE-PAYMENT] Error marking payment authorized:', markError);
+          setPaymentError('Erreur lors de la mise à jour du statut de paiement');
+          return;
         }
 
-        console.log('Test: PaymentLink - Transaction status updated to "paid"');
+        console.log('✅ [STRIPE-PAYMENT] Transaction status updated via edge function');
 
         toast({
           title: '✅ Paiement autorisé !',
@@ -85,9 +84,9 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
               currency: transaction.currency
             }
           });
-          console.log('Test: PaymentLink - Notifications sent');
+          console.log('✅ [STRIPE-PAYMENT] Notifications sent');
         } catch (notificationError) {
-          console.error('Notification error (non-critical):', notificationError);
+          console.error('❌ [STRIPE-PAYMENT] Notification error (non-critical):', notificationError);
         }
 
         onSuccess();

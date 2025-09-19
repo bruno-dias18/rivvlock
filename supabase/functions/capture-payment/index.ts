@@ -12,31 +12,48 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  // User client for authentication
+  const userClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
+  // Admin client for database operations
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
     const { transactionId } = await req.json();
     
-    console.log("Capturing payment for transaction:", transactionId);
+    console.log("🔍 [CAPTURE-PAYMENT] Capturing payment for transaction:", transactionId);
 
-    // Get transaction details with auth check
-    const authHeader = req.headers.get("Authorization")!;
+    // Get user authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("Authentication required");
+    
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    if (!userData.user) throw new Error("Unauthorized");
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
+    if (userError || !userData.user) throw new Error("Unauthorized");
 
-    const { data: transaction, error: transactionError } = await supabaseClient
+    console.log("✅ [CAPTURE-PAYMENT] User authenticated:", userData.user.id);
+
+    // Get transaction details (using admin client)
+    const { data: transaction, error: transactionError } = await adminClient
       .from("transactions")
       .select("*")
       .eq("id", transactionId)
-      .or(`user_id.eq.${userData.user.id},buyer_id.eq.${userData.user.id}`)
       .single();
 
     if (transactionError || !transaction) {
-      throw new Error("Transaction not found or unauthorized");
+      console.error("❌ [CAPTURE-PAYMENT] Transaction not found:", transactionError);
+      throw new Error("Transaction not found");
+    }
+
+    // Verify user is authorized (buyer or seller)
+    if (transaction.user_id !== userData.user.id && transaction.buyer_id !== userData.user.id) {
+      throw new Error("Unauthorized access to transaction");
     }
 
     if (!transaction.stripe_payment_intent_id) {
@@ -48,27 +65,21 @@ serve(async (req) => {
       throw new Error("Both parties must validate before funds can be released");
     }
 
+    console.log("✅ [CAPTURE-PAYMENT] Transaction validation verified");
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2024-06-20",
     });
 
-    // Calculate platform fee (5%)
-    const totalAmount = Math.round(transaction.price * 100);
-    const platformFee = Math.round(totalAmount * 0.05);
-    const sellerAmount = totalAmount - platformFee;
-
-    // Capture the full payment intent
+    // Capture the payment intent (without application fee for now)
     const capturedIntent = await stripe.paymentIntents.capture(
-      transaction.stripe_payment_intent_id,
-      {
-        application_fee_amount: platformFee, // 5% platform fee
-      }
+      transaction.stripe_payment_intent_id
     );
 
-    console.log("Payment captured:", capturedIntent.id, "Amount:", sellerAmount / 100, transaction.currency);
+    console.log("✅ [CAPTURE-PAYMENT] Payment captured:", capturedIntent.id, "Amount:", capturedIntent.amount / 100, transaction.currency);
 
-    // Update transaction status
-    const { error: updateError } = await supabaseClient
+    // Update transaction status (using admin client)
+    const { error: updateError } = await adminClient
       .from("transactions")
       .update({ 
         status: 'completed',
@@ -78,19 +89,18 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error("Error updating transaction:", updateError);
+      console.error("❌ [CAPTURE-PAYMENT] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction status");
     }
 
     // Mock notifications
-    console.log(`📧 EMAIL: Funds released to seller - Amount: ${(sellerAmount / 100).toFixed(2)} ${transaction.currency}`);
-    console.log(`📧 EMAIL: Transaction completed successfully for ${transaction.title}`);
-    console.log(`📱 SMS: Payment of ${(sellerAmount / 100).toFixed(2)} ${transaction.currency} released to your account`);
+    console.log(`📧 [CAPTURE-PAYMENT] EMAIL: Funds released to seller - Amount: ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency}`);
+    console.log(`📧 [CAPTURE-PAYMENT] EMAIL: Transaction completed successfully for ${transaction.title}`);
+    console.log(`📱 [CAPTURE-PAYMENT] SMS: Payment of ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency} released to your account`);
 
     return new Response(JSON.stringify({ 
       success: true,
-      amount_transferred: sellerAmount / 100,
-      platform_fee: platformFee / 100,
+      amount_transferred: capturedIntent.amount / 100,
       currency: transaction.currency
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

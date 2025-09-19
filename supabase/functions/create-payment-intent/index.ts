@@ -13,88 +13,104 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
+  // User client for authentication
+  const userClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
+  // Admin client for database operations
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
     const { transactionId, paymentMethod } = await req.json();
     
-    console.log("🔍 DEBUG: Creating payment intent for transaction:", transactionId);
+    console.log("🔍 [CREATE-PAYMENT-INTENT] Creating payment intent for transaction:", transactionId);
     
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("❌ ERROR: No authorization header provided");
+      console.error("❌ [CREATE-PAYMENT-INTENT] No authorization header provided");
       throw new Error("Authentication required");
     }
     
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
     
     if (userError || !userData.user) {
-      console.error("❌ ERROR: Invalid user token:", userError);
+      console.error("❌ [CREATE-PAYMENT-INTENT] Invalid user token:", userError);
       throw new Error("Invalid authentication token");
     }
     
-    console.log("✅ SUCCESS: User authenticated:", userData.user.id);
+    console.log("✅ [CREATE-PAYMENT-INTENT] User authenticated:", userData.user.id);
 
-    // Get transaction details
-    const { data: transaction, error: transactionError } = await supabaseClient
+    // Get transaction details (using admin client)
+    const { data: transaction, error: transactionError } = await adminClient
       .from("transactions")
       .select("*")
       .eq("id", transactionId)
       .single();
 
     if (transactionError || !transaction) {
+      console.error("❌ [CREATE-PAYMENT-INTENT] Transaction not found:", transactionError);
       throw new Error("Transaction not found");
     }
 
-    console.log("Transaction found:", transaction);
+    // Verify user is the buyer
+    if (transaction.buyer_id !== userData.user.id) {
+      console.error("❌ [CREATE-PAYMENT-INTENT] User is not the buyer");
+      throw new Error("Only the buyer can create payment intent");
+    }
+
+    console.log("✅ [CREATE-PAYMENT-INTENT] Transaction found, buyer verified");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2024-06-20",
     });
 
-    // Get user profile to check for existing Stripe customer
-    const { data: profile, error: profileError } = await supabaseClient
+    // Get buyer profile to check for existing Stripe customer
+    const { data: buyerProfile, error: profileError } = await adminClient
       .from("profiles")
       .select("stripe_customer_id, first_name, last_name")
-      .eq("user_id", transaction.user_id)
+      .eq("user_id", userData.user.id)
       .single();
 
-    console.log("Profile found:", profile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
+    console.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
 
     // Prepare payment intent data
     const paymentIntentData: any = {
       amount: Math.round(transaction.price * 100), // Convert to cents
       currency: transaction.currency.toLowerCase(),
-      capture_method: 'manual', // This is key for escrow - we capture later
+      capture_method: 'manual', // Key for escrow - we capture later
       description: `RIVVLOCK Escrow: ${transaction.title}`,
       metadata: {
         transaction_id: transactionId,
         seller_id: transaction.user_id,
+        buyer_id: userData.user.id,
         service_date: transaction.service_date,
+        platform: 'rivvlock',
       },
       automatic_payment_methods: {
         enabled: true,
       },
     };
 
-    // Use existing Stripe customer if available
-    if (profile?.stripe_customer_id) {
-      paymentIntentData.customer = profile.stripe_customer_id;
-      console.log("Using existing Stripe customer:", profile.stripe_customer_id);
+    // Use existing Stripe customer if available (buyer's customer)
+    if (buyerProfile?.stripe_customer_id) {
+      paymentIntentData.customer = buyerProfile.stripe_customer_id;
+      console.log("✅ [CREATE-PAYMENT-INTENT] Using existing Stripe customer:", buyerProfile.stripe_customer_id);
     }
 
     // Create payment intent with manual capture (escrow)
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
-    console.log("Payment intent created:", paymentIntent.id);
+    console.log("✅ [CREATE-PAYMENT-INTENT] Payment intent created:", paymentIntent.id);
 
-    // Update transaction with payment intent ID
-    const { error: updateError } = await supabaseClient
+    // Update transaction with payment intent ID (using admin client)
+    const { error: updateError } = await adminClient
       .from("transactions")
       .update({ 
         stripe_payment_intent_id: paymentIntent.id,
@@ -103,7 +119,7 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error("Error updating transaction:", updateError);
+      console.error("❌ [CREATE-PAYMENT-INTENT] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction");
     }
 

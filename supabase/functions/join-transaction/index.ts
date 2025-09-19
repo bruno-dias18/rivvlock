@@ -13,12 +13,18 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Join Transaction Function: Starting request processing');
+    console.log('🔍 [JOIN-TRANSACTION] Starting request processing');
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
+    // User client for authentication
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
+    // Admin client for database operations
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Get user from auth header
@@ -28,13 +34,13 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
     
     if (userError || !userData.user) {
       throw new Error('Utilisateur non authentifié');
     }
 
-    console.log('Join Transaction Function: User authenticated:', userData.user.id);
+    console.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
 
     // Parse request body
     const { transaction_id, token: linkToken } = await req.json();
@@ -43,10 +49,10 @@ serve(async (req) => {
       throw new Error('ID de transaction ou token manquant');
     }
 
-    console.log('Join Transaction Function: Processing transaction:', transaction_id);
+    console.log('🔍 [JOIN-TRANSACTION] Processing transaction:', transaction_id);
 
-    // Verify transaction exists and token is valid
-    const { data: transaction, error: fetchError } = await supabaseClient
+    // Verify transaction exists and token is valid (using admin client)
+    const { data: transaction, error: fetchError } = await adminClient
       .from('transactions')
       .select('*')
       .eq('id', transaction_id)
@@ -54,13 +60,15 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !transaction) {
+      console.error('❌ [JOIN-TRANSACTION] Transaction fetch error:', fetchError);
       throw new Error('Transaction non trouvée ou token invalide');
     }
 
-    console.log('Join Transaction Function: Transaction found:', transaction.id);
+    console.log('✅ [JOIN-TRANSACTION] Transaction found:', transaction.id);
 
     // Check if link is expired
-    if (transaction.link_expires_at && new Date(transaction.link_expires_at) < new Date()) {
+    const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
+    if (expiresAt && new Date(expiresAt) < new Date()) {
       throw new Error('Le lien d\'invitation a expiré');
     }
 
@@ -76,7 +84,7 @@ serve(async (req) => {
 
     // If user is already the buyer, return success
     if (transaction.buyer_id === userData.user.id) {
-      console.log('Join Transaction Function: User already assigned as buyer');
+      console.log('✅ [JOIN-TRANSACTION] User already assigned as buyer');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -89,20 +97,22 @@ serve(async (req) => {
       );
     }
 
-    // Assign user as buyer
-    const { error: updateError } = await supabaseClient
+    // Assign user as buyer (using admin client to bypass RLS)
+    const { error: updateError } = await adminClient
       .from('transactions')
       .update({ 
         buyer_id: userData.user.id,
+        payment_deadline: new Date(Date.now() + (transaction.payment_window_hours || 168) * 60 * 60 * 1000).toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', transaction_id);
 
     if (updateError) {
+      console.error('❌ [JOIN-TRANSACTION] Update error:', updateError);
       throw new Error('Erreur lors de l\'assignation à la transaction');
     }
 
-    console.log('Join Transaction Function: Successfully assigned buyer:', userData.user.id);
+    console.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
 
     return new Response(
       JSON.stringify({ 

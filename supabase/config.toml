@@ -49,6 +49,12 @@ jwt_expiry = 3600
 enable_signup = true
 enable_confirmations = false
 
+[functions.get-transaction-by-token]
+verify_jwt = false
+
+[functions.mark-payment-authorized]
+verify_jwt = true
+
 [functions.create-payment-intent]
 verify_jwt = true
 

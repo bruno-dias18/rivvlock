@@ -86,46 +86,44 @@ export const PaymentLink = () => {
   const fetchTransaction = async () => {
     if (!token) return;
 
-    console.log('🔍 DEBUG: PaymentLink - Token reçu:', token);
-    console.log('🔍 DEBUG: PaymentLink - URL actuelle:', window.location.href);
+    console.log('🔍 [PAYMENT-LINK] Token reçu:', token);
+    console.log('🔍 [PAYMENT-LINK] URL actuelle:', window.location.href);
 
     try {
-      // First, let's check all transactions to see what tokens exist
-      const { data: allTransactions, error: debugError } = await supabase
-        .from('transactions')
-        .select('id, title, shared_link_token')
-        .limit(5);
-      
-      console.log('🔍 DEBUG: Tous les tokens disponibles:', allTransactions);
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .select(`
-          *,
-          profiles!transactions_user_id_fkey(first_name, last_name, company_name, user_type)
-        `)
-        .eq('shared_link_token', token)
-        .single();
-
-      console.log('🔍 DEBUG: Résultat de la requête avec token:', { data, error });
-
-      if (error) throw error;
-      
-      console.log('✅ SUCCESS: PaymentLink - Transaction loaded:', data);
-      console.log('👤 DEBUG: PaymentLink - Current user:', user?.id);
-      console.log('🛒 DEBUG: PaymentLink - Buyer assigned:', data.buyer_id);
-      
-      setTransaction(data);
-      updateCountdown(data);
-    } catch (error) {
-      console.error('❌ ERROR: PaymentLink - Error fetching transaction:', error);
-      console.log('🔍 DEBUG: PaymentLink - Token recherché:', token);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Transaction non trouvée ou lien invalide',
+      // Use the public edge function to fetch transaction data
+      const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
+        body: { token }
       });
-      navigate('/');
+
+      if (error) {
+        console.error('❌ [PAYMENT-LINK] Edge function error:', error);
+        throw error;
+      }
+
+      if (!data.success || !data.transaction) {
+        throw new Error('Transaction non trouvée ou token invalide');
+      }
+
+      const transactionData = data.transaction;
+      console.log('✅ [PAYMENT-LINK] Transaction trouvée:', transactionData);
+      console.log('👤 [PAYMENT-LINK] Current user:', user?.id);
+      console.log('🛒 [PAYMENT-LINK] Buyer assigned:', transactionData.buyer_id);
+
+      setTransaction(transactionData);
+      updateCountdown(transactionData);
+    } catch (error: any) {
+      console.error('❌ [PAYMENT-LINK] Erreur lors de la récupération de la transaction:', error);
+      
+      // Don't redirect to '/' on auth errors - just show appropriate UI
+      if (error.message?.includes('Token')) {
+        setTransaction(null);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: error.message || 'Transaction non trouvée'
+        });
+      }
     } finally {
       setLoading(false);
     }
