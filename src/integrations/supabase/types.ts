@@ -114,6 +114,42 @@ export type Database = {
           },
         ]
       }
+      profile_audit_log: {
+        Row: {
+          action: string
+          changed_by: string
+          changed_fields: Json | null
+          created_at: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          profile_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          changed_by: string
+          changed_fields?: Json | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          profile_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string
+          changed_fields?: Json | null
+          created_at?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          profile_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -268,6 +304,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_admin_status: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
