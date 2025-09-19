@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useRealTimeStats } from '@/hooks/useRealTimeStats';
+import { useRecentTransactions } from '@/hooks/useRecentTransactions';
 import { CSVExporter } from '@/components/export/CSVExporter';
 import { motion } from 'framer-motion';
 import { 
@@ -21,6 +22,14 @@ export const Admin = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { stats, refreshStats } = useRealTimeStats();
+  const { 
+    transactions: recentTransactions,
+    loading: transactionsLoading,
+    getDisplayName,
+    getStatusBadgeVariant,
+    getActivityAction,
+    formatTimeAgo
+  } = useRecentTransactions();
 
   return (
     <AdminRoute>
@@ -290,33 +299,43 @@ export const Admin = () => {
           <CardHeader>
             <CardTitle>Activité Récente</CardTitle>
             <CardDescription>
-              Dernières actions sur la plateforme
+              Dernières transactions sur la plateforme • Mise à jour en temps réel
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { action: 'Nouvelle inscription', user: 'Marie Dubois', time: '5 min', type: 'user' },
-                { action: 'Transaction validée', user: 'Tech Solutions SA', time: '12 min', type: 'success' },
-                { action: 'Litige ouvert', user: 'Jean Martin', time: '25 min', type: 'warning' },
-                { action: 'Paiement effectué', user: 'Innovation Lab', time: '1h', type: 'success' },
-              ].map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <Badge variant={activity.type === 'success' ? 'default' : activity.type === 'warning' ? 'destructive' : 'secondary'}>
-                      {activity.type === 'user' ? 'User' : activity.type === 'success' ? 'Success' : 'Warning'}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{activity.action}</p>
-                      <p className="text-sm text-muted-foreground">{activity.user}</p>
+            {transactionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-muted-foreground">Chargement...</span>
+              </div>
+            ) : recentTransactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Aucune transaction récente
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentTransactions.map((transaction) => (
+                  <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                    <div className="flex items-center gap-3">
+                      <Badge variant={getStatusBadgeVariant(transaction.status)}>
+                        {transaction.status.toUpperCase()}
+                      </Badge>
+                      <div>
+                        <p className="font-medium">
+                          Tx #{transaction.id.slice(0, 8)} : {transaction.title}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {getDisplayName(transaction)} • {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')} • {getActivityAction(transaction)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Il y a {formatTimeAgo(transaction.created_at)}
                     </div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    Il y a {activity.time}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
