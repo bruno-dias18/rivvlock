@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
+import { getAppBaseUrl } from '@/lib/appUrl';
 
 const createTransactionSchema = z.object({
   title: z.string().min(1, 'Le titre est obligatoire'),
@@ -86,7 +87,7 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${window.location.origin}/join-transaction/${token}`;
+      const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}`;
       setGeneratedLink(shareableLink);
       
       console.log('Test: CreateTransaction - Generated payment link:', shareableLink);

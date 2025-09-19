@@ -27,6 +27,7 @@ import {
   Copy
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getAppBaseUrl } from '@/lib/appUrl';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
@@ -42,7 +43,7 @@ export const Transactions = () => {
 
   const copyInvitationLink = async (token: string) => {
     try {
-      const invitationLink = `${window.location.origin}/join-transaction/${token}`;
+      const invitationLink = `${getAppBaseUrl()}/join-transaction/${token}`;
       await navigator.clipboard.writeText(invitationLink);
       toast({
         title: "Lien copié !",
@@ -267,8 +268,7 @@ export const Transactions = () => {
                             size="sm"
                             onClick={() => {
                               if (transaction.shared_link_token) {
-                                const detailsLink = `${window.location.origin}/join-transaction/${transaction.shared_link_token}`;
-                                window.open(detailsLink, '_blank');
+                                navigate(`/join-transaction/${transaction.shared_link_token}`);
                               }
                             }}
                           >
@@ -292,8 +292,7 @@ export const Transactions = () => {
                               className="gradient-success text-white"
                               onClick={() => {
                                 if (transaction.shared_link_token) {
-                                  const paymentLink = `${window.location.origin}/payment-link/${transaction.shared_link_token}`;
-                                  window.open(paymentLink, '_blank');
+                                  navigate(`/payment-link/${transaction.shared_link_token}`);
                                 }
                               }}
                             >
