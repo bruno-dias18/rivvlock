@@ -14,6 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { ShareLinkDialog } from './ShareLinkDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -32,6 +35,9 @@ interface NewTransactionDialogProps {
 
 export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareLink, setShareLink] = useState('');
+  const [transactionTitle, setTransactionTitle] = useState('');
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -46,17 +52,30 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
-      // TODO: Implement transaction creation logic
-      console.log('Transaction data:', data);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Close dialog and reset form
+      const { data: result, error } = await supabase.functions.invoke('create-transaction', {
+        body: {
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          currency: data.currency,
+          serviceDate: data.serviceDate.toISOString()
+        }
+      });
+
+      if (error) throw error;
+      if (result.error) throw new Error(result.error);
+
+      // Show success and share link
+      setTransactionTitle(result.transaction.title);
+      setShareLink(result.transaction.shareLink);
       onOpenChange(false);
       form.reset();
-    } catch (error) {
+      setShowShareDialog(true);
+      
+      toast.success('Transaction créée avec succès !');
+    } catch (error: any) {
       console.error('Error creating transaction:', error);
+      toast.error(error.message || 'Erreur lors de la création de la transaction');
     } finally {
       setIsLoading(false);
     }
@@ -68,11 +87,12 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Nouvelle transaction</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Nouvelle transaction</DialogTitle>
+          </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -216,5 +236,13 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
         </Form>
       </DialogContent>
     </Dialog>
+
+    <ShareLinkDialog
+      open={showShareDialog}
+      onOpenChange={setShowShareDialog}
+      shareLink={shareLink}
+      transactionTitle={transactionTitle}
+    />
+    </>
   );
 }

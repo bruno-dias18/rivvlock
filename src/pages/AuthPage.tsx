@@ -10,6 +10,7 @@ type Country = 'FR' | 'CH';
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const resetMode = searchParams.get('mode') === 'reset';
+  const redirectTo = searchParams.get('redirect');
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(resetMode);
@@ -52,7 +53,8 @@ export default function AuthPage() {
 
   // Redirect if already authenticated
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    const destination = redirectTo || '/dashboard';
+    return <Navigate to={destination} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -9,6 +9,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import PaymentLinkPage from "./pages/PaymentLinkPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/DashboardLayout";
@@ -36,6 +37,7 @@ const App: React.FC = () => {
             null,
             React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
             React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
+            React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
             React.createElement(Route, { 
               path: "/dashboard", 
               element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
