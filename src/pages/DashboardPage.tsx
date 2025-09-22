@@ -16,7 +16,7 @@ export default function DashboardPage() {
       variant: 'outline' as const,
     },
     {
-      title: 'Bloquée',
+      title: 'Fonds bloqués',
       count: '0',
       icon: AlertCircle,
       variant: 'destructive' as const,
