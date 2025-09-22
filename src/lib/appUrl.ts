@@ -21,10 +21,11 @@ export function getAppBaseUrl(): string {
     console.warn('⚠️ [APP-URL] OBSOLETE URL DETECTED:', currentUrl);
     console.warn('⚠️ [APP-URL] Should be using:', WORKING_DOMAIN);
     
-    // Sur mobile, forcer la redirection immédiatement
-    if (isMobile && typeof window !== 'undefined') {
-      console.log('🔄 [APP-URL] Redirecting mobile user to correct domain...');
-      window.location.replace(WORKING_DOMAIN + window.location.pathname + window.location.search);
+    // Forcer la redirection immédiatement (mobile ET desktop)
+    if (typeof window !== 'undefined') {
+      console.log('🔄 [APP-URL] Redirecting user to correct domain... (mobile:', isMobile, ')');
+      const targetUrl = WORKING_DOMAIN + window.location.pathname + window.location.search + window.location.hash;
+      window.location.replace(targetUrl);
       return WORKING_DOMAIN; // Retourner quand même pour éviter les erreurs
     }
   }
