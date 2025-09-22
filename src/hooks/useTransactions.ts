@@ -100,6 +100,8 @@ export const useTransactions = () => {
       }
 
       // Step 4: Combine data client-side
+      console.log('🔍 [DEBUG] Counterparty profiles fetched:', counterpartyProfiles);
+      
       const processedData = transactionsData.map(transaction => {
         const isUserSeller = transaction.user_id === user.id;
         const isUserBuyer = transaction.buyer_id === user.id;
@@ -112,16 +114,30 @@ export const useTransactions = () => {
           current_user_id: user.id,
           status: transaction.status
         });
+
+        // Find buyer profile (when user is seller)
+        const buyerProfile = isUserSeller && transaction.buyer_id 
+          ? counterpartyProfiles.find(profile => profile.user_id === transaction.buyer_id) || null
+          : null;
+
+        // Find seller profile (when user is buyer)  
+        const sellerProfile = isUserBuyer 
+          ? counterpartyProfiles.find(profile => profile.user_id === transaction.user_id) || null
+          : null;
+
+        console.log('🔍 [DEBUG] Profile assignment for transaction', transaction.id, {
+          isUserBuyer,
+          seller_user_id: transaction.user_id,
+          sellerProfile,
+          sellerProfileFound: !!sellerProfile,
+          sellerProfileName: sellerProfile ? (sellerProfile.company_name || `${sellerProfile.first_name} ${sellerProfile.last_name}`) : 'N/A'
+        });
         
         return {
           ...transaction,
           user_role: isUserSeller ? 'seller' as const : 'buyer' as const,
-          buyer_profile: isUserSeller && transaction.buyer_id 
-            ? counterpartyProfiles.find(profile => profile.user_id === transaction.buyer_id) || null
-            : null,
-          seller_profile: isUserBuyer 
-            ? counterpartyProfiles.find(profile => profile.user_id === transaction.user_id) || null
-            : null
+          buyer_profile: buyerProfile,
+          seller_profile: sellerProfile
         };
       });
       
