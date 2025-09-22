@@ -82,6 +82,9 @@ verify_jwt = true
 [functions.validate-seller]
 verify_jwt = true
 
+[functions.fix-blocked-transaction]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

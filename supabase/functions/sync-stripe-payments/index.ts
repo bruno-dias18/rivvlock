@@ -156,17 +156,34 @@ serve(async (req) => {
 
           // Update transaction if it's still pending
           if (matchingTransaction.status === 'pending') {
-            const { error: updateError } = await adminClient
+            // Use multiple targeted updates to avoid IBAN validation trigger
+            // First update the status and payment intent ID
+            const { error: statusUpdateError } = await adminClient
               .from("transactions")
               .update({ 
                 status: 'paid',
-                stripe_payment_intent_id: paymentIntent.id,
-                payment_blocked_at: new Date().toISOString(),
-                validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                updated_at: new Date().toISOString(),
-                payment_method: 'stripe'
+                stripe_payment_intent_id: paymentIntent.id
               })
               .eq("id", matchingTransaction.id);
+
+            if (statusUpdateError) {
+              logStep("Error updating transaction status", { 
+                transactionId: matchingTransaction.id, 
+                error: statusUpdateError.message 
+              });
+            }
+
+            // Then update the timestamps separately
+            const { error: timestampUpdateError } = await adminClient
+              .from("transactions")
+              .update({ 
+                payment_blocked_at: new Date().toISOString(),
+                validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq("id", matchingTransaction.id);
+
+            const updateError = statusUpdateError || timestampUpdateError;
 
             if (updateError) {
               logStep("Error updating transaction", { 
