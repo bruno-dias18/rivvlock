@@ -57,34 +57,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [isAdminStatus, setIsAdminStatus] = useState(false);
+
   useEffect(() => {
-    // Initialize session
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-        
-        if (initialSession?.user) {
-          // Basic user profile
-          setUser({
-            id: initialSession.user.id,
-            email: initialSession.user.email || '',
-            type: 'individual',
-            country: 'FR',
-            verified: false,
-            isAdmin: false
-          });
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for auth changes
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -97,12 +73,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             verified: false,
             isAdmin: false
           });
+          
+          // Check admin status after setting user (avoid deadlock)
+          setTimeout(async () => {
+            try {
+              const { data: adminStatus } = await supabase.rpc('get_current_user_admin_status');
+              setIsAdminStatus(adminStatus || false);
+            } catch (error) {
+              console.error('Error checking admin status:', error);
+              setIsAdminStatus(false);
+            }
+          }, 0);
         } else {
           setUser(null);
+          setIsAdminStatus(false);
         }
         setLoading(false);
       }
     );
+
+    // THEN check for existing session
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        
+        if (initialSession?.user) {
+          setUser({
+            id: initialSession.user.id,
+            email: initialSession.user.email || '',
+            type: 'individual',
+            country: 'FR',
+            verified: false,
+            isAdmin: false
+          });
+          
+          // Check admin status
+          setTimeout(async () => {
+            try {
+              const { data: adminStatus } = await supabase.rpc('get_current_user_admin_status');
+              setIsAdminStatus(adminStatus || false);
+            } catch (error) {
+              console.error('Error checking admin status:', error);
+              setIsAdminStatus(false);
+            }
+          }, 0);
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -156,12 +180,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user, 
     session, 
     loading, 
-    isAdmin: user?.isAdmin || false,
+    isAdmin: isAdminStatus,
     isMobileDevice: false,
     login, 
     register, 
     logout 
-  }), [user, session, loading]);
+  }), [user, session, loading, isAdminStatus]);
 
   return (
     <AuthContext.Provider value={value}>
