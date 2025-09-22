@@ -35,62 +35,63 @@ export const JoinTransaction = () => {
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Allow user to see transaction details first before proceeding
-    console.log('[JOIN-TRANSACTION] Loading page with token:', token);
-    fetchTransaction();
-  }, [token]);
-
-  const fetchTransaction = async () => {
+  const fetchTransaction = useCallback(async () => {
     if (!token || token === ':token') {
+      setError('Lien invalide - token manquant ou exemple');
       setLoading(false);
-      toast({
-        variant: 'destructive',
-        title: 'Lien invalide',
-        description: 'Le lien utilisé est un exemple (/:token). Utilisez un lien réel généré par l’application.'
-      });
       return;
     }
 
     try {
-      console.log('🔍 [JOIN-TRANSACTION-UI] Fetching transaction with token:', token);
-      console.log('🔍 [JOIN-TRANSACTION-UI] Supabase URL:', 'https://slthyxqruhfuyfmextwr.supabase.co');
+      console.log('🔍 [JOIN] Fetching transaction with token:', token);
       
-      // Use the public edge function to fetch transaction data
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token }
       });
 
-      console.log('🔍 [JOIN-TRANSACTION-UI] Function response:', { data, error });
+      console.log('🔍 [JOIN] Function response:', { data, error });
 
       if (error) {
-        console.error('❌ [JOIN-TRANSACTION-UI] Edge function error:', error);
-        throw new Error(`Erreur de fonction: ${error.message}`);
+        console.error('❌ [JOIN] Edge function error:', error);
+        setError(`Erreur de fonction: ${error.message}`);
+        return;
       }
 
       if (!data) {
-        console.error('❌ [JOIN-TRANSACTION-UI] No data received from function');
-        throw new Error('Aucune donnée reçue du serveur');
+        console.error('❌ [JOIN] No data received');
+        setError('Aucune donnée reçue du serveur');
+        return;
       }
 
       if (!data.success || !data.transaction) {
-        console.error('❌ [JOIN-TRANSACTION-UI] Invalid response structure:', data);
-        throw new Error(data.error || 'Transaction non trouvée ou token invalide');
+        console.error('❌ [JOIN] Invalid response:', data);
+        setError(data.error || 'Transaction non trouvée ou token invalide');
+        return;
       }
 
       setTransaction(data.transaction);
-      console.log('✅ [JOIN-TRANSACTION-UI] Transaction loaded successfully:', data.transaction);
+      setError(null); // Clear any previous errors
+      console.log('✅ [JOIN] Transaction loaded successfully');
     } catch (error) {
-      console.error('❌ [JOIN-TRANSACTION-UI] Error fetching transaction:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur de chargement',
-        description: error instanceof Error ? error.message : 'Impossible de charger la transaction'
-      });
+      console.error('❌ [JOIN] Error fetching transaction:', error);
+      setError(error instanceof Error ? error.message : 'Impossible de charger la transaction');
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    console.log('[JOIN] Loading page with token:', token);
+    fetchTransaction();
+  }, [fetchTransaction]);
+
+  // Handle redirect to payment if user is already the buyer
+  useEffect(() => {
+    if (user && transaction && transaction.buyer_id === user.id) {
+      console.log('🔄 [JOIN] User is already buyer, redirecting to payment');
+      navigate(`/payment-link/${token}`);
+    }
+  }, [user, transaction, token, navigate]);
 
   const handleJoinTransaction = async () => {
     if (!user || !transaction) return;
@@ -122,7 +123,7 @@ export const JoinTransaction = () => {
 
       if (error) throw error;
 
-      console.log('✅ [JOIN-TRANSACTION-UI] Successfully joined transaction');
+      console.log('✅ [JOIN] Successfully joined transaction');
       toast({
         title: 'Transaction rejointe !',
         description: 'Vous pouvez maintenant procéder au paiement sécurisé.'
@@ -131,7 +132,7 @@ export const JoinTransaction = () => {
       // Redirect to payment page
       navigate(`/payment-link/${token}`);
     } catch (error) {
-      console.error('Error joining transaction:', error);
+      console.error('❌ [JOIN] Error joining transaction:', error);
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -174,7 +175,7 @@ export const JoinTransaction = () => {
     );
   }
 
-  if (!transaction && !loading && error) {
+  if (!transaction && !loading) {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto space-y-6">
@@ -191,7 +192,7 @@ export const JoinTransaction = () => {
                   🔗 Lien invalide ou expiré
                 </h3>
                 <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Cette transaction n'existe pas, le lien a expiré, ou vous n'avez pas les autorisations nécessaires pour y accéder.
+                  {error || 'Cette transaction n\'existe pas, le lien a expiré, ou vous n\'avez pas les autorisations nécessaires pour y accéder.'}
                 </p>
               </div>
               
@@ -213,12 +214,28 @@ export const JoinTransaction = () => {
                   Retour à l'accueil
                 </Button>
                 <Button 
-                  onClick={() => window.location.reload()} 
+                  onClick={() => fetchTransaction()} 
                   className="flex-1 gradient-primary text-white"
                 >
                   Réessayer
                 </Button>
               </div>
+              
+              {/* Fallback button to continue to payment if user has the token */}
+              {token && token !== ':token' && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Vous avez déjà un compte et voulez continuer le paiement ?
+                  </p>
+                  <Button 
+                    onClick={() => navigate(`/payment-link/${token}`)} 
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    Continuer vers le paiement
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -226,9 +243,8 @@ export const JoinTransaction = () => {
     );
   }
 
-  // If user is already buyer, redirect to payment
-  if (user && transaction.buyer_id === user.id) {
-    navigate(`/payment-link/${token}`);
+  // Don't render main content if transaction is null
+  if (!transaction) {
     return null;
   }
 
@@ -365,6 +381,15 @@ export const JoinTransaction = () => {
                         Procéder au paiement
                       </>
                     )}
+                  </Button>
+                  
+                  {/* Alternative fallback button */}
+                  <Button 
+                    onClick={() => navigate(`/payment-link/${token}`)}
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    Continuer vers le paiement
                   </Button>
                 </div>
               )}
