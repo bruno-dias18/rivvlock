@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -44,6 +44,34 @@ export const Transactions = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
+  const hasAutoSyncedRef = useRef(false);
+
+  // Silent sync function for automatic synchronization
+  const syncWithStripesilent = async () => {
+    try {
+      console.log('🔄 [AUTO-SYNC] Running automatic Stripe sync...');
+      await supabase.functions.invoke('sync-stripe-payments');
+      refreshTransactions();
+    } catch (error) {
+      console.error('❌ [AUTO-SYNC] Failed:', error);
+    }
+  };
+
+  // Auto-sync on page load (once)
+  useEffect(() => {
+    if (!hasAutoSyncedRef.current && transactions.length >= 0) {
+      hasAutoSyncedRef.current = true;
+      syncWithStripesilent();
+    }
+  }, [transactions]);
+
+  // Auto-sync when switching to "Bloquée" (paid) tab
+  useEffect(() => {
+    if (statusFilter === 'paid' && hasAutoSyncedRef.current) {
+      console.log('🔄 [AUTO-SYNC] User clicked on Bloquée tab, syncing...');
+      syncWithStripesilent();
+    }
+  }, [statusFilter]);
 
   const copyInvitationLink = async (token: string) => {
     try {
@@ -210,7 +238,7 @@ export const Transactions = () => {
                   disabled={isSyncing}
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Synchronisation...' : 'Sync Stripe'}
+                  {isSyncing ? 'Sync en cours...' : 'Sync Transaction'}
                 </Button>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
