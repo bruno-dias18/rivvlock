@@ -273,8 +273,8 @@ export const Transactions = () => {
 
   // Compute effective status for display
   const getComputedStatus = (transaction: any) => {
-    // If status is 'pending' but payment_blocked_at exists, treat as 'paid' for display
-    if (transaction.status === 'pending' && transaction.payment_blocked_at) {
+    // If payment_blocked_at exists, treat as 'paid' for display (blocked funds)
+    if (transaction.payment_blocked_at) {
       return 'paid';
     }
     return transaction.status;
