@@ -4,7 +4,8 @@ import { Clock, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface ValidationCountdownProps {
-  validationDeadline: string;
+  validationDeadline: string | null;
+  serviceDate: string | null;
   userRole: 'seller' | 'buyer';
 }
 
@@ -15,9 +16,10 @@ interface TimeLeft {
   total: number;
 }
 
-export const ValidationCountdown: React.FC<ValidationCountdownProps> = ({
-  validationDeadline,
-  userRole
+export const ValidationCountdown: React.FC<ValidationCountdownProps> = ({ 
+  validationDeadline, 
+  serviceDate,
+  userRole 
 }) => {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ hours: 0, minutes: 0, seconds: 0, total: 0 });
 

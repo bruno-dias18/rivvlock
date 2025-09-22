@@ -62,18 +62,26 @@ serve(async (req) => {
 
     console.log("✅ [VALIDATE-SELLER] Seller authorization verified");
 
-    // Set validation deadline to 48 hours from now
-    const validationDeadline = new Date();
-    validationDeadline.setHours(validationDeadline.getHours() + 48);
+    // Check if service date has passed to determine if validation deadline should be set immediately
+    const serviceDate = new Date(transaction.service_date);
+    const now = new Date();
+    
+    let updateData: any = { 
+      seller_validated: true,
+      updated_at: new Date().toISOString()
+    };
+    
+    // Only set validation deadline if service date has passed
+    if (serviceDate <= now) {
+      const validationDeadline = new Date();
+      validationDeadline.setHours(validationDeadline.getHours() + 48);
+      updateData.validation_deadline = validationDeadline.toISOString();
+    }
 
-    // Update seller validation and set deadline (using admin client)
+    // Update seller validation and conditional validation deadline (using admin client)
     const { error: updateError } = await adminClient
       .from("transactions")
-      .update({ 
-        seller_validated: true,
-        validation_deadline: validationDeadline.toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", transactionId);
 
     if (updateError) {

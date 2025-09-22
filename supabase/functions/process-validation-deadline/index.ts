@@ -22,12 +22,14 @@ serve(async (req) => {
     console.log("🕐 [PROCESS-VALIDATION-DEADLINE] Starting deadline processing");
 
     // Find transactions where validation deadline has passed and funds not released
+    // Only process transactions that have an active validation deadline
     const { data: expiredTransactions, error: fetchError } = await adminClient
       .from("transactions")
       .select("*")
       .eq("seller_validated", true)
       .eq("buyer_validated", false)
       .eq("funds_released", false)
+      .not("validation_deadline", "is", null)
       .lt("validation_deadline", new Date().toISOString())
       .eq("status", "paid");
 

@@ -46,6 +46,7 @@ serve(async (req) => {
       console.log(`🔍 [SEND-VALIDATION-REMINDERS] Checking ${reminder.type} reminders for window: ${windowStart.toISOString()} to ${windowEnd.toISOString()}`);
 
       // Find transactions that need this reminder
+      // Only process transactions that have an active validation deadline
       const { data: transactions, error: fetchError } = await adminClient
         .from("transactions")
         .select("*")
@@ -53,6 +54,7 @@ serve(async (req) => {
         .eq("buyer_validated", false)
         .eq("funds_released", false)
         .eq("status", "paid")
+        .not("validation_deadline", "is", null)
         .gte("validation_deadline", windowStart.toISOString())
         .lte("validation_deadline", windowEnd.toISOString());
 

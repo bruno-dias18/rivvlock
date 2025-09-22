@@ -91,6 +91,9 @@ verify_jwt = false
 [functions.send-validation-reminders]
 verify_jwt = false
 
+[functions.activate-validation-deadlines]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

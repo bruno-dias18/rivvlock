@@ -325,6 +325,7 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
       {showCountdown && (
         <ValidationCountdown 
           validationDeadline={transaction.validation_deadline}
+          serviceDate={transaction.service_date}
           userRole={isBuyer ? 'buyer' : 'seller'}
         />
       )}
