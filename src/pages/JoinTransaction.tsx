@@ -6,6 +6,7 @@ import { Clock, Shield, Users, CreditCard, AlertTriangle } from 'lucide-react';
 import { Layout } from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,15 +26,26 @@ interface Transaction {
   link_expires_at: string | null;
 }
 
+interface Profile {
+  first_name?: string | null;
+  last_name?: string | null;
+  company_name?: string | null;
+}
+
 export const JoinTransaction = () => {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const { toast } = useToast();
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
+const [transaction, setTransaction] = useState<Transaction | null>(null);
+  const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   console.log('🔍 [JOIN] Component render with:', { 
     token, 
@@ -93,7 +105,8 @@ export const JoinTransaction = () => {
         responseData = fallbackJson;
       }
 
-      setTransaction(responseData.transaction);
+setTransaction(responseData.transaction);
+      setSellerProfile(responseData.seller_profile || null);
       
       // Check if the link has expired
       const transaction = responseData.transaction;
@@ -185,7 +198,37 @@ export const JoinTransaction = () => {
     }
   };
 
-  const formatCurrency = (amount: number, currency: string) => {
+  const handleInlineLogin = async (e?: any) => {
+    e?.preventDefault?.();
+    setLoginError(null);
+    setLoginLoading(true);
+    try {
+      if (!email || !password) {
+        setLoginError('Veuillez saisir votre email et votre mot de passe.');
+        return;
+      }
+      const { error } = await login(email, password);
+      if (error) {
+        setLoginError(error.message || 'Connexion impossible.');
+        return;
+      }
+      // Join immediately after successful login
+      if (transaction) {
+        const { error: joinError } = await supabase.functions.invoke('join-transaction', {
+          body: { transaction_id: transaction.id, token }
+        });
+        if (joinError) {
+          setLoginError(joinError.message || 'Impossible de rejoindre la transaction après connexion.');
+          return;
+        }
+      }
+      navigate(`/payment-link/${token}`);
+    } catch (err: any) {
+      setLoginError(err?.message || 'Erreur inconnue lors de la connexion.');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: currency,
@@ -202,6 +245,12 @@ export const JoinTransaction = () => {
     if (diffDays <= 0) return 'Expiré';
     if (diffDays === 1) return 'Demain';
     return `${diffDays} jours`;
+  };
+
+  const getSellerDisplayName = () => {
+    if (!sellerProfile) return 'Vendeur';
+    const name = sellerProfile.company_name || `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim();
+    return name || 'Vendeur';
   };
 
   if (loading) {
@@ -340,6 +389,16 @@ export const JoinTransaction = () => {
                       : 'Non spécifiée'
                     }
                   </div>
+                </div>
+              </div>
+
+              <div className="p-3 border rounded-lg">
+                <div className="flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">Vendeur</span>
+                </div>
+                <div className="text-sm font-semibold">
+                  {getSellerDisplayName()}
                 </div>
               </div>
 

@@ -56,42 +56,84 @@ serve(async (req) => {
 
     console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
 
-    // Fetch transaction by shared_link_token
-    const { data: transaction, error: fetchError } = await adminClient
-      .from('transactions')
-      .select(`
-        id,
-        title,
-        description,
-        price,
-        currency,
-        service_date,
-        status,
-        user_id,
-        buyer_id,
-        shared_link_expires_at,
-        link_expires_at,
-        payment_deadline,
-        created_at,
-        payment_method,
-        payment_blocked_at,
-        stripe_payment_intent_id,
-        seller_validated,
-        buyer_validated,
-        validation_deadline,
-        funds_released,
-        dispute_id
-      `)
-      .eq('shared_link_token', token)
-      .single();
+// Try by shared_link_token first, then fallback to id (backward compatibility)
+let transaction: any = null;
+let lookupMethod: 'shared_link_token' | 'id' | 'none' = 'none';
 
-    if (fetchError || !transaction) {
-      console.error('❌ [GET-TX-BY-TOKEN] Transaction not found:', fetchError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Transaction non trouvée ou token invalide', reason: 'not_found' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-      );
-    }
+const { data: txByToken, error: errByToken } = await adminClient
+  .from('transactions')
+  .select(`
+    id,
+    title,
+    description,
+    price,
+    currency,
+    service_date,
+    status,
+    user_id,
+    buyer_id,
+    shared_link_expires_at,
+    link_expires_at,
+    payment_deadline,
+    created_at,
+    payment_method,
+    payment_blocked_at,
+    stripe_payment_intent_id,
+    seller_validated,
+    buyer_validated,
+    validation_deadline,
+    funds_released,
+    dispute_id
+  `)
+  .eq('shared_link_token', token)
+  .maybeSingle();
+
+if (txByToken) {
+  transaction = txByToken;
+  lookupMethod = 'shared_link_token';
+  console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transaction.id);
+} else {
+  console.warn('⚠️ [GET-TX-BY-TOKEN] Not found by shared_link_token, trying by id. Error:', errByToken);
+  const { data: txById, error: errById } = await adminClient
+    .from('transactions')
+    .select(`
+      id,
+      title,
+      description,
+      price,
+      currency,
+      service_date,
+      status,
+      user_id,
+      buyer_id,
+      shared_link_expires_at,
+      link_expires_at,
+      payment_deadline,
+      created_at,
+      payment_method,
+      payment_blocked_at,
+      stripe_payment_intent_id,
+      seller_validated,
+      buyer_validated,
+      validation_deadline,
+      funds_released,
+      dispute_id
+    `)
+    .eq('id', token)
+    .maybeSingle();
+  if (txById) {
+    transaction = txById;
+    lookupMethod = 'id';
+    console.log('✅ [GET-TX-BY-TOKEN] Found by id (backward compat):', transaction.id);
+  } else {
+    console.error('❌ [GET-TX-BY-TOKEN] Transaction not found by token nor id', { errByToken, errById });
+    return new Response(
+      JSON.stringify({ success: false, error: 'Transaction non trouvée ou token invalide', reason: 'not_found' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+    );
+  }
+}
+
 
     // Check if link is expired
     const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
