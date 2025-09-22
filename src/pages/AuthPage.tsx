@@ -37,14 +37,21 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-foreground">
-            {isSignUp ? 'Create Account' : 'Welcome Back'}
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            {isSignUp ? 'Sign up for RivvLock' : 'Sign in to your account'}
-          </p>
+      <div className="text-center">
+        <div className="mb-8">
+          <img 
+            src="/assets/rivvlock-logo.jpeg" 
+            alt="RIVVLOCK Logo" 
+            className="mx-auto h-24 w-auto object-contain"
+          />
         </div>
+        <h2 className="text-3xl font-bold text-foreground">
+          {isSignUp ? 'Create Account' : 'Welcome Back'}
+        </h2>
+        <p className="mt-2 text-muted-foreground">
+          {isSignUp ? 'Sign up for RivvLock' : 'Sign in to your account'}
+        </p>
+      </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
