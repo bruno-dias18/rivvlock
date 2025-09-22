@@ -10,7 +10,7 @@ const OBSOLETE_DOMAINS = [
 ];
 
 // Version du système d'URL pour forcer le refresh en cas de changement
-const URL_VERSION = 'v2.1';
+const URL_VERSION = 'v2.2';
 
 export function getAppBaseUrl(): string {
   const currentUrl = typeof window !== 'undefined' ? window.location.origin : '';

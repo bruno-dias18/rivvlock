@@ -1,34 +1,40 @@
-const CACHE_NAME = 'rivvlock-v2';
-const OLD_CACHE_NAMES = ['rivvlock-v1']; // Liste des anciens caches à supprimer
+const CACHE_NAME = 'rivvlock-v3';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2'];
+const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
+const OLD_DOMAINS = [
+  'https://rivv-secure-escrow.lovable.app',
+  'https://lovableproject.com'
+];
+
+// Minimal files to cache (avoid caching HTML to prevent stale pages)
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 [SW] Installing service worker v2...');
+  console.log('🔧 [SW] Installing service worker v3...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('🔧 [SW] Caching app shell...');
+        console.log('🔧 [SW] Caching core assets...');
         return cache.addAll(urlsToCache);
       })
       .then(() => {
         console.log('🔧 [SW] Installation complete, taking control...');
-        return self.skipWaiting(); // Force le nouveau SW à prendre le contrôle
+        return self.skipWaiting();
       })
   );
 });
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  console.log('🔧 [SW] Activating service worker v2...');
+  console.log('🔧 [SW] Activating service worker v3...');
   event.waitUntil(
     Promise.all([
-      // Supprimer tous les anciens caches
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
@@ -39,25 +45,54 @@ self.addEventListener('activate', (event) => {
           })
         );
       }),
-      // Prendre le contrôle de tous les clients
       self.clients.claim()
     ]).then(() => {
-      console.log('🔧 [SW] Service worker v2 activated and controlling all clients');
+      console.log('🔧 [SW] Service worker v3 activated and controlling all clients');
     })
   );
 });
 
 // Interception des requêtes réseau
 self.addEventListener('fetch', (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  // Force redirect for navigations coming from obsolete domains
+  if (req.mode === 'navigate') {
+    if (OLD_DOMAINS.includes(url.origin)) {
+      const targetUrl = WORKING_DOMAIN + url.pathname + url.search + url.hash;
+      console.log('🔄 [SW] Redirecting navigation from obsolete domain to:', targetUrl);
+      event.respondWith(Response.redirect(targetUrl, 302));
+      return;
+    }
+
+    // Network-first for navigations to always get fresh HTML (prevents stale cached index.html)
+    event.respondWith(
+      fetch(req)
+        .then((networkRes) => {
+          return networkRes;
+        })
+        .catch(() => {
+          return caches.match(req).then((cached) => cached || caches.match('/'));
+        })
+    );
+    return;
+  }
+
+  // For non-navigation requests: cache-first with network fallback
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
+    caches.match(req).then((cachedRes) => {
+      return (
+        cachedRes ||
+        fetch(req).then((networkRes) => {
+          // Optionally cache successful GET responses
+          if (req.method === 'GET' && networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+            const resClone = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone)).catch(() => {});
+          }
+          return networkRes;
+        })
+      );
+    })
   );
 });
