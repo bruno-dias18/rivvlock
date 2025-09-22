@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import React from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
@@ -10,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
-import { useMobileSync } from '@/hooks/useMobileSync';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
@@ -31,361 +31,191 @@ import {
   Timer,
   Banknote,
   CheckCheck,
-  Download,
-  Flag,
-  Smartphone
+  Download
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
-import { supabase } from '@/integrations/supabase/client';
 import { generateSellerInvoice, generateBuyerInvoice, downloadInvoice } from '@/components/invoice/AutoInvoiceGenerator';
-import { DisputeModal } from '@/components/escrow/DisputeModal';
-import { isMobileDevice, forceMobileRefresh } from '@/lib/mobileUtils';
-
-// Remove mock transactions data - now using real data from useTransactions hook
 
 export const Transactions = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { user, isMobileDevice: userIsMobile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { transactions, loading, error, refreshTransactions, getCounterpartyDisplayName, isOffline } = useTransactions();
-  const { syncStatus, performFullSync, forceAppRefresh } = useMobileSync();
+  const { transactions, refreshTransactions } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
-  const [disputeTransactionId, setDisputeTransactionId] = useState<string>('');
-  const [disputeRole, setDisputeRole] = useState<'seller' | 'buyer'>('seller');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const isMobile = isMobileDevice();
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [validatingTransactions, setValidatingTransactions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const hasAutoSyncedRef = useRef(false);
 
-  // Silent sync function for automatic synchronization
-  const syncWithStripesilent = async () => {
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    
+    setIsRefreshing(true);
     try {
-      console.log('🔄 [AUTO-SYNC] Running automatic Stripe sync...');
-      await supabase.functions.invoke('sync-stripe-payments');
-      refreshTransactions();
-    } catch (error) {
-      console.error('❌ [AUTO-SYNC] Failed:', error);
-    }
-  };
-
-  // Auto-sync on page load (once)
-  useEffect(() => {
-    if (!hasAutoSyncedRef.current && transactions.length >= 0) {
-      hasAutoSyncedRef.current = true;
-      syncWithStripesilent();
-    }
-  }, [transactions]);
-
-  // Auto-sync when switching to "Bloquée" (paid) tab
-  useEffect(() => {
-    if (statusFilter === 'paid' && hasAutoSyncedRef.current) {
-      console.log('🔄 [AUTO-SYNC] User clicked on Bloquée tab, syncing...');
-      syncWithStripesilent();
-    }
-  }, [statusFilter]);
-
-  const copyInvitationLink = async (token: string) => {
-    try {
-      const invitationLink = `${getAppBaseUrl()}/join-transaction/${token}?v=v2.2`;
-      await navigator.clipboard.writeText(invitationLink);
+      await refreshTransactions();
       toast({
-        title: "Lien copié !",
-        description: `Domaine: ${getAppBaseUrl()}`,
+        title: "Actualisé",
+        description: "Liste des transactions mise à jour",
       });
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Impossible de copier le lien. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSellerValidation = async (transactionId: string) => {
-    setValidatingTransactions(prev => new Set(prev).add(transactionId));
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('validate-seller', {
-        body: { transactionId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Travail finalisé",
-        description: "Votre validation a été enregistrée. En attente de la validation de l'acheteur.",
-      });
-
-      refreshTransactions();
-    } catch (error: any) {
-      console.error('Error validating seller:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de la validation",
+        description: "Impossible d'actualiser les transactions",
         variant: "destructive",
       });
     } finally {
-      setValidatingTransactions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(transactionId);
-        return newSet;
-      });
+      setIsRefreshing(false);
     }
   };
 
-  const handleFundsRelease = async (transactionId: string) => {
-    setValidatingTransactions(prev => new Set(prev).add(transactionId));
-    
+  const copyToClipboard = async (text: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('capture-payment', {
-        body: { transactionId }
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copié !",
+        description: "Lien copié dans le presse-papiers",
       });
-
-      if (error) throw error;
-
-      if (data.funds_captured === false) {
-        toast({
-          title: "Validation enregistrée",
-          description: data.message || "En attente de la validation du vendeur.",
-        });
-      } else {
-        toast({
-          title: "Fonds libérés",
-          description: `${data.amount_transferred} ${data.currency} transférés au vendeur.`,
-        });
-      }
-
-      refreshTransactions();
-    } catch (error: any) {
-      console.error('Error releasing funds:', error);
+    } catch (error) {
+      console.error('Failed to copy:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Erreur lors de la libération des fonds",
+        description: "Impossible de copier le lien",
         variant: "destructive",
-      });
-    } finally {
-      setValidatingTransactions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(transactionId);
-        return newSet;
       });
     }
   };
 
-  const handleInvoiceDownload = async (transaction: any) => {
-    if (!user) return;
-
+  const downloadTransactionInvoice = async (transaction: any, type: 'seller' | 'buyer') => {
     try {
-      toast({
-        title: "Génération de la facture...",
-        description: "Veuillez patienter",
-      });
-
-      // Get user profile
-      const { data: userProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError || !userProfile) {
-        throw new Error('Impossible de récupérer le profil utilisateur');
-      }
-
-      const userEmail = user.email || '';
+      // Create a basic user profile for invoice generation
+      const basicProfile = {
+        user_id: user?.id || '',
+        user_type: 'individual' as const,
+        email: user?.email || '',
+        first_name: '',
+        last_name: '',
+        country: 'FR' as const,
+        verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
-      let invoiceData: string;
-      let filename: string;
-
-      // Generate appropriate invoice based on user role
-      if (transaction.user_role === 'seller') {
-        invoiceData = await generateSellerInvoice(transaction, userProfile, userEmail);
-        filename = `RIVVLOCK_Vendeur_${transaction.id.substring(0, 8)}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      } else {
-        invoiceData = await generateBuyerInvoice(transaction, userProfile, userEmail);
-        filename = `RIVVLOCK_Acheteur_${transaction.id.substring(0, 8)}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      }
-
-      // Download the invoice
-      downloadInvoice(invoiceData, filename);
-
-      // Check if mobile for different success message
-      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-        navigator.userAgent.toLowerCase()
-      );
+      const invoice = type === 'seller' 
+        ? await generateSellerInvoice(transaction, basicProfile, transaction.currency)
+        : await generateBuyerInvoice(transaction, basicProfile, transaction.currency);
+      
+      downloadInvoice(invoice, `${type}-invoice-${transaction.id.slice(0, 8)}.pdf`);
       
       toast({
-        title: isMobile ? "Facture générée" : "Facture téléchargée",
-        description: isMobile 
-          ? "La facture s'ouvre dans un nouvel onglet. Utilisez 'Partager' pour sauvegarder."
-          : "La facture a été générée et téléchargée avec succès",
+        title: "Facture téléchargée",
+        description: `Facture ${type === 'seller' ? 'vendeur' : 'acheteur'} générée avec succès`,
       });
-
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error generating invoice:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Erreur lors de la génération de la facture",
+        description: "Impossible de générer la facture",
         variant: "destructive",
       });
     }
   };
 
-  const openDisputeModal = (transactionId: string, role: 'seller' | 'buyer') => {
-    setDisputeTransactionId(transactionId);
-    setDisputeRole(role);
-    setDisputeModalOpen(true);
-  };
-
-  const handleDisputeCreated = () => {
-    refreshTransactions();
-    setDisputeModalOpen(false);
-    setDisputeTransactionId(null);
-    setDisputeRole(null);
-  };
-
-  const syncWithStripe = async () => {
-    setIsSyncing(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
-      
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      toast({
-        title: "Synchronisation terminée",
-        description: `${data.synchronized} transaction(s) synchronisée(s) avec Stripe`,
-      });
-
-      // Refresh transactions to show updated data
-      refreshTransactions();
-    } catch (error) {
-      toast({
-        title: "Erreur de synchronisation",
-        description: "Impossible de synchroniser avec Stripe. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncing(false);
+  const statusConfig = {
+    pending: {
+      badge: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      icon: Clock,
+      color: 'text-yellow-600'
+    },
+    paid: {
+      badge: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: CheckCircle,
+      color: 'text-blue-600'
+    },
+    validated: {
+      badge: 'bg-green-100 text-green-800 border-green-200',
+      icon: CheckCheck,
+      color: 'text-green-600'
+    },
+    disputed: {
+      badge: 'bg-red-100 text-red-800 border-red-200',
+      icon: AlertTriangle,
+      color: 'text-red-600'
     }
   };
 
-  // Compute effective status for display
-  const getComputedStatus = (transaction: any) => {
-    // If payment_blocked_at exists, treat as 'paid' for display (blocked funds)
-    if (transaction.payment_blocked_at) {
-      return 'paid';
-    }
-    return transaction.status;
-  };
+  const statusCounts = transactions.reduce((acc, transaction) => {
+    const status = transaction.status || 'pending';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {
+    pending: 0,
+    paid: 0,
+    validated: 0,
+    disputed: 0,
+  });
 
   const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const computedStatus = getComputedStatus(transaction);
-    const matchesStatus = statusFilter === 'all' || computedStatus === statusFilter;
+    const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusConfig = (status: string) => {
-    const configs = {
-      pending: {
-        badge: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-        icon: Clock,
-        color: 'text-yellow-600'
-      },
-      validated: {
-        badge: 'bg-green-100 text-green-800 border-green-200',
-        icon: CheckCircle,
-        color: 'text-green-600'
-      },
-      paid: {
-        badge: 'bg-blue-100 text-blue-800 border-blue-200',
-        icon: CheckCircle,
-        color: 'text-blue-600'
-      },
-      disputed: {
-        badge: 'bg-red-100 text-red-800 border-red-200',
-        icon: AlertTriangle,
-        color: 'text-red-600'
-      }
-    };
-    
-    return configs[status as keyof typeof configs] || configs.pending;
-  };
-
-  const getStatusCounts = () => {
-    const countsWithComputedStatus = {
-      all: transactions.length,
-      pending: 0,
-      paid: 0,
-      validated: 0,
-      disputed: 0,
-    };
-
-    transactions.forEach(t => {
-      const computedStatus = getComputedStatus(t);
-      countsWithComputedStatus[computedStatus as keyof typeof countsWithComputedStatus]++;
-    });
-
-    return countsWithComputedStatus;
-  };
-
-  const statusCounts = getStatusCounts();
-
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
-              {t('transactions.title')}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Gérez toutes vos transactions escrow
+            <h1 className="text-3xl font-bold gradient-text">Mes Transactions</h1>
+            <p className="text-muted-foreground">
+              Gérez vos transactions sécurisées
             </p>
           </div>
-          <Button 
-            className="gradient-primary text-white"
-            onClick={() => navigate('/create-transaction')}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t('transactions.new')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+            <Button onClick={() => navigate('/create-transaction')} className="gradient-primary text-white">
+              <Plus className="w-4 h-4 mr-2" />
+              Nouvelle Transaction
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { key: 'all', label: 'Total', count: statusCounts.all, color: 'text-gray-600' },
-            { key: 'pending', label: t('transactions.pending'), count: statusCounts.pending, color: 'text-yellow-600' },
-            { key: 'paid', label: t('transactions.paid'), count: statusCounts.paid, color: 'text-blue-600' },
+            { key: 'pending', label: 'En attente', count: statusCounts.pending, color: 'text-yellow-600' },
+            { key: 'paid', label: 'Payées', count: statusCounts.paid, color: 'text-blue-600' },
             { key: 'validated', label: 'Complétées', count: statusCounts.validated, color: 'text-green-600' },
-            { key: 'disputed', label: t('transactions.disputed'), count: statusCounts.disputed, color: 'text-red-600' },
+            { key: 'disputed', label: 'En litige', count: statusCounts.disputed, color: 'text-red-600' },
           ].map((stat) => (
             <Card 
               key={stat.key}
-              className={`cursor-pointer transition-all hover:shadow-md ${
-                statusFilter === stat.key ? 'border-primary bg-primary/5' : ''
+              className={`transition-all duration-200 cursor-pointer hover:shadow-md ${
+                statusFilter === stat.key ? 'ring-2 ring-primary' : ''
               }`}
-              onClick={() => setStatusFilter(stat.key)}
+              onClick={() => setStatusFilter(statusFilter === stat.key ? 'all' : stat.key)}
             >
-              <CardContent className="p-4 text-center">
-                <div className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.count}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {stat.label}
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">{stat.label}</p>
+                    <p className={`text-2xl font-bold ${stat.color}`}>{stat.count}</p>
+                  </div>
+                  <div className={`p-2 rounded-full bg-muted ${stat.color}`}>
+                    {React.createElement(statusConfig[stat.key]?.icon || Clock, { className: "w-4 h-4" })}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -398,9 +228,9 @@ export const Transactions = () => {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    placeholder="Rechercher une transaction..."
+                    placeholder="Rechercher par titre ou description..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -408,26 +238,17 @@ export const Transactions = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={syncWithStripe}
-                  disabled={isSyncing}
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Sync en cours...' : 'Sync Transaction'}
-                </Button>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-48">
                     <Filter className="w-4 h-4 mr-2" />
                     <SelectValue placeholder="Filtrer par statut" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="pending">{t('transactions.pending')}</SelectItem>
-                    <SelectItem value="paid">{t('transactions.paid')}</SelectItem>
+                    <SelectItem value="pending">En attente</SelectItem>
+                    <SelectItem value="paid">Payées</SelectItem>
                     <SelectItem value="validated">Complétées</SelectItem>
-                    <SelectItem value="disputed">{t('transactions.disputed')}</SelectItem>
+                    <SelectItem value="disputed">En litige</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -437,212 +258,104 @@ export const Transactions = () => {
 
         {/* Transactions List */}
         <div className="space-y-4">
-          {loading ? (
+          {filteredTransactions.length === 0 ? (
             <Card>
-              <CardContent className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p>Chargement des transactions...</p>
-              </CardContent>
-            </Card>
-          ) : error ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-500" />
-                <p className="text-red-600 mb-4">{error}</p>
-                <Button onClick={() => refreshTransactions()}>Réessayer</Button>
+              <CardContent className="text-center py-12">
+                <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aucune transaction trouvée</h3>
+                <p className="text-muted-foreground mb-4">
+                  {transactions.length === 0 
+                    ? "Vous n'avez pas encore de transactions."
+                    : "Aucune transaction ne correspond à vos critères de recherche."
+                  }
+                </p>
+                {transactions.length === 0 && (
+                  <Button onClick={() => navigate('/create-transaction')} className="gradient-primary text-white">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Créer ma première transaction
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
             filteredTransactions.map((transaction) => {
-              const computedStatus = getComputedStatus(transaction);
-              const statusConfig = getStatusConfig(computedStatus);
-              const StatusIcon = statusConfig.icon;
+              const status = transaction.status || 'pending';
+              const config = statusConfig[status] || statusConfig.pending;
+              const Icon = config.icon;
+              
+              const isUserSeller = transaction.user_id === user?.id;
+              const userRole = isUserSeller ? 'seller' : 'buyer';
               
               return (
-                <Card key={transaction.id} className="hover:shadow-md transition-all duration-200">
+                <Card key={transaction.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        {/* Header */}
-                        <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold">{transaction.title}</h3>
+                          <Badge className={config.badge}>
+                            <Icon className="w-3 h-3 mr-1" />
+                            {status === 'pending' ? 'En attente' :
+                             status === 'paid' ? 'Payé' :
+                             status === 'validated' ? 'Complété' :
+                             status === 'disputed' ? 'En litige' : status}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-muted-foreground text-sm mb-3">
+                          {transaction.description || 'Aucune description'}
+                        </p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-semibold text-lg">{transaction.title}</h3>
-                               <Badge className={statusConfig.badge}>
-                                <StatusIcon className="w-3 h-3 mr-1" />
-                                {t(`transactions.${computedStatus}`)}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              ID: {transaction.id.substring(0, 8).toUpperCase()}
+                            <span className="text-muted-foreground">Montant:</span>
+                            <p className="font-semibold">
+                              {formatAmount(transaction.price, transaction.currency as 'EUR' | 'CHF')}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold text-foreground">
-                              {formatAmount(transaction.price, transaction.currency)}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {transaction.currency}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-muted-foreground">
-                          {transaction.description}
-                        </p>
-
-                        {/* Details */}
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            <strong>{transaction.user_role === 'seller' ? 'Acheteur:' : 'Vendeur:'}</strong> {getCounterpartyDisplayName(transaction)}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Badge variant="outline" className="text-xs">
-                              {transaction.user_role === 'seller' ? 'Vendeur' : 'Acheteur'}
-                            </Badge>
+                          <div>
+                            <span className="text-muted-foreground">Rôle:</span>
+                            <p className="font-semibold capitalize">
+                              {isUserSeller ? 'Vendeur' : 'Acheteur'}
+                            </p>
                           </div>
                           <div>
-                            <strong>Service:</strong> {format(new Date(transaction.service_date), 'PPP', { locale: fr })}
-                          </div>
-                          <div>
-                            <strong>Créé:</strong> {format(new Date(transaction.created_at), 'PPP', { locale: fr })}
-                          </div>
-                          {transaction.payment_deadline && (
-                            <div>
-                              <strong>Paiement avant:</strong> {format(new Date(transaction.payment_deadline), 'PPP', { locale: fr })}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-2 pt-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              if (transaction.shared_link_token) {
-                                navigate(`/join-transaction/${transaction.shared_link_token}`);
+                            <span className="text-muted-foreground">Date de service:</span>
+                            <p className="font-semibold">
+                              {transaction.service_date ? 
+                                format(new Date(transaction.service_date), 'dd MMM yyyy', { locale: fr }) : 
+                                'Non définie'
                               }
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Voir détails
-                          </Button>
-                          
-                          {transaction.status === 'validated' ? (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleInvoiceDownload(transaction)}
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Télécharger la Facture
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => copyInvitationLink(transaction.shared_link_token)}
-                              disabled={!transaction.shared_link_token}
-                            >
-                              <Link className="w-4 h-4 mr-2" />
-                              Copier le lien
-                            </Button>
-                          )}
-
-                           {/* Seller validation button */}
-                          {computedStatus === 'paid' && 
-                           transaction.user_role === 'seller' && 
-                           !transaction.seller_validated && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => handleSellerValidation(transaction.id)}
-                                disabled={validatingTransactions.has(transaction.id)}
-                              >
-                                {validatingTransactions.has(transaction.id) ? (
-                                  <Timer className="w-4 h-4 mr-2 animate-pulse" />
-                                ) : (
-                                  <CheckCheck className="w-4 h-4 mr-2" />
-                                )}
-                                Finaliser
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                                onClick={() => openDisputeModal(transaction.id, 'seller')}
-                              >
-                                <AlertTriangle className="w-4 h-4 mr-2" />
-                                Ouvrir un Litige
-                              </Button>
-                            </>
-                          )}
-
-                          {/* Seller validated state */}
-                          {computedStatus === 'paid' && 
-                           transaction.user_role === 'seller' && 
-                           transaction.seller_validated && 
-                           !transaction.buyer_validated && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              disabled
-                            >
-                              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                              En attente acheteur
-                            </Button>
-                          )}
-
-                           {/* Buyer fund release button */}
-                          {computedStatus === 'paid' && 
-                           transaction.user_role === 'buyer' && 
-                           transaction.stripe_payment_intent_id && (
-                            <>
-                              <Button 
-                                size="sm" 
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={() => handleFundsRelease(transaction.id)}
-                                disabled={validatingTransactions.has(transaction.id)}
-                              >
-                                {validatingTransactions.has(transaction.id) ? (
-                                  <Timer className="w-4 h-4 mr-2 animate-pulse" />
-                                ) : (
-                                  <Banknote className="w-4 h-4 mr-2" />
-                                )}
-                                {transaction.seller_validated ? 'Libérer les Fonds' : 'Libérer les Fonds (En attente vendeur)'}
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className="text-red-600 border-red-600 hover:bg-red-50"
-                                onClick={() => openDisputeModal(transaction.id, 'buyer')}
-                              >
-                                <Flag className="w-4 h-4 mr-2" />
-                                Signaler un Litige
-                              </Button>
-                            </>
-                          )}
-
-                          {transaction.status === 'pending' && (
-                            <Button 
-                              size="sm" 
-                              className="gradient-success text-white"
-                              onClick={() => {
-                                if (transaction.shared_link_token) {
-                                  navigate(`/join-transaction/${transaction.shared_link_token}`);
-                                }
-                              }}
-                            >
-                              <CreditCard className="w-4 h-4 mr-2" />
-                              Accéder au paiement
-                            </Button>
-                          )}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Créé le:</span>
+                            <p className="font-semibold">
+                              {format(new Date(transaction.created_at), 'dd MMM yyyy', { locale: fr })}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 pt-4 border-t">
+                      <Button
+                        onClick={() => downloadTransactionInvoice(transaction, userRole)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Télécharger Facture
+                      </Button>
+                      
+                      <Button
+                        onClick={() => copyToClipboard(`${getAppBaseUrl()}/transactions/${transaction.id}`)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copier Lien
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -650,45 +363,7 @@ export const Transactions = () => {
             })
           )}
         </div>
-
-        {/* Empty State */}
-        {!loading && !error && filteredTransactions.length === 0 && (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="text-muted-foreground">
-                <CreditCard className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">
-                  Aucune transaction trouvée
-                </p>
-                <p className="text-sm">
-                  {searchTerm || statusFilter !== 'all' 
-                    ? 'Essayez de modifier vos critères de recherche'
-                    : 'Créez votre première transaction pour commencer'
-                  }
-                </p>
-                {!searchTerm && statusFilter === 'all' && (
-                  <Button 
-                    className="mt-4 gradient-primary text-white"
-                    onClick={() => navigate('/create-transaction')}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Créer une transaction
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
-
-      {/* Dispute Modal */}
-      <DisputeModal
-        isOpen={disputeModalOpen}
-        onClose={() => setDisputeModalOpen(false)}
-        transactionId={disputeTransactionId}
-        userRole={disputeRole}
-        onDisputeCreated={handleDisputeCreated}
-      />
     </Layout>
   );
 };

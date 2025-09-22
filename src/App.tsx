@@ -7,8 +7,6 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import { Dashboard } from "./pages/Dashboard";
 import { CreateTransaction } from "./pages/CreateTransaction";
-import { PaymentLink } from "./pages/PaymentLink";
-import { JoinTransaction } from "./pages/JoinTransaction";
 import { Transactions } from "./pages/Transactions";
 import { Profile } from "./pages/Profile";
 import { Security } from "./pages/Security";
@@ -29,9 +27,6 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/create-transaction" element={<ProtectedRoute><CreateTransaction /></ProtectedRoute>} />
-          <Route path="/join-transaction/:token" element={<JoinTransaction />} />
-          <Route path="/payment-link/:token" element={<PaymentLink />} />
-          <Route path="/payment/:token" element={<PaymentLink />} />
           <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/security" element={<ProtectedRoute><Security /></ProtectedRoute>} />
