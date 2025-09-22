@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, User, Settings, Shield, Clock, AlertCircle, CheckCircle, Plus } from 'lucide-react';
+import { CreditCard, User, Settings, Shield, Clock, Lock, CheckCircle, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -18,8 +18,8 @@ export default function DashboardPage() {
     {
       title: 'Fonds bloqués',
       count: '0',
-      icon: AlertCircle,
-      variant: 'destructive' as const,
+      icon: Lock,
+      variant: 'outline' as const,
     },
     {
       title: 'Complétée',
