@@ -31,6 +31,9 @@ export interface Transaction {
   buyer_profile?: BuyerProfile;
   seller_profile?: BuyerProfile;
   user_role: 'seller' | 'buyer';
+  stripe_payment_intent_id?: string;
+  seller_validated?: boolean;
+  buyer_validated?: boolean;
 }
 
 export interface TransactionStats {
@@ -61,7 +64,7 @@ export const useTransactions = () => {
       // Step 1: Fetch transactions where user is seller OR buyer
       const { data: transactionsData, error: fetchError } = await supabase
         .from('transactions')
-        .select('*')
+        .select('*, stripe_payment_intent_id, seller_validated, buyer_validated')
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 

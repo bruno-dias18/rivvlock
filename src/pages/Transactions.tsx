@@ -26,7 +26,10 @@ import {
   Link,
   Copy,
   User,
-  RefreshCw
+  RefreshCw,
+  Timer,
+  Banknote,
+  CheckCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
@@ -43,6 +46,7 @@ export const Transactions = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [validatingTransactions, setValidatingTransactions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const hasAutoSyncedRef = useRef(false);
 
@@ -86,6 +90,77 @@ export const Transactions = () => {
         title: "Erreur",
         description: "Impossible de copier le lien. Veuillez réessayer.",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleSellerValidation = async (transactionId: string) => {
+    setValidatingTransactions(prev => new Set(prev).add(transactionId));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-seller', {
+        body: { transactionId }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Travail finalisé",
+        description: "Votre validation a été enregistrée. En attente de la validation de l'acheteur.",
+      });
+
+      refreshTransactions();
+    } catch (error: any) {
+      console.error('Error validating seller:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la validation",
+        variant: "destructive",
+      });
+    } finally {
+      setValidatingTransactions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleFundsRelease = async (transactionId: string) => {
+    setValidatingTransactions(prev => new Set(prev).add(transactionId));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('capture-payment', {
+        body: { transactionId }
+      });
+
+      if (error) throw error;
+
+      if (data.funds_captured === false) {
+        toast({
+          title: "Validation enregistrée",
+          description: data.message || "En attente de la validation du vendeur.",
+        });
+      } else {
+        toast({
+          title: "Fonds libérés",
+          description: `${data.amount_transferred} ${data.currency} transférés au vendeur.`,
+        });
+      }
+
+      refreshTransactions();
+    } catch (error: any) {
+      console.error('Error releasing funds:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la libération des fonds",
+        variant: "destructive",
+      });
+    } finally {
+      setValidatingTransactions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(transactionId);
+        return newSet;
       });
     }
   };
@@ -362,6 +437,59 @@ export const Transactions = () => {
                             <Link className="w-4 h-4 mr-2" />
                             Copier le lien
                           </Button>
+
+                          {/* Seller validation button */}
+                          {transaction.status === 'paid' && 
+                           transaction.user_role === 'seller' && 
+                           !transaction.seller_validated && (
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700 text-white"
+                              onClick={() => handleSellerValidation(transaction.id)}
+                              disabled={validatingTransactions.has(transaction.id)}
+                            >
+                              {validatingTransactions.has(transaction.id) ? (
+                                <Timer className="w-4 h-4 mr-2 animate-pulse" />
+                              ) : (
+                                <CheckCheck className="w-4 h-4 mr-2" />
+                              )}
+                              Finaliser
+                            </Button>
+                          )}
+
+                          {/* Seller validated state */}
+                          {transaction.status === 'paid' && 
+                           transaction.user_role === 'seller' && 
+                           transaction.seller_validated && 
+                           !transaction.buyer_validated && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              disabled
+                            >
+                              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                              En attente acheteur
+                            </Button>
+                          )}
+
+                          {/* Buyer fund release button */}
+                          {transaction.status === 'paid' && 
+                           transaction.user_role === 'buyer' && 
+                           transaction.stripe_payment_intent_id && (
+                            <Button 
+                              size="sm" 
+                              className="bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => handleFundsRelease(transaction.id)}
+                              disabled={validatingTransactions.has(transaction.id)}
+                            >
+                              {validatingTransactions.has(transaction.id) ? (
+                                <Timer className="w-4 h-4 mr-2 animate-pulse" />
+                              ) : (
+                                <Banknote className="w-4 h-4 mr-2" />
+                              )}
+                              {transaction.seller_validated ? 'Libérer les Fonds' : 'Libérer les Fonds (En attente vendeur)'}
+                            </Button>
+                          )}
 
                           {transaction.status === 'pending' && (
                             <Button 

@@ -60,9 +60,36 @@ serve(async (req) => {
       throw new Error("No payment intent found for this transaction");
     }
 
-    // Verify both parties have validated
-    if (!transaction.seller_validated || !transaction.buyer_validated) {
-      throw new Error("Both parties must validate before funds can be released");
+    // Verify user is the buyer for fund release
+    if (transaction.buyer_id !== userData.user.id) {
+      throw new Error("Only the buyer can release funds");
+    }
+
+    // Mark buyer as validated
+    const { error: validationError } = await adminClient
+      .from("transactions")
+      .update({ 
+        buyer_validated: true,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", transactionId);
+
+    if (validationError) {
+      console.error("❌ [CAPTURE-PAYMENT] Error updating buyer validation:", validationError);
+      throw new Error("Failed to update buyer validation");
+    }
+
+    // Only capture funds if seller has also validated
+    if (!transaction.seller_validated) {
+      console.log("✅ [CAPTURE-PAYMENT] Buyer validated, waiting for seller validation");
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: "Buyer validation completed. Waiting for seller validation before fund release.",
+        funds_captured: false
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     console.log("✅ [CAPTURE-PAYMENT] Transaction validation verified");
