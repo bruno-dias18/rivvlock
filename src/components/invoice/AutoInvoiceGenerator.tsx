@@ -457,11 +457,49 @@ export const generateInvoicesForTransaction = async (transactionId: string) => {
   }
 };
 
+// Mobile-compatible download function
 export const downloadInvoice = (dataUri: string, filename: string) => {
-  const link = document.createElement('a');
-  link.href = dataUri;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  try {
+    // Check if we're on mobile
+    const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+      navigator.userAgent.toLowerCase()
+    );
+    
+    if (isMobile) {
+      // Mobile approach: Convert data URI to blob and open in new tab
+      const byteCharacters = atob(dataUri.split(',')[1]);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
+      // Create blob URL and open in new tab
+      const blobUrl = URL.createObjectURL(blob);
+      const newWindow = window.open(blobUrl, '_blank');
+      
+      if (newWindow) {
+        // Clean up blob URL after a delay
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      } else {
+        // Fallback: try direct navigation
+        window.location.href = blobUrl;
+      }
+    } else {
+      // Desktop approach: Use traditional download
+      const link = document.createElement('a');
+      link.href = dataUri;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  } catch (error) {
+    console.error('Error downloading invoice:', error);
+    // Fallback: open data URI directly
+    window.open(dataUri, '_blank');
+  }
 };

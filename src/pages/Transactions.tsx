@@ -204,9 +204,16 @@ export const Transactions = () => {
       // Download the invoice
       downloadInvoice(invoiceData, filename);
 
+      // Check if mobile for different success message
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        navigator.userAgent.toLowerCase()
+      );
+      
       toast({
-        title: "Facture téléchargée",
-        description: "La facture a été générée et téléchargée avec succès",
+        title: isMobile ? "Facture générée" : "Facture téléchargée",
+        description: isMobile 
+          ? "La facture s'ouvre dans un nouvel onglet. Utilisez 'Partager' pour sauvegarder."
+          : "La facture a été générée et téléchargée avec succès",
       });
 
     } catch (error: any) {
