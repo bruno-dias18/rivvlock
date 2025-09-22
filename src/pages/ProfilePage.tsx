@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import { Edit } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { data: profile, isLoading, error, refetch } = useProfile();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -97,14 +99,6 @@ export default function ProfilePage() {
               <label className="text-sm font-medium">Pays</label>
               <div className="mt-1">
                 <Badge variant="secondary">{profile?.country}</Badge>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Statut de vérification</label>
-              <div className="mt-1">
-                <Badge variant={profile?.verified ? "default" : "destructive"}>
-                  {profile?.verified ? 'Vérifié' : 'Non vérifié'}
-                </Badge>
               </div>
             </div>
           </CardContent>
@@ -238,6 +232,15 @@ export default function ProfilePage() {
                 <p className="text-sm text-muted-foreground">Configuré</p>
               </div>
             )}
+            <div className="pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsChangePasswordOpen(true)}
+                className="w-full"
+              >
+                Modifier le mot de passe
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -247,6 +250,11 @@ export default function ProfilePage() {
         onOpenChange={setIsEditDialogOpen}
         profile={profile}
         onProfileUpdated={() => refetch()}
+      />
+
+      <ChangePasswordDialog 
+        open={isChangePasswordOpen}
+        onOpenChange={setIsChangePasswordOpen}
       />
     </div>
   );
