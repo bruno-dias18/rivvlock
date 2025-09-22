@@ -52,29 +52,42 @@ export const useTransactions = () => {
     async () => {
       if (!user) return [];
 
-      const { data, error: fetchError } = await supabase
+      // Step 1: Fetch transactions
+      const { data: transactionsData, error: fetchError } = await supabase
         .from('transactions')
-        .select(`
-          *,
-          buyer_profile:profiles!buyer_id(
-            first_name,
-            last_name,
-            company_name,
-            user_id
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
+      if (!transactionsData) return [];
+
+      // Step 2: Get unique buyer IDs
+      const buyerIds = transactionsData
+        .map(t => t.buyer_id)
+        .filter((id): id is string => id !== null && id !== undefined);
+
+      let buyerProfiles: BuyerProfile[] = [];
       
-      // Process data to handle potential join errors
-      const processedData = data?.map(transaction => ({
+      // Step 3: Fetch buyer profiles if there are any buyers
+      if (buyerIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name, company_name')
+          .in('user_id', buyerIds);
+
+        if (!profilesError && profilesData) {
+          buyerProfiles = profilesData;
+        }
+      }
+
+      // Step 4: Combine data client-side
+      const processedData = transactionsData.map(transaction => ({
         ...transaction,
-        buyer_profile: transaction.buyer_profile && !('error' in transaction.buyer_profile) 
-          ? transaction.buyer_profile 
+        buyer_profile: transaction.buyer_id 
+          ? buyerProfiles.find(profile => profile.user_id === transaction.buyer_id) || null
           : null
-      })) || [];
+      }));
       
       return processedData as Transaction[];
     },
