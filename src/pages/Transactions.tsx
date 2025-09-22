@@ -627,7 +627,7 @@ export const Transactions = () => {
                               className="gradient-success text-white"
                               onClick={() => {
                                 if (transaction.shared_link_token) {
-                                  navigate(`/payment-link/${transaction.shared_link_token}`);
+                                  navigate(`/join-transaction/${transaction.shared_link_token}`);
                                 }
                               }}
                             >

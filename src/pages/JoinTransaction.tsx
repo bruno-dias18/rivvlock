@@ -74,6 +74,20 @@ export const JoinTransaction = () => {
       }
 
       setTransaction(responseData.transaction);
+      
+      // Check if the link has expired
+      const transaction = responseData.transaction;
+      if (transaction.shared_link_expires_at || transaction.link_expires_at) {
+        const expirationDate = new Date(transaction.shared_link_expires_at || transaction.link_expires_at);
+        const now = new Date();
+        if (now > expirationDate) {
+          console.warn('⚠️ [JOIN] Link has expired');
+          setError('Ce lien d\'invitation a expiré. Veuillez demander un nouveau lien au vendeur.');
+          setLoading(false);
+          return;
+        }
+      }
+      
       setError(null); // Clear any previous errors
       console.log('✅ [JOIN] Transaction loaded successfully');
     } catch (error) {
