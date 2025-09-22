@@ -22,7 +22,7 @@ const profileSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   user_type: z.enum(['individual', 'company'], { required_error: 'Le type de compte est obligatoire' }),
-  country: z.enum(['FR', 'CH', 'BE', 'LU'], { required_error: 'Le pays est obligatoire' }),
+  country: z.enum(['FR', 'CH'], { required_error: 'Le pays est obligatoire' }),
   company_name: z.string().optional(),
 });
 
@@ -74,7 +74,7 @@ export const Profile = () => {
           last_name: data.last_name || '',
           phone: data.phone || '',
           address: data.address || '',
-          user_type: data.user_type || 'individual',
+          user_type: data.user_type === 'independent' ? 'individual' : data.user_type || 'individual',
           country: data.country || 'FR',
           company_name: data.company_name || '',
         });
@@ -283,8 +283,6 @@ export const Profile = () => {
                         <SelectContent>
                           <SelectItem value="FR">🇫🇷 France</SelectItem>
                           <SelectItem value="CH">🇨🇭 Suisse</SelectItem>
-                          <SelectItem value="BE">🇧🇪 Belgique</SelectItem>
-                          <SelectItem value="LU">🇱🇺 Luxembourg</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
