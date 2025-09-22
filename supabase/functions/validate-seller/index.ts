@@ -62,11 +62,16 @@ serve(async (req) => {
 
     console.log("✅ [VALIDATE-SELLER] Seller authorization verified");
 
-    // Update seller validation (using admin client)
+    // Set validation deadline to 48 hours from now
+    const validationDeadline = new Date();
+    validationDeadline.setHours(validationDeadline.getHours() + 48);
+
+    // Update seller validation and set deadline (using admin client)
     const { error: updateError } = await adminClient
       .from("transactions")
       .update({ 
         seller_validated: true,
+        validation_deadline: validationDeadline.toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", transactionId);

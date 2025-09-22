@@ -14,6 +14,7 @@ import { generateInvoicePDF } from '@/components/invoice/InvoiceGenerator';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ValidationCountdown } from '@/components/validation/ValidationCountdown';
 import { DisputeModal } from './DisputeModal';
 
 interface ValidationButtonsProps {
@@ -189,6 +190,9 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
     }
   };
 
+  // Show countdown if validation deadline exists and user is buyer
+  const showCountdown = transaction.validation_deadline && isBuyer && !transaction.funds_released;
+
   if (!canValidate) {
     return (
       <motion.div
@@ -316,12 +320,21 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
   const bothValidated = transaction.seller_validated && transaction.buyer_validated;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card className="overflow-hidden">
+    <div className="space-y-6">
+      {/* Validation Countdown */}
+      {showCountdown && (
+        <ValidationCountdown 
+          validationDeadline={transaction.validation_deadline}
+          userRole={isBuyer ? 'buyer' : 'seller'}
+        />
+      )}
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-background to-muted/30">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-full bg-primary/10">
@@ -628,6 +641,7 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
           </AnimatePresence>
         </CardContent>
       </Card>
+      </motion.div>
 
       {/* Dispute Modal */}
       <DisputeModal
@@ -637,6 +651,6 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
         userRole={isSeller ? 'seller' : 'buyer'}
         onDisputeCreated={onValidationUpdate}
       />
-    </motion.div>
+    </div>
   );
 };
