@@ -40,7 +40,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          acceptance_terms: boolean | null
           address: string | null
+          avs_number: string | null
+          company_address: string | null
           company_name: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at: string
@@ -48,13 +51,21 @@ export type Database = {
           id: string
           last_name: string | null
           phone: string | null
+          registration_complete: boolean | null
+          siret_uid: string | null
+          stripe_customer_id: string | null
+          tva_rate: number | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          vat_rate: number | null
           verified: boolean
         }
         Insert: {
+          acceptance_terms?: boolean | null
           address?: string | null
+          avs_number?: string | null
+          company_address?: string | null
           company_name?: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -62,13 +73,21 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
+          registration_complete?: boolean | null
+          siret_uid?: string | null
+          stripe_customer_id?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          vat_rate?: number | null
           verified?: boolean
         }
         Update: {
+          acceptance_terms?: boolean | null
           address?: string | null
+          avs_number?: string | null
+          company_address?: string | null
           company_name?: string | null
           country?: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -76,9 +95,14 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
+          registration_complete?: boolean | null
+          siret_uid?: string | null
+          stripe_customer_id?: string | null
+          tva_rate?: number | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+          vat_rate?: number | null
           verified?: boolean
         }
         Relationships: []
