@@ -30,12 +30,14 @@ import {
   Timer,
   Banknote,
   CheckCheck,
-  Download
+  Download,
+  Flag
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSellerInvoice, generateBuyerInvoice, downloadInvoice } from '@/components/invoice/AutoInvoiceGenerator';
+import { DisputeModal } from '@/components/escrow/DisputeModal';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
@@ -49,6 +51,9 @@ export const Transactions = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isSyncing, setIsSyncing] = useState(false);
   const [validatingTransactions, setValidatingTransactions] = useState<Set<string>>(new Set());
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null);
+  const [disputeRole, setDisputeRole] = useState<'seller' | 'buyer' | null>(null);
   const { toast } = useToast();
   const hasAutoSyncedRef = useRef(false);
 
@@ -224,6 +229,19 @@ export const Transactions = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const openDisputeModal = (transactionId: string, role: 'seller' | 'buyer') => {
+    setDisputeTransactionId(transactionId);
+    setDisputeRole(role);
+    setDisputeModalOpen(true);
+  };
+
+  const handleDisputeCreated = () => {
+    refreshTransactions();
+    setDisputeModalOpen(false);
+    setDisputeTransactionId(null);
+    setDisputeRole(null);
   };
 
   const syncWithStripe = async () => {
@@ -528,23 +546,34 @@ export const Transactions = () => {
                             </Button>
                           )}
 
-                          {/* Seller validation button */}
+                           {/* Seller validation button */}
                           {computedStatus === 'paid' && 
                            transaction.user_role === 'seller' && 
                            !transaction.seller_validated && (
-                            <Button 
-                              size="sm" 
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                              onClick={() => handleSellerValidation(transaction.id)}
-                              disabled={validatingTransactions.has(transaction.id)}
-                            >
-                              {validatingTransactions.has(transaction.id) ? (
-                                <Timer className="w-4 h-4 mr-2 animate-pulse" />
-                              ) : (
-                                <CheckCheck className="w-4 h-4 mr-2" />
-                              )}
-                              Finaliser
-                            </Button>
+                            <>
+                              <Button 
+                                size="sm" 
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => handleSellerValidation(transaction.id)}
+                                disabled={validatingTransactions.has(transaction.id)}
+                              >
+                                {validatingTransactions.has(transaction.id) ? (
+                                  <Timer className="w-4 h-4 mr-2 animate-pulse" />
+                                ) : (
+                                  <CheckCheck className="w-4 h-4 mr-2" />
+                                )}
+                                Finaliser
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                                onClick={() => openDisputeModal(transaction.id, 'seller')}
+                              >
+                                <AlertTriangle className="w-4 h-4 mr-2" />
+                                Ouvrir un Litige
+                              </Button>
+                            </>
                           )}
 
                           {/* Seller validated state */}
@@ -562,23 +591,34 @@ export const Transactions = () => {
                             </Button>
                           )}
 
-                          {/* Buyer fund release button */}
+                           {/* Buyer fund release button */}
                           {computedStatus === 'paid' && 
                            transaction.user_role === 'buyer' && 
                            transaction.stripe_payment_intent_id && (
-                            <Button 
-                              size="sm" 
-                              className="bg-blue-600 hover:bg-blue-700 text-white"
-                              onClick={() => handleFundsRelease(transaction.id)}
-                              disabled={validatingTransactions.has(transaction.id)}
-                            >
-                              {validatingTransactions.has(transaction.id) ? (
-                                <Timer className="w-4 h-4 mr-2 animate-pulse" />
-                              ) : (
-                                <Banknote className="w-4 h-4 mr-2" />
-                              )}
-                              {transaction.seller_validated ? 'Libérer les Fonds' : 'Libérer les Fonds (En attente vendeur)'}
-                            </Button>
+                            <>
+                              <Button 
+                                size="sm" 
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => handleFundsRelease(transaction.id)}
+                                disabled={validatingTransactions.has(transaction.id)}
+                              >
+                                {validatingTransactions.has(transaction.id) ? (
+                                  <Timer className="w-4 h-4 mr-2 animate-pulse" />
+                                ) : (
+                                  <Banknote className="w-4 h-4 mr-2" />
+                                )}
+                                {transaction.seller_validated ? 'Libérer les Fonds' : 'Libérer les Fonds (En attente vendeur)'}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-red-600 border-red-600 hover:bg-red-50"
+                                onClick={() => openDisputeModal(transaction.id, 'buyer')}
+                              >
+                                <Flag className="w-4 h-4 mr-2" />
+                                Signaler un Litige
+                              </Button>
+                            </>
                           )}
 
                           {transaction.status === 'pending' && (
@@ -634,6 +674,15 @@ export const Transactions = () => {
           </Card>
         )}
       </div>
+
+      {/* Dispute Modal */}
+      <DisputeModal
+        isOpen={disputeModalOpen}
+        onClose={() => setDisputeModalOpen(false)}
+        transactionId={disputeTransactionId}
+        userRole={disputeRole}
+        onDisputeCreated={handleDisputeCreated}
+      />
     </Layout>
   );
 };
