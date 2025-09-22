@@ -42,9 +42,11 @@ serve(async (req) => {
 
     console.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
 
-    // Parse request body
-    const { transaction_id, token: linkToken } = await req.json();
-    
+    // Parse request body (support both `token` and `linkToken`)
+    const body = await req.json();
+    const transaction_id = body.transaction_id;
+    const linkToken = body.linkToken || body.token;
+
     if (!transaction_id || !linkToken) {
       throw new Error('ID de transaction ou token manquant');
     }

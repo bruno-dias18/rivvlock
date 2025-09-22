@@ -45,31 +45,35 @@ export const JoinTransaction = () => {
     try {
       console.log('🔍 [JOIN] Fetching transaction with token:', token);
       
+      // 1) Try via supabase.functions.invoke
+      let responseData: any | null = null;
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token }
       });
-
+      
       console.log('🔍 [JOIN] Function response:', { data, error });
 
-      if (error) {
-        console.error('❌ [JOIN] Edge function error:', error);
-        setError(`Erreur de fonction: ${error.message}`);
-        return;
+      if (!error && data && data.success && data.transaction) {
+        responseData = data;
+      } else {
+        // 2) Fallback: direct fetch to Edge Function URL
+        console.warn('⚠️ [JOIN] Falling back to direct fetch for get-transaction-by-token');
+        const resp = await fetch('https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const fallbackJson = await resp.json().catch(() => null);
+
+        if (!resp.ok || !fallbackJson?.success) {
+          console.error('❌ [JOIN] Fallback fetch failed:', { status: resp.status, body: fallbackJson });
+          setError(fallbackJson?.error || `Erreur (${resp.status})`);
+          return;
+        }
+        responseData = fallbackJson;
       }
 
-      if (!data) {
-        console.error('❌ [JOIN] No data received');
-        setError('Aucune donnée reçue du serveur');
-        return;
-      }
-
-      if (!data.success || !data.transaction) {
-        console.error('❌ [JOIN] Invalid response:', data);
-        setError(data.error || 'Transaction non trouvée ou token invalide');
-        return;
-      }
-
-      setTransaction(data.transaction);
+      setTransaction(responseData.transaction);
       setError(null); // Clear any previous errors
       console.log('✅ [JOIN] Transaction loaded successfully');
     } catch (error) {

@@ -16,21 +16,42 @@ serve(async (req) => {
     console.log('🔍 [GET-TX-BY-TOKEN] Starting transaction fetch');
 
     // Use service role key for admin access to read transaction data
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('❌ [GET-TX-BY-TOKEN] Missing env variables', {
+        hasUrl: !!supabaseUrl,
+        hasServiceRole: !!serviceRoleKey
+      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Configuration serveur incomplète',
+          reason: 'env_missing'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const { token } = await req.json();
     
     if (!token) {
-      throw new Error('Token manquant');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Token manquant', reason: 'missing_token' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     // Validate token format (basic UUID check)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(token)) {
-      throw new Error('Format de token invalide');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Format de token invalide', reason: 'invalid_token_format' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
     console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
@@ -66,7 +87,10 @@ serve(async (req) => {
 
     if (fetchError || !transaction) {
       console.error('❌ [GET-TX-BY-TOKEN] Transaction not found:', fetchError);
-      throw new Error('Transaction non trouvée ou token invalide');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Transaction non trouvée ou token invalide', reason: 'not_found' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
     }
 
     // Check if link is expired
@@ -86,7 +110,10 @@ serve(async (req) => {
         expirationDate: expirationDate.toISOString(),
         currentTime: now.toISOString()
       });
-      throw new Error('Le lien d\'invitation a expiré');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Le lien d\'invitation a expiré', reason: 'link_expired' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 410 }
+      );
     }
 
     console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
@@ -152,6 +179,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: errorMessage,
+        reason: 'internal_error',
         success: false 
       }),
       { 

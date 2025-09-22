@@ -105,22 +105,30 @@ export const PaymentLink = () => {
 
     try {
       // Use the public edge function to fetch transaction data
+      let payload: any = null;
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token }
       });
 
-      if (error) {
-        console.error('❌ [PAYMENT-LINK] Edge function error:', error);
-        throw error;
+      if (!error && data && data.success && data.transaction) {
+        payload = data;
+      } else {
+        console.warn('⚠️ [PAYMENT-LINK] Falling back to direct fetch for get-transaction-by-token');
+        const resp = await fetch('https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const fallbackJson = await resp.json().catch(() => null);
+        if (!resp.ok || !fallbackJson?.success) {
+          throw new Error(fallbackJson?.error || `Erreur (${resp.status})`);
+        }
+        payload = fallbackJson;
       }
 
-      if (!data.success || !data.transaction) {
-        throw new Error('Transaction non trouvée ou token invalide');
-      }
-
-      const transactionData = data.transaction;
-      const sellerProfile = data.seller_profile;
-      const buyerProfile = data.buyer_profile;
+      const transactionData = payload.transaction;
+      const sellerProfile = payload.seller_profile;
+      const buyerProfile = payload.buyer_profile;
       
       console.log('✅ [PAYMENT-LINK] Transaction trouvée:', transactionData);
       console.log('👤 [PAYMENT-LINK] Current user:', user?.id);
