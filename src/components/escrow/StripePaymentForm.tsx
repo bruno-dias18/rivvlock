@@ -54,6 +54,8 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
         console.log('✅ [STRIPE-PAYMENT] Amount:', paymentIntent.amount, 'Currency:', paymentIntent.currency);
         
         // Update transaction status using mark-payment-authorized edge function
+        console.log('🔄 [STRIPE-PAYMENT] Calling mark-payment-authorized edge function...');
+        
         const { data: markResult, error: markError } = await supabase.functions.invoke('mark-payment-authorized', {
           body: {
             transactionId: transaction.id,
@@ -63,11 +65,23 @@ export const StripePaymentForm = ({ transaction, clientSecret, onSuccess }: Stri
 
         if (markError) {
           console.error('❌ [STRIPE-PAYMENT] Error marking payment authorized:', markError);
-          setPaymentError('Erreur lors de la mise à jour du statut de paiement');
+          console.error('❌ [STRIPE-PAYMENT] Full error details:', JSON.stringify(markError, null, 2));
+          
+          // Try automatic sync as fallback
+          console.log('🔄 [STRIPE-PAYMENT] Attempting automatic sync fallback...');
+          try {
+            await supabase.functions.invoke('sync-stripe-payments');
+            console.log('✅ [STRIPE-PAYMENT] Fallback sync completed');
+          } catch (syncError) {
+            console.error('❌ [STRIPE-PAYMENT] Fallback sync also failed:', syncError);
+          }
+          
+          setPaymentError('Erreur lors de la mise à jour du statut de paiement. Une synchronisation automatique a été tentée.');
           return;
         }
 
         console.log('✅ [STRIPE-PAYMENT] Transaction status updated via edge function');
+        console.log('✅ [STRIPE-PAYMENT] Mark result:', markResult);
 
         toast({
           title: '✅ Paiement autorisé !',

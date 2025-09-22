@@ -25,10 +25,12 @@ import {
   ExternalLink,
   Link,
   Copy,
-  User
+  User,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
+import { supabase } from '@/integrations/supabase/client';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
@@ -40,6 +42,7 @@ export const Transactions = () => {
   const { transactions, loading, error, refreshTransactions, getCounterpartyDisplayName } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
 
   const copyInvitationLink = async (token: string) => {
@@ -56,6 +59,33 @@ export const Transactions = () => {
         description: "Impossible de copier le lien. Veuillez réessayer.",
         variant: "destructive",
       });
+    }
+  };
+
+  const syncWithStripe = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      toast({
+        title: "Synchronisation terminée",
+        description: `${data.synchronized} transaction(s) synchronisée(s) avec Stripe`,
+      });
+
+      // Refresh transactions to show updated data
+      refreshTransactions();
+    } catch (error) {
+      toast({
+        title: "Erreur de synchronisation",
+        description: "Impossible de synchroniser avec Stripe. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -173,6 +203,15 @@ export const Transactions = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={syncWithStripe}
+                  disabled={isSyncing}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Synchronisation...' : 'Sync Stripe'}
+                </Button>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
                     <Filter className="w-4 h-4 mr-2" />

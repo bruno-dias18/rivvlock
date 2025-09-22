@@ -78,7 +78,7 @@
     "serviceDate": "Date de service",
     "status": "Statut",
     "pending": "En attente",
-    "paid": "Payée",
+    "paid": "Bloquée",
     "validated": "Validée",
     "disputed": "Contestée",
     "new": "Nouvelle transaction",
@@ -90,7 +90,8 @@
     "transactions": "Transactions",
     "volume": "Volume",
     "conversion": "Conversion",
-    "export": "Exporter CSV"
+    "export": "Exporter CSV",
+    "syncStripe": "Synchroniser Stripe"
   },
   "navigation": {
     "home": "Accueil",
