@@ -54,12 +54,17 @@ export const useTransactions = () => {
     async () => {
       if (!user) return [];
 
+      console.log('🔍 [DEBUG] Fetching transactions for user:', user.id);
+
       // Step 1: Fetch transactions where user is seller OR buyer
       const { data: transactionsData, error: fetchError } = await supabase
         .from('transactions')
         .select('*')
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
+
+      console.log('🔍 [DEBUG] Raw transactions from Supabase:', transactionsData);
+      console.log('🔍 [DEBUG] Fetch error:', fetchError);
 
       if (fetchError) throw fetchError;
       if (!transactionsData) return [];
@@ -74,6 +79,9 @@ export const useTransactions = () => {
         .filter(t => t.buyer_id === user.id) // When user is buyer
         .map(t => t.user_id)
         .filter((id): id is string => id !== null && id !== undefined);
+
+      console.log('🔍 [DEBUG] Buyer IDs to fetch:', buyerIds);
+      console.log('🔍 [DEBUG] Seller IDs to fetch:', sellerIds);
 
       const allCounterpartyIds = [...new Set([...buyerIds, ...sellerIds])];
 
@@ -96,6 +104,15 @@ export const useTransactions = () => {
         const isUserSeller = transaction.user_id === user.id;
         const isUserBuyer = transaction.buyer_id === user.id;
         
+        console.log('🔍 [DEBUG] Processing transaction:', transaction.id, {
+          isUserSeller,
+          isUserBuyer,
+          transaction_user_id: transaction.user_id,
+          transaction_buyer_id: transaction.buyer_id,
+          current_user_id: user.id,
+          status: transaction.status
+        });
+        
         return {
           ...transaction,
           user_role: isUserSeller ? 'seller' as const : 'buyer' as const,
@@ -108,6 +125,7 @@ export const useTransactions = () => {
         };
       });
       
+      console.log('🔍 [DEBUG] Final processed transactions:', processedData);
       return processedData as Transaction[];
     },
     2 * 60 * 1000 // 2 minutes cache
