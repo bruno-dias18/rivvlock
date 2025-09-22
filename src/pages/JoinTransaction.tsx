@@ -33,7 +33,16 @@ export const JoinTransaction = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
-const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  console.log('🔍 [JOIN] Component render with:', { 
+    token, 
+    hasUser: !!user, 
+    userEmail: user?.email,
+    loading, 
+    error,
+    transaction: transaction?.id 
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined' && isObsoleteUrl()) {
@@ -43,7 +52,11 @@ const [error, setError] = useState<string | null>(null);
   }, []);
 
   const fetchTransaction = useCallback(async () => {
+    console.log('🔍 [JOIN] fetchTransaction called with token:', token);
+    console.log('🔍 [JOIN] Current user:', user ? 'connected' : 'not connected');
+    
     if (!token || token === ':token') {
+      console.log('❌ [JOIN] Invalid token:', token);
       setError('Lien invalide - token manquant ou exemple');
       setLoading(false);
       return;
@@ -106,7 +119,11 @@ const [error, setError] = useState<string | null>(null);
   }, [token]);
 
   useEffect(() => {
-    console.log('[JOIN] Loading page with token:', token);
+    console.log('🔍 [JOIN] Component mounted/updated with:', { 
+      token, 
+      userConnected: !!user, 
+      loading 
+    });
     fetchTransaction();
   }, [fetchTransaction]);
 
