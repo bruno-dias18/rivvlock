@@ -85,7 +85,6 @@ export const CreateTransaction = () => {
             currency: data.currency,
             service_date: data.serviceDate.toISOString(),
             shared_link_token: token,
-            link_expires_at: linkExpiresAt.toISOString(),
             payment_deadline: paymentDeadline.toISOString(),
             seller_display_name: sellerDisplayName,
             status: 'pending'
