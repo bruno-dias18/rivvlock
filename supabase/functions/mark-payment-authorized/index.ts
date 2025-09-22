@@ -81,6 +81,8 @@ serve(async (req) => {
       .from("transactions")
       .update({ 
         status: 'paid',
+        stripe_payment_intent_id: paymentIntentId,
+        payment_method: 'stripe',
         payment_blocked_at: new Date().toISOString(),
         validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
         updated_at: new Date().toISOString()

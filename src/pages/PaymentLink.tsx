@@ -180,10 +180,41 @@ export const PaymentLink = () => {
           description: error.message || 'Transaction non trouvée'
         });
       }
-    } finally {
+  } finally {
       setLoading(false);
     }
   };
+
+  // After returning from Stripe Checkout, auto-sync "non capturé" payments
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+
+    if (!paymentStatus) return;
+
+    const run = async () => {
+      if (paymentStatus === 'success') {
+        try {
+          console.log('🔄 [PAYMENT-LINK] Auto-syncing uncaptured Stripe payments...');
+          await supabase.functions.invoke('sync-stripe-payments');
+          await fetchTransaction();
+          toast({ title: 'Synchronisation réussie', description: 'Les fonds bloqués ont été synchronisés.' });
+        } catch (e) {
+          console.error('❌ [PAYMENT-LINK] Sync after checkout failed:', e);
+          toast({ variant: 'destructive', title: 'Erreur de synchronisation', description: 'Réessayez depuis la page Transactions.' });
+        }
+      } else if (paymentStatus === 'cancelled') {
+        toast({ title: 'Paiement annulé', description: 'Vous pouvez réessayer quand vous voulez.' });
+      }
+
+      // Clean the query param to avoid re-triggering
+      const url = new URL(window.location.href);
+      url.searchParams.delete('payment');
+      window.history.replaceState({}, '', url.toString());
+    };
+
+    run();
+  }, []);
 
   const updateCountdown = (txData = transaction) => {
     if (!txData?.payment_deadline) return;
