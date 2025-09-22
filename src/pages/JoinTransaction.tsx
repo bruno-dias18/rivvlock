@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -33,6 +33,7 @@ export const JoinTransaction = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Allow user to see transaction details first before proceeding
@@ -173,7 +174,7 @@ export const JoinTransaction = () => {
     );
   }
 
-  if (!transaction) {
+  if (!transaction && !loading && error) {
     return (
       <Layout>
         <div className="max-w-2xl mx-auto space-y-6">
