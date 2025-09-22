@@ -1,4 +1,9 @@
 // Simple mobile utilities
+import { useMediaQuery } from 'react-responsive';
+
+export const useIsMobile = () => {
+  return useMediaQuery({ maxWidth: 768 });
+};
 
 export const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined') return false;

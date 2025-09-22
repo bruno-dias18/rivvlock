@@ -5,8 +5,12 @@ import { Toaster } from "sonner";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
+import TransactionsPage from "./pages/TransactionsPage";
+import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { DashboardLayout } from "./components/DashboardLayout";
 import "./index.css";
 import "./i18n/config";
 
@@ -30,7 +34,19 @@ const App: React.FC = () => {
           React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
           React.createElement(Route, { 
             path: "/dashboard", 
-            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
+            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
+          }),
+          React.createElement(Route, { 
+            path: "/dashboard/transactions", 
+            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
+          }),
+          React.createElement(Route, { 
+            path: "/dashboard/profile", 
+            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
+          }),
+          React.createElement(Route, { 
+            path: "/dashboard/admin", 
+            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
           })
         )
       )
