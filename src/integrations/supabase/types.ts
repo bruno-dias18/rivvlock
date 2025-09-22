@@ -43,6 +43,7 @@ export type Database = {
           acceptance_terms: boolean | null
           address: string | null
           avs_number: string | null
+          city: string | null
           company_address: string | null
           company_name: string | null
           country: Database["public"]["Enums"]["country_code"]
@@ -51,6 +52,7 @@ export type Database = {
           id: string
           last_name: string | null
           phone: string | null
+          postal_code: string | null
           registration_complete: boolean | null
           siret_uid: string | null
           stripe_customer_id: string | null
@@ -65,6 +67,7 @@ export type Database = {
           acceptance_terms?: boolean | null
           address?: string | null
           avs_number?: string | null
+          city?: string | null
           company_address?: string | null
           company_name?: string | null
           country: Database["public"]["Enums"]["country_code"]
@@ -73,6 +76,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
+          postal_code?: string | null
           registration_complete?: boolean | null
           siret_uid?: string | null
           stripe_customer_id?: string | null
@@ -87,6 +91,7 @@ export type Database = {
           acceptance_terms?: boolean | null
           address?: string | null
           avs_number?: string | null
+          city?: string | null
           company_address?: string | null
           company_name?: string | null
           country?: Database["public"]["Enums"]["country_code"]
@@ -95,6 +100,7 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
+          postal_code?: string | null
           registration_complete?: boolean | null
           siret_uid?: string | null
           stripe_customer_id?: string | null

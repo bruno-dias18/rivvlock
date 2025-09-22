@@ -20,6 +20,8 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [postalCode, setPostalCode] = useState('');
+  const [city, setCity] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [siretUid, setSiretUid] = useState('');
@@ -41,7 +43,7 @@ export default function AuthPage() {
     setError('');
 
     console.log('Form submission - Country:', country, 'UserType:', userType);
-    console.log('Form values:', { firstName, lastName, phone, address, companyName, siretUid, avsNumber, tvaRate });
+    console.log('Form values:', { firstName, lastName, phone, address, postalCode, city, companyName, siretUid, avsNumber, tvaRate });
 
     // Validation for sign up
     if (isSignUp) {
@@ -78,6 +80,8 @@ export default function AuthPage() {
           last_name: lastName,
           phone,
           address,
+          postal_code: postalCode,
+          city,
           company_name: companyName,
           company_address: companyAddress,
           siret_uid: siretUid,
@@ -265,6 +269,36 @@ export default function AuthPage() {
                   className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                   rows={2}
                 />
+              </div>
+
+              {/* Postal Code and City */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="postalCode" className="block text-sm font-medium text-foreground">
+                    Code postal
+                  </label>
+                  <input
+                    id="postalCode"
+                    type="text"
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Ex: 75001"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-foreground">
+                    Ville
+                  </label>
+                  <input
+                    id="city"
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Ex: Paris"
+                  />
+                </div>
               </div>
 
               {/* Country and User Type Specific Fields */}
