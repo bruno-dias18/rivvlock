@@ -109,8 +109,7 @@ serve(async (req) => {
     logStep('Transaction created successfully', { transactionId: transaction.id, token: sharedLinkToken });
 
     // Return transaction data with share link
-    const origin = req.headers.get('origin');
-    const baseUrl = origin && origin.includes('lovableproject.com') ? origin : 'https://rivvlock.com';
+    const baseUrl = 'https://rivvlock.com';
     const shareLink = `${baseUrl}/payment-link/${sharedLinkToken}`;
 
     return new Response(JSON.stringify({
