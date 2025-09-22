@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
 
   const transactionStatuses = [
@@ -43,13 +45,13 @@ export default function DashboardPage() {
       title: t('user.profile'),
       description: 'Mettre à jour vos informations',
       icon: User,
-      href: '/dashboard/profile',
+      onClick: () => navigate('/dashboard/profile'),
     },
     {
       title: 'Sécurité',
       description: 'Paramètres de sécurité du compte',
       icon: Shield,
-      href: '/dashboard/security',
+      onClick: () => navigate('/dashboard/security'),
     },
   ];
 
