@@ -260,6 +260,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          buyer_display_name: string | null
           buyer_id: string | null
           buyer_validated: boolean | null
           created_at: string
@@ -274,6 +275,7 @@ export type Database = {
           payment_method: string | null
           payment_window_hours: number | null
           price: number
+          seller_display_name: string | null
           seller_validated: boolean | null
           service_date: string | null
           shared_link_expires_at: string | null
@@ -286,6 +288,7 @@ export type Database = {
           validation_deadline: string | null
         }
         Insert: {
+          buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
           created_at?: string
@@ -300,6 +303,7 @@ export type Database = {
           payment_method?: string | null
           payment_window_hours?: number | null
           price: number
+          seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
           shared_link_expires_at?: string | null
@@ -312,6 +316,7 @@ export type Database = {
           validation_deadline?: string | null
         }
         Update: {
+          buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
           created_at?: string
@@ -326,6 +331,7 @@ export type Database = {
           payment_method?: string | null
           payment_window_hours?: number | null
           price?: number
+          seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
           shared_link_expires_at?: string | null

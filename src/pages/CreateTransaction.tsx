@@ -63,6 +63,17 @@ export const CreateTransaction = () => {
       paymentDeadline.setDate(paymentDeadline.getDate() - 1); // Day before service date
       paymentDeadline.setHours(23, 59, 59, 999); // End of day before service date
       
+      // Get current user profile for seller display name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_name, first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const sellerDisplayName = profile?.company_name || 
+        `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 
+        'Vendeur';
+
       const { data: transaction, error } = await supabase
         .from('transactions')
         .insert([
@@ -76,6 +87,7 @@ export const CreateTransaction = () => {
             shared_link_token: token,
             link_expires_at: linkExpiresAt.toISOString(),
             payment_deadline: paymentDeadline.toISOString(),
+            seller_display_name: sellerDisplayName,
             status: 'pending'
           }
         ])

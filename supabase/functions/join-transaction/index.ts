@@ -97,11 +97,23 @@ serve(async (req) => {
       );
     }
 
+    // Get buyer profile for display name
+    const { data: buyerProfile } = await adminClient
+      .from('profiles')
+      .select('company_name, first_name, last_name')
+      .eq('user_id', userData.user.id)
+      .single();
+
+    const buyerDisplayName = buyerProfile?.company_name || 
+      `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
+      'Acheteur';
+
     // Assign user as buyer (using admin client to bypass RLS)
     const { error: updateError } = await adminClient
       .from('transactions')
       .update({ 
         buyer_id: userData.user.id,
+        buyer_display_name: buyerDisplayName,
         payment_deadline: new Date(Date.now() + (transaction.payment_window_hours || 168) * 60 * 60 * 1000).toISOString(),
         updated_at: new Date().toISOString()
       })

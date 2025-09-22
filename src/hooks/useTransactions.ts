@@ -26,6 +26,8 @@ export interface Transaction {
   payment_method?: string;
   payment_blocked_at?: string;
   shared_link_token?: string;
+  seller_display_name?: string | null;
+  buyer_display_name?: string | null;
   buyer_profile?: BuyerProfile;
   seller_profile?: BuyerProfile;
   user_role: 'seller' | 'buyer';
@@ -207,6 +209,12 @@ export const useTransactions = () => {
         return 'En attente d\'acheteur';
       }
 
+      // First try display name from database
+      if (transaction.buyer_display_name) {
+        return transaction.buyer_display_name;
+      }
+
+      // Fallback to profile object
       const profile = transaction.buyer_profile;
       if (!profile) {
         return 'Acheteur';
@@ -223,6 +231,13 @@ export const useTransactions = () => {
       return 'Acheteur';
     } else {
       // User is buyer, show seller info
+      
+      // First try display name from database
+      if (transaction.seller_display_name) {
+        return transaction.seller_display_name;
+      }
+
+      // Fallback to profile object
       const profile = transaction.seller_profile;
       if (!profile) {
         return 'Vendeur';
