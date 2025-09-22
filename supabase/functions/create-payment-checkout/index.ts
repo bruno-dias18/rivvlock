@@ -88,6 +88,9 @@ serve(async (req) => {
     // Calculate amount in cents
     const amountInCents = Math.round(transaction.price * 100);
 
+    // Use the correct working domain for redirects
+    const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
+    
     // Create a Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -106,8 +109,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `https://rivv-secure-escrow.lovable.app/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
-      cancel_url: `https://rivv-secure-escrow.lovable.app/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
+      success_url: `${WORKING_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
+      cancel_url: `${WORKING_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: transactionId,
         transactionId: transactionId, // Alternative key for compatibility
