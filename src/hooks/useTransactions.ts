@@ -27,6 +27,8 @@ export interface Transaction {
   payment_blocked_at?: string;
   shared_link_token?: string;
   buyer_profile?: BuyerProfile;
+  seller_profile?: BuyerProfile;
+  user_role: 'seller' | 'buyer';
 }
 
 export interface TransactionStats {
@@ -52,42 +54,59 @@ export const useTransactions = () => {
     async () => {
       if (!user) return [];
 
-      // Step 1: Fetch transactions
+      // Step 1: Fetch transactions where user is seller OR buyer
       const { data: transactionsData, error: fetchError } = await supabase
         .from('transactions')
         .select('*')
-        .eq('user_id', user.id)
+        .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
       if (!transactionsData) return [];
 
-      // Step 2: Get unique buyer IDs
+      // Step 2: Get unique counterparty IDs (buyers and sellers)
       const buyerIds = transactionsData
+        .filter(t => t.user_id === user.id && t.buyer_id) // When user is seller
         .map(t => t.buyer_id)
         .filter((id): id is string => id !== null && id !== undefined);
 
-      let buyerProfiles: BuyerProfile[] = [];
+      const sellerIds = transactionsData
+        .filter(t => t.buyer_id === user.id) // When user is buyer
+        .map(t => t.user_id)
+        .filter((id): id is string => id !== null && id !== undefined);
+
+      const allCounterpartyIds = [...new Set([...buyerIds, ...sellerIds])];
+
+      let counterpartyProfiles: BuyerProfile[] = [];
       
-      // Step 3: Fetch buyer profiles if there are any buyers
-      if (buyerIds.length > 0) {
+      // Step 3: Fetch counterparty profiles
+      if (allCounterpartyIds.length > 0) {
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, first_name, last_name, company_name')
-          .in('user_id', buyerIds);
+          .in('user_id', allCounterpartyIds);
 
         if (!profilesError && profilesData) {
-          buyerProfiles = profilesData;
+          counterpartyProfiles = profilesData;
         }
       }
 
       // Step 4: Combine data client-side
-      const processedData = transactionsData.map(transaction => ({
-        ...transaction,
-        buyer_profile: transaction.buyer_id 
-          ? buyerProfiles.find(profile => profile.user_id === transaction.buyer_id) || null
-          : null
-      }));
+      const processedData = transactionsData.map(transaction => {
+        const isUserSeller = transaction.user_id === user.id;
+        const isUserBuyer = transaction.buyer_id === user.id;
+        
+        return {
+          ...transaction,
+          user_role: isUserSeller ? 'seller' as const : 'buyer' as const,
+          buyer_profile: isUserSeller && transaction.buyer_id 
+            ? counterpartyProfiles.find(profile => profile.user_id === transaction.buyer_id) || null
+            : null,
+          seller_profile: isUserBuyer 
+            ? counterpartyProfiles.find(profile => profile.user_id === transaction.user_id) || null
+            : null
+        };
+      });
       
       return processedData as Transaction[];
     },
@@ -121,7 +140,20 @@ export const useTransactions = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('Real-time transaction update:', payload);
+          console.log('Real-time transaction update (seller):', payload);
+          refetch(); // Refetch data when changes occur
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `buyer_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Real-time transaction update (buyer):', payload);
           refetch(); // Refetch data when changes occur
         }
       )
@@ -134,25 +166,44 @@ export const useTransactions = () => {
     };
   }, [user, isOffline, refetch]);
 
-  const getBuyerDisplayName = (transaction: Transaction): string => {
-    if (!transaction.buyer_id) {
-      return 'En attente d\'acheteur';
-    }
+  const getCounterpartyDisplayName = (transaction: Transaction): string => {
+    if (transaction.user_role === 'seller') {
+      // User is seller, show buyer info
+      if (!transaction.buyer_id) {
+        return 'En attente d\'acheteur';
+      }
 
-    const profile = transaction.buyer_profile;
-    if (!profile) {
+      const profile = transaction.buyer_profile;
+      if (!profile) {
+        return 'Acheteur';
+      }
+
+      if (profile.company_name) {
+        return profile.company_name;
+      }
+
+      if (profile.first_name || profile.last_name) {
+        return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+      }
+
       return 'Acheteur';
-    }
+    } else {
+      // User is buyer, show seller info
+      const profile = transaction.seller_profile;
+      if (!profile) {
+        return 'Vendeur';
+      }
 
-    if (profile.company_name) {
-      return profile.company_name;
-    }
+      if (profile.company_name) {
+        return profile.company_name;
+      }
 
-    if (profile.first_name || profile.last_name) {
-      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-    }
+      if (profile.first_name || profile.last_name) {
+        return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+      }
 
-    return 'Acheteur';
+      return 'Vendeur';
+    }
   };
 
   const getPaymentCountdown = (transaction: Transaction): string | null => {
@@ -188,6 +239,6 @@ export const useTransactions = () => {
     isOffline,
     refreshTransactions: refetch,
     getPaymentCountdown,
-    getBuyerDisplayName,
+    getCounterpartyDisplayName,
   };
 };

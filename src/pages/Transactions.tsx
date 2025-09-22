@@ -37,7 +37,7 @@ export const Transactions = () => {
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { transactions, loading, error, refreshTransactions, getBuyerDisplayName } = useTransactions();
+  const { transactions, loading, error, refreshTransactions, getCounterpartyDisplayName } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
@@ -251,7 +251,12 @@ export const Transactions = () => {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <User className="w-3 h-3" />
-                            <strong>Acheteur:</strong> {getBuyerDisplayName(transaction)}
+                            <strong>{transaction.user_role === 'seller' ? 'Acheteur:' : 'Vendeur:'}</strong> {getCounterpartyDisplayName(transaction)}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {transaction.user_role === 'seller' ? 'Vendeur' : 'Acheteur'}
+                            </Badge>
                           </div>
                           <div>
                             <strong>Service:</strong> {format(new Date(transaction.service_date), 'PPP', { locale: fr })}
