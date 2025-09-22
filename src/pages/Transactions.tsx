@@ -29,11 +29,13 @@ import {
   RefreshCw,
   Timer,
   Banknote,
-  CheckCheck
+  CheckCheck,
+  Download
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
 import { supabase } from '@/integrations/supabase/client';
+import { generateSellerInvoice, generateBuyerInvoice, downloadInvoice } from '@/components/invoice/AutoInvoiceGenerator';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
@@ -161,6 +163,58 @@ export const Transactions = () => {
         const newSet = new Set(prev);
         newSet.delete(transactionId);
         return newSet;
+      });
+    }
+  };
+
+  const handleInvoiceDownload = async (transaction: any) => {
+    if (!user) return;
+
+    try {
+      toast({
+        title: "Génération de la facture...",
+        description: "Veuillez patienter",
+      });
+
+      // Get user profile
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        throw new Error('Impossible de récupérer le profil utilisateur');
+      }
+
+      const userEmail = user.email || '';
+      
+      let invoiceData: string;
+      let filename: string;
+
+      // Generate appropriate invoice based on user role
+      if (transaction.user_role === 'seller') {
+        invoiceData = await generateSellerInvoice(transaction, userProfile, userEmail);
+        filename = `RIVVLOCK_Vendeur_${transaction.id.substring(0, 8)}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      } else {
+        invoiceData = await generateBuyerInvoice(transaction, userProfile, userEmail);
+        filename = `RIVVLOCK_Acheteur_${transaction.id.substring(0, 8)}_${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      }
+
+      // Download the invoice
+      downloadInvoice(invoiceData, filename);
+
+      toast({
+        title: "Facture téléchargée",
+        description: "La facture a été générée et téléchargée avec succès",
+      });
+
+    } catch (error: any) {
+      console.error('Error generating invoice:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la génération de la facture",
+        variant: "destructive",
       });
     }
   };
@@ -428,15 +482,26 @@ export const Transactions = () => {
                             Voir détails
                           </Button>
                           
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => copyInvitationLink(transaction.shared_link_token)}
-                            disabled={!transaction.shared_link_token}
-                          >
-                            <Link className="w-4 h-4 mr-2" />
-                            Copier le lien
-                          </Button>
+                          {transaction.status === 'validated' ? (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleInvoiceDownload(transaction)}
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Télécharger la Facture
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => copyInvitationLink(transaction.shared_link_token)}
+                              disabled={!transaction.shared_link_token}
+                            >
+                              <Link className="w-4 h-4 mr-2" />
+                              Copier le lien
+                            </Button>
+                          )}
 
                           {/* Seller validation button */}
                           {transaction.status === 'paid' && 
