@@ -1,14 +1,19 @@
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EditProfileDialog } from '@/components/EditProfileDialog';
+import { Edit } from 'lucide-react';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { data: profile, isLoading, error } = useProfile();
+  const { data: profile, isLoading, error, refetch } = useProfile();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -51,11 +56,20 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('navigation.profile')}</h1>
-        <p className="text-muted-foreground">
-          {t('user.profile')} - Gérez vos informations personnelles
-        </p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">{t('navigation.profile')}</h1>
+          <p className="text-muted-foreground">
+            {t('user.profile')} - Gérez vos informations personnelles
+          </p>
+        </div>
+        <Button
+          onClick={() => setIsEditDialogOpen(true)}
+          className="flex items-center gap-2"
+        >
+          <Edit className="h-4 w-4" />
+          Modifier le profil
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -227,6 +241,13 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <EditProfileDialog 
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        profile={profile}
+        onProfileUpdated={() => refetch()}
+      />
     </div>
   );
 }
