@@ -1,3 +1,4 @@
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -11,19 +12,30 @@ import "./i18n/config";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <Toaster position="top-right" />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App: React.FC = () => {
+  return React.createElement(
+    QueryClientProvider,
+    { client: queryClient },
+    React.createElement(
+      AuthProvider,
+      null,
+      React.createElement(Toaster, { position: "top-right" }),
+      React.createElement(
+        BrowserRouter,
+        null,
+        React.createElement(
+          Routes,
+          null,
+          React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
+          React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
+          React.createElement(Route, { 
+            path: "/dashboard", 
+            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
+          })
+        )
+      )
+    )
+  );
+};
 
 export default App;
