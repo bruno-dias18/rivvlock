@@ -73,7 +73,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const register = async (email: string, password: string, metadata?: any) => {
-    const { error } = await supabase.auth.signUp({
+    console.log('Registration metadata being sent:', metadata);
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -82,7 +84,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
 
+    console.log('Registration response:', { data, error });
+
     if (error) {
+      console.error('Registration error:', error);
       throw error;
     }
   };
