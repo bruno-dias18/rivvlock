@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getAppBaseUrl } from '@/lib/appUrl';
+import { isMobileDevice, clearMobileCache } from '@/lib/mobileUtils';
 import type { Session } from '@supabase/supabase-js';
 
 export interface UserProfile {
@@ -34,6 +35,7 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   isAdmin: boolean;
+  isMobileDevice: boolean;
   login: (email: string, password: string) => Promise<{ error: any | null }>;
   register: (data: RegisterData) => Promise<{ error: any | null; data?: any }>;
   logout: () => Promise<{ error: any | null }>;
@@ -44,6 +46,7 @@ const defaultValue: AuthContextValue = {
   session: null,
   loading: true,
   isAdmin: false,
+  isMobileDevice: false,
   async login() { return { error: null }; },
   async register() { return { error: null }; },
   async logout() { return { error: null }; },
@@ -56,23 +59,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [creatingStripeCustomer, setCreatingStripeCustomer] = useState(false);
+  const isMobile = isMobileDevice();
 
   useEffect(() => {
+    console.log('🔐 [AUTH] Initializing auth context (mobile:', isMobile, ')');
+    
     // 1) Listen first
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('🔐 [AUTH] State change:', event, 'mobile:', isMobile);
+      
       setSession(session);
       if (session?.user) {
+        // On mobile, add delay to ensure stable connection
+        const delay = isMobile ? 500 : 0;
         setTimeout(() => {
           fetchUserProfile(session.user.id, session.user.email || '');
-        }, 0);
+        }, delay);
       } else {
         setUser(null);
+        // Clear mobile cache on logout
+        if (isMobile && event === 'SIGNED_OUT') {
+          console.log('🧹 [AUTH] Clearing mobile cache on logout');
+          clearMobileCache();
+        }
       }
       setLoading(false);
     });
 
     // 2) Then check current session once
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔐 [AUTH] Initial session check:', !!session, 'mobile:', isMobile);
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id, session.user.email || '');
@@ -82,28 +98,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isMobile]);
 
   const fetchUserProfile = async (userId: string, userEmail: string) => {
     try {
-      // Fetch user profile
-      const { data: profile, error } = await supabase
+      console.log('👤 [AUTH] Fetching profile for:', userEmail, '(mobile:', isMobile, ')');
+      
+      // Mobile optimization: add timeout for slower connections
+      const timeoutMs = isMobile ? 15000 : 30000;
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
+      const adminPromise = supabase
+        .rpc('is_admin', { check_user_id: userId });
+
+      // Race against timeout
+      const results = await Promise.race([
+        Promise.all([profilePromise, adminPromise]),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout')), timeoutMs)
+        )
+      ]) as [any, any];
+
+      const [{ data: profile, error }, { data: isAdminResult, error: adminError }] = results;
+
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ [AUTH] Error fetching profile:', error);
+        if (isMobile && error.message.includes('timeout')) {
+          console.warn('⚠️ [AUTH] Mobile timeout - will retry');
+          // On mobile timeout, set fallback and retry later
+          setUser({ 
+            id: userId, 
+            email: userEmail, 
+            type: 'individual' as const, 
+            country: 'FR' as const, 
+            verified: false,
+            isAdmin: false
+          });
+          setLoading(false);
+          
+          // Retry after delay
+          setTimeout(() => fetchUserProfile(userId, userEmail), 3000);
+          return;
+        }
         return;
       }
 
-      // Check if user is admin
-      const { data: isAdminResult, error: adminError } = await supabase
-        .rpc('is_admin', { check_user_id: userId });
-
       if (adminError) {
-        console.error('Error checking admin status:', adminError);
+        console.error('❌ [AUTH] Error checking admin status:', adminError);
       }
 
       const isAdmin = isAdminResult || userEmail === 'bruno-dias@outlook.com';
@@ -118,6 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAdmin,
         };
         setUser(userProfile);
+        console.log('✅ [AUTH] Profile loaded successfully (mobile:', isMobile, ')');
 
         // Automatically create Stripe customer if not exists and not already creating
         if (!profile.stripe_customer_id && !creatingStripeCustomer) {
@@ -137,9 +183,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           isAdmin
         };
         setUser(fallbackUser);
+        console.log('⚠️ [AUTH] Using fallback user profile (mobile:', isMobile, ')');
       }
     } catch (e) {
-      console.error('Error fetching user profile:', e);
+      console.error('❌ [AUTH] Exception fetching user profile:', e);
+      
+      // On mobile, provide more resilient fallback
+      if (isMobile) {
+        setUser({ 
+          id: userId, 
+          email: userEmail, 
+          type: 'individual' as const, 
+          country: 'FR' as const, 
+          verified: false,
+          isAdmin: false
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -209,6 +268,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout: AuthContextValue['logout'] = async () => {
     try {
+      console.log('🚪 [AUTH] Logout initiated (mobile:', isMobile, ')');
+      
       // Force cleanup of client-side session data first
       setUser(null);
       setSession(null);
@@ -223,6 +284,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
+      // Mobile-specific: also clear cache
+      if (isMobile) {
+        console.log('🧹 [AUTH] Clearing mobile cache on logout');
+        clearMobileCache();
+      }
+      
       // Try local signout first to avoid 403 errors
       await supabase.auth.signOut({ scope: 'local' });
       
@@ -231,7 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       return { error: null };
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('❌ [AUTH] Logout error:', error);
       // Force logout even on error
       setUser(null);
       setSession(null);
@@ -246,6 +313,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
+      // Mobile-specific cleanup
+      if (isMobile) {
+        clearMobileCache();
+      }
+      
       window.location.replace('/auth');
       return { error: null };
     }
@@ -256,10 +328,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session, 
     loading, 
     isAdmin: user?.isAdmin || false,
+    isMobileDevice: isMobile,
     login, 
     register, 
     logout 
-  }), [user, session, loading]);
+  }), [user, session, loading, isMobile]);
 
   return (
     <AuthContext.Provider value={value}>

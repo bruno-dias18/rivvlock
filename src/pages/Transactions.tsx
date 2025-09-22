@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTransactions } from '@/hooks/useTransactions';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
+import { useMobileSync } from '@/hooks/useMobileSync';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
@@ -31,29 +32,34 @@ import {
   Banknote,
   CheckCheck,
   Download,
-  Flag
+  Flag,
+  Smartphone
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
 import { supabase } from '@/integrations/supabase/client';
 import { generateSellerInvoice, generateBuyerInvoice, downloadInvoice } from '@/components/invoice/AutoInvoiceGenerator';
 import { DisputeModal } from '@/components/escrow/DisputeModal';
+import { isMobileDevice, forceMobileRefresh } from '@/lib/mobileUtils';
 
 // Remove mock transactions data - now using real data from useTransactions hook
 
 export const Transactions = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
-  const { user } = useAuth();
+  const { user, isMobileDevice: userIsMobile } = useAuth();
   const navigate = useNavigate();
-  const { transactions, loading, error, refreshTransactions, getCounterpartyDisplayName } = useTransactions();
+  const { transactions, loading, error, refreshTransactions, getCounterpartyDisplayName, isOffline } = useTransactions();
+  const { syncStatus, performFullSync, forceAppRefresh } = useMobileSync();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
+  const [disputeTransactionId, setDisputeTransactionId] = useState<string>('');
+  const [disputeRole, setDisputeRole] = useState<'seller' | 'buyer'>('seller');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const isMobile = isMobileDevice();
   const [isSyncing, setIsSyncing] = useState(false);
   const [validatingTransactions, setValidatingTransactions] = useState<Set<string>>(new Set());
-  const [disputeModalOpen, setDisputeModalOpen] = useState(false);
-  const [disputeTransactionId, setDisputeTransactionId] = useState<string | null>(null);
-  const [disputeRole, setDisputeRole] = useState<'seller' | 'buyer' | null>(null);
   const { toast } = useToast();
   const hasAutoSyncedRef = useRef(false);
 
