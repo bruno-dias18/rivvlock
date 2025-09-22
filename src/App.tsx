@@ -2,6 +2,7 @@ import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
+import { I18nextProvider } from "react-i18next";
 import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -11,8 +12,8 @@ import AdminPage from "./pages/AdminPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/DashboardLayout";
+import i18n from "./i18n/config";
 import "./index.css";
-import "./i18n/config";
 
 const queryClient = new QueryClient();
 
@@ -21,33 +22,37 @@ const App: React.FC = () => {
     QueryClientProvider,
     { client: queryClient },
     React.createElement(
-      AuthProvider,
-      null,
-      React.createElement(Toaster, { position: "top-right" }),
+      I18nextProvider,
+      { i18n },
       React.createElement(
-        BrowserRouter,
+        AuthProvider,
         null,
+        React.createElement(Toaster, { position: "top-right" }),
         React.createElement(
-          Routes,
+          BrowserRouter,
           null,
-          React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
-          React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
-          React.createElement(Route, { 
-            path: "/dashboard", 
-            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
-          }),
-          React.createElement(Route, { 
-            path: "/dashboard/transactions", 
-            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
-          }),
-          React.createElement(Route, { 
-            path: "/dashboard/profile", 
-            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
-          }),
-          React.createElement(Route, { 
-            path: "/dashboard/admin", 
-            element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
-          })
+          React.createElement(
+            Routes,
+            null,
+            React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
+            React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
+            React.createElement(Route, { 
+              path: "/dashboard", 
+              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
+            }),
+            React.createElement(Route, { 
+              path: "/dashboard/transactions", 
+              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
+            }),
+            React.createElement(Route, { 
+              path: "/dashboard/profile", 
+              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
+            }),
+            React.createElement(Route, { 
+              path: "/dashboard/admin", 
+              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
+            })
+          )
         )
       )
     )
