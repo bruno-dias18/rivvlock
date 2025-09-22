@@ -3,8 +3,8 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
-type Country = 'france' | 'switzerland';
 type UserType = 'individual' | 'company' | 'independent';
+type Country = 'FR' | 'CH';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -13,8 +13,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Profile fields
-  const [country, setCountry] = useState<Country>('france');
+  // Registration form fields
+  const [country, setCountry] = useState<Country>('FR');
   const [userType, setUserType] = useState<UserType>('individual');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -35,54 +35,39 @@ export default function AuthPage() {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const validateForm = () => {
-    if (!acceptanceTerms && isSignUp) {
-      setError('Vous devez accepter les conditions générales');
-      return false;
-    }
-    
-    if (isSignUp) {
-      if (!firstName || !lastName) {
-        setError('Le prénom et nom sont obligatoires');
-        return false;
-      }
-      
-      if (userType === 'company') {
-        if (!companyName) {
-          setError('Le nom de société est obligatoire');
-          return false;
-        }
-        if (country === 'france' && !siretUid) {
-          setError('Le SIRET est obligatoire pour les sociétés françaises');
-          return false;
-        }
-      }
-      
-      if (userType === 'independent' && country === 'switzerland' && !avsNumber) {
-        setError('Le numéro AVS est obligatoire pour les indépendants suisses');
-        return false;
-      }
-    }
-    
-    return true;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    if (!validateForm()) {
-      setLoading(false);
-      return;
+    // Validation for sign up
+    if (isSignUp) {
+      if (!acceptanceTerms) {
+        setError('Vous devez accepter les conditions générales');
+        setLoading(false);
+        return;
+      }
+
+      // Country/UserType specific validations
+      if (country === 'FR' && userType === 'company' && !siretUid) {
+        setError('Le numéro SIRET est obligatoire pour les sociétés françaises');
+        setLoading(false);
+        return;
+      }
+
+      if (country === 'CH' && userType === 'independent' && !avsNumber) {
+        setError('Le numéro AVS est obligatoire pour les indépendants suisses');
+        setLoading(false);
+        return;
+      }
     }
 
     try {
       if (isSignUp) {
-        // Prepare metadata for registration
+        // Prepare registration metadata
         const metadata = {
           user_type: userType,
-          country: country === 'france' ? 'FR' : 'CH',
+          country,
           first_name: firstName,
           last_name: lastName,
           phone,
@@ -91,12 +76,11 @@ export default function AuthPage() {
           company_address: companyAddress,
           siret_uid: siretUid,
           avs_number: avsNumber,
-          tva_rate: tvaRate ? parseFloat(tvaRate) : null,
-          vat_rate: tvaRate ? parseFloat(tvaRate) : null,
+          tva_rate: tvaRate,
           acceptance_terms: acceptanceTerms,
           registration_complete: true
         };
-        
+
         await register(email, password, metadata);
       } else {
         await login(email, password);
@@ -108,24 +92,41 @@ export default function AuthPage() {
     }
   };
 
+  const isFieldRequired = (field: string): boolean => {
+    if (!isSignUp) return false;
+    
+    switch (field) {
+      case 'siret':
+        return country === 'FR' && userType === 'company';
+      case 'avs':
+        return country === 'CH' && userType === 'independent';
+      case 'companyName':
+        return userType === 'company';
+      case 'companyAddress':
+        return userType === 'company';
+      default:
+        return false;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full space-y-8">
-      <div className="text-center">
-        <div className="mb-8">
-          <img 
-            src="/assets/rivvlock-logo.jpeg" 
-            alt="RIVVLOCK Logo" 
-            className="mx-auto h-24 w-auto object-contain"
-          />
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <div className="mb-8">
+            <img 
+              src="/assets/rivvlock-logo.jpeg" 
+              alt="RIVVLOCK Logo" 
+              className="mx-auto h-24 w-auto object-contain"
+            />
+          </div>
+          <h2 className="text-3xl font-bold text-foreground">
+            {isSignUp ? 'Créer un compte' : 'Bienvenue'}
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            {isSignUp ? 'Inscription sur RivvLock' : 'Connectez-vous à votre compte'}
+          </p>
         </div>
-        <h2 className="text-3xl font-bold text-foreground">
-          {isSignUp ? 'Create Account' : 'Welcome Back'}
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          {isSignUp ? 'Sign up for RivvLock' : 'Sign in to your account'}
-        </p>
-      </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           {error && (
@@ -134,128 +135,106 @@ export default function AuthPage() {
             </div>
           )}
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
-              {t('common.email')}
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder={t('common.email')}
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
-              {t('common.password')}
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete={isSignUp ? "new-password" : "current-password"}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder={t('common.password')}
-            />
-          </div>
-
           {isSignUp && (
             <>
               {/* Country Selection */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Pays
+                <label htmlFor="country" className="block text-sm font-medium text-foreground">
+                  Pays *
                 </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setCountry('france')}
-                    className={`p-3 border rounded-md text-sm font-medium transition-colors ${
-                      country === 'france'
-                        ? 'bg-primary text-primary-foreground border-primary' 
-                        : 'bg-background text-foreground border-border hover:bg-accent'
-                    }`}
-                  >
-                    🇫🇷 France
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCountry('switzerland')}
-                    className={`p-3 border rounded-md text-sm font-medium transition-colors ${
-                      country === 'switzerland'
-                        ? 'bg-primary text-primary-foreground border-primary' 
-                        : 'bg-background text-foreground border-border hover:bg-accent'
-                    }`}
-                  >
-                    🇨🇭 Suisse
-                  </button>
-                </div>
+                <select
+                  id="country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value as Country)}
+                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                >
+                  <option value="FR">France</option>
+                  <option value="CH">Suisse</option>
+                </select>
               </div>
 
               {/* User Type Selection */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Type de profil
+                <label htmlFor="userType" className="block text-sm font-medium text-foreground">
+                  Type de profil *
                 </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {(['individual', 'company', 'independent'] as UserType[]).map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setUserType(type)}
-                      className={`p-3 border rounded-md text-sm font-medium transition-colors text-left ${
-                        userType === type
-                          ? 'bg-primary text-primary-foreground border-primary' 
-                          : 'bg-background text-foreground border-border hover:bg-accent'
-                      }`}
-                    >
-                      {type === 'individual' && '👤 Particulier'}
-                      {type === 'company' && '🏢 Société'}
-                      {type === 'independent' && '💼 Indépendant'}
-                    </button>
-                  ))}
-                </div>
+                <select
+                  id="userType"
+                  value={userType}
+                  onChange={(e) => setUserType(e.target.value as UserType)}
+                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  required
+                >
+                  <option value="individual">Particulier</option>
+                  <option value="company">Société</option>
+                  <option value="independent">Indépendant</option>
+                </select>
               </div>
 
               {/* Personal Information */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-foreground">
-                    {t('user.firstName')} *
+                    Prénom *
                   </label>
                   <input
                     id="firstName"
                     type="text"
-                    required
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
                   />
                 </div>
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-foreground">
-                    {t('user.lastName')} *
+                    Nom *
                   </label>
                   <input
                     id="lastName"
                     type="text"
-                    required
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
                   />
                 </div>
               </div>
 
+              {/* Company Information */}
+              {userType === 'company' && (
+                <>
+                  <div>
+                    <label htmlFor="companyName" className="block text-sm font-medium text-foreground">
+                      Nom de l'entreprise *
+                    </label>
+                    <input
+                      id="companyName"
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      required={isFieldRequired('companyName')}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="companyAddress" className="block text-sm font-medium text-foreground">
+                      Adresse du siège social *
+                    </label>
+                    <textarea
+                      id="companyAddress"
+                      value={companyAddress}
+                      onChange={(e) => setCompanyAddress(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      rows={2}
+                      required={isFieldRequired('companyAddress')}
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Contact Information */}
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-foreground">
                   Téléphone
@@ -271,134 +250,136 @@ export default function AuthPage() {
 
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-foreground">
-                  Adresse
+                  Adresse personnelle
                 </label>
                 <textarea
                   id="address"
-                  rows={2}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  rows={2}
                 />
               </div>
 
-              {/* Company Information */}
-              {userType === 'company' && (
-                <>
-                  <div>
-                    <label htmlFor="companyName" className="block text-sm font-medium text-foreground">
-                      {t('user.companyName')} *
-                    </label>
-                    <input
-                      id="companyName"
-                      type="text"
-                      required
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="companyAddress" className="block text-sm font-medium text-foreground">
-                      Adresse du siège social
-                    </label>
-                    <textarea
-                      id="companyAddress"
-                      rows={2}
-                      value={companyAddress}
-                      onChange={(e) => setCompanyAddress(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Country-specific fields */}
-              {country === 'france' && userType !== 'individual' && (
+              {/* Country and User Type Specific Fields */}
+              {country === 'FR' && userType === 'company' && (
                 <div>
-                  <label htmlFor="siretUid" className="block text-sm font-medium text-foreground">
-                    SIRET {userType === 'company' && '*'}
+                  <label htmlFor="siret" className="block text-sm font-medium text-foreground">
+                    Numéro SIRET *
                   </label>
                   <input
-                    id="siretUid"
+                    id="siret"
                     type="text"
-                    required={userType === 'company'}
                     value={siretUid}
                     onChange={(e) => setSiretUid(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="12345678901234"
+                    placeholder="14 chiffres"
+                    required={isFieldRequired('siret')}
                   />
                 </div>
               )}
 
-              {country === 'switzerland' && userType === 'independent' && (
+              {country === 'CH' && userType === 'company' && (
                 <div>
-                  <label htmlFor="avsNumber" className="block text-sm font-medium text-foreground">
-                    Numéro AVS *
-                  </label>
-                  <input
-                    id="avsNumber"
-                    type="text"
-                    required
-                    value={avsNumber}
-                    onChange={(e) => setAvsNumber(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="756.1234.5678.90"
-                  />
-                </div>
-              )}
-
-              {country === 'switzerland' && userType === 'company' && (
-                <div>
-                  <label htmlFor="siretUid" className="block text-sm font-medium text-foreground">
+                  <label htmlFor="uid" className="block text-sm font-medium text-foreground">
                     Numéro UID *
                   </label>
                   <input
-                    id="siretUid"
+                    id="uid"
                     type="text"
-                    required
                     value={siretUid}
                     onChange={(e) => setSiretUid(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="CHE-123.456.789"
+                    placeholder="CHE-XXX.XXX.XXX"
+                    required
                   />
                 </div>
               )}
 
-              {/* TVA/VAT */}
-              {userType !== 'individual' && (
+              {country === 'CH' && userType === 'independent' && (
                 <div>
-                  <label htmlFor="tvaRate" className="block text-sm font-medium text-foreground">
-                    Numéro TVA {userType === 'company' && country === 'france' ? '*' : ''}
+                  <label htmlFor="avs" className="block text-sm font-medium text-foreground">
+                    Numéro AVS *
                   </label>
                   <input
-                    id="tvaRate"
+                    id="avs"
                     type="text"
-                    required={userType === 'company' && country === 'france'}
+                    value={avsNumber}
+                    onChange={(e) => setAvsNumber(e.target.value)}
+                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="756.XXXX.XXXX.XX"
+                    required={isFieldRequired('avs')}
+                  />
+                </div>
+              )}
+
+              {(userType === 'company' || (userType === 'independent' && country === 'FR')) && (
+                <div>
+                  <label htmlFor="tva" className="block text-sm font-medium text-foreground">
+                    Numéro de TVA {userType === 'company' ? '*' : ''}
+                  </label>
+                  <input
+                    id="tva"
+                    type="text"
                     value={tvaRate}
                     onChange={(e) => setTvaRate(e.target.value)}
                     className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder={country === 'france' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
+                    placeholder={country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'}
+                    required={userType === 'company'}
                   />
                 </div>
               )}
 
               {/* Terms and Conditions */}
-              <div className="flex items-start space-x-2">
+              <div className="flex items-start">
                 <input
-                  id="acceptanceTerms"
+                  id="terms"
                   type="checkbox"
-                  required
                   checked={acceptanceTerms}
                   onChange={(e) => setAcceptanceTerms(e.target.checked)}
                   className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                  required
                 />
-                <label htmlFor="acceptanceTerms" className="text-sm text-foreground">
-                  J'accepte les <span className="text-primary hover:underline cursor-pointer">conditions générales d'utilisation</span> et la <span className="text-primary hover:underline cursor-pointer">politique de confidentialité</span> *
+                <label htmlFor="terms" className="ml-2 block text-sm text-foreground">
+                  J'accepte les <a href="#" className="text-primary hover:text-primary/90">conditions générales</a> et la <a href="#" className="text-primary hover:text-primary/90">politique de confidentialité</a> *
                 </label>
               </div>
             </>
           )}
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-foreground">
+              Email *
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Votre email"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
+              Mot de passe *
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Votre mot de passe"
+            />
+          </div>
 
           <div>
             <button
@@ -406,7 +387,7 @@ export default function AuthPage() {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Veuillez patienter...' : (isSignUp ? 'Créer un compte' : 'Se connecter')}
+              {loading ? 'Chargement...' : (isSignUp ? 'Créer le compte' : 'Se connecter')}
             </button>
           </div>
 
@@ -416,7 +397,7 @@ export default function AuthPage() {
               onClick={() => setIsSignUp(!isSignUp)}
               className="text-sm text-primary hover:text-primary/90"
             >
-              {isSignUp ? 'Déjà un compte ? Se connecter' : "Pas de compte ? S'inscrire"}
+              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
             </button>
           </div>
         </form>
