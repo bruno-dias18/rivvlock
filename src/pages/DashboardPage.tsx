@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, User, Settings, Shield, Clock, Lock, CheckCircle, Plus } from 'lucide-react';
+import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 
 export default function DashboardPage() {
@@ -46,12 +46,6 @@ export default function DashboardPage() {
       description: 'Mettre à jour vos informations',
       icon: User,
       onClick: () => navigate('/dashboard/profile'),
-    },
-    {
-      title: 'Sécurité',
-      description: 'Paramètres de sécurité du compte',
-      icon: Shield,
-      onClick: () => navigate('/dashboard/security'),
     },
   ];
 
