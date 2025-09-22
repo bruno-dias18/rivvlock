@@ -253,11 +253,21 @@ export const Transactions = () => {
     }
   };
 
+  // Compute effective status for display
+  const getComputedStatus = (transaction: any) => {
+    // If status is 'pending' but payment_blocked_at exists, treat as 'paid' for display
+    if (transaction.status === 'pending' && transaction.payment_blocked_at) {
+      return 'paid';
+    }
+    return transaction.status;
+  };
+
   const filteredTransactions = transactions.filter(transaction => {
     const matchesSearch = transaction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          transaction.description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || transaction.status === statusFilter;
+    const computedStatus = getComputedStatus(transaction);
+    const matchesStatus = statusFilter === 'all' || computedStatus === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -290,13 +300,20 @@ export const Transactions = () => {
   };
 
   const getStatusCounts = () => {
-    return {
+    const countsWithComputedStatus = {
       all: transactions.length,
-      pending: transactions.filter(t => t.status === 'pending').length,
-      paid: transactions.filter(t => t.status === 'paid').length,
-      validated: transactions.filter(t => t.status === 'validated').length,
-      disputed: transactions.filter(t => t.status === 'disputed').length,
+      pending: 0,
+      paid: 0,
+      validated: 0,
+      disputed: 0,
     };
+
+    transactions.forEach(t => {
+      const computedStatus = getComputedStatus(t);
+      countsWithComputedStatus[computedStatus as keyof typeof countsWithComputedStatus]++;
+    });
+
+    return countsWithComputedStatus;
   };
 
   const statusCounts = getStatusCounts();
@@ -413,7 +430,8 @@ export const Transactions = () => {
             </Card>
           ) : (
             filteredTransactions.map((transaction) => {
-              const statusConfig = getStatusConfig(transaction.status);
+              const computedStatus = getComputedStatus(transaction);
+              const statusConfig = getStatusConfig(computedStatus);
               const StatusIcon = statusConfig.icon;
               
               return (
@@ -426,9 +444,9 @@ export const Transactions = () => {
                           <div>
                             <div className="flex items-center gap-3">
                               <h3 className="font-semibold text-lg">{transaction.title}</h3>
-                              <Badge className={statusConfig.badge}>
+                               <Badge className={statusConfig.badge}>
                                 <StatusIcon className="w-3 h-3 mr-1" />
-                                {t(`transactions.${transaction.status}`)}
+                                {t(`transactions.${computedStatus}`)}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -511,7 +529,7 @@ export const Transactions = () => {
                           )}
 
                           {/* Seller validation button */}
-                          {transaction.status === 'paid' && 
+                          {computedStatus === 'paid' && 
                            transaction.user_role === 'seller' && 
                            !transaction.seller_validated && (
                             <Button 
@@ -530,7 +548,7 @@ export const Transactions = () => {
                           )}
 
                           {/* Seller validated state */}
-                          {transaction.status === 'paid' && 
+                          {computedStatus === 'paid' && 
                            transaction.user_role === 'seller' && 
                            transaction.seller_validated && 
                            !transaction.buyer_validated && (
@@ -545,7 +563,7 @@ export const Transactions = () => {
                           )}
 
                           {/* Buyer fund release button */}
-                          {transaction.status === 'paid' && 
+                          {computedStatus === 'paid' && 
                            transaction.user_role === 'buyer' && 
                            transaction.stripe_payment_intent_id && (
                             <Button 
