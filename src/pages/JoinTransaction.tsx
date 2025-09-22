@@ -277,9 +277,9 @@ const [error, setError] = useState<string | null>(null);
     <Layout>
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold gradient-text">Connexion RIVVLOCK</h1>
+          <h1 className="text-3xl font-bold gradient-text">Transaction RIVVLOCK</h1>
           <p className="text-muted-foreground mt-1">
-            Connectez-vous pour accéder à cette transaction sécurisée
+            Détails de la transaction sécurisée
           </p>
         </div>
 
@@ -294,11 +294,11 @@ const [error, setError] = useState<string | null>(null);
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Transaction Details */}
+            {/* Transaction Details - Always visible */}
             <div className="space-y-4">
               <div className="p-4 bg-accent rounded-lg">
                 <h3 className="font-semibold mb-2">Description du service</h3>
-                <p className="text-sm">{transaction.description}</p>
+                <p className="text-sm">{transaction.description || 'Aucune description fournie'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -355,16 +355,16 @@ const [error, setError] = useState<string | null>(null);
               </ul>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
+            {/* Authentication & Action Section */}
+            <div className="border-t pt-4">
               {!user ? (
                 <div className="text-center space-y-3">
                   <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <h3 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">
-                      🔐 Connexion RIVVLOCK requise
+                      🔐 Connexion requise pour le paiement
                     </h3>
                     <p className="text-sm text-blue-700 dark:text-blue-300">
-                      Pour accéder à cette transaction sécurisée, vous devez vous connecter ou créer un compte RIVVLOCK.
+                      Pour procéder au paiement sécurisé, connectez-vous ou créez un compte RIVVLOCK.
                     </p>
                   </div>
                   <Button 
@@ -373,7 +373,7 @@ const [error, setError] = useState<string | null>(null);
                     size="lg"
                   >
                     <Users className="w-4 h-4 mr-2" />
-                    Se connecter à RIVVLOCK
+                    Se connecter pour payer
                   </Button>
                   <p className="text-xs text-muted-foreground">
                     Nouveau chez RIVVLOCK ? Un compte sera créé automatiquement.
@@ -418,15 +418,15 @@ const [error, setError] = useState<string | null>(null);
                   </Button>
                 </div>
               )}
-              
-              <Button 
-                onClick={() => navigate('/')} 
-                variant="outline" 
-                className="w-full"
-              >
-                Retour à l'accueil
-              </Button>
             </div>
+            
+            <Button 
+              onClick={() => navigate('/')} 
+              variant="outline" 
+              className="w-full"
+            >
+              Retour à l'accueil
+            </Button>
           </CardContent>
         </Card>
       </div>
