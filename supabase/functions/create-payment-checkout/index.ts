@@ -110,6 +110,7 @@ serve(async (req) => {
       cancel_url: `https://rivv-secure-escrow.lovable.app/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: transactionId,
+        transactionId: transactionId, // Alternative key for compatibility
         user_id: user.id,
         rivvlock_escrow: 'true'
       },
@@ -117,6 +118,7 @@ serve(async (req) => {
         capture_method: 'manual', // For escrow - funds will be captured later
         metadata: {
           transaction_id: transactionId,
+          transactionId: transactionId, // Alternative key for compatibility
           user_id: user.id,
           rivvlock_escrow: 'true'
         }

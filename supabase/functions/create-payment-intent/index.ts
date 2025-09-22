@@ -88,10 +88,12 @@ serve(async (req) => {
       description: `RIVVLOCK Escrow: ${transaction.title}`,
       metadata: {
         transaction_id: transactionId,
+        transactionId: transactionId, // Alternative key for compatibility
         seller_id: transaction.user_id,
         buyer_id: userData.user.id,
         service_date: transaction.service_date,
         platform: 'rivvlock',
+        rivvlock_escrow: 'true',
       },
       automatic_payment_methods: {
         enabled: true,

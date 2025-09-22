@@ -101,19 +101,51 @@ serve(async (req) => {
         logStep("Processing Payment Intent", { 
           id: paymentIntent.id, 
           amount: paymentIntent.amount,
-          currency: paymentIntent.currency 
+          currency: paymentIntent.currency,
+          metadata: paymentIntent.metadata
         });
 
-        // Look for matching transaction by payment intent ID
+        // Strategy 1: Match by payment intent ID
         let matchingTransaction = transactions?.find(t => 
           t.stripe_payment_intent_id === paymentIntent.id
         );
 
-        // If not found by payment intent ID, try to match by metadata
+        // Strategy 2: Match by metadata transaction_id
+        if (!matchingTransaction && paymentIntent.metadata?.transaction_id) {
+          matchingTransaction = transactions?.find(t => 
+            t.id === paymentIntent.metadata.transaction_id
+          );
+        }
+
+        // Strategy 3: Match by metadata transactionId (alternative key)
         if (!matchingTransaction && paymentIntent.metadata?.transactionId) {
           matchingTransaction = transactions?.find(t => 
             t.id === paymentIntent.metadata.transactionId
           );
+        }
+
+        // Strategy 4: Match by amount, currency and timeframe (fallback for payments without metadata)
+        if (!matchingTransaction) {
+          const paymentAmount = paymentIntent.amount / 100; // Convert from cents
+          const paymentDate = new Date(paymentIntent.created * 1000);
+          const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+          
+          matchingTransaction = transactions?.find(t => {
+            const transactionDate = new Date(t.created_at);
+            return (
+              Math.abs(t.price - paymentAmount) < 0.01 && // Amount match (within 1 cent)
+              t.currency.toLowerCase() === paymentIntent.currency.toLowerCase() && // Currency match
+              transactionDate > twoDaysAgo && // Created within last 2 days
+              t.status === 'pending' // Still pending
+            );
+          });
+          
+          if (matchingTransaction) {
+            logStep("Matched by amount/currency/date", { 
+              transactionId: matchingTransaction.id,
+              paymentIntentId: paymentIntent.id 
+            });
+          }
         }
 
         if (matchingTransaction) {
@@ -131,7 +163,8 @@ serve(async (req) => {
                 stripe_payment_intent_id: paymentIntent.id,
                 payment_blocked_at: new Date().toISOString(),
                 validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                payment_method: 'stripe'
               })
               .eq("id", matchingTransaction.id);
 
