@@ -3,6 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useOfflineCache } from './useOfflineCache';
 
+export interface BuyerProfile {
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  user_id?: string;
+}
+
 export interface Transaction {
   id: string;
   title: string;
@@ -19,6 +26,7 @@ export interface Transaction {
   payment_method?: string;
   payment_blocked_at?: string;
   shared_link_token?: string;
+  buyer_profile?: BuyerProfile;
 }
 
 export interface TransactionStats {
@@ -46,12 +54,29 @@ export const useTransactions = () => {
 
       const { data, error: fetchError } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          buyer_profile:profiles!buyer_id(
+            first_name,
+            last_name,
+            company_name,
+            user_id
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      return data as Transaction[];
+      
+      // Process data to handle potential join errors
+      const processedData = data?.map(transaction => ({
+        ...transaction,
+        buyer_profile: transaction.buyer_profile && !('error' in transaction.buyer_profile) 
+          ? transaction.buyer_profile 
+          : null
+      })) || [];
+      
+      return processedData as Transaction[];
     },
     2 * 60 * 1000 // 2 minutes cache
   );
@@ -96,6 +121,27 @@ export const useTransactions = () => {
     };
   }, [user, isOffline, refetch]);
 
+  const getBuyerDisplayName = (transaction: Transaction): string => {
+    if (!transaction.buyer_id) {
+      return 'En attente d\'acheteur';
+    }
+
+    const profile = transaction.buyer_profile;
+    if (!profile) {
+      return 'Acheteur';
+    }
+
+    if (profile.company_name) {
+      return profile.company_name;
+    }
+
+    if (profile.first_name || profile.last_name) {
+      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    }
+
+    return 'Acheteur';
+  };
+
   const getPaymentCountdown = (transaction: Transaction): string | null => {
     if (!transaction.payment_deadline || transaction.status !== 'pending') return null;
 
@@ -129,5 +175,6 @@ export const useTransactions = () => {
     isOffline,
     refreshTransactions: refetch,
     getPaymentCountdown,
+    getBuyerDisplayName,
   };
 };

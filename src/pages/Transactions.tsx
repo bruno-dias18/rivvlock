@@ -24,7 +24,8 @@ import {
   CreditCard,
   ExternalLink,
   Link,
-  Copy
+  Copy,
+  User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
@@ -36,7 +37,7 @@ export const Transactions = () => {
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { transactions, loading, error, refreshTransactions } = useTransactions();
+  const { transactions, loading, error, refreshTransactions, getBuyerDisplayName } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const { toast } = useToast();
@@ -248,6 +249,10 @@ export const Transactions = () => {
 
                         {/* Details */}
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            <strong>Acheteur:</strong> {getBuyerDisplayName(transaction)}
+                          </div>
                           <div>
                             <strong>Service:</strong> {format(new Date(transaction.service_date), 'PPP', { locale: fr })}
                           </div>
