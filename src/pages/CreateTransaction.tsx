@@ -96,7 +96,7 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}`;
+      const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}?v=v2.1`;
       setGeneratedLink(shareableLink);
 
       toast({
@@ -124,7 +124,7 @@ export const CreateTransaction = () => {
       setLinkCopied(true);
       toast({
         title: 'Lien copié !',
-        description: 'Le lien a été copié dans le presse-papiers.',
+        description: `Domaine: ${new URL(generatedLink).origin}`,
       });
       setTimeout(() => setLinkCopied(false), 2000);
     } catch (error) {

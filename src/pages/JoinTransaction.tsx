@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-
+import { isObsoleteUrl, forceCorrectUrl } from '@/lib/appUrl';
 interface Transaction {
   id: string;
   title: string;
@@ -33,7 +33,14 @@ export const JoinTransaction = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [loading, setLoading] = useState(true);
   const [isJoining, setIsJoining] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isObsoleteUrl()) {
+      console.warn('⚠️ [JOIN] Obsolete domain detected, redirecting to working domain...');
+      forceCorrectUrl();
+    }
+  }, []);
 
   const fetchTransaction = useCallback(async () => {
     if (!token || token === ':token') {

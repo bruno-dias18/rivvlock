@@ -31,6 +31,7 @@ import { TransactionChat } from '@/components/escrow/TransactionChat';
 import { ValidationButtons } from '@/components/escrow/ValidationButtons';
 import { PaymentWindow } from '@/components/validation/PaymentWindow';
 import { DisputeForm } from '@/components/escrow/DisputeForm';
+import { isObsoleteUrl, forceCorrectUrl } from '@/lib/appUrl';
 
 interface Transaction {
   id: string;
@@ -69,7 +70,14 @@ export const PaymentLink = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && isObsoleteUrl()) {
+      console.warn('⚠️ [PAYMENT-LINK] Obsolete domain detected, redirecting to working domain...');
+      forceCorrectUrl();
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) {
