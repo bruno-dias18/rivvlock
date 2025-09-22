@@ -96,7 +96,7 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${getAppBaseUrl()}/payment-link/${token}`;
+      const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}`;
       setGeneratedLink(shareableLink);
 
       toast({
