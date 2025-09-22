@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -207,12 +207,32 @@ export const AuthPage = () => {
         {/* Auth Form */}
         <Card className="animate-fade-in">
           <CardHeader>
-            <Tabs value={isLogin ? 'login' : 'register'} onValueChange={(value) => setIsLogin(value === 'login')}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">{t('common.login')}</TabsTrigger>
-                <TabsTrigger value="register">{t('common.register')}</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <div className="flex w-full border rounded-lg p-1 bg-muted">
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all",
+                  isLogin 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setIsLogin(true)}
+              >
+                {t('common.login')}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "flex-1 py-2 px-3 text-sm font-medium rounded-md transition-all",
+                  !isLogin 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setIsLogin(false)}
+              >
+                {t('common.register')}
+              </button>
+            </div>
           </CardHeader>
 
           <CardContent>
