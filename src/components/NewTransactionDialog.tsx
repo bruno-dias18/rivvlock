@@ -122,6 +122,12 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                         min="0"
                         placeholder="0.00"
                         {...field}
+                        onFocus={(e) => {
+                          if (e.target.value === '0') {
+                            e.target.value = '';
+                            field.onChange('');
+                          }
+                        }}
                         onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     </FormControl>
@@ -143,8 +149,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                        <SelectItem value="CHF">CHF (₣)</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="CHF">CHF</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
