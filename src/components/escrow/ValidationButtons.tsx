@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Clock, Download, Lock, Sparkles, Users, Shield } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Clock, Download, Lock, Sparkles, Users, Shield, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,6 +14,7 @@ import { generateInvoicePDF } from '@/components/invoice/InvoiceGenerator';
 import { format, differenceInDays, differenceInHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DisputeModal } from './DisputeModal';
 
 interface ValidationButtonsProps {
   transaction: {
@@ -35,6 +36,7 @@ interface ValidationButtonsProps {
 
 export const ValidationButtons = ({ transaction, onValidationUpdate }: ValidationButtonsProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
@@ -267,6 +269,17 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
                 <Download className="w-5 h-5 mr-2" />
                 Télécharger la facture
               </Button>
+              
+              {/* Dispute button for completed transactions */}
+              <Button
+                onClick={() => setShowDisputeModal(true)}
+                variant="outline"
+                size="lg"
+                className="flex-1 border-orange-200 text-orange-700 hover:bg-orange-50"
+              >
+                <AlertTriangle className="w-5 h-5 mr-2" />
+                {isSeller ? 'Ouvrir un Litige' : 'Signaler un Litige'}
+              </Button>
             </motion.div>
             
             <motion.div
@@ -480,32 +493,54 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
                       </p>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                          onClick={() => handleValidation(true)}
-                          disabled={isProcessing}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                          size="lg"
-                        >
-                          <CheckCircle className="w-5 h-5 mr-2" />
-                          Oui, parfait !
-                        </Button>
-                      </motion.div>
-                      
-                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button
-                          onClick={() => handleValidation(false)}
-                          disabled={isProcessing}
-                          variant="destructive"
-                          className="w-full shadow-lg hover:shadow-xl transition-all duration-300"
-                          size="lg"
-                        >
-                          <XCircle className="w-5 h-5 mr-2" />
-                          Il y a un souci
-                        </Button>
-                      </motion.div>
-                    </div>
+                     <div className="grid grid-cols-2 gap-3">
+                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                         <Button
+                           onClick={() => handleValidation(true)}
+                           disabled={isProcessing}
+                           className="w-full bg-green-600 hover:bg-green-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                           size="lg"
+                         >
+                           <CheckCircle className="w-5 h-5 mr-2" />
+                           Oui, parfait !
+                         </Button>
+                       </motion.div>
+                       
+                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                         <Button
+                           onClick={() => handleValidation(false)}
+                           disabled={isProcessing}
+                           variant="destructive"
+                           className="w-full shadow-lg hover:shadow-xl transition-all duration-300"
+                           size="lg"
+                         >
+                           <XCircle className="w-5 h-5 mr-2" />
+                           Il y a un souci
+                         </Button>
+                       </motion.div>
+                     </div>
+                     
+                     {/* Dispute button for validation section */}
+                     <div className="pt-2">
+                       <Button
+                         onClick={() => setShowDisputeModal(true)}
+                         variant="outline"
+                         className="w-full border-orange-200 text-orange-700 hover:bg-orange-50"
+                         size="lg"
+                       >
+                         {isSeller ? (
+                           <>
+                             <AlertTriangle className="w-5 h-5 mr-2" />
+                             Ouvrir un Litige
+                           </>
+                         ) : (
+                           <>
+                             <Flag className="w-5 h-5 mr-2" />
+                             Signaler un Litige
+                           </>
+                         )}
+                       </Button>
+                     </div>
                   </div>
                 )}
 
@@ -531,26 +566,41 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
                       </AlertDescription>
                     </Alert>
                     
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Button
-                        onClick={handleReleaseFunds}
-                        disabled={isProcessing}
-                        className="w-full gradient-primary text-white text-lg py-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border-0"
-                        size="lg"
-                      >
-                        <motion.div
-                          animate={{ rotate: isProcessing ? 360 : 0 }}
-                          transition={{ duration: 1, repeat: isProcessing ? Infinity : 0, ease: "linear" }}
-                          className="mr-3"
-                        >
-                          <LockAnimation isLocked={false} size="sm" />
-                        </motion.div>
-                        🔓 Libérer les fonds maintenant
-                      </Button>
-                    </motion.div>
+                     <motion.div
+                       whileHover={{ scale: 1.02 }}
+                       whileTap={{ scale: 0.98 }}
+                     >
+                       <Button
+                         onClick={handleReleaseFunds}
+                         disabled={isProcessing}
+                         className="w-full gradient-primary text-white text-lg py-8 shadow-2xl hover:shadow-3xl transition-all duration-500 border-0"
+                         size="lg"
+                       >
+                         <motion.div
+                           animate={{ rotate: isProcessing ? 360 : 0 }}
+                           transition={{ duration: 1, repeat: isProcessing ? Infinity : 0, ease: "linear" }}
+                           className="mr-3"
+                         >
+                           <LockAnimation isLocked={false} size="sm" />
+                         </motion.div>
+                         🔓 Libérer les fonds maintenant
+                       </Button>
+                     </motion.div>
+                     
+                     {/* Dispute button for seller after validation */}
+                     {isSeller && (
+                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                         <Button
+                           onClick={() => setShowDisputeModal(true)}
+                           variant="outline"
+                           className="w-full border-orange-200 text-orange-700 hover:bg-orange-50"
+                           size="lg"
+                         >
+                           <AlertTriangle className="w-5 h-5 mr-2" />
+                           Ouvrir un Litige
+                         </Button>
+                       </motion.div>
+                     )}
                     
                     <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                       <h5 className="font-semibold text-sm">💰 Répartition des fonds :</h5>
@@ -578,6 +628,15 @@ export const ValidationButtons = ({ transaction, onValidationUpdate }: Validatio
           </AnimatePresence>
         </CardContent>
       </Card>
+
+      {/* Dispute Modal */}
+      <DisputeModal
+        isOpen={showDisputeModal}
+        onClose={() => setShowDisputeModal(false)}
+        transactionId={transaction.id}
+        userRole={isSeller ? 'seller' : 'buyer'}
+        onDisputeCreated={onValidationUpdate}
+      />
     </motion.div>
   );
 };
