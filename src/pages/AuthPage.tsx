@@ -40,6 +40,9 @@ export default function AuthPage() {
     setLoading(true);
     setError('');
 
+    console.log('Form submission - Country:', country, 'UserType:', userType);
+    console.log('Form values:', { firstName, lastName, phone, address, companyName, siretUid, avsNumber, tvaRate });
+
     // Validation for sign up
     if (isSignUp) {
       if (!acceptanceTerms) {
@@ -47,6 +50,8 @@ export default function AuthPage() {
         setLoading(false);
         return;
       }
+
+      console.log('Validating fields for:', country, userType);
 
       // Country/UserType specific validations
       if (country === 'FR' && userType === 'company' && !siretUid) {
@@ -56,6 +61,7 @@ export default function AuthPage() {
       }
 
       if (country === 'CH' && userType === 'independent' && !avsNumber) {
+        console.log('AVS validation failed - avsNumber:', avsNumber);
         setError('Le numéro AVS est obligatoire pour les indépendants suisses');
         setLoading(false);
         return;
