@@ -30,19 +30,17 @@ import {
   RefreshCw,
   Timer,
   Banknote,
-  CheckCheck,
-  Download
+  CheckCheck
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { getAppBaseUrl } from '@/lib/appUrl';
-import { generateSellerInvoice, generateBuyerInvoice, downloadInvoice } from '@/components/invoice/AutoInvoiceGenerator';
 
 export const Transactions = () => {
   const { t } = useTranslation();
   const { formatAmount } = useCurrency();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { transactions, refreshTransactions } = useTransactions();
+  const { transactions, refetch } = useTransactions();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -53,7 +51,7 @@ export const Transactions = () => {
     
     setIsRefreshing(true);
     try {
-      await refreshTransactions();
+      await refetch();
       toast({
         title: "Actualisé",
         description: "Liste des transactions mise à jour",
@@ -87,38 +85,11 @@ export const Transactions = () => {
   };
 
   const downloadTransactionInvoice = async (transaction: any, type: 'seller' | 'buyer') => {
-    try {
-      // Create a basic user profile for invoice generation
-      const basicProfile = {
-        user_id: user?.id || '',
-        user_type: 'individual' as const,
-        email: user?.email || '',
-        first_name: '',
-        last_name: '',
-        country: 'FR' as const,
-        verified: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      const invoice = type === 'seller' 
-        ? await generateSellerInvoice(transaction, basicProfile, transaction.currency)
-        : await generateBuyerInvoice(transaction, basicProfile, transaction.currency);
-      
-      downloadInvoice(invoice, `${type}-invoice-${transaction.id.slice(0, 8)}.pdf`);
-      
-      toast({
-        title: "Facture téléchargée",
-        description: `Facture ${type === 'seller' ? 'vendeur' : 'acheteur'} générée avec succès`,
-      });
-    } catch (error) {
-      console.error('Error generating invoice:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer la facture",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Fonctionnalité non disponible",
+      description: "Les factures ne sont temporairement pas disponibles",
+      variant: "destructive",
+    });
   };
 
   const statusConfig = {
@@ -343,9 +314,9 @@ export const Transactions = () => {
                         onClick={() => downloadTransactionInvoice(transaction, userRole)}
                         size="sm"
                         variant="outline"
+                        disabled={true}
                       >
-                        <Download className="w-4 h-4 mr-2" />
-                        Télécharger Facture
+                        Facture (bientôt)
                       </Button>
                       
                       <Button

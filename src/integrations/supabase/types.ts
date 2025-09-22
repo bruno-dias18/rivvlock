@@ -17,7 +17,6 @@ export type Database = {
       admin_roles: {
         Row: {
           created_at: string
-          email: string
           id: string
           role: string
           updated_at: string
@@ -25,7 +24,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          email: string
           id?: string
           role?: string
           updated_at?: string
@@ -33,129 +31,16 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          email?: string
           id?: string
           role?: string
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      disputes: {
-        Row: {
-          admin_notes: string | null
-          created_at: string
-          description: string
-          id: string
-          reporter_id: string
-          status: string | null
-          transaction_id: string
-          updated_at: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string
-          description: string
-          id?: string
-          reporter_id: string
-          status?: string | null
-          transaction_id: string
-          updated_at?: string
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          reporter_id?: string
-          status?: string | null
-          transaction_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "disputes_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      messages: {
-        Row: {
-          content: string
-          created_at: string
-          id: string
-          sender_id: string
-          transaction_id: string
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          id?: string
-          sender_id: string
-          transaction_id: string
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          id?: string
-          sender_id?: string
-          transaction_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profile_audit_log: {
-        Row: {
-          action: string
-          changed_by: string | null
-          changed_fields: Json | null
-          created_at: string | null
-          id: string
-          new_values: Json | null
-          old_values: Json | null
-          profile_id: string
-          user_id: string
-        }
-        Insert: {
-          action: string
-          changed_by?: string | null
-          changed_fields?: Json | null
-          created_at?: string | null
-          id?: string
-          new_values?: Json | null
-          old_values?: Json | null
-          profile_id: string
-          user_id: string
-        }
-        Update: {
-          action?: string
-          changed_by?: string | null
-          changed_fields?: Json | null
-          created_at?: string | null
-          id?: string
-          new_values?: Json | null
-          old_values?: Json | null
-          profile_id?: string
           user_id?: string
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          acceptance_terms: boolean | null
           address: string | null
-          avs_number: string | null
-          company_address: string | null
           company_name: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at: string
@@ -163,21 +48,13 @@ export type Database = {
           id: string
           last_name: string | null
           phone: string | null
-          registration_complete: boolean | null
-          siret_uid: string | null
-          stripe_customer_id: string | null
-          tva_rate: number | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
-          vat_rate: number | null
           verified: boolean
         }
         Insert: {
-          acceptance_terms?: boolean | null
           address?: string | null
-          avs_number?: string | null
-          company_address?: string | null
           company_name?: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -185,21 +62,13 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
-          registration_complete?: boolean | null
-          siret_uid?: string | null
-          stripe_customer_id?: string | null
-          tva_rate?: number | null
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
-          vat_rate?: number | null
           verified?: boolean
         }
         Update: {
-          acceptance_terms?: boolean | null
           address?: string | null
-          avs_number?: string | null
-          company_address?: string | null
           company_name?: string | null
           country?: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -207,54 +76,10 @@ export type Database = {
           id?: string
           last_name?: string | null
           phone?: string | null
-          registration_complete?: boolean | null
-          siret_uid?: string | null
-          stripe_customer_id?: string | null
-          tva_rate?: number | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
-          vat_rate?: number | null
           verified?: boolean
-        }
-        Relationships: []
-      }
-      stripe_accounts: {
-        Row: {
-          account_status: string | null
-          charges_enabled: boolean | null
-          country: string
-          created_at: string
-          details_submitted: boolean | null
-          id: string
-          payouts_enabled: boolean | null
-          stripe_account_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          account_status?: string | null
-          charges_enabled?: boolean | null
-          country: string
-          created_at?: string
-          details_submitted?: boolean | null
-          id?: string
-          payouts_enabled?: boolean | null
-          stripe_account_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          account_status?: string | null
-          charges_enabled?: boolean | null
-          country?: string
-          created_at?: string
-          details_submitted?: boolean | null
-          id?: string
-          payouts_enabled?: boolean | null
-          stripe_account_id?: string
-          updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -262,118 +87,59 @@ export type Database = {
         Row: {
           buyer_display_name: string | null
           buyer_id: string | null
-          buyer_validated: boolean | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
-          dispute_id: string | null
-          funds_released: boolean | null
           id: string
-          link_expires_at: string | null
-          payment_blocked_at: string | null
           payment_deadline: string | null
           payment_method: string | null
-          payment_window_hours: number | null
           price: number
           seller_display_name: string | null
-          seller_validated: boolean | null
           service_date: string | null
-          shared_link_expires_at: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id: string | null
           title: string
           updated_at: string
           user_id: string
-          validation_deadline: string | null
         }
         Insert: {
           buyer_display_name?: string | null
           buyer_id?: string | null
-          buyer_validated?: boolean | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           description?: string | null
-          dispute_id?: string | null
-          funds_released?: boolean | null
           id?: string
-          link_expires_at?: string | null
-          payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
-          payment_window_hours?: number | null
           price: number
           seller_display_name?: string | null
-          seller_validated?: boolean | null
           service_date?: string | null
-          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
           title: string
           updated_at?: string
           user_id: string
-          validation_deadline?: string | null
         }
         Update: {
           buyer_display_name?: string | null
           buyer_id?: string | null
-          buyer_validated?: boolean | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
-          dispute_id?: string | null
-          funds_released?: boolean | null
           id?: string
-          link_expires_at?: string | null
-          payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
-          payment_window_hours?: number | null
           price?: number
           seller_display_name?: string | null
-          seller_validated?: boolean | null
           service_date?: string | null
-          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
-          validation_deadline?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_dispute_id_fkey"
-            columns: ["dispute_id"]
-            isOneToOne: false
-            referencedRelation: "disputes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      validation_reminders: {
-        Row: {
-          created_at: string
-          id: string
-          reminder_type: string
-          sent_at: string
-          transaction_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          reminder_type: string
-          sent_at?: string
-          transaction_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          reminder_type?: string
-          sent_at?: string
-          transaction_id?: string
         }
         Relationships: []
       }
@@ -389,10 +155,6 @@ export type Database = {
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
-      }
-      log_security_event: {
-        Args: { details?: Json; event_type: string }
-        Returns: undefined
       }
     }
     Enums: {

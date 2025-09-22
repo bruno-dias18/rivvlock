@@ -3,15 +3,12 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
 import { QuickActions } from '@/components/dashboard/QuickActions';
-import { CompletionSummary } from '@/components/status/CompletionSummary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAuth } from '@/hooks/useAuth';
 import { useTransactions } from '@/hooks/useTransactions';
-import { useInvoiceGeneration } from '@/hooks/useInvoiceGeneration';
 import { RivvlockLogo } from '@/components/ui/lock-animation';
 import { motion } from 'framer-motion';
 import { 
@@ -23,12 +20,8 @@ import {
   ArrowUpRight,
   AlertTriangle,
   RefreshCw,
-  Settings,
-  FileText,
-  CheckCircle,
-  TestTube
+  Settings
 } from 'lucide-react';
-import { InvoiceSection } from '@/components/invoice/InvoiceSection';
 
 export const Dashboard = () => {
   const { t } = useTranslation();
@@ -36,9 +29,6 @@ export const Dashboard = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
   const { transactions, stats, loading: transactionsLoading, getPaymentCountdown } = useTransactions();
   const navigate = useNavigate();
-  
-  // Enable automatic invoice generation
-  useInvoiceGeneration();
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -151,15 +141,6 @@ export const Dashboard = () => {
         {/* Quick Actions */}
         <QuickActions />
 
-        {/* Completion Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-        >
-          <CompletionSummary />
-        </motion.div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
@@ -220,9 +201,6 @@ export const Dashboard = () => {
             </motion.div>
           ))}
         </div>
-
-        {/* Invoices Section */}
-        <InvoiceSection />
 
         {/* Recent Transactions */}
         <Card>

@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { Header } from './Header';
 import { BottomTabBar } from './BottomTabBar';
 import { OfflineIndicator } from './OfflineIndicator';
-import { MobileSyncStatus } from '@/components/mobile/MobileSyncStatus';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { isObsoleteUrl, forceCorrectUrl } from '@/lib/appUrl';
@@ -31,7 +30,6 @@ export const Layout = ({ children, showBottomNav = true }: LayoutProps) => {
         {children}
       </main>
       <BottomTabBar />
-      <MobileSyncStatus />
     </div>
   );
 };

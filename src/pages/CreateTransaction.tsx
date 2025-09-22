@@ -96,8 +96,8 @@ export const CreateTransaction = () => {
 
       if (error) throw error;
 
-      const shareableLink = `${getAppBaseUrl()}/join-transaction/${token}?v=v2.2`;
-      setGeneratedLink(shareableLink);
+      // For now, we just display a success message without generating a broken link
+      setGeneratedLink(`Transaction créée avec l'ID: ${transaction.id}`);
 
       toast({
         title: 'Transaction créée !',
