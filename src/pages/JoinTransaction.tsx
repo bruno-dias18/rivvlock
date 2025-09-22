@@ -35,13 +35,10 @@ export const JoinTransaction = () => {
   const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
-    // Redirection automatique vers la page de paiement complète
-    if (token && token !== ':token') {
-      navigate(`/payment-link/${token}`, { replace: true });
-      return;
-    }
+    // Allow user to see transaction details first before proceeding
+    console.log('[JOIN-TRANSACTION] Loading page with token:', token);
     fetchTransaction();
-  }, [token, navigate]);
+  }, [token]);
 
   const fetchTransaction = async () => {
     if (!token || token === ':token') {
@@ -55,30 +52,39 @@ export const JoinTransaction = () => {
     }
 
     try {
-      console.log('🔍 [JOIN-TRANSACTION-UI] Fetching transaction with token');
+      console.log('🔍 [JOIN-TRANSACTION-UI] Fetching transaction with token:', token);
+      console.log('🔍 [JOIN-TRANSACTION-UI] Supabase URL:', 'https://slthyxqruhfuyfmextwr.supabase.co');
       
       // Use the public edge function to fetch transaction data
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token }
       });
 
+      console.log('🔍 [JOIN-TRANSACTION-UI] Function response:', { data, error });
+
       if (error) {
         console.error('❌ [JOIN-TRANSACTION-UI] Edge function error:', error);
-        throw error;
+        throw new Error(`Erreur de fonction: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('❌ [JOIN-TRANSACTION-UI] No data received from function');
+        throw new Error('Aucune donnée reçue du serveur');
       }
 
       if (!data.success || !data.transaction) {
-        throw new Error('Transaction non trouvée ou token invalide');
+        console.error('❌ [JOIN-TRANSACTION-UI] Invalid response structure:', data);
+        throw new Error(data.error || 'Transaction non trouvée ou token invalide');
       }
 
       setTransaction(data.transaction);
-      console.log('✅ [JOIN-TRANSACTION-UI] Transaction loaded:', data.transaction);
+      console.log('✅ [JOIN-TRANSACTION-UI] Transaction loaded successfully:', data.transaction);
     } catch (error) {
       console.error('❌ [JOIN-TRANSACTION-UI] Error fetching transaction:', error);
       toast({
         variant: 'destructive',
-        title: 'Erreur',
-        description: error instanceof Error ? error.message : 'Transaction non trouvée'
+        title: 'Erreur de chargement',
+        description: error instanceof Error ? error.message : 'Impossible de charger la transaction'
       });
     } finally {
       setLoading(false);
