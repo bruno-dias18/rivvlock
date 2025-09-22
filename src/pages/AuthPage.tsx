@@ -1,15 +1,21 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';
 
 export default function AuthPage() {
+  const [searchParams] = useSearchParams();
+  const resetMode = searchParams.get('mode') === 'reset';
+  
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(resetMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -31,6 +37,18 @@ export default function AuthPage() {
 
   const { user, login, register } = useAuth();
   const { t } = useTranslation();
+
+  // Check for auth state changes and session recovery
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        setIsResetPassword(true);
+        setError('');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Redirect if already authenticated
   if (user) {
@@ -71,7 +89,34 @@ export default function AuthPage() {
     }
 
     try {
-      if (isSignUp) {
+      if (isResetPassword) {
+        // Handle password reset
+        if (!password || !confirmPassword) {
+          setError('Veuillez remplir tous les champs');
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          setError('Les mots de passe ne correspondent pas');
+          setLoading(false);
+          return;
+        }
+
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: password
+        });
+
+        if (updateError) {
+          setError('Erreur lors de la mise à jour du mot de passe');
+          console.error('Password update error:', updateError);
+          setLoading(false);
+          return;
+        }
+
+        // Redirect to dashboard after successful password reset
+        return;
+      } else if (isSignUp) {
         // Prepare registration metadata
         const metadata = {
           user_type: userType,
@@ -131,10 +176,10 @@ export default function AuthPage() {
             />
           </div>
           <h2 className="text-3xl font-bold text-foreground">
-            {isSignUp ? 'Créer un compte' : 'Bienvenue'}
+            {isResetPassword ? 'Nouveau mot de passe' : (isSignUp ? 'Créer un compte' : 'Bienvenue')}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            {isSignUp ? 'Inscription sur RivvLock' : 'Connectez-vous à votre compte'}
+            {isResetPassword ? 'Définissez votre nouveau mot de passe' : (isSignUp ? 'Inscription sur RivvLock' : 'Connectez-vous à votre compte')}
           </p>
         </div>
 
@@ -387,6 +432,7 @@ export default function AuthPage() {
             </>
           )}
 
+        {!isResetPassword && (
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
               Email *
@@ -403,23 +449,43 @@ export default function AuthPage() {
               placeholder="Votre email"
             />
           </div>
+        )}
 
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-foreground">
+            {isResetPassword ? 'Nouveau mot de passe *' : 'Mot de passe *'}
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete={isSignUp ? "new-password" : "current-password"}
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            placeholder={isResetPassword ? "Votre nouveau mot de passe" : "Votre mot de passe"}
+          />
+        </div>
+
+        {isResetPassword && (
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
-              Mot de passe *
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
+              Confirmer le mot de passe *
             </label>
             <input
-              id="password"
-              name="password"
+              id="confirmPassword"
+              name="confirmPassword"
               type="password"
-              autoComplete={isSignUp ? "new-password" : "current-password"}
+              autoComplete="new-password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Votre mot de passe"
+              placeholder="Confirmer votre nouveau mot de passe"
             />
           </div>
+        )}
 
           <div>
             <button
@@ -427,19 +493,24 @@ export default function AuthPage() {
               disabled={loading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Chargement...' : (isSignUp ? 'Créer le compte' : 'Se connecter')}
+              {loading ? 'Chargement...' : (
+                isResetPassword ? 'Définir le nouveau mot de passe' : 
+                (isSignUp ? 'Créer le compte' : 'Se connecter')
+              )}
             </button>
           </div>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-sm text-primary hover:text-primary/90"
-            >
-              {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
-            </button>
-          </div>
+          {!isResetPassword && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm text-primary hover:text-primary/90"
+              >
+                {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>
