@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CreditCard, User, Settings, Shield, Clock, Lock, CheckCircle, Plus } from 'lucide-react';
+import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
 
   const transactionStatuses = [
     {
@@ -34,7 +37,7 @@ export default function DashboardPage() {
       title: 'Nouvelle transaction',
       description: 'Créer une nouvelle transaction d\'escrow',
       icon: Plus,
-      href: '/dashboard/transactions/new',
+      onClick: () => setIsNewTransactionOpen(true),
     },
     {
       title: t('user.profile'),
@@ -86,7 +89,11 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold text-foreground mb-4">Actions rapides</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {quickActions.map((action) => (
-            <Card key={action.title} className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card 
+              key={action.title} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={action.onClick}
+            >
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <action.icon className="h-5 w-5" />
@@ -115,6 +122,11 @@ export default function DashboardPage() {
           </p>
         </CardContent>
       </Card>
+
+      <NewTransactionDialog 
+        open={isNewTransactionOpen}
+        onOpenChange={setIsNewTransactionOpen}
+      />
     </div>
   );
 }
