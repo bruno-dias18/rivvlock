@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [GET-TRANSACTION] Starting public transaction fetch');
+    console.log('🔍 [GET-TX-BY-TOKEN] Starting transaction fetch');
 
     // Use service role key for admin access to read transaction data
     const adminClient = createClient(
@@ -27,7 +27,13 @@ serve(async (req) => {
       throw new Error('Token manquant');
     }
 
-    console.log('🔍 [GET-TRANSACTION] Fetching transaction with token');
+    // Validate token format (basic UUID check)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(token)) {
+      throw new Error('Format de token invalide');
+    }
+
+    console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
 
     // Fetch transaction by shared_link_token
     const { data: transaction, error: fetchError } = await adminClient
@@ -59,16 +65,16 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !transaction) {
-      console.error('❌ [GET-TRANSACTION] Transaction not found:', fetchError);
+      console.error('❌ [GET-TX-BY-TOKEN] Transaction not found:', fetchError);
       throw new Error('Transaction non trouvée ou token invalide');
     }
 
-    // Check if link is expired with detailed logging
+    // Check if link is expired
     const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
     const now = new Date();
     const expirationDate = expiresAt ? new Date(expiresAt) : null;
     
-    console.log('🕒 [GET-TRANSACTION] Expiration check:', {
+    console.log('🕒 [GET-TX-BY-TOKEN] Expiration check:', {
       expiresAt,
       now: now.toISOString(),
       expirationDate: expirationDate?.toISOString(),
@@ -76,14 +82,14 @@ serve(async (req) => {
     });
     
     if (expirationDate && expirationDate < now) {
-      console.error('❌ [GET-TRANSACTION] Link expired:', {
+      console.error('❌ [GET-TX-BY-TOKEN] Link expired:', {
         expirationDate: expirationDate.toISOString(),
         currentTime: now.toISOString()
       });
       throw new Error('Le lien d\'invitation a expiré');
     }
 
-    console.log('✅ [GET-TRANSACTION] Transaction found:', transaction.id);
+    console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
 
     // Fetch seller profile and email
     let sellerProfile = null;
@@ -139,7 +145,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ [GET-TRANSACTION] Error:', error);
+    console.error('❌ [GET-TX-BY-TOKEN] Error:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
     
