@@ -128,6 +128,14 @@ export default function ProfilePage() {
                 {profile?.address || 'Non renseignée'}
               </p>
             </div>
+            {profile?.country === 'CH' && (
+              <div>
+                <label className="text-sm font-medium">Numéro AVS</label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.avs_number || 'Non renseigné'}
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -158,24 +166,18 @@ export default function ProfilePage() {
                   {profile?.company_address || 'Non renseignée'}
                 </p>
               </div>
-              {profile?.avs_number && (
-                <div>
-                  <label className="text-sm font-medium">Numéro AVS</label>
-                  <p className="text-sm text-muted-foreground">{profile.avs_number}</p>
-                </div>
-              )}
-              {profile?.tva_rate && (
-                <div>
-                  <label className="text-sm font-medium">Taux TVA (%)</label>
-                  <p className="text-sm text-muted-foreground">{profile.tva_rate}</p>
-                </div>
-              )}
-              {profile?.vat_rate && (
-                <div>
-                  <label className="text-sm font-medium">Taux VAT (%)</label>
-                  <p className="text-sm text-muted-foreground">{profile.vat_rate}</p>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium">Taux TVA (%)</label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.tva_rate || 'Non renseigné'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Taux VAT (%)</label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.vat_rate || 'Non renseigné'}
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
