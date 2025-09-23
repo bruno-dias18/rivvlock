@@ -1,0 +1,183 @@
+import { useState } from 'react';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useActivityHistory } from '@/hooks/useActivityHistory';
+import { formatDistanceToNow, format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  Activity,
+  CreditCard,
+  Plus,
+  RefreshCw,
+  CheckCircle,
+  UserPlus,
+  Settings,
+  AlertTriangle,
+  Banknote,
+  ArrowLeft
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
+const getActivityIcon = (activityType: string) => {
+  switch (activityType) {
+    case 'transaction_created':
+      return Plus;
+    case 'payment_received':
+      return CreditCard;
+    case 'transaction_validated':
+      return CheckCircle;
+    case 'transaction_joined':
+      return UserPlus;
+    case 'profile_updated':
+      return Settings;
+    case 'payment_sync':
+      return RefreshCw;
+    case 'dispute_created':
+      return AlertTriangle;
+    case 'funds_released':
+      return Banknote;
+    default:
+      return Activity;
+  }
+};
+
+const getActivityColor = (activityType: string) => {
+  switch (activityType) {
+    case 'transaction_created':
+      return 'text-blue-500';
+    case 'payment_received':
+      return 'text-green-500';
+    case 'transaction_validated':
+      return 'text-emerald-500';
+    case 'transaction_joined':
+      return 'text-purple-500';
+    case 'profile_updated':
+      return 'text-gray-500';
+    case 'payment_sync':
+      return 'text-orange-500';
+    case 'dispute_created':
+      return 'text-red-500';
+    case 'funds_released':
+      return 'text-green-600';
+    default:
+      return 'text-muted-foreground';
+  }
+};
+
+export default function ActivityHistoryPage() {
+  const navigate = useNavigate();
+  const [limit] = useState(50);
+  const { data: activities, isLoading } = useActivityHistory(limit);
+
+  const handleBack = () => {
+    navigate('/dashboard');
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Retour
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Historique d'activité</h1>
+              <p className="text-muted-foreground">
+                Toutes vos activités récentes
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Activity List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Toutes les activités</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 p-4 animate-pulse">
+                    <div className="w-10 h-10 bg-muted rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4" />
+                      <div className="h-3 bg-muted rounded w-1/2" />
+                      <div className="h-3 bg-muted rounded w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : activities && activities.length > 0 ? (
+              <div className="space-y-1">
+                {activities.map((activity) => {
+                  const IconComponent = getActivityIcon(activity.activity_type);
+                  const iconColor = getActivityColor(activity.activity_type);
+                  
+                  return (
+                    <div
+                      key={activity.id}
+                      className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`mt-1 ${iconColor} flex-shrink-0`}>
+                        <IconComponent className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-foreground">
+                              {activity.title}
+                            </p>
+                            {activity.description && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {activity.description}
+                              </p>
+                            )}
+                            <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                              <span>
+                                {formatDistanceToNow(new Date(activity.created_at), {
+                                  addSuffix: true,
+                                  locale: fr
+                                })}
+                              </span>
+                              <span>•</span>
+                              <span>
+                                {format(new Date(activity.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {activity.metadata && Object.keys(activity.metadata).length > 0 && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            {JSON.stringify(activity.metadata)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Activity className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucune activité</h3>
+                <p className="text-muted-foreground">
+                  Votre historique d'activité apparaîtra ici une fois que vous aurez commencé à utiliser l'application.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+}

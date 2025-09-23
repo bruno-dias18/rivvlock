@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { logActivity } from '@/lib/activityLogger';
 import { toast } from 'sonner';
 
 const transactionSchema = z.object({
@@ -68,6 +69,20 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       // Show success and share link
       setTransactionTitle(result.transaction.title);
       setShareLink(result.transaction.shareLink);
+      
+      // Log the activity
+      await logActivity({
+        type: 'transaction_created',
+        title: `Transaction "${result.transaction.title}" créée`,
+        description: `Nouvelle transaction d'escrow créée pour ${data.price} ${data.currency}`,
+        metadata: {
+          transaction_id: result.transaction.id,
+          amount: data.price,
+          currency: data.currency,
+          service_date: data.serviceDate.toISOString()
+        }
+      });
+      
       onOpenChange(false);
       form.reset();
       setShowShareDialog(true);

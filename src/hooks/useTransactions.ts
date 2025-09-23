@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAutoSync } from './useAutoSync';
+import { logActivity } from '@/lib/activityLogger';
 
 export const useTransactions = () => {
   const { user } = useAuth();
@@ -102,6 +103,18 @@ export const useSyncStripePayments = () => {
     if (error) {
       throw error;
     }
+    
+    // Log the sync activity
+    await logActivity({
+      type: 'payment_sync',
+      title: 'Paiements synchronisés',
+      description: 'Synchronisation automatique avec Stripe effectuée',
+      metadata: {
+        sync_count: data?.processed || 0,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
     return data;
   };
   

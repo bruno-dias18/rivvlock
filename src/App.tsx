@@ -11,6 +11,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
 import TransactionJoinPage from "./pages/TransactionJoinPage";
+import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -61,6 +62,10 @@ const App: React.FC = () => {
               React.createElement(Route, { 
                 path: "/dashboard/admin", 
                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage))))
+              }),
+              React.createElement(Route, { 
+                path: "/activity-history", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(ActivityHistoryPage))
               }),
               React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
             )

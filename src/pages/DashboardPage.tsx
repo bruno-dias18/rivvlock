@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
 
@@ -170,19 +171,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Activity */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Activité récente</CardTitle>
-          <CardDescription>
-            Vos dernières actions sur la plateforme
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Aucune activité récente à afficher
-          </p>
-        </CardContent>
-      </Card>
+      <RecentActivityCard />
 
       <NewTransactionDialog 
         open={isNewTransactionOpen}
