@@ -297,7 +297,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   yPosition += 8;
   
   // Frais plateforme
-  doc.setTextColor(200, 50, 50); // Rouge pour les frais
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]); // Noir pour les frais
   doc.text('Frais RivvLock (5%):', calcStartX - 60, yPosition);
   doc.text(`-${rivvlockFee.toFixed(2)} ${currency}`, calcStartX, yPosition);
   
@@ -314,7 +314,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
-  doc.text('NET À RECEVOIR:', calcStartX - 60, yPosition);
+  doc.text('Net reçu:', calcStartX - 60, yPosition);
   doc.text(`${amountReceived.toFixed(2)} ${currency}`, calcStartX, yPosition);
   
   yPosition += 30;

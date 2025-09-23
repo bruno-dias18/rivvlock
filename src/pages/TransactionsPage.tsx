@@ -142,10 +142,36 @@ export default function TransactionsPage() {
       const sellerProfile = sellerProfileResult.data;
       const buyerProfile = buyerProfileResult.data;
       
-      // Utiliser l'email du user connecté quand disponible
+      // Pour maintenant, utiliser l'approche actuelle mais améliorer la logique
       const currentUser = user;
-      const sellerEmail = currentUser?.id === transaction.user_id ? currentUser.email : undefined;
-      const buyerEmail = currentUser?.id === transaction.buyer_id ? currentUser.email : undefined;
+      let sellerEmail = undefined;
+      let buyerEmail = undefined;
+      
+      // Si le user connecté est le vendeur, on a son email
+      if (currentUser?.id === transaction.user_id) {
+        sellerEmail = currentUser.email;
+      }
+      // Si le user connecté est l'acheteur, on a son email  
+      if (currentUser?.id === transaction.buyer_id) {
+        buyerEmail = currentUser.email;
+      }
+      
+      // Appeler l'edge function pour récupérer les emails manquants
+      try {
+        const { data: emailData } = await supabase.functions.invoke('get-user-emails', {
+          body: { 
+            sellerUserId: transaction.user_id,
+            buyerUserId: transaction.buyer_id 
+          }
+        });
+        
+        if (emailData) {
+          sellerEmail = sellerEmail || emailData.sellerEmail;
+          buyerEmail = buyerEmail || emailData.buyerEmail;
+        }
+      } catch (error) {
+        console.warn('Impossible de récupérer les emails via edge function:', error);
+      }
 
       const userRole = getUserRole(transaction);
       const sellerName = sellerProfile 
