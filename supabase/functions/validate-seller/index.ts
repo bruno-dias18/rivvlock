@@ -91,6 +91,20 @@ serve(async (req) => {
 
     console.log("✅ [VALIDATE-SELLER] Seller validation completed for transaction:", transactionId);
 
+    // Log activity for the seller
+    try {
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: userData.user.id,
+          activity_type: 'seller_validation',
+          title: 'Validation vendeur',
+          description: `Vous avez validé la transaction "${transaction.title}"`
+        });
+    } catch (logError) {
+      console.error('❌ [VALIDATE-SELLER] Error logging activity:', logError);
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       message: "Seller validation completed successfully"

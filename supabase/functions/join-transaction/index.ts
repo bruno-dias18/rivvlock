@@ -128,6 +128,20 @@ serve(async (req) => {
 
     console.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
 
+    // Log activity for the buyer
+    try {
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: userData.user.id,
+          activity_type: 'transaction_joined',
+          title: 'Transaction rejointe',
+          description: `Vous avez rejoint la transaction "${transaction.title}"`
+        });
+    } catch (logError) {
+      console.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

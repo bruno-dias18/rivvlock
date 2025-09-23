@@ -2,11 +2,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 export type ActivityType = 
   | 'transaction_created'
-  | 'payment_received'
+  | 'funds_blocked'
   | 'transaction_validated'
   | 'transaction_joined'
+  | 'seller_validation'
+  | 'buyer_validation'
   | 'profile_updated'
-  | 'payment_sync'
   | 'dispute_created'
   | 'funds_released';
 

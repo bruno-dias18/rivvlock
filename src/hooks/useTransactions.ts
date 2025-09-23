@@ -104,17 +104,6 @@ export const useSyncStripePayments = () => {
       throw error;
     }
     
-    // Log the sync activity
-    await logActivity({
-      type: 'payment_sync',
-      title: 'Paiements synchronisés',
-      description: 'Synchronisation automatique avec Stripe effectuée',
-      metadata: {
-        sync_count: data?.processed || 0,
-        timestamp: new Date().toISOString()
-      }
-    });
-    
     return data;
   };
   

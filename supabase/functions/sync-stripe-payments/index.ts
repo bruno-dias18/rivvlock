@@ -201,6 +201,21 @@ serve(async (req) => {
                 transactionId: matchingTransaction.id,
                 paymentIntentId: paymentIntent.id 
               });
+              
+              // Log activity for funds blocked
+              try {
+                await adminClient
+                  .from('activity_logs')
+                  .insert({
+                    user_id: matchingTransaction.user_id,
+                    activity_type: 'funds_blocked',
+                    title: 'Fonds bloqués',
+                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`
+                  });
+              } catch (logError) {
+                logStep("Error logging funds blocked activity", { error: logError.message });
+              }
+              
               synchronizedCount++;
               syncResults.push({
                 paymentIntentId: paymentIntent.id,
