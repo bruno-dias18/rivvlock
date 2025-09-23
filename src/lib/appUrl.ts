@@ -27,10 +27,28 @@ export const getPublicBaseUrl = (): string => {
 
 export const isObsoleteUrl = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return false; // For simplicity, we'll consider no URL as obsolete
+  const host = window.location.host;
+  // Consider editor/preview domains obsolete for shared/public links
+  const isEditorOrPreview = host.includes('lovable.dev') ||
+    host.includes('lovableproject.com') ||
+    /^[a-f0-9-]+\.lovable\.app$/.test(host);
+  return isEditorOrPreview;
 };
 
 export const forceCorrectUrl = (): void => {
-  // For simplicity, we'll do nothing here
-  console.log('URL correction not needed');
+  if (typeof window === 'undefined') return;
+  try {
+    if (isObsoleteUrl()) {
+      const targetBase = getPublicBaseUrl();
+      const targetUrl = `${targetBase}${window.location.pathname}${window.location.search}${window.location.hash}`;
+      if (window.location.href !== targetUrl) {
+        // Use replace to avoid polluting history
+        window.location.replace(targetUrl);
+      }
+    } else {
+      console.log('URL correction not needed');
+    }
+  } catch (e) {
+    console.log('URL correction skipped', e);
+  }
 };

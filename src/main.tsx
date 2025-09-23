@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { forceCorrectUrl } from "./lib/appUrl";
+
+// Ensure public domain for shared links (redirect from editor/preview domains)
+forceCorrectUrl();
 
 // Startup diagnostics
 console.log('[BOOT] App starting...');
