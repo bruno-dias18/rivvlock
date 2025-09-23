@@ -70,6 +70,7 @@ export default function TransactionsPage() {
   const pendingTransactions = transactions.filter(t => t.status === 'pending');
   const blockedTransactions = transactions.filter(t => t.status === 'paid');
   const completedTransactions = transactions.filter(t => t.status === 'validated');
+  const disputedTransactions = transactions.filter(t => t.status === 'disputed');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -272,9 +273,9 @@ export default function TransactionsPage() {
                 <CheckCircle2 className="h-4 w-4" />
                 Complétées ({completedTransactions.length})
               </TabsTrigger>
-              <TabsTrigger value="new" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Nouvelle
+              <TabsTrigger value="disputed" className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Litiges ({disputedTransactions.length})
               </TabsTrigger>
             </>
           )}
@@ -284,9 +285,9 @@ export default function TransactionsPage() {
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">Complétées ({completedTransactions.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="new" className="flex items-center gap-2 flex-col py-3">
-                <Plus className="h-4 w-4" />
-                <span className="text-xs">Nouvelle</span>
+              <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-xs">Litiges ({disputedTransactions.length})</span>
               </TabsTrigger>
             </>
           )}
@@ -387,22 +388,29 @@ export default function TransactionsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="new">
+        <TabsContent value="disputed">
           <Card>
             <CardHeader>
-              <CardTitle>Créer une nouvelle transaction</CardTitle>
+              <CardTitle>Transactions en litige</CardTitle>
               <CardDescription>
-                Commencez une nouvelle transaction d'escrow
+                Transactions faisant l'objet d'un litige ouvert
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                className="w-full"
-                onClick={() => setIsNewTransactionOpen(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Créer une transaction
-              </Button>
+              {!isLoading && !queryError && disputedTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Aucune transaction en litige
+                  </p>
+                </div>
+              )}
+
+              {!isLoading && !queryError && disputedTransactions.length > 0 && (
+                <div className="space-y-4">
+                  {disputedTransactions.map(transaction => renderTransactionCard(transaction, false))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
