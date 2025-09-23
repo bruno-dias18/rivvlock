@@ -4,33 +4,61 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus } from 'lucide-react';
+import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
+import { toast } from 'sonner';
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
+  
+  const { data: counts, isLoading: countsLoading, refetch: refetchCounts } = useTransactionCounts();
+  const { syncPayments } = useSyncStripePayments();
+
+  const handleSyncPayments = async () => {
+    try {
+      toast.loading("Synchronisation en cours...", {
+        description: "Vérification des paiements Stripe",
+      });
+      
+      await syncPayments();
+      await refetchCounts();
+      
+      toast.success("Synchronisation terminée", {
+        description: "Les données ont été mises à jour",
+      });
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error("Erreur de synchronisation", {
+        description: "Impossible de synchroniser les paiements",
+      });
+    }
+  };
 
   const transactionStatuses = [
     {
       title: 'En attente',
-      count: '0',
+      count: countsLoading ? '...' : String(counts?.pending || 0),
       icon: Clock,
       variant: 'outline' as const,
+      onClick: () => navigate('/dashboard/transactions?tab=pending'),
     },
     {
       title: 'Fonds bloqués',
-      count: '0',
+      count: countsLoading ? '...' : String(counts?.paid || 0),
       icon: Lock,
       variant: 'outline' as const,
+      onClick: () => navigate('/dashboard/transactions?tab=blocked'),
     },
     {
       title: 'Complétée',
-      count: '0',
+      count: countsLoading ? '...' : String(counts?.validated || 0),
       icon: CheckCircle,
       variant: 'default' as const,
+      onClick: () => navigate('/dashboard/transactions?tab=completed'),
     },
   ];
 
@@ -46,6 +74,12 @@ export default function DashboardPage() {
       description: 'Mettre à jour vos informations',
       icon: User,
       onClick: () => navigate('/dashboard/profile'),
+    },
+    {
+      title: 'Actualiser les paiements',
+      description: 'Synchroniser avec Stripe',
+      icon: RefreshCw,
+      onClick: handleSyncPayments,
     },
   ];
 
@@ -69,6 +103,7 @@ export default function DashboardPage() {
               key={status.title}
               variant={status.variant}
               className="h-auto p-4 flex-col items-start gap-2"
+              onClick={status.onClick}
             >
               <div className="flex items-center gap-2">
                 <status.icon className="h-4 w-4" />

@@ -144,6 +144,19 @@ serve(async (req) => {
       logStep("Warning: Failed to update transaction", { error: updateError });
     }
 
+    // Auto-sync after creating checkout session
+    try {
+      logStep("Auto-syncing Stripe payments...");
+      const { data: syncResult, error: syncError } = await supabaseAdmin.functions.invoke('sync-stripe-payments');
+      if (syncError) {
+        logStep("Auto-sync error", { error: syncError });
+      } else {
+        logStep("Auto-sync completed", { result: syncResult });
+      }
+    } catch (syncErr) {
+      logStep("Failed to call sync function", { error: syncErr });
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       sessionUrl: session.url,

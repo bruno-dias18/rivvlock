@@ -1,210 +1,327 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getPublicBaseUrl } from '@/lib/appUrl';
-import { useSearchParams } from 'react-router-dom';
-import { CreditCard, User, ShoppingCart } from 'lucide-react';
+import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
+  
+  const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
+  const { syncPayments } = useSyncStripePayments();
+  
+  const activeTab = searchParams.get('tab') || 'pending';
 
-  interface PendingTransaction {
-    id: string;
-    title: string;
-    price: number;
-    currency: string;
-    shared_link_token: string;
-    user_id: string;
-    buyer_id: string | null;
-    status: string;
-  }
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [pending, setPending] = useState<PendingTransaction[]>([]);
-  const [processingPayment, setProcessingPayment] = useState<string | null>(null);
-
-  const baseUrl = useMemo(() => {
-    return getPublicBaseUrl();
-  }, []);
-
+  // Check for success message after joining a transaction
   useEffect(() => {
-    if (user) {
-      fetchPendingTransactions();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    // Check if user just joined a transaction
     if (searchParams.get('joined') === 'success') {
-      toast.success('Transaction jointe avec succès ! Vous pouvez maintenant procéder au paiement.');
-      // Remove the parameter from URL
-      setSearchParams({});
-      // Refresh data
-      if (user) {
-        fetchPendingTransactions();
-      }
+      toast.success("Transaction rejointe avec succès", {
+        description: "Vous pouvez maintenant effectuer le paiement pour bloquer les fonds.",
+      });
+      
+      // Clean up URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('joined');
+      setSearchParams(newSearchParams, { replace: true });
+      
+      // Refresh transactions
+      refetch();
     }
-  }, [searchParams, setSearchParams, user]);
+  }, [searchParams, refetch, setSearchParams]);
 
-  const fetchPendingTransactions = async () => {
+  const handleSyncPayments = async () => {
     try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('id, title, price, currency, shared_link_token, user_id, buyer_id, status')
-        .or(`user_id.eq.${user!.id},buyer_id.eq.${user!.id}`)
-        .eq('status', 'pending');
-
-      if (error) throw error;
-      setPending(data || []);
-    } catch (err) {
-      console.error('Error fetching pending transactions:', err);
-      setError('Erreur lors du chargement des transactions');
-    } finally {
-      setLoading(false);
+      toast.loading("Synchronisation en cours...", {
+        description: "Vérification des paiements Stripe",
+      });
+      
+      await syncPayments();
+      await refetch();
+      
+      toast.success("Synchronisation terminée", {
+        description: "Les données ont été mises à jour",
+      });
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error("Erreur de synchronisation", {
+        description: "Impossible de synchroniser les paiements",
+      });
     }
   };
+
+  // Filter transactions by status
+  const pendingTransactions = transactions.filter(t => t.status === 'pending');
+  const blockedTransactions = transactions.filter(t => t.status === 'paid');
+  const completedTransactions = transactions.filter(t => t.status === 'validated');
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success('Lien copié dans le presse-papier !');
   };
 
-  const handlePayment = async (transaction: PendingTransaction) => {
-    if (processingPayment) return;
-    
-    setProcessingPayment(transaction.id);
+  const handlePayment = async (transaction: any) => {
     try {
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
-        body: { 
-          transactionId: transaction.id,
-          transactionToken: transaction.shared_link_token
-        }
+      const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
+        body: { transactionId: transaction.id }
       });
 
-      if (checkoutError) throw checkoutError;
-      if (checkoutData.error) throw new Error(checkoutData.error);
+      if (error) throw error;
 
-      // Redirect to Stripe checkout
-      if (checkoutData.url || checkoutData.sessionUrl) {
-        const stripeUrl = checkoutData.url || checkoutData.sessionUrl;
-        window.open(stripeUrl, '_blank');
+      if (data?.url) {
+        window.open(data.url, '_blank');
       }
-    } catch (err: any) {
-      console.error('Error processing payment:', err);
-      toast.error(err.message || 'Erreur lors du traitement du paiement');
-    } finally {
-      setProcessingPayment(null);
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error("Erreur de paiement", {
+        description: "Impossible de créer la session de paiement. Veuillez réessayer.",
+      });
     }
+  };
+
+  const getUserRole = (transaction: any) => {
+    if (transaction.user_id === user?.id) return 'seller';
+    if (transaction.buyer_id === user?.id) return 'buyer';
+    return null;
+  };
+
+  const renderTransactionCard = (transaction: any, showActions = true) => {
+    const userRole = getUserRole(transaction);
+    const displayName = userRole === 'seller' 
+      ? transaction.buyer_display_name || 'Acheteur anonyme'
+      : transaction.seller_display_name || 'Vendeur';
+
+    return (
+      <Card key={transaction.id} className="mb-4">
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <CardTitle className="text-lg">{transaction.title}</CardTitle>
+              <CardDescription className="mt-1">
+                {transaction.description}
+              </CardDescription>
+            </div>
+            <div className="text-right ml-4">
+              <div className="text-2xl font-bold">
+                {transaction.price} {transaction.currency?.toUpperCase()}
+              </div>
+              <Badge variant="outline" className="mt-1">
+                {userRole === 'seller' ? 'Vendeur' : 'Acheteur'}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm text-muted-foreground mb-4">
+            <div>Partenaire: {displayName}</div>
+            <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
+            {transaction.service_date && (
+              <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')}</div>
+            )}
+          </div>
+          
+          {showActions && (
+            <div className="flex gap-2 pt-2">
+              {userRole === 'seller' && transaction.status === 'pending' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(`${window.location.origin}/join/${transaction.shared_link_token}`)}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copier le lien
+                </Button>
+              )}
+              
+              {userRole === 'buyer' && transaction.status === 'pending' && (
+                <Button
+                  size="sm"
+                  onClick={() => handlePayment(transaction)}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Bloquer l'argent
+                </Button>
+              )}
+              
+              {transaction.status === 'paid' && userRole === 'seller' && (
+                <Button variant="outline" size="sm">
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Valider la transaction
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('navigation.transactions')}</h1>
-        <p className="text-muted-foreground">
-          {t('dashboard.transactions')} - Gérez vos transactions d'escrow
-        </p>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-foreground">Transactions</h1>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleSyncPayments}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualiser
+          </Button>
+          <Button onClick={() => setIsNewTransactionOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle transaction
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('transactions.new')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Fonctionnalité à implémenter
-            </p>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="pending" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            En attente ({pendingTransactions.length})
+          </TabsTrigger>
+          <TabsTrigger value="blocked" className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            Fonds bloqués ({blockedTransactions.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4" />
+            Complétées ({completedTransactions.length})
+          </TabsTrigger>
+          <TabsTrigger value="new" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Nouvelle
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('transactions.pending')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Chargement...</p>
-            ) : error ? (
-              <p className="text-sm text-destructive">{error}</p>
-            ) : pending.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune transaction en attente</p>
-            ) : (
-              <div className="space-y-4">
-                {pending.map((transaction) => {
-                  const isUserSeller = transaction.user_id === user?.id;
-                  const isUserBuyer = transaction.buyer_id === user?.id;
-                  
-                  return (
-                    <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium">{transaction.title}</h4>
-                          {isUserSeller && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                              <User className="w-3 h-3" />
-                              Vendeur
-                            </span>
-                          )}
-                          {isUserBuyer && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                              <ShoppingCart className="w-3 h-3" />
-                              Acheteur
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.price} {transaction.currency}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        {isUserSeller && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyToClipboard(`${baseUrl}/join-transaction/${transaction.shared_link_token}`)}
-                          >
-                            Copier le lien
-                          </Button>
-                        )}
-                        {isUserBuyer && (
-                          <Button
-                            size="sm"
-                            onClick={() => handlePayment(transaction)}
-                            disabled={processingPayment === transaction.id}
-                          >
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            {processingPayment === transaction.id ? 'Traitement...' : 'Bloquer l\'argent'}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <TabsContent value="pending">
+          <Card>
+            <CardHeader>
+              <CardTitle>Transactions en attente</CardTitle>
+              <CardDescription>
+                Transactions nécessitant un paiement ou en attente d'un acheteur
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-2 text-sm text-muted-foreground">Chargement...</p>
+                </div>
+              )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('dashboard.history')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Aucun historique disponible
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+              {queryError && (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Erreur de chargement</p>
+                </div>
+              )}
+
+              {!isLoading && !queryError && pendingTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Aucune transaction en attente
+                  </p>
+                </div>
+              )}
+
+              {!isLoading && !queryError && pendingTransactions.length > 0 && (
+                <div className="space-y-4">
+                  {pendingTransactions.map(transaction => renderTransactionCard(transaction))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="blocked">
+          <Card>
+            <CardHeader>
+              <CardTitle>Fonds bloqués</CardTitle>
+              <CardDescription>
+                Transactions avec paiement effectué, en attente de validation
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!isLoading && !queryError && blockedTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <Lock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Aucun fonds bloqué
+                  </p>
+                </div>
+              )}
+
+              {!isLoading && !queryError && blockedTransactions.length > 0 && (
+                <div className="space-y-4">
+                  {blockedTransactions.map(transaction => renderTransactionCard(transaction))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="completed">
+          <Card>
+            <CardHeader>
+              <CardTitle>Transactions complétées</CardTitle>
+              <CardDescription>
+                Transactions validées et terminées
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!isLoading && !queryError && completedTransactions.length === 0 && (
+                <div className="text-center py-8">
+                  <CheckCircle2 className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Aucune transaction complétée
+                  </p>
+                </div>
+              )}
+
+              {!isLoading && !queryError && completedTransactions.length > 0 && (
+                <div className="space-y-4">
+                  {completedTransactions.map(transaction => renderTransactionCard(transaction, false))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="new">
+          <Card>
+            <CardHeader>
+              <CardTitle>Créer une nouvelle transaction</CardTitle>
+              <CardDescription>
+                Commencez une nouvelle transaction d'escrow
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                className="w-full"
+                onClick={() => setIsNewTransactionOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Créer une transaction
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <NewTransactionDialog 
+        open={isNewTransactionOpen}
+        onOpenChange={setIsNewTransactionOpen}
+      />
     </div>
   );
 }
