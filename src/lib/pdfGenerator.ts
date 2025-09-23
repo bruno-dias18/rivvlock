@@ -104,31 +104,31 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   yPosition += 15;
   
   // Calculs
-  const baseAmount = invoiceData.amount;
-  const rivvlockFee = baseAmount * 0.05;
-  const totalAmount = baseAmount + rivvlockFee;
+  const amountPaid = invoiceData.amount; // Ce que paie l'acheteur
+  const rivvlockFee = amountPaid * 0.05; // Frais déduits du vendeur
+  const amountReceived = amountPaid - rivvlockFee; // Ce que reçoit le vendeur
   
-  // Sous-total
-  doc.text('Sous-total:', pageWidth - 100, yPosition);
-  doc.text(`${baseAmount.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
+  // Montant payé par l'acheteur
+  doc.text('Montant payé par l\'acheteur:', pageWidth - 130, yPosition);
+  doc.text(`${amountPaid.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
   
   yPosition += 8;
   
-  // Frais RivvLock
-  doc.text('Frais RivvLock (5%):', pageWidth - 100, yPosition);
-  doc.text(`${rivvlockFee.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
+  // Frais RivvLock (déduits du vendeur)
+  doc.text('Frais RivvLock (5%) - déduits:', pageWidth - 130, yPosition);
+  doc.text(`-${rivvlockFee.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
   
   yPosition += 8;
   
   // Ligne de séparation
-  doc.line(pageWidth - 100, yPosition, pageWidth - margin, yPosition);
+  doc.line(pageWidth - 130, yPosition, pageWidth - margin, yPosition);
   
   yPosition += 8;
   
-  // Total
+  // Montant net reçu par le vendeur
   doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL TTC:', pageWidth - 100, yPosition);
-  doc.text(`${totalAmount.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
+  doc.text('Montant net reçu par le vendeur:', pageWidth - 130, yPosition);
+  doc.text(`${amountReceived.toFixed(2)} ${invoiceData.currency.toUpperCase()}`, pageWidth - 80, yPosition);
   
   yPosition += 30;
   
