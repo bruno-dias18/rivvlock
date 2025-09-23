@@ -1,16 +1,13 @@
 import { ReactNode } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { BottomTabBar } from './BottomTabBar';
-import { Button } from '@/components/ui/button';
-import { LogOut, User } from 'lucide-react';
+import { UserMenu } from './UserMenu';
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, logout } = useAuth();
   const { t } = useTranslation();
 
   return (
@@ -26,20 +23,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <span className="font-bold text-foreground">RIVVLOCK</span>
         </div>
         
-        <div className="flex items-center gap-6 ml-auto">
-          <div className="flex items-center gap-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">{user?.email}</span>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={logout}
-            className="gap-2 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive"
-          >
-            <LogOut className="h-4 w-4" />
-            {t('common.logout')}
-          </Button>
+        <div className="ml-auto">
+          <UserMenu />
         </div>
       </header>
 
