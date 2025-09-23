@@ -98,7 +98,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Actualiser les paiements',
-      description: 'Synchroniser avec Stripe',
+      description: '',
       icon: RefreshCw,
       onClick: handleSyncPayments,
     },
