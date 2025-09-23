@@ -423,7 +423,7 @@ export default function TransactionsPage() {
 
               {!isLoading && !queryError && completedTransactions.length > 0 && (
                 <div className="space-y-4">
-                  {completedTransactions.map(transaction => renderTransactionCard(transaction, false))}
+                  {completedTransactions.map(transaction => renderTransactionCard(transaction, true))}
                 </div>
               )}
             </CardContent>
