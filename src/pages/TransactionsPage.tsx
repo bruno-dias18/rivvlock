@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getPublicBaseUrl } from '@/lib/appUrl';
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -25,10 +26,7 @@ export default function TransactionsPage() {
   const [pending, setPending] = useState<PendingTransaction[]>([]);
 
   const baseUrl = useMemo(() => {
-    if (typeof window === 'undefined') return 'https://rivvlock.com';
-    const origin = window.location.origin;
-    // Ensure public domain is used when copying links
-    return origin.includes('lovableproject.com') ? origin.replace('lovableproject.com', 'lovable.app') : origin;
+    return getPublicBaseUrl();
   }, []);
 
   useEffect(() => {
