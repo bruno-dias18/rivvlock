@@ -123,31 +123,53 @@ export default function TransactionsPage() {
     return null;
   };
 
-  const handleDownloadInvoice = (transaction: any) => {
-    const userRole = getUserRole(transaction);
-    const sellerName = userRole === 'seller' 
-      ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Vendeur'
-      : transaction.seller_display_name || 'Vendeur';
-    
-    const buyerName = userRole === 'buyer'
-      ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Acheteur'
-      : transaction.buyer_display_name || 'Acheteur anonyme';
+  const handleDownloadInvoice = async (transaction: any) => {
+    try {
+      // Récupérer les profils vendeur et acheteur
+      const [sellerProfileResult, buyerProfileResult] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', transaction.user_id)
+          .maybeSingle(),
+        transaction.buyer_id ? supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', transaction.buyer_id)
+          .maybeSingle() : Promise.resolve({ data: null, error: null })
+      ]);
 
-    const invoiceData = {
-      transactionId: transaction.id,
-      title: transaction.title,
-      description: transaction.description,
-      amount: parseFloat(transaction.price),
-      currency: transaction.currency,
-      sellerName,
-      buyerName,
-      serviceDate: transaction.service_date,
-      validatedDate: transaction.updated_at,
-      sellerProfile: userRole === 'seller' ? profile : null,
-      buyerProfile: userRole === 'buyer' ? profile : null,
-    };
+      const sellerProfile = sellerProfileResult.data;
+      const buyerProfile = buyerProfileResult.data;
 
-    generateInvoicePDF(invoiceData);
+      const userRole = getUserRole(transaction);
+      const sellerName = sellerProfile 
+        ? `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim() || 'Vendeur'
+        : transaction.seller_display_name || 'Vendeur';
+      
+      const buyerName = buyerProfile
+        ? `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Acheteur'
+        : transaction.buyer_display_name || 'Acheteur anonyme';
+
+      const invoiceData = {
+        transactionId: transaction.id,
+        title: transaction.title,
+        description: transaction.description,
+        amount: parseFloat(transaction.price),
+        currency: transaction.currency,
+        sellerName,
+        buyerName,
+        serviceDate: transaction.service_date,
+        validatedDate: transaction.updated_at,
+        sellerProfile,
+        buyerProfile,
+      };
+
+      generateInvoicePDF(invoiceData);
+    } catch (error) {
+      console.error('Erreur lors de la génération de la facture:', error);
+      toast.error('Erreur lors de la génération de la facture');
+    }
   };
 
   const renderTransactionCard = (transaction: any, showActions = true) => {
