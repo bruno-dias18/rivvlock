@@ -9,6 +9,7 @@ export const useActivityHistory = (limit = 50, offset = 0) => {
       const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
+        .neq('activity_type', 'payment_sync')
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 

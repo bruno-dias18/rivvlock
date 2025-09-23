@@ -17,6 +17,7 @@ export const useRecentActivity = () => {
       const { data, error } = await supabase
         .from('activity_logs')
         .select('*')
+        .neq('activity_type', 'payment_sync')
         .order('created_at', { ascending: false })
         .limit(4);
 
