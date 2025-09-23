@@ -1,5 +1,5 @@
-const CACHE_NAME = 'rivvlock-v3';
-const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2'];
+const CACHE_NAME = 'rivvlock-v4';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3'];
 const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
 const OLD_DOMAINS = [
   'https://rivv-secure-escrow.lovable.app',
@@ -16,7 +16,7 @@ const urlsToCache = [
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 [SW] Installing service worker v3...');
+  console.log('🔧 [SW] Installing service worker v4...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -32,7 +32,7 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  console.log('🔧 [SW] Activating service worker v3...');
+  console.log('🔧 [SW] Activating service worker v4...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
@@ -47,7 +47,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      console.log('🔧 [SW] Service worker v3 activated and controlling all clients');
+      console.log('🔧 [SW] Service worker v4 activated and controlling all clients');
     })
   );
 });
@@ -66,13 +66,20 @@ self.addEventListener('fetch', (event) => {
       return;
     }
 
-    // Network-first for navigations to always get fresh HTML (prevents stale cached index.html)
+    // Network-first for navigations with SPA fallback
     event.respondWith(
       fetch(req)
         .then((networkRes) => {
+          // If we get a 404 for a navigation request, serve the root HTML so React Router can handle it
+          if (networkRes.status === 404) {
+            console.log('🔄 [SW] 404 for navigation, serving root HTML for SPA routing:', req.url);
+            return caches.match('/') || fetch('/');
+          }
           return networkRes;
         })
         .catch(() => {
+          // Network failed, try cache fallback
+          console.log('🔄 [SW] Network failed, trying cache fallback for:', req.url);
           return caches.match(req).then((cached) => cached || caches.match('/'));
         })
     );
