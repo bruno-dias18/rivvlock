@@ -72,18 +72,14 @@ const { data: txByToken, error: errByToken } = await adminClient
     status,
     user_id,
     buyer_id,
-    shared_link_expires_at,
-    link_expires_at,
     payment_deadline,
     created_at,
+    updated_at,
     payment_method,
-    payment_blocked_at,
     stripe_payment_intent_id,
-    seller_validated,
-    buyer_validated,
-    validation_deadline,
-    funds_released,
-    dispute_id
+    seller_display_name,
+    buyer_display_name,
+    shared_link_token
   `)
   .eq('shared_link_token', token)
   .maybeSingle();
@@ -106,18 +102,14 @@ if (txByToken) {
       status,
       user_id,
       buyer_id,
-      shared_link_expires_at,
-      link_expires_at,
       payment_deadline,
       created_at,
+      updated_at,
       payment_method,
-      payment_blocked_at,
       stripe_payment_intent_id,
-      seller_validated,
-      buyer_validated,
-      validation_deadline,
-      funds_released,
-      dispute_id
+      seller_display_name,
+      buyer_display_name,
+      shared_link_token
     `)
     .eq('id', token)
     .maybeSingle();
@@ -134,29 +126,6 @@ if (txByToken) {
   }
 }
 
-
-    // Check if link is expired
-    const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
-    const now = new Date();
-    const expirationDate = expiresAt ? new Date(expiresAt) : null;
-    
-    console.log('🕒 [GET-TX-BY-TOKEN] Expiration check:', {
-      expiresAt,
-      now: now.toISOString(),
-      expirationDate: expirationDate?.toISOString(),
-      isExpired: expirationDate ? expirationDate < now : false
-    });
-    
-    if (expirationDate && expirationDate < now) {
-      console.error('❌ [GET-TX-BY-TOKEN] Link expired:', {
-        expirationDate: expirationDate.toISOString(),
-        currentTime: now.toISOString()
-      });
-      return new Response(
-        JSON.stringify({ success: false, error: 'Le lien d\'invitation a expiré', reason: 'link_expired' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 410 }
-      );
-    }
 
     console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
 
