@@ -95,7 +95,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('ÉMETTEUR', margin, yPosition);
   
   // Client (Acheteur)
-  doc.text('CLIENT', pageWidth / 2 + 10, yPosition);
+  doc.text('CLIENT', pageWidth - 60, yPosition);
   
   yPosition += 8;
   
