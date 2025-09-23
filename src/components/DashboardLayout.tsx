@@ -17,9 +17,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Header */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">R</span>
-          </div>
+          <img 
+            src="/assets/rivvlock-logo.jpg" 
+            alt="RIVVLOCK Logo" 
+            className="h-8 w-8 rounded-md object-contain"
+          />
           <span className="font-bold text-foreground">RIVVLOCK</span>
         </div>
         
