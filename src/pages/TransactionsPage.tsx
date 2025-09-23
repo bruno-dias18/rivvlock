@@ -1,9 +1,52 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 export default function TransactionsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
 
+  interface PendingTransaction {
+    id: string;
+    title: string;
+    price: number;
+    currency: string;
+    shared_link_token: string | null;
+    created_at: string;
+    status: string;
+    buyer_id: string | null;
+  }
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingTransaction[]>([]);
+
+  const baseUrl = useMemo(() => (typeof window !== 'undefined' ? window.location.origin : 'https://rivvlock.com'), []);
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      if (!user?.id) { setLoading(false); return; }
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('id,title,price,currency,shared_link_token,created_at,status,buyer_id')
+          .eq('user_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
+        setPending(data || []);
+      } catch (e: any) {
+        console.error('Error loading pending transactions', e);
+        setError(e.message || 'Erreur lors du chargement');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPending();
+  }, [user?.id]);
   return (
     <div className="space-y-6">
       <div>
@@ -36,9 +79,52 @@ export default function TransactionsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Aucune transaction en attente
-            </p>
+            {loading ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : error ? (
+              <p className="text-sm text-destructive">{error}</p>
+            ) : pending.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune transaction en attente</p>
+            ) : (
+              <ul className="space-y-4">
+                {pending.map((tx) => {
+                  const joinLink = tx.shared_link_token ? `${baseUrl}/join-transaction/${tx.shared_link_token}` : null;
+                  const handleCopy = async () => {
+                    if (!joinLink) return;
+                    try {
+                      await navigator.clipboard.writeText(joinLink);
+                      toast.success('Lien copié');
+                    } catch (e) {
+                      toast.error('Impossible de copier le lien');
+                    }
+                  };
+                  return (
+                    <li key={tx.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium">{tx.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {tx.price} {tx.currency}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {joinLink ? (
+                            <>
+                              <Button variant="outline" size="sm" onClick={handleCopy}>Copier le lien</Button>
+                              <a href={joinLink} target="_blank" rel="noreferrer">
+                                <Button size="sm">Ouvrir</Button>
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Lien indisponible</span>
+                          )}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </CardContent>
         </Card>
 
