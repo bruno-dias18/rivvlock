@@ -12,6 +12,8 @@ interface InvoiceData {
   validatedDate: string;
   sellerProfile?: any;
   buyerProfile?: any;
+  sellerEmail?: string;
+  buyerEmail?: string;
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
@@ -117,9 +119,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
       yPosition += 4;
     }
     
-    // Email - utiliser un email générique basé sur l'user_id
-    if (profile.user_id) {
-      doc.text(`Email: user-${profile.user_id.slice(-8)}@seller.com`, margin, yPosition);
+    // Email réel du vendeur
+    if (invoiceData.sellerEmail) {
+      doc.text(`Email: ${invoiceData.sellerEmail}`, margin, yPosition);
       yPosition += 4;
     }
     
@@ -159,8 +161,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
   }
   
-  // Informations client (Acheteur) - à droite
-  const clientX = pageWidth / 2 + 10;
+  // Informations client (Acheteur) - complètement à droite
+  const clientX = pageWidth - margin - 80;
   let buyerY = sellerStartY;
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.buyerName, clientX, buyerY);
@@ -177,9 +179,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
       buyerY += 4;
     }
     
-    // Email - utiliser un email générique basé sur l'user_id ou demander l'email réel
-    if (profile.user_id) {
-      doc.text(`Email: user-${profile.user_id.slice(-8)}@client.com`, clientX, buyerY);
+    // Email réel du client
+    if (invoiceData.buyerEmail) {
+      doc.text(`Email: ${invoiceData.buyerEmail}`, clientX, buyerY);
       buyerY += 4;
     }
     
@@ -329,7 +331,6 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   }
   
   doc.text(`Transaction validée le: ${invoiceDate}`, margin, yPosition);
-  doc.text(`ID Transaction: ${invoiceData.transactionId}`, margin, yPosition + 6);
   
   yPosition += 20;
   

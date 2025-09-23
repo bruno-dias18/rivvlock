@@ -141,6 +141,11 @@ export default function TransactionsPage() {
 
       const sellerProfile = sellerProfileResult.data;
       const buyerProfile = buyerProfileResult.data;
+      
+      // Utiliser l'email du user connecté quand disponible
+      const currentUser = user;
+      const sellerEmail = currentUser?.id === transaction.user_id ? currentUser.email : undefined;
+      const buyerEmail = currentUser?.id === transaction.buyer_id ? currentUser.email : undefined;
 
       const userRole = getUserRole(transaction);
       const sellerName = sellerProfile 
@@ -163,6 +168,8 @@ export default function TransactionsPage() {
         validatedDate: transaction.updated_at,
         sellerProfile,
         buyerProfile,
+        sellerEmail,
+        buyerEmail,
       };
 
       generateInvoicePDF(invoiceData);
