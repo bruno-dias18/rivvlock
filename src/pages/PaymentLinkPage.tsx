@@ -33,12 +33,7 @@ export default function PaymentLinkPage() {
     fetchTransaction();
   }, [token]);
 
-  useEffect(() => {
-    // If user just logged in and we have transaction data, join transaction and proceed to payment
-    if (user && transaction && !processingPayment) {
-      handleJoinAndPay();
-    }
-  }, [user, transaction]);
+  // Remove automatic payment trigger - let user click the button
 
   const fetchTransaction = async () => {
     try {
@@ -80,7 +75,8 @@ export default function PaymentLinkPage() {
       // Then create payment checkout
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
         body: { 
-          transaction_id: transaction.id 
+          transactionId: transaction.id,
+          token: token
         }
       });
 
@@ -88,8 +84,9 @@ export default function PaymentLinkPage() {
       if (checkoutData.error) throw new Error(checkoutData.error);
 
       // Redirect to Stripe checkout
-      if (checkoutData.url) {
-        window.open(checkoutData.url, '_blank');
+      if (checkoutData.url || checkoutData.sessionUrl) {
+        const stripeUrl = checkoutData.url || checkoutData.sessionUrl;
+        window.open(stripeUrl, '_blank');
         // Redirect user back to dashboard after opening payment
         window.location.href = '/dashboard';
       }
@@ -189,7 +186,7 @@ export default function PaymentLinkPage() {
                 size="lg"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Procéder au paiement
+                Bloquer l'argent
               </Button>
             )}
           </div>

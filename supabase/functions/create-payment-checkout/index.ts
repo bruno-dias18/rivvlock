@@ -41,25 +41,26 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { transactionId, transactionToken } = await req.json();
-    if (!transactionId) throw new Error("Transaction ID is required");
+    const { transactionId, transaction_id, transactionToken, token } = await req.json();
+    const finalTransactionId = transactionId || transaction_id;
+    if (!finalTransactionId) throw new Error("Transaction ID is required");
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    logStep("Fetching transaction details", { transactionId });
+    logStep("Fetching transaction details", { transactionId: finalTransactionId });
 
     // Get transaction details using admin client
     const { data: transaction, error: transactionError } = await supabaseAdmin
       .from('transactions')
       .select('id, title, description, price, currency, user_id, buyer_id, status, shared_link_token')
-      .eq('id', transactionId)
+      .eq('id', finalTransactionId)
       .single();
 
     if (transactionError || !transaction) {
-      logStep("Transaction query error", { error: transactionError, transactionId });
+      logStep("Transaction query error", { error: transactionError, transactionId: finalTransactionId });
       throw new Error("Transaction not found");
     }
 
@@ -88,8 +89,8 @@ serve(async (req) => {
     // Calculate amount in cents
     const amountInCents = Math.round(transaction.price * 100);
 
-    // Use the correct working domain for redirects
-    const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
+    // Use the rivvlock domain for all redirects
+    const RIVVLOCK_DOMAIN = 'https://rivvlock.lovable.app';
     
     // Create a Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
@@ -109,19 +110,19 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${WORKING_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=success`,
-      cancel_url: `${WORKING_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
+      success_url: `${RIVVLOCK_DOMAIN}/dashboard?payment=success`,
+      cancel_url: `${RIVVLOCK_DOMAIN}/payment-link/${transactionToken || token || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
-        transaction_id: transactionId,
-        transactionId: transactionId, // Alternative key for compatibility
+        transaction_id: finalTransactionId,
+        transactionId: finalTransactionId, // Alternative key for compatibility
         user_id: user.id,
         rivvlock_escrow: 'true'
       },
       payment_intent_data: {
         capture_method: 'manual', // For escrow - funds will be captured later
         metadata: {
-          transaction_id: transactionId,
-          transactionId: transactionId, // Alternative key for compatibility
+          transaction_id: finalTransactionId,
+          transactionId: finalTransactionId, // Alternative key for compatibility
           user_id: user.id,
           rivvlock_escrow: 'true'
         }
@@ -137,7 +138,7 @@ serve(async (req) => {
         stripe_payment_intent_id: session.payment_intent as string,
         payment_method: 'stripe'
       })
-      .eq('id', transactionId);
+      .eq('id', finalTransactionId);
 
     if (updateError) {
       logStep("Warning: Failed to update transaction", { error: updateError });
@@ -146,6 +147,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       sessionUrl: session.url,
+      url: session.url,  // Add url property for compatibility
       sessionId: session.id 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
