@@ -33,15 +33,20 @@ export default function TransactionJoinPage() {
 
   const fetchTransaction = async () => {
     try {
+      console.log('Fetching transaction with token:', token);
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token }
       });
 
       if (error) throw error;
 
-      if (data.error) {
-        setError(data.error);
+      console.log('Edge function response:', data);
+      
+      if (!data.success) {
+        console.error('Transaction fetch failed:', data.error);
+        setError(data.error || 'Erreur lors de la récupération de la transaction');
       } else {
+        console.log('Transaction found:', data.transaction);
         setTransaction(data.transaction);
       }
     } catch (err: any) {
