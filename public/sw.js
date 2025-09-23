@@ -1,5 +1,5 @@
-const CACHE_NAME = 'rivvlock-v6';
-const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5'];
+const CACHE_NAME = 'rivvlock-v7';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6'];
 const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
 const OLD_DOMAINS = [
   'https://rivv-secure-escrow.lovable.app',
@@ -16,7 +16,7 @@ const urlsToCache = [
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 [SW] Installing service worker v6...');
+  console.log('🔧 [SW] Installing service worker v7...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -32,7 +32,7 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  console.log('🔧 [SW] Activating service worker v6...');
+  console.log('🔧 [SW] Activating service worker v7...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
@@ -47,7 +47,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      console.log('🔧 [SW] Service worker v6 activated and controlling all clients');
+      console.log('🔧 [SW] Service worker v7 activated and controlling all clients');
     })
   );
 });

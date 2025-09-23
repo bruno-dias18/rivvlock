@@ -35,14 +35,37 @@ export default function TransactionJoinPage() {
     try {
       console.log('🔍 [TransactionJoin] Fetching transaction with token:', token);
       
-      const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(token || '')}`;
+      // Support both URL token and query param txId for existing links
+      const searchParams = new URLSearchParams(window.location.search);
+      const txId = searchParams.get('txId');
+      const finalToken = token || txId;
+      
+      if (!finalToken) {
+        throw new Error('No transaction token found in URL or query params');
+      }
+      
+      console.log('🔍 [TransactionJoin] Using token:', finalToken, '(source:', token ? 'URL' : 'txId query param', ')');
+      
+      const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
+      
+      // Check if user is authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      const isAuthenticated = !!session?.access_token;
+      console.log('🔍 [TransactionJoin] User authenticated:', isAuthenticated);
+      
+      // Only include Authorization header if user is authenticated
+      const headers: Record<string, string> = {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
+      };
+      
+      if (isAuthenticated) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+      
       const response = await fetch(functionUrl, {
         method: 'GET',
         cache: 'no-store',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || 'anonymous'}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
-        }
+        headers
       });
       
       if (!response.ok) {
