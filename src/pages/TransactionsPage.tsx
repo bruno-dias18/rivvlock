@@ -92,7 +92,12 @@ export default function TransactionsPage() {
       if (error) throw error;
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Sur mobile, utiliser window.location.href pour éviter les problèmes de popup
+        if (isMobile) {
+          window.location.href = data.url;
+        } else {
+          window.open(data.url, '_blank');
+        }
       }
     } catch (error) {
       console.error('Payment error:', error);
