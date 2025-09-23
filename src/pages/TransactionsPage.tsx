@@ -13,10 +13,12 @@ import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   const [contactDialog, setContactDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
@@ -126,15 +128,15 @@ export default function TransactionsPage() {
     return (
       <Card key={transaction.id} className="mb-4">
         <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
+          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
             <div className="flex-1">
-              <CardTitle className="text-lg">{transaction.title}</CardTitle>
+              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'}`}>{transaction.title}</CardTitle>
               <CardDescription className="mt-1">
                 {transaction.description}
               </CardDescription>
             </div>
-            <div className="text-right ml-4">
-              <div className="text-2xl font-bold">
+            <div className={`${isMobile ? 'flex justify-between items-center' : 'text-right ml-4'}`}>
+              <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
                 {transaction.price} {transaction.currency?.toUpperCase()}
               </div>
               <Badge variant="outline" className="mt-1">
@@ -153,60 +155,68 @@ export default function TransactionsPage() {
           </div>
           
           {showActions && (
-            <div className="flex gap-2 pt-2">
+            <div className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
               {userRole === 'seller' && transaction.status === 'pending' && (
                 <Button
                   variant="outline"
-                  size="sm"
+                  size={isMobile ? "default" : "sm"}
                   onClick={() => copyToClipboard(`${window.location.origin}/join/${transaction.shared_link_token}`)}
+                  className={isMobile ? "justify-center" : ""}
                 >
                   <Copy className="h-4 w-4 mr-2" />
-                  Copier le lien
+                  {isMobile ? 'Copier' : 'Copier le lien'}
                 </Button>
               )}
               
               {userRole === 'buyer' && transaction.status === 'pending' && (
                 <Button
-                  size="sm"
+                  size={isMobile ? "default" : "sm"}
                   onClick={() => handlePayment(transaction)}
+                  className={isMobile ? "justify-center" : ""}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
-                  Bloquer l'argent
+                  {isMobile ? 'Bloquer' : 'Bloquer l\'argent'}
                 </Button>
               )}
               
               {transaction.status === 'paid' && userRole === 'seller' && (
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size={isMobile ? "default" : "sm"}
+                  className={isMobile ? "justify-center" : ""}
+                >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Valider la transaction
+                  Valider
                 </Button>
               )}
               
               {transaction.status === 'paid' && userRole === 'buyer' && (
-                <div className="flex gap-2 flex-wrap">
+                <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-wrap'}`}>
                   <Button 
-                    size="sm" 
+                    size={isMobile ? "default" : "sm"}
                     onClick={() => handleReleaseFunds(transaction)}
-                    className="bg-green-600 hover:bg-green-700"
+                    className={`bg-green-600 hover:bg-green-700 ${isMobile ? "justify-center" : ""}`}
                   >
                     <Check className="h-4 w-4 mr-2" />
-                    Libérer les fonds
+                    {isMobile ? 'Libérer' : 'Libérer les fonds'}
                   </Button>
                   <Button 
                     variant="outline" 
-                    size="sm"
+                    size={isMobile ? "default" : "sm"}
                     onClick={() => setContactDialog({ open: true, transaction })}
+                    className={isMobile ? "justify-center" : ""}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    Contacter le vendeur
+                    {isMobile ? 'Contact' : 'Contacter le vendeur'}
                   </Button>
                   <Button 
                     variant="destructive" 
-                    size="sm"
+                    size={isMobile ? "default" : "sm"}
                     onClick={() => setDisputeDialog({ open: true, transaction })}
+                    className={isMobile ? "justify-center" : ""}
                   >
                     <AlertTriangle className="h-4 w-4 mr-2" />
-                    Ouvrir un litige
+                    {isMobile ? 'Litige' : 'Ouvrir un litige'}
                   </Button>
                 </div>
               )}
@@ -219,38 +229,67 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Transactions</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSyncPayments}>
+      <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
+        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>Transactions</h1>
+        <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
+          <Button 
+            variant="outline" 
+            onClick={handleSyncPayments}
+            size={isMobile ? "default" : "default"}
+            className={isMobile ? "justify-center" : ""}
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
-            Actualiser
+            {isMobile ? 'Sync' : 'Actualiser'}
           </Button>
-          <Button onClick={() => setIsNewTransactionOpen(true)}>
+          <Button 
+            onClick={() => setIsNewTransactionOpen(true)}
+            size={isMobile ? "default" : "default"}
+            className={isMobile ? "justify-center" : ""}
+          >
             <Plus className="h-4 w-4 mr-2" />
-            Nouvelle transaction
+            {isMobile ? 'Nouvelle' : 'Nouvelle transaction'}
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="pending" className="flex items-center gap-2">
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} ${isMobile ? 'h-auto' : ''}`}>
+          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Clock className="h-4 w-4" />
-            En attente ({pendingTransactions.length})
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? `Attente (${pendingTransactions.length})` : `En attente (${pendingTransactions.length})`}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="blocked" className="flex items-center gap-2">
+          <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Lock className="h-4 w-4" />
-            Fonds bloqués ({blockedTransactions.length})
+            <span className={isMobile ? 'text-xs' : ''}>
+              {isMobile ? `Bloqués (${blockedTransactions.length})` : `Fonds bloqués (${blockedTransactions.length})`}
+            </span>
           </TabsTrigger>
-          <TabsTrigger value="completed" className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4" />
-            Complétées ({completedTransactions.length})
-          </TabsTrigger>
-          <TabsTrigger value="new" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Nouvelle
-          </TabsTrigger>
+          {!isMobile && (
+            <>
+              <TabsTrigger value="completed" className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4" />
+                Complétées ({completedTransactions.length})
+              </TabsTrigger>
+              <TabsTrigger value="new" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Nouvelle
+              </TabsTrigger>
+            </>
+          )}
+          {isMobile && (
+            <>
+              <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3">
+                <CheckCircle2 className="h-4 w-4" />
+                <span className="text-xs">Complétées ({completedTransactions.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="new" className="flex items-center gap-2 flex-col py-3">
+                <Plus className="h-4 w-4" />
+                <span className="text-xs">Nouvelle</span>
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="pending">
