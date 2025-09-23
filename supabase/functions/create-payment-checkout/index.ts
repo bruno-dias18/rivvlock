@@ -41,7 +41,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { transactionId, transaction_id, transactionToken, token } = await req.json();
+    const { transactionId, transaction_id, transactionToken } = await req.json();
     const finalTransactionId = transactionId || transaction_id;
     if (!finalTransactionId) throw new Error("Transaction ID is required");
 
@@ -111,7 +111,7 @@ serve(async (req) => {
       ],
       mode: "payment",
       success_url: `${RIVVLOCK_DOMAIN}/dashboard?payment=success`,
-      cancel_url: `${RIVVLOCK_DOMAIN}/payment-link/${transactionToken || token || transaction.shared_link_token}?payment=cancelled`,
+      cancel_url: `${RIVVLOCK_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: finalTransactionId,
         transactionId: finalTransactionId, // Alternative key for compatibility

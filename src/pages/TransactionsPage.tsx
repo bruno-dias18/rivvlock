@@ -1,55 +1,110 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getPublicBaseUrl } from '@/lib/appUrl';
+import { useSearchParams } from 'react-router-dom';
+import { CreditCard, User, ShoppingCart } from 'lucide-react';
+
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   interface PendingTransaction {
     id: string;
     title: string;
     price: number;
     currency: string;
-    shared_link_token: string | null;
-    created_at: string;
-    status: string;
+    shared_link_token: string;
+    user_id: string;
     buyer_id: string | null;
+    status: string;
   }
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
   const [pending, setPending] = useState<PendingTransaction[]>([]);
+  const [processingPayment, setProcessingPayment] = useState<string | null>(null);
 
   const baseUrl = useMemo(() => {
     return getPublicBaseUrl();
   }, []);
 
   useEffect(() => {
-    const fetchPending = async () => {
-      if (!user?.id) { setLoading(false); return; }
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('id,title,price,currency,shared_link_token,created_at,status,buyer_id')
-          .eq('user_id', user.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        setPending(data || []);
-      } catch (e: any) {
-        console.error('Error loading pending transactions', e);
-        setError(e.message || 'Erreur lors du chargement');
-      } finally {
-        setLoading(false);
+    if (user) {
+      fetchPendingTransactions();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Check if user just joined a transaction
+    if (searchParams.get('joined') === 'success') {
+      toast.success('Transaction jointe avec succès ! Vous pouvez maintenant procéder au paiement.');
+      // Remove the parameter from URL
+      setSearchParams({});
+      // Refresh data
+      if (user) {
+        fetchPendingTransactions();
       }
-    };
-    fetchPending();
-  }, [user?.id]);
+    }
+  }, [searchParams, setSearchParams, user]);
+
+  const fetchPendingTransactions = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id, title, price, currency, shared_link_token, user_id, buyer_id, status')
+        .or(`user_id.eq.${user!.id},buyer_id.eq.${user!.id}`)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      setPending(data || []);
+    } catch (err) {
+      console.error('Error fetching pending transactions:', err);
+      setError('Erreur lors du chargement des transactions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Lien copié dans le presse-papier !');
+  };
+
+  const handlePayment = async (transaction: PendingTransaction) => {
+    if (processingPayment) return;
+    
+    setProcessingPayment(transaction.id);
+    try {
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
+        body: { 
+          transactionId: transaction.id,
+          transactionToken: transaction.shared_link_token
+        }
+      });
+
+      if (checkoutError) throw checkoutError;
+      if (checkoutData.error) throw new Error(checkoutData.error);
+
+      // Redirect to Stripe checkout
+      if (checkoutData.url || checkoutData.sessionUrl) {
+        const stripeUrl = checkoutData.url || checkoutData.sessionUrl;
+        window.open(stripeUrl, '_blank');
+      }
+    } catch (err: any) {
+      console.error('Error processing payment:', err);
+      toast.error(err.message || 'Erreur lors du traitement du paiement');
+    } finally {
+      setProcessingPayment(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -63,9 +118,6 @@ export default function TransactionsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('transactions.new')}</CardTitle>
-            <CardDescription>
-              Créer une nouvelle transaction d'escrow
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
@@ -77,9 +129,6 @@ export default function TransactionsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('transactions.pending')}</CardTitle>
-            <CardDescription>
-              Transactions en attente
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -89,44 +138,58 @@ export default function TransactionsPage() {
             ) : pending.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucune transaction en attente</p>
             ) : (
-              <ul className="space-y-4">
-                {pending.map((tx) => {
-                  const joinLink = tx.shared_link_token ? `${baseUrl}/join-transaction/${tx.shared_link_token}` : null;
-                  const handleCopy = async () => {
-                    if (!joinLink) return;
-                    try {
-                      await navigator.clipboard.writeText(joinLink);
-                      toast.success('Lien copié');
-                    } catch (e) {
-                      toast.error('Impossible de copier le lien');
-                    }
-                  };
+              <div className="space-y-4">
+                {pending.map((transaction) => {
+                  const isUserSeller = transaction.user_id === user?.id;
+                  const isUserBuyer = transaction.buyer_id === user?.id;
+                  
                   return (
-                    <li key={tx.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium">{tx.title}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {tx.price} {tx.currency}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          {joinLink ? (
-                            <>
-                              <Button variant="outline" size="sm" onClick={handleCopy}>Copier le lien</Button>
-                              <a href={joinLink} target="_blank" rel="noreferrer">
-                                <Button size="sm">Ouvrir</Button>
-                              </a>
-                            </>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Lien indisponible</span>
+                    <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium">{transaction.title}</h4>
+                          {isUserSeller && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                              <User className="w-3 h-3" />
+                              Vendeur
+                            </span>
+                          )}
+                          {isUserBuyer && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                              <ShoppingCart className="w-3 h-3" />
+                              Acheteur
+                            </span>
                           )}
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                          {transaction.price} {transaction.currency}
+                        </p>
                       </div>
-                    </li>
+                      <div className="flex gap-2">
+                        {isUserSeller && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(`${baseUrl}/join-transaction/${transaction.shared_link_token}`)}
+                          >
+                            Copier le lien
+                          </Button>
+                        )}
+                        {isUserBuyer && (
+                          <Button
+                            size="sm"
+                            onClick={() => handlePayment(transaction)}
+                            disabled={processingPayment === transaction.id}
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            {processingPayment === transaction.id ? 'Traitement...' : 'Bloquer l\'argent'}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -134,9 +197,6 @@ export default function TransactionsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('dashboard.history')}</CardTitle>
-            <CardDescription>
-              Historique des transactions
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">

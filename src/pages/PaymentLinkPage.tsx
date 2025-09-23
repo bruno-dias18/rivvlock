@@ -75,12 +75,12 @@ export default function PaymentLinkPage() {
     }
   };
 
-  const handleJoinAndPay = async () => {
+  const handleJoinTransaction = async () => {
     if (!user || !transaction || processingPayment) return;
 
     setProcessingPayment(true);
     try {
-      // First, join the transaction
+      // Join the transaction
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
           transaction_id: transaction.id,
@@ -91,27 +91,14 @@ export default function PaymentLinkPage() {
       if (joinError) throw joinError;
       if (joinData.error) throw new Error(joinData.error);
 
-      // Then create payment checkout
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
-        body: { 
-          transactionId: transaction.id,
-          token: token
-        }
-      });
+      // Wait a moment for database to update
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (checkoutError) throw checkoutError;
-      if (checkoutData.error) throw new Error(checkoutData.error);
-
-      // Redirect to Stripe checkout
-      if (checkoutData.url || checkoutData.sessionUrl) {
-        const stripeUrl = checkoutData.url || checkoutData.sessionUrl;
-        window.open(stripeUrl, '_blank');
-        // Redirect user back to dashboard after opening payment
-        window.location.href = '/dashboard';
-      }
+      // Redirect to transactions page with success indication
+      window.location.href = '/dashboard/transactions?joined=success';
     } catch (err: any) {
-      console.error('Error processing payment:', err);
-      setError(err.message || 'Erreur lors du traitement du paiement');
+      console.error('Error joining transaction:', err);
+      setError(err.message || 'Erreur lors de l\'ajout de la transaction');
     } finally {
       setProcessingPayment(false);
     }
@@ -200,12 +187,12 @@ export default function PaymentLinkPage() {
               </div>
             ) : (
               <Button 
-                onClick={handleJoinAndPay}
+                onClick={handleJoinTransaction}
                 className="w-full"
                 size="lg"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Bloquer l'argent
+                Rejoindre la transaction
               </Button>
             )}
           </div>
