@@ -110,7 +110,7 @@ serve(async (req) => {
 
     // Return transaction data with share link - always use the rivvlock domain
     const baseUrl = 'https://rivvlock.lovable.app';
-    const shareLink = `${baseUrl}/payment-link/${sharedLinkToken}`;
+    const shareLink = `${baseUrl}/join-transaction/${sharedLinkToken}`;
 
     return new Response(JSON.stringify({
       success: true,
