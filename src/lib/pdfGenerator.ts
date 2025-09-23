@@ -14,8 +14,8 @@ interface InvoiceData {
   buyerProfile?: any;
 }
 
-// Base64 du logo RivvLock (version réduite pour la facture)
-const RIVVLOCK_LOGO_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+// Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
+const RIVVLOCK_LOGO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAMEAQIGBQf/xAA0EAABAwMBBQYGAQQDAAAAAAABAAIDBBEhBRIxQVFhBhMicYGRFDKhscHR4fAjQlJi8f/EABsBAAIDAQEBAAAAAAAAAAAAAAAGAwQFAgEH/8QALBEAAgECBQIEBwAAAAAAAAAAAAECAwQFESFBIFESYcHwMVKBkbHh8UKSocL/2gAMAwEAAhEDEQA/APEREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf/Z';
 
 export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const doc = new jsPDF();
@@ -73,7 +73,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   // === INFORMATIONS FACTURE ===
   
-  const invoiceNumber = `INV-${invoiceData.transactionId.slice(-8)}`;
+  // Numérotation automatique par vendeur
+  const sellerUserId = invoiceData.sellerProfile?.user_id || 'UNKNOWN';
+  const sequenceNumber = Math.floor(Date.now() / 1000) % 10000; // Séquence basée sur timestamp
+  const invoiceNumber = `FAC-${sellerUserId.slice(-4).toUpperCase()}-${sequenceNumber.toString().padStart(4, '0')}`;
   const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString('fr-FR');
   const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'); // +30 jours
   
@@ -96,41 +99,79 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   // === ÉMETTEUR ET CLIENT (Two columns) ===
   
-  // Émetteur (RivvLock)
+  // Émetteur (Vendeur)
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
   doc.text('ÉMETTEUR', margin, yPosition);
   
-  // Client 
+  // Client (Acheteur)
   doc.text('CLIENT', pageWidth / 2 + 10, yPosition);
   
   yPosition += 8;
   
-  // Informations émetteur
+  // Informations émetteur (Vendeur)
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('RivvLock SAS', margin, yPosition);
+  doc.text(invoiceData.sellerName, margin, yPosition);
   
   yPosition += 5;
   doc.setFont('helvetica', 'normal');
-  doc.text('Plateforme d\'escrow sécurisée', margin, yPosition);
-  doc.text('Paris, France', margin, yPosition + 5);
-  doc.text('contact@rivvlock.com', margin, yPosition + 10);
   
-  // Informations client (vendeur/acheteur selon contexte)
-  const clientY = yPosition - 5;
+  // Informations du profil vendeur
+  if (invoiceData.sellerProfile) {
+    const profile = invoiceData.sellerProfile;
+    
+    if (profile.company_name) {
+      doc.text(profile.company_name, margin, yPosition);
+      yPosition += 4;
+    }
+    
+    if (profile.address) {
+      doc.text(profile.address, margin, yPosition);
+      yPosition += 4;
+    }
+    
+    if (profile.postal_code && profile.city) {
+      doc.text(`${profile.postal_code} ${profile.city}`, margin, yPosition);
+      yPosition += 4;
+    }
+    
+    if (profile.siret_uid) {
+      doc.text(`SIRET/UID: ${profile.siret_uid}`, margin, yPosition);
+      yPosition += 4;
+    }
+  }
+  
+  // Informations client (Acheteur) - à droite
+  const clientY = yPosition - (invoiceData.sellerProfile ? 20 : 8);
   doc.setFont('helvetica', 'bold');
-  doc.text(`${invoiceData.sellerName}`, pageWidth / 2 + 10, clientY);
+  doc.text(invoiceData.buyerName, pageWidth / 2 + 10, clientY);
   
   doc.setFont('helvetica', 'normal');
-  if (invoiceData.sellerProfile?.address) {
-    doc.text(invoiceData.sellerProfile.address, pageWidth / 2 + 10, clientY + 5);
-  }
-  doc.text(`Acheteur: ${invoiceData.buyerName}`, pageWidth / 2 + 10, clientY + 10);
+  let buyerY = clientY + 5;
   
-  yPosition += 35;
+  if (invoiceData.buyerProfile) {
+    const profile = invoiceData.buyerProfile;
+    
+    if (profile.company_name) {
+      doc.text(profile.company_name, pageWidth / 2 + 10, buyerY);
+      buyerY += 4;
+    }
+    
+    if (profile.address) {
+      doc.text(profile.address, pageWidth / 2 + 10, buyerY);
+      buyerY += 4;
+    }
+    
+    if (profile.postal_code && profile.city) {
+      doc.text(`${profile.postal_code} ${profile.city}`, pageWidth / 2 + 10, buyerY);
+      buyerY += 4;
+    }
+  }
+  
+  yPosition += 15;
   
   // === TABLEAU PROFESSIONNEL ===
   
@@ -269,15 +310,19 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('• Les frais RivvLock (5%) sont déduits du montant reçu par le vendeur.', margin + 5, yPosition + 4);
   doc.text('• La transaction a été validée par l\'acheteur conformément aux conditions d\'utilisation.', margin + 5, yPosition + 8);
   
-  // Numéro de page et date de génération (bas de page)
+  // Numéro de page et informations RivvLock (bas de page)
   const footerY = pageHeight - 15;
   doc.setFontSize(7);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(150, 150, 150);
   doc.text(`Page 1/1 - Générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, margin, footerY);
-  doc.text('RivvLock - Plateforme d\'escrow sécurisée | contact@rivvlock.com', pageWidth - 100, footerY);
   
-  // Télécharger le PDF
-  const fileName = `Facture-RivvLock-${invoiceData.transactionId.slice(-8)}.pdf`;
+  // RivvLock uniquement dans le pied de page
+  const footerRightText = 'RivvLock - Plateforme d\'escrow | contact@rivvlock.com';
+  const footerTextWidth = doc.getTextWidth(footerRightText);
+  doc.text(footerRightText, pageWidth - margin - footerTextWidth, footerY);
+  
+  // Télécharger le PDF avec numéro de facture automatique
+  const fileName = `Facture-${invoiceNumber}.pdf`;
   doc.save(fileName);
 };
