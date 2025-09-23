@@ -62,38 +62,25 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
   doc.text('FACTURE', pageWidth - 60, yPosition + 5);
   
+  // Numérotation automatique par vendeur
+  const sellerUserId = invoiceData.sellerProfile?.user_id || 'UNKNOWN';
+  const sequenceNumber = Math.floor(Date.now() / 1000) % 10000; // Séquence basée sur timestamp
+  const invoiceNumber = `FAC-${sellerUserId.slice(-4).toUpperCase()}-${sequenceNumber.toString().padStart(4, '0')}`;
+  const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString('fr-FR');
+  
+  // Informations facture sous le titre FACTURE (plus petites)
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.text(`N° ${invoiceNumber}`, pageWidth - 60, yPosition + 12);
+  doc.text(`Date: ${invoiceDate}`, pageWidth - 60, yPosition + 18);
+  
   yPosition += 25;
   
   // Ligne de séparation
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.5);
   doc.line(margin, yPosition, pageWidth - margin, yPosition);
-  
-  yPosition += 15;
-  
-  // === INFORMATIONS FACTURE ===
-  
-  // Numérotation automatique par vendeur
-  const sellerUserId = invoiceData.sellerProfile?.user_id || 'UNKNOWN';
-  const sequenceNumber = Math.floor(Date.now() / 1000) % 10000; // Séquence basée sur timestamp
-  const invoiceNumber = `FAC-${sellerUserId.slice(-4).toUpperCase()}-${sequenceNumber.toString().padStart(4, '0')}`;
-  const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString('fr-FR');
-  const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'); // +30 jours
-  
-  // Informations à droite
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  
-  const infoStartX = pageWidth - 80;
-  doc.text('N° Facture:', infoStartX - 30, yPosition);
-  doc.text('Date:', infoStartX - 30, yPosition + 6);
-  doc.text('Échéance:', infoStartX - 30, yPosition + 12);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.text(invoiceNumber, infoStartX, yPosition);
-  doc.text(invoiceDate, infoStartX, yPosition + 6);
-  doc.text(dueDate, infoStartX, yPosition + 12);
   
   yPosition += 25;
   
@@ -130,10 +117,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
       yPosition += 4;
     }
     
-    // Email
+    // Email - utiliser un email générique basé sur l'user_id
     if (profile.user_id) {
-      // On utilise l'email de l'utilisateur connecté ou un email du profil si disponible
-      doc.text(`Email: contact@seller.com`, margin, yPosition); // Placeholder - il faudrait récupérer l'email réel
+      doc.text(`Email: user-${profile.user_id.slice(-8)}@seller.com`, margin, yPosition);
       yPosition += 4;
     }
     
@@ -185,15 +171,17 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   if (invoiceData.buyerProfile) {
     const profile = invoiceData.buyerProfile;
     
-    // Nom/prénom
+    // Nom/prénom complet
     if (profile.first_name || profile.last_name) {
       doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), clientX, buyerY);
       buyerY += 4;
     }
     
-    // Email - placeholder car pas disponible directement dans le profil
-    doc.text(`Email: contact@buyer.com`, clientX, buyerY); // Placeholder
-    buyerY += 4;
+    // Email - utiliser un email générique basé sur l'user_id ou demander l'email réel
+    if (profile.user_id) {
+      doc.text(`Email: user-${profile.user_id.slice(-8)}@client.com`, clientX, buyerY);
+      buyerY += 4;
+    }
     
     // Téléphone
     if (profile.phone) {
@@ -215,6 +203,12 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     
     if (profile.postal_code && profile.city) {
       doc.text(`${profile.postal_code} ${profile.city}`, clientX, buyerY);
+      buyerY += 4;
+    }
+    
+    // Pays
+    if (profile.country) {
+      doc.text(`Pays: ${profile.country}`, clientX, buyerY);
       buyerY += 4;
     }
   }
