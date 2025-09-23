@@ -45,7 +45,7 @@ const App: React.FC = () => {
               null,
               React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
               React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
-              React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(TransactionJoinPage) }),
+              React.createElement(Route, { path: "/join/:token", element: React.createElement(TransactionJoinPage) }),
               React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
               React.createElement(Route, { 
                 path: "/dashboard", 
