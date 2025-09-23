@@ -91,12 +91,19 @@ export default function TransactionsPage() {
 
       if (error) throw error;
 
-      if (data?.url) {
-        // Sur mobile, utiliser window.location.href pour éviter les problèmes de popup
-        if (isMobile) {
-          window.location.href = data.url;
-        } else {
-          window.open(data.url, '_blank');
+      const url = data?.url || data?.sessionUrl;
+      if (!url) throw new Error('URL de session Stripe introuvable');
+
+      if (isMobile) {
+        // iOS/Safari: ensure navigation is not blocked even after async
+        setTimeout(() => {
+          window.location.assign(url);
+        }, 0);
+      } else {
+        const opened = window.open(url, '_blank');
+        if (!opened) {
+          // Fallback if popup blocked
+          window.location.assign(url);
         }
       }
     } catch (error) {
