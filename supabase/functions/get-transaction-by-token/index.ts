@@ -36,7 +36,8 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    const { token } = await req.json();
+    const url = new URL(req.url);
+    const token = url.searchParams.get('token');
     
     if (!token) {
       return new Response(
