@@ -38,20 +38,26 @@ export default function TransactionJoinPage() {
         body: { token }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       console.log('Edge function response:', data);
       
-      if (!data.success) {
-        console.error('Transaction fetch failed:', data.error);
-        setError(data.error || 'Erreur lors de la récupération de la transaction');
-      } else {
+      if (!data || !data.success) {
+        console.error('Transaction fetch failed:', data?.error || 'No data received');
+        setError(data?.error || 'Erreur lors de la récupération de la transaction');
+      } else if (data.transaction) {
         console.log('Transaction found:', data.transaction);
         setTransaction(data.transaction);
+      } else {
+        console.error('Transaction data is missing from response');
+        setError('Données de transaction manquantes');
       }
     } catch (err: any) {
       console.error('Error fetching transaction:', err);
-      setError('Erreur lors de la récupération de la transaction');
+      setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -150,5 +156,19 @@ export default function TransactionJoinPage() {
     );
   }
 
-  return null;
+  // Default fallback - should not reach here
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="max-w-md w-full text-center">
+        <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">État inattendu</h1>
+        <p className="text-muted-foreground mb-6">
+          Une erreur inattendue s'est produite lors du chargement de la transaction.
+        </p>
+        <Button onClick={() => window.location.href = '/'}>
+          Retour à l'accueil
+        </Button>
+      </div>
+    </div>
+  );
 }
