@@ -63,11 +63,66 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Get seller's Stripe account details
+    const { data: sellerStripeAccount, error: accountError } = await supabaseClient
+      .from('stripe_accounts')
+      .select('*')
+      .eq('user_id', transaction.user_id)
+      .single();
+
+    if (accountError || !sellerStripeAccount) {
+      throw new Error("Seller does not have a configured Stripe account");
+    }
+
+    if (!sellerStripeAccount.payouts_enabled || !sellerStripeAccount.charges_enabled) {
+      throw new Error("Seller's Stripe account is not ready for transfers");
+    }
+
+    logStep("Seller Stripe account validated", { 
+      accountId: sellerStripeAccount.stripe_account_id,
+      payoutsEnabled: sellerStripeAccount.payouts_enabled 
+    });
+
     // Capture the payment intent to release funds to seller
     const paymentIntent = await stripe.paymentIntents.capture(
       transaction.stripe_payment_intent_id
     );
     logStep("Payment intent captured", { paymentIntentId: paymentIntent.id });
+
+    // Get the charge ID from the payment intent for the transfer
+    const chargeId = paymentIntent.latest_charge as string;
+    if (!chargeId) {
+      throw new Error("No charge ID found in payment intent");
+    }
+    logStep("Charge ID retrieved", { chargeId });
+
+    // Calculate transfer amount (subtract platform fee)
+    const platformFeePercent = 0.05; // 5% platform fee
+    const originalAmount = Math.round(transaction.price * 100); // Convert to cents
+    const platformFee = Math.round(originalAmount * platformFeePercent);
+    const transferAmount = originalAmount - platformFee;
+
+    logStep("Transfer amount calculated", { 
+      originalAmount, 
+      platformFee, 
+      transferAmount 
+    });
+
+    // Create transfer to connected account using charge ID
+    const transfer = await stripe.transfers.create({
+      amount: transferAmount,
+      currency: transaction.currency.toLowerCase(),
+      destination: sellerStripeAccount.stripe_account_id,
+      source_transaction: chargeId,
+      description: `Transfer for transaction: ${transaction.title}`,
+      metadata: {
+        transaction_id: transaction.id,
+        seller_id: transaction.user_id,
+        buyer_id: transaction.buyer_id
+      }
+    });
+
+    logStep("Transfer created", { transferId: transfer.id });
 
     // Update transaction status to validated
     const { error: updateError } = await supabaseClient
@@ -83,11 +138,50 @@ serve(async (req) => {
     }
     logStep("Transaction updated to validated");
 
+    // Log the activity for seller
+    await supabaseClient
+      .from('activity_logs')
+      .insert({
+        user_id: transaction.user_id,
+        activity_type: 'TRANSFER_COMPLETED',
+        title: 'Funds transferred to your account',
+        description: `Received ${(transferAmount / 100).toFixed(2)} ${transaction.currency} for transaction: ${transaction.title}`,
+        metadata: {
+          transaction_id: transaction.id,
+          transfer_id: transfer.id,
+          amount: transferAmount,
+          currency: transaction.currency,
+          platform_fee: platformFee
+        }
+      });
+
+    // Log for buyer as well
+    await supabaseClient
+      .from('activity_logs')
+      .insert({
+        user_id: transaction.buyer_id,
+        activity_type: 'TRANSACTION_COMPLETED',
+        title: 'Transaction completed',
+        description: `Funds transferred to seller for: ${transaction.title}`,
+        metadata: {
+          transaction_id: transaction.id,
+          transfer_id: transfer.id,
+          amount: transferAmount,
+          currency: transaction.currency
+        }
+      });
+
+    logStep("Activity logs created");
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Funds released successfully",
-        transactionId 
+        message: "Funds released and transferred successfully",
+        transactionId,
+        transferId: transfer.id,
+        amountTransferred: transferAmount,
+        currency: transaction.currency,
+        platformFee: platformFee
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

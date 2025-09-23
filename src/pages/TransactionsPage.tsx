@@ -280,11 +280,8 @@ export default function TransactionsPage() {
               )}
               
               {transaction.status === 'paid' && userRole === 'buyer' && (
-                <CompleteTransactionButton
-                  transactionId={transaction.id}
-                  transactionStatus={transaction.status}
-                  isUserBuyer={true}
-                  sellerHasStripeAccount={true}
+                <CompleteTransactionButtonWithStatus
+                  transaction={transaction}
                   onTransferComplete={() => refetch()}
                 />
               )}
@@ -304,6 +301,27 @@ export default function TransactionsPage() {
           )}
         </CardContent>
       </Card>
+    );
+  };
+
+  // Component wrapper to handle seller Stripe status
+  const CompleteTransactionButtonWithStatus = ({ 
+    transaction, 
+    onTransferComplete 
+  }: { 
+    transaction: any; 
+    onTransferComplete: () => void; 
+  }) => {
+    const { data: sellerStatus } = useSellerStripeStatus(transaction.user_id);
+    
+    return (
+      <CompleteTransactionButton
+        transactionId={transaction.id}
+        transactionStatus={transaction.status}
+        isUserBuyer={true}
+        sellerHasStripeAccount={sellerStatus?.hasActiveAccount || false}
+        onTransferComplete={onTransferComplete}
+      />
     );
   };
 

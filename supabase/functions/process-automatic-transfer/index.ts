@@ -120,12 +120,22 @@ serve(async (req) => {
       transferAmount 
     });
 
+    // Get the charge ID from the payment intent
+    const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+    const chargeId = paymentIntent.latest_charge as string;
+    
+    if (!chargeId) {
+      throw new Error("No charge ID found in payment intent");
+    }
+    
+    logStep("Charge ID retrieved from payment intent", { chargeId });
+
     // Create transfer to connected account
     const transfer = await stripe.transfers.create({
       amount: transferAmount,
       currency: transaction.currency.toLowerCase(),
       destination: sellerStripeAccount.stripe_account_id,
-      source_transaction: transaction.stripe_payment_intent_id,
+      source_transaction: chargeId,
       description: `Transfer for transaction: ${transaction.title}`,
       metadata: {
         transaction_id: transaction.id,
@@ -140,7 +150,7 @@ serve(async (req) => {
     const { error: updateError } = await supabaseClient
       .from('transactions')
       .update({
-        status: 'completed',
+        status: 'validated',
         updated_at: new Date().toISOString()
       })
       .eq('id', transaction_id);
@@ -191,7 +201,7 @@ serve(async (req) => {
       amount_transferred: transferAmount,
       currency: transaction.currency,
       platform_fee: platformFee,
-      transaction_status: 'completed'
+      transaction_status: 'validated'
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,

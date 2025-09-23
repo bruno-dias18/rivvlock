@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useProcessTransfer } from '@/hooks/useStripeAccount';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CompleteTransactionButtonProps {
   transactionId: string;
@@ -21,7 +21,6 @@ export default function CompleteTransactionButton({
   onTransferComplete
 }: CompleteTransactionButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const processTransfer = useProcessTransfer();
 
   // Only show for paid transactions where user is buyer
   if (transactionStatus !== 'paid' || !isUserBuyer) {
@@ -32,7 +31,11 @@ export default function CompleteTransactionButton({
     try {
       setIsProcessing(true);
       
-      await processTransfer.mutateAsync(transactionId);
+      const { data, error } = await supabase.functions.invoke('release-funds', {
+        body: { transactionId }
+      });
+
+      if (error) throw error;
       
       toast.success('Transaction finalisée ! Les fonds ont été transférés au vendeur.');
       
