@@ -6,18 +6,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle, Download } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useProfile } from '@/hooks/useProfile';
+import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useIsMobile } from '@/lib/mobileUtils';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { data: profile } = useProfile();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
@@ -120,6 +123,33 @@ export default function TransactionsPage() {
     return null;
   };
 
+  const handleDownloadInvoice = (transaction: any) => {
+    const userRole = getUserRole(transaction);
+    const sellerName = userRole === 'seller' 
+      ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Vendeur'
+      : transaction.seller_display_name || 'Vendeur';
+    
+    const buyerName = userRole === 'buyer'
+      ? `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Acheteur'
+      : transaction.buyer_display_name || 'Acheteur anonyme';
+
+    const invoiceData = {
+      transactionId: transaction.id,
+      title: transaction.title,
+      description: transaction.description,
+      amount: parseFloat(transaction.price),
+      currency: transaction.currency,
+      sellerName,
+      buyerName,
+      serviceDate: transaction.service_date,
+      validatedDate: transaction.updated_at,
+      sellerProfile: userRole === 'seller' ? profile : null,
+      buyerProfile: userRole === 'buyer' ? profile : null,
+    };
+
+    generateInvoicePDF(invoiceData);
+  };
+
   const renderTransactionCard = (transaction: any, showActions = true) => {
     const userRole = getUserRole(transaction);
     const displayName = userRole === 'seller' 
@@ -220,6 +250,18 @@ export default function TransactionsPage() {
                     {isMobile ? 'Litige' : 'Ouvrir un litige'}
                   </Button>
                 </div>
+              )}
+
+              {transaction.status === 'validated' && (
+                <Button 
+                  variant="outline" 
+                  size={isMobile ? "default" : "sm"}
+                  onClick={() => handleDownloadInvoice(transaction)}
+                  className={isMobile ? "justify-center" : ""}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isMobile ? 'Facture' : 'Télécharger la facture'}
+                </Button>
               )}
             </div>
           )}
