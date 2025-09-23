@@ -161,8 +161,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
   }
   
-  // Informations client (Acheteur) - complètement à droite
-  const clientX = pageWidth - margin - 80;
+  // Informations client (Acheteur) - aligné sous le titre CLIENT
+  const clientX = pageWidth - 80;
   let buyerY = sellerStartY;
   doc.setFont('helvetica', 'bold');
   doc.text(invoiceData.buyerName, clientX, buyerY);
