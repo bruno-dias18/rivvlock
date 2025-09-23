@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/DashboardLayout";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import i18n from "./i18n/config";
 import "./index.css";
 
@@ -32,32 +33,36 @@ const App: React.FC = () => {
         null,
         React.createElement(Toaster, { position: "top-right" }),
         React.createElement(
-          BrowserRouter,
+          GlobalErrorBoundary,
           null,
           React.createElement(
-            Routes,
+            BrowserRouter,
             null,
-            React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
-            React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
-            React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(TransactionJoinPage) }),
-            React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
-            React.createElement(Route, { 
-              path: "/dashboard", 
-              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
-            }),
-            React.createElement(Route, { 
-              path: "/dashboard/transactions", 
-              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
-            }),
-            React.createElement(Route, { 
-              path: "/dashboard/profile", 
-              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
-            }),
-            React.createElement(Route, { 
-              path: "/dashboard/admin", 
-              element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
-            }),
-            React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
+            React.createElement(
+              Routes,
+              null,
+              React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
+              React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
+              React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(TransactionJoinPage) }),
+              React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
+              React.createElement(Route, { 
+                path: "/dashboard", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
+              }),
+              React.createElement(Route, { 
+                path: "/dashboard/transactions", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
+              }),
+              React.createElement(Route, { 
+                path: "/dashboard/profile", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
+              }),
+              React.createElement(Route, { 
+                path: "/dashboard/admin", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
+              }),
+              React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
+            )
           )
         )
       )

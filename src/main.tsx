@@ -2,6 +2,17 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
+// Startup diagnostics
+console.log('[BOOT] App starting...');
+
+window.addEventListener('error', (e) => {
+  console.error('🚨 [Global] window.error:', e.message, e.error);
+});
+
+window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
+  console.error('🚨 [Global] unhandledrejection:', e.reason);
+});
+
 // Service Worker management
 if (import.meta.env.PROD) {
   // Register SW only in production

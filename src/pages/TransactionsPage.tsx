@@ -24,7 +24,12 @@ export default function TransactionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingTransaction[]>([]);
 
-  const baseUrl = useMemo(() => (typeof window !== 'undefined' ? window.location.origin : 'https://rivvlock.com'), []);
+  const baseUrl = useMemo(() => {
+    if (typeof window === 'undefined') return 'https://rivvlock.com';
+    const origin = window.location.origin;
+    // Ensure public domain is used when copying links
+    return origin.includes('lovableproject.com') ? origin.replace('lovableproject.com', 'lovable.app') : origin;
+  }, []);
 
   useEffect(() => {
     const fetchPending = async () => {

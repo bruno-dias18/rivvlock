@@ -1,14 +1,15 @@
-const CACHE_NAME = 'rivvlock-v7';
-const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6'];
+const CACHE_NAME = 'rivvlock-v8';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7'];
 const WORKING_DOMAIN = 'https://id-preview--cfd5feba-e675-4ca7-b281-9639755fdc6f.lovable.app';
 const OLD_DOMAINS = [
   'https://rivv-secure-escrow.lovable.app',
   'https://lovableproject.com'
 ];
 
-// Minimal files to cache (avoid caching HTML to prevent stale pages)
+// Minimal files to cache (add index.html for SPA fallback)
 const urlsToCache = [
   '/',
+  '/index.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png'
@@ -16,7 +17,7 @@ const urlsToCache = [
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 [SW] Installing service worker v7...');
+  console.log('🔧 [SW] Installing service worker v8...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -32,7 +33,7 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  console.log('🔧 [SW] Activating service worker v7...');
+  console.log('🔧 [SW] Activating service worker v8...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
@@ -47,7 +48,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      console.log('🔧 [SW] Service worker v7 activated and controlling all clients');
+      console.log('🔧 [SW] Service worker v8 activated and controlling all clients');
     })
   );
 });
@@ -66,21 +67,19 @@ self.addEventListener('fetch', (event) => {
       return;
     }
 
-    // Network-first for navigations with SPA fallback
+    // Network-first for navigations with SPA fallback to index.html
     event.respondWith(
       fetch(req)
         .then((networkRes) => {
-          // If we get a 404 for a navigation request, serve the root HTML so React Router can handle it
           if (networkRes.status === 404) {
-            console.log('🔄 [SW] 404 for navigation, serving root HTML for SPA routing:', req.url);
-            return caches.match('/') || fetch('/');
+            console.log('🔄 [SW] 404 for navigation, serving index.html for SPA routing:', req.url);
+            return caches.match('/index.html') || fetch('/index.html');
           }
           return networkRes;
         })
         .catch(() => {
-          // Network failed, try cache fallback
-          console.log('🔄 [SW] Network failed, trying cache fallback for:', req.url);
-          return caches.match(req).then((cached) => cached || caches.match('/'));
+          console.log('🔄 [SW] Network failed, trying cache fallback for navigation:', req.url);
+          return caches.match('/index.html').then((cached) => cached || fetch('/index.html'));
         })
     );
     return;
@@ -98,6 +97,11 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone)).catch(() => {});
           }
           return networkRes;
+        }).catch(() => {
+          // As a last resort, return index.html for GET requests to keep SPA usable
+          if (req.method === 'GET') {
+            return caches.match('/index.html');
+          }
         })
       );
     })
