@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw } from 'lucide-react';
+import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
@@ -15,8 +15,26 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   
-  const { data: counts, isLoading: countsLoading, refetch: refetchCounts } = useTransactionCounts();
+  const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
   const { syncPayments } = useSyncStripePayments();
+
+  // Force sync on dashboard load
+  useEffect(() => {
+    if (user) {
+      console.log('🏠 Dashboard loaded for user:', user.email);
+      // Trigger sync after a short delay to ensure everything is initialized
+      const timer = setTimeout(async () => {
+        try {
+          console.log('🔄 Dashboard auto-sync triggered');
+          await syncPayments();
+          await refetchCounts();
+        } catch (error) {
+          console.error('Dashboard auto-sync failed:', error);
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id]);
 
   const handleSyncPayments = async () => {
     try {
@@ -41,24 +59,27 @@ export default function DashboardPage() {
   const transactionStatuses = [
     {
       title: 'En attente',
-      count: countsLoading ? '...' : String(counts?.pending || 0),
+      count: countsLoading ? '...' : countsError ? '!' : String(counts?.pending || 0),
       icon: Clock,
       variant: 'outline' as const,
       onClick: () => navigate('/dashboard/transactions?tab=pending'),
+      hasError: countsError,
     },
     {
       title: 'Fonds bloqués',
-      count: countsLoading ? '...' : String(counts?.paid || 0),
+      count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
       icon: Lock,
       variant: 'outline' as const,
       onClick: () => navigate('/dashboard/transactions?tab=blocked'),
+      hasError: countsError,
     },
     {
       title: 'Complétée',
-      count: countsLoading ? '...' : String(counts?.validated || 0),
+      count: countsLoading ? '...' : countsError ? '!' : String(counts?.validated || 0),
       icon: CheckCircle,
       variant: 'default' as const,
       onClick: () => navigate('/dashboard/transactions?tab=completed'),
+      hasError: countsError,
     },
   ];
 
@@ -102,14 +123,23 @@ export default function DashboardPage() {
             <Button
               key={status.title}
               variant={status.variant}
-              className="h-auto p-4 flex-col items-start gap-2"
+              className={`h-auto p-4 flex-col items-start gap-2 ${status.hasError ? 'border-destructive' : ''}`}
               onClick={status.onClick}
             >
               <div className="flex items-center gap-2">
-                <status.icon className="h-4 w-4" />
+                {status.hasError ? (
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                ) : (
+                  <status.icon className="h-4 w-4" />
+                )}
                 <span className="font-medium">{status.title}</span>
               </div>
-              <div className="text-2xl font-bold">{status.count}</div>
+              <div className={`text-2xl font-bold ${status.hasError ? 'text-destructive' : ''}`}>
+                {status.count}
+              </div>
+              {status.hasError && (
+                <div className="text-xs text-destructive">Erreur de chargement</div>
+              )}
             </Button>
           ))}
         </div>
