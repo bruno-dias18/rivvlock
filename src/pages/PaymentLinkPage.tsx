@@ -37,20 +37,39 @@ export default function PaymentLinkPage() {
 
   const fetchTransaction = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
-        body: { token }
+      console.log('🔍 [PaymentLink] Fetching transaction with token:', token);
+      
+      const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(token || '')}`;
+      const response = await fetch(functionUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: {
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || 'anonymous'}`,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
+        }
       });
-
-      if (error) throw error;
-
-      if (data.error) {
-        setError(data.error);
-      } else {
+      
+      if (!response.ok) {
+        console.error('🚨 [PaymentLink] HTTP error:', response.status, response.statusText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('📦 [PaymentLink] Edge function response:', data);
+      
+      if (!data || !data.success) {
+        console.error('🚨 [PaymentLink] Transaction fetch failed:', data?.error || 'No data received');
+        setError(data?.error || 'Erreur lors de la récupération de la transaction');
+      } else if (data.transaction) {
+        console.log('✅ [PaymentLink] Transaction found:', data.transaction);
         setTransaction(data.transaction);
+      } else {
+        console.error('🚨 [PaymentLink] Transaction data missing from response');
+        setError('Données de transaction manquantes');
       }
     } catch (err: any) {
-      console.error('Error fetching transaction:', err);
-      setError('Erreur lors de la récupération de la transaction');
+      console.error('🚨 [PaymentLink] Error fetching transaction:', err);
+      setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
     } finally {
       setLoading(false);
     }

@@ -33,11 +33,12 @@ export default function TransactionJoinPage() {
 
   const fetchTransaction = async () => {
     try {
-      console.log('Fetching transaction with token:', token);
+      console.log('🔍 [TransactionJoin] Fetching transaction with token:', token);
       
       const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(token || '')}`;
       const response = await fetch(functionUrl, {
         method: 'GET',
+        cache: 'no-store',
         headers: {
           'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || 'anonymous'}`,
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
@@ -45,25 +46,25 @@ export default function TransactionJoinPage() {
       });
       
       if (!response.ok) {
+        console.error('🚨 [TransactionJoin] HTTP error:', response.status, response.statusText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-
-      console.log('Edge function response:', data);
+      console.log('📦 [TransactionJoin] Edge function response:', data);
       
       if (!data || !data.success) {
-        console.error('Transaction fetch failed:', data?.error || 'No data received');
+        console.error('🚨 [TransactionJoin] Transaction fetch failed:', data?.error || 'No data received');
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       } else if (data.transaction) {
-        console.log('Transaction found:', data.transaction);
+        console.log('✅ [TransactionJoin] Transaction found:', data.transaction);
         setTransaction(data.transaction);
       } else {
-        console.error('Transaction data is missing from response');
+        console.error('🚨 [TransactionJoin] Transaction data missing from response');
         setError('Données de transaction manquantes');
       }
     } catch (err: any) {
-      console.error('Error fetching transaction:', err);
+      console.error('🚨 [TransactionJoin] Error fetching transaction:', err);
       setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
     } finally {
       setLoading(false);
