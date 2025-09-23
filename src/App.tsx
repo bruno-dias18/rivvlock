@@ -14,6 +14,7 @@ import TransactionJoinPage from "./pages/TransactionJoinPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import i18n from "./i18n/config";
@@ -59,7 +60,7 @@ const App: React.FC = () => {
               }),
               React.createElement(Route, { 
                 path: "/dashboard/admin", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage))))
               }),
               React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
             )

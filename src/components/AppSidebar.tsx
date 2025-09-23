@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Home, CreditCard, User, Settings, BarChart3, Users } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 import {
   Sidebar,
@@ -48,6 +49,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { user } = useAuth();
   const { state } = useSidebar();
+  const { isAdmin } = useIsAdmin();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -55,10 +57,6 @@ export function AppSidebar() {
     }
     return location.pathname.startsWith(path);
   };
-
-  // For now, we'll assume any logged-in user can access admin
-  // In a real app, you'd check user roles here
-  const canAccessAdmin = !!user;
 
   return (
     <Sidebar>
@@ -92,7 +90,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {canAccessAdmin && (
+        {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel>{t('admin.dashboard')}</SidebarGroupLabel>
             <SidebarGroupContent>
