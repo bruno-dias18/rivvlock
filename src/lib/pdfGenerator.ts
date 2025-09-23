@@ -23,8 +23,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   // Configuration
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
-  const margin = 20;
-  let yPosition = 25;
+  const margin = 15;
+  let yPosition = 20;
   
   // Couleurs
   const primaryBlue = [24, 119, 242]; // RivvLock blue
@@ -120,14 +120,36 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'normal');
   
   // Informations du profil vendeur
+  let sellerStartY = yPosition;
   if (invoiceData.sellerProfile) {
     const profile = invoiceData.sellerProfile;
     
+    // Nom/prénom
+    if (profile.first_name || profile.last_name) {
+      doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), margin, yPosition);
+      yPosition += 4;
+    }
+    
+    // Email
+    if (profile.user_id) {
+      // On utilise l'email de l'utilisateur connecté ou un email du profil si disponible
+      doc.text(`Email: contact@seller.com`, margin, yPosition); // Placeholder - il faudrait récupérer l'email réel
+      yPosition += 4;
+    }
+    
+    // Téléphone
+    if (profile.phone) {
+      doc.text(`Tél: ${profile.phone}`, margin, yPosition);
+      yPosition += 4;
+    }
+    
+    // Société si applicable
     if (profile.company_name) {
       doc.text(profile.company_name, margin, yPosition);
       yPosition += 4;
     }
     
+    // Adresse complète
     if (profile.address) {
       doc.text(profile.address, margin, yPosition);
       yPosition += 4;
@@ -138,6 +160,13 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
       yPosition += 4;
     }
     
+    // Numéro AVS pour la Suisse
+    if (profile.avs_number) {
+      doc.text(`AVS: ${profile.avs_number}`, margin, yPosition);
+      yPosition += 4;
+    }
+    
+    // SIRET/UID
     if (profile.siret_uid) {
       doc.text(`SIRET/UID: ${profile.siret_uid}`, margin, yPosition);
       yPosition += 4;
@@ -145,80 +174,102 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   }
   
   // Informations client (Acheteur) - à droite
-  const clientY = yPosition - (invoiceData.sellerProfile ? 20 : 8);
+  const clientX = pageWidth / 2 + 10;
+  let buyerY = sellerStartY;
   doc.setFont('helvetica', 'bold');
-  doc.text(invoiceData.buyerName, pageWidth / 2 + 10, clientY);
+  doc.text(invoiceData.buyerName, clientX, buyerY);
   
   doc.setFont('helvetica', 'normal');
-  let buyerY = clientY + 5;
+  buyerY += 5;
   
   if (invoiceData.buyerProfile) {
     const profile = invoiceData.buyerProfile;
     
-    if (profile.company_name) {
-      doc.text(profile.company_name, pageWidth / 2 + 10, buyerY);
+    // Nom/prénom
+    if (profile.first_name || profile.last_name) {
+      doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), clientX, buyerY);
       buyerY += 4;
     }
     
+    // Email - placeholder car pas disponible directement dans le profil
+    doc.text(`Email: contact@buyer.com`, clientX, buyerY); // Placeholder
+    buyerY += 4;
+    
+    // Téléphone
+    if (profile.phone) {
+      doc.text(`Tél: ${profile.phone}`, clientX, buyerY);
+      buyerY += 4;
+    }
+    
+    // Société si applicable
+    if (profile.company_name) {
+      doc.text(profile.company_name, clientX, buyerY);
+      buyerY += 4;
+    }
+    
+    // Adresse complète
     if (profile.address) {
-      doc.text(profile.address, pageWidth / 2 + 10, buyerY);
+      doc.text(profile.address, clientX, buyerY);
       buyerY += 4;
     }
     
     if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, pageWidth / 2 + 10, buyerY);
+      doc.text(`${profile.postal_code} ${profile.city}`, clientX, buyerY);
       buyerY += 4;
     }
   }
   
-  yPosition += 15;
+  // Ajuster yPosition pour prendre en compte la section la plus longue
+  yPosition = Math.max(yPosition, buyerY);
+  
+  yPosition += 10;
   
   // === TABLEAU PROFESSIONNEL ===
   
   // En-tête du tableau
   doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F');
+  doc.rect(margin, yPosition, pageWidth - 2 * margin, 10, 'F');
   
   // Bordure du tableau
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.5);
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, 12);
+  doc.rect(margin, yPosition, pageWidth - 2 * margin, 10);
   
-  // En-têtes de colonnes
-  doc.setFontSize(9);
+  // En-têtes de colonnes (optimisées pour l'espace)
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   
-  const colX1 = margin + 5; // Description
-  const colX2 = margin + 80; // Prix unitaire
-  const colX3 = margin + 105; // Quantité
-  const colX4 = margin + 125; // Total HT
-  const colX5 = margin + 145; // Frais Platform
-  const colX6 = margin + 165; // Net Vendeur
+  const colX1 = margin + 3; // Description
+  const colX2 = margin + 70; // Prix unitaire
+  const colX3 = margin + 95; // Quantité
+  const colX4 = margin + 110; // Total HT
+  const colX5 = margin + 135; // Frais Platform
+  const colX6 = margin + 160; // Net Vendeur
   
-  doc.text('Description', colX1, yPosition + 8);
-  doc.text('Prix Unit.', colX2, yPosition + 8);
-  doc.text('Qté', colX3, yPosition + 8);
-  doc.text('Total HT', colX4, yPosition + 8);
-  doc.text('Frais (5%)', colX5, yPosition + 8);
-  doc.text('Net Vendeur', colX6, yPosition + 8);
+  doc.text('Description', colX1, yPosition + 7);
+  doc.text('Prix Unit.', colX2, yPosition + 7);
+  doc.text('Qté', colX3, yPosition + 7);
+  doc.text('Total HT', colX4, yPosition + 7);
+  doc.text('Frais (5%)', colX5, yPosition + 7);
+  doc.text('Net Vendeur', colX6, yPosition + 7);
   
-  yPosition += 12;
+  yPosition += 10;
   
   // Ligne de service
-  const rowHeight = invoiceData.description ? 20 : 12;
+  const rowHeight = invoiceData.description ? 18 : 10;
   doc.rect(margin, yPosition, pageWidth - 2 * margin, rowHeight);
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   
   // Description
-  doc.text(invoiceData.title, colX1, yPosition + 8);
+  doc.text(invoiceData.title, colX1, yPosition + 7);
   if (invoiceData.description) {
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
-    doc.text(invoiceData.description.substring(0, 30) + '...', colX1, yPosition + 14);
-    doc.setFontSize(9);
+    doc.text(invoiceData.description.substring(0, 25) + '...', colX1, yPosition + 12);
+    doc.setFontSize(8);
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
   }
   
@@ -229,13 +280,13 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const currency = invoiceData.currency.toUpperCase();
   
   // Valeurs dans le tableau
-  doc.text(`${amountPaid.toFixed(2)}`, colX2, yPosition + 8);
-  doc.text('1', colX3, yPosition + 8);
-  doc.text(`${amountPaid.toFixed(2)}`, colX4, yPosition + 8);
-  doc.text(`-${rivvlockFee.toFixed(2)}`, colX5, yPosition + 8);
-  doc.text(`${amountReceived.toFixed(2)}`, colX6, yPosition + 8);
+  doc.text(`${amountPaid.toFixed(2)}`, colX2, yPosition + 7);
+  doc.text('1', colX3, yPosition + 7);
+  doc.text(`${amountPaid.toFixed(2)}`, colX4, yPosition + 7);
+  doc.text(`-${rivvlockFee.toFixed(2)}`, colX5, yPosition + 7);
+  doc.text(`${amountReceived.toFixed(2)}`, colX6, yPosition + 7);
   
-  yPosition += rowHeight + 20;
+  yPosition += rowHeight + 15;
   
   // === SECTION CALCULS FINANCIERS ===
   
@@ -288,36 +339,44 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   yPosition += 20;
   
-  // === PIED DE PAGE PROFESSIONNEL ===
+  // === INFORMATIONS LÉGALES (Rectangle ajusté) ===
   
-  // Cadre d'informations légales
+  // Cadre d'informations légales - plus petit et mieux ajusté
   doc.setFillColor(250, 250, 250);
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, 25, 'F');
+  doc.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F');
   doc.setDrawColor(200, 200, 200);
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, 25);
+  doc.rect(margin, yPosition, pageWidth - 2 * margin, 20);
   
-  yPosition += 8;
+  yPosition += 6;
   
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
-  doc.text('INFORMATIONS LÉGALES', margin + 5, yPosition);
+  doc.text('INFORMATIONS LÉGALES', margin + 3, yPosition);
   
-  yPosition += 5;
+  yPosition += 4;
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-  doc.text('• Cette facture certifie la réalisation de la transaction via notre service d\'escrow sécurisé.', margin + 5, yPosition);
-  doc.text('• Les frais RivvLock (5%) sont déduits du montant reçu par le vendeur.', margin + 5, yPosition + 4);
-  doc.text('• La transaction a été validée par l\'acheteur conformément aux conditions d\'utilisation.', margin + 5, yPosition + 8);
-  
-  // Numéro de page et informations RivvLock (bas de page)
-  const footerY = pageHeight - 15;
   doc.setFontSize(7);
+  doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+  doc.text('• Cette facture certifie la réalisation de la transaction via notre service d\'escrow sécurisé.', margin + 3, yPosition);
+  doc.text('• Les frais RivvLock (5%) sont déduits du montant reçu par le vendeur.', margin + 3, yPosition + 3);
+  doc.text('• La transaction a été validée par l\'acheteur conformément aux conditions d\'utilisation.', margin + 3, yPosition + 6);
+  
+  yPosition += 15;
+  
+  // === PIED DE PAGE - COMPLÈTEMENT SÉPARÉ ===
+  
+  // Numéro de page (bas gauche)
+  const footerY = pageHeight - 10;
+  doc.setFontSize(6);
   doc.setFont('helvetica', 'italic');
   doc.setTextColor(150, 150, 150);
   doc.text(`Page 1/1 - Générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, margin, footerY);
   
-  // RivvLock uniquement dans le pied de page
+  // Informations RivvLock (bas droite) - COMPLÈTEMENT EN DEHORS DU RECTANGLE
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
   const footerRightText = 'RivvLock - Plateforme d\'escrow | contact@rivvlock.com';
   const footerTextWidth = doc.getTextWidth(footerRightText);
   doc.text(footerRightText, pageWidth - margin - footerTextWidth, footerY);
