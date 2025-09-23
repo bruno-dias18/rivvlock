@@ -1,9 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoSync } from './useAutoSync';
 
 export const useTransactions = () => {
   const { user } = useAuth();
+  
+  // Initialize auto-sync functionality
+  useAutoSync();
   
   return useQuery({
     queryKey: ['transactions', user?.id],

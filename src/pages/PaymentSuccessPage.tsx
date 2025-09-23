@@ -11,20 +11,39 @@ export default function PaymentSuccessPage() {
   const [syncing, setSyncing] = useState(true);
 
   useEffect(() => {
-    // Auto-sync payments after successful payment
+    // Auto-sync payments after successful payment with retries
     const syncPayments = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
-        if (error) {
-          console.error('Sync error:', error);
-        } else {
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      const attemptSync = async () => {
+        try {
+          attempts++;
+          const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
+          if (error) {
+            throw error;
+          }
+          
           console.log('Payment synced:', data);
+          setSyncing(false);
+          
+          if (data?.transactions_updated > 0) {
+            toast.success(`${data.transactions_updated} transaction(s) synchronisée(s)`);
+          }
+        } catch (error) {
+          console.error(`Sync attempt ${attempts} failed:`, error);
+          
+          if (attempts < maxAttempts) {
+            // Retry after delay
+            setTimeout(attemptSync, 2000 * attempts);
+          } else {
+            setSyncing(false);
+            toast.error('Erreur lors de la synchronisation des paiements');
+          }
         }
-      } catch (error) {
-        console.error('Failed to sync:', error);
-      } finally {
-        setSyncing(false);
-      }
+      };
+
+      attemptSync();
     };
 
     syncPayments();
