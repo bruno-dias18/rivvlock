@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { ContactSellerDialog } from '@/components/ContactSellerDialog';
+import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
@@ -17,6 +19,8 @@ export default function TransactionsPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
+  const [contactDialog, setContactDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
+  const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
   const { syncPayments } = useSyncStripePayments();
@@ -89,6 +93,24 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleReleaseFunds = async (transaction: any) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('release-funds', {
+        body: { transactionId: transaction.id },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success('Fonds libérés avec succès !');
+      refetch();
+    } catch (error) {
+      console.error('Error releasing funds:', error);
+      toast.error('Erreur lors de la libération des fonds');
+    }
+  };
+
   const getUserRole = (transaction: any) => {
     if (transaction.user_id === user?.id) return 'seller';
     if (transaction.buyer_id === user?.id) return 'buyer';
@@ -158,6 +180,35 @@ export default function TransactionsPage() {
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Valider la transaction
                 </Button>
+              )}
+              
+              {transaction.status === 'paid' && userRole === 'buyer' && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button 
+                    size="sm" 
+                    onClick={() => handleReleaseFunds(transaction)}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Libérer les fonds
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setContactDialog({ open: true, transaction })}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Contacter le vendeur
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setDisputeDialog({ open: true, transaction })}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Ouvrir un litige
+                  </Button>
+                </div>
               )}
             </div>
           )}
@@ -321,6 +372,19 @@ export default function TransactionsPage() {
       <NewTransactionDialog 
         open={isNewTransactionOpen}
         onOpenChange={setIsNewTransactionOpen}
+      />
+
+      <ContactSellerDialog
+        open={contactDialog.open}
+        onOpenChange={(open) => setContactDialog({ open, transaction: contactDialog.transaction })}
+        transaction={contactDialog.transaction}
+      />
+
+      <CreateDisputeDialog
+        open={disputeDialog.open}
+        onOpenChange={(open) => setDisputeDialog({ open, transaction: disputeDialog.transaction })}
+        transaction={disputeDialog.transaction}
+        onDisputeCreated={() => refetch()}
       />
     </div>
   );
