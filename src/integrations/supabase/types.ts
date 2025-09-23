@@ -188,6 +188,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_accounts: {
+        Row: {
+          account_status: string
+          charges_enabled: boolean
+          country: string
+          created_at: string
+          details_submitted: boolean
+          id: string
+          last_status_check: string | null
+          onboarding_completed: boolean
+          payouts_enabled: boolean
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_status?: string
+          charges_enabled?: boolean
+          country: string
+          created_at?: string
+          details_submitted?: boolean
+          id?: string
+          last_status_check?: string | null
+          onboarding_completed?: boolean
+          payouts_enabled?: boolean
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_status?: string
+          charges_enabled?: boolean
+          country?: string
+          created_at?: string
+          details_submitted?: boolean
+          id?: string
+          last_status_check?: string | null
+          onboarding_completed?: boolean
+          payouts_enabled?: boolean
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           buyer_display_name: string | null

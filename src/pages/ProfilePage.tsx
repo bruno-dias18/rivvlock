@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
+import BankAccountSetupCard from '@/components/BankAccountSetupCard';
 import { Edit } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -243,6 +244,8 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
+
+        <BankAccountSetupCard />
       </div>
 
       <EditProfileDialog 

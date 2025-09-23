@@ -16,6 +16,9 @@ import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions'
 import { useProfile } from '@/hooks/useProfile';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useIsMobile } from '@/lib/mobileUtils';
+import CompleteTransactionButton from '@/components/CompleteTransactionButton';
+import { useStripeAccount } from '@/hooks/useStripeAccount';
+import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -277,34 +280,13 @@ export default function TransactionsPage() {
               )}
               
               {transaction.status === 'paid' && userRole === 'buyer' && (
-                <div className={`flex gap-2 ${isMobile ? 'flex-col' : 'flex-wrap'}`}>
-                  <Button 
-                    size={isMobile ? "default" : "sm"}
-                    onClick={() => handleReleaseFunds(transaction)}
-                    className={`bg-green-600 hover:bg-green-700 ${isMobile ? "justify-center" : ""}`}
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    {isMobile ? 'Libérer' : 'Libérer les fonds'}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size={isMobile ? "default" : "sm"}
-                    onClick={() => setContactDialog({ open: true, transaction })}
-                    className={isMobile ? "justify-center" : ""}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    {isMobile ? 'Contact' : 'Contacter le vendeur'}
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    size={isMobile ? "default" : "sm"}
-                    onClick={() => setDisputeDialog({ open: true, transaction })}
-                    className={isMobile ? "justify-center" : ""}
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    {isMobile ? 'Litige' : 'Ouvrir un litige'}
-                  </Button>
-                </div>
+                <CompleteTransactionButton
+                  transactionId={transaction.id}
+                  transactionStatus={transaction.status}
+                  isUserBuyer={true}
+                  sellerHasStripeAccount={true}
+                  onTransferComplete={() => refetch()}
+                />
               )}
 
               {transaction.status === 'validated' && (
