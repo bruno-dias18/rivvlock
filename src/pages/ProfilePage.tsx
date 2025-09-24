@@ -187,18 +187,48 @@ export default function ProfilePage() {
                   {profile?.company_address || 'Non renseignée'}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {(profile?.user_type === 'company' || profile?.user_type === 'independent') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations fiscales</CardTitle>
+              <CardDescription>
+                Vos informations de TVA
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium">Taux TVA (%)</label>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.tva_rate || 'Non renseigné'}
-                </p>
+                <label className="text-sm font-medium">Assujetti à la TVA</label>
+                <div className="mt-1">
+                  <Badge variant={profile?.is_subject_to_vat ? "default" : "secondary"}>
+                    {profile?.is_subject_to_vat ? 'Oui' : 'Non'}
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium">Taux VAT (%)</label>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.vat_rate || 'Non renseigné'}
-                </p>
-              </div>
+              {profile?.is_subject_to_vat && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium">Numéro de TVA</label>
+                    <p className="text-sm text-muted-foreground">
+                      {profile?.vat_number || 'Non renseigné'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">
+                      Taux de {profile?.country === 'FR' ? 'TVA' : 'TVA'} (%)
+                    </label>
+                    <p className="text-sm text-muted-foreground">
+                      {profile?.country === 'FR' 
+                        ? (profile?.tva_rate || 'Non renseigné')
+                        : (profile?.vat_rate || 'Non renseigné')
+                      }
+                    </p>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )}

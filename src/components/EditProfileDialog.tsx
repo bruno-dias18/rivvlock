@@ -253,7 +253,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
               </div>
             </div>
 
-            {/* Company Information */}
+            {/* Company Information - Only for companies */}
             {profile?.user_type === 'company' && (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Informations d'entreprise</h3>
@@ -308,8 +308,14 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     </FormItem>
                   )}
                 />
+              </div>
+            )}
 
-                {/* VAT Management */}
+            {/* Tax Information - For both companies and independents */}
+            {(profile?.user_type === 'company' || profile?.user_type === 'independent') && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Informations fiscales</h3>
+                
                 <FormField
                   control={form.control}
                   name="is_subject_to_vat"
@@ -331,7 +337,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                             className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
                           />
                         </FormControl>
-                        <FormLabel>Assujetti à la TVA</FormLabel>
+                        <FormLabel>
+                          {profile?.country === 'FR' ? 'Assujetti à la TVA' : 'Assujetti à la TVA'}
+                        </FormLabel>
                       </div>
                       <FormMessage />
                     </FormItem>
@@ -345,7 +353,9 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                       name="vat_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Numéro de TVA</FormLabel>
+                          <FormLabel>
+                            {profile?.country === 'FR' ? 'Numéro de TVA' : 'Numéro de TVA'}
+                          </FormLabel>
                           <FormControl>
                             <Input 
                               placeholder={profile?.country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'} 
