@@ -53,19 +53,21 @@ export default function TransactionsPage() {
   }, [searchParams, refetch, setSearchParams]);
 
   const handleSyncPayments = async () => {
+    const loadingToastId = toast.loading("Synchronisation en cours...", {
+      description: "Vérification des paiements Stripe",
+    });
+    
     try {
-      toast.loading("Synchronisation en cours...", {
-        description: "Vérification des paiements Stripe",
-      });
-      
       await syncPayments();
       await refetch();
       
+      toast.dismiss(loadingToastId);
       toast.success("Synchronisation terminée", {
         description: "Les données ont été mises à jour",
       });
     } catch (error) {
       console.error('Sync error:', error);
+      toast.dismiss(loadingToastId);
       toast.error("Erreur de synchronisation", {
         description: "Impossible de synchroniser les paiements",
       });
