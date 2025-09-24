@@ -53,23 +53,17 @@ export default function TransactionsPage() {
   }, [searchParams, refetch, setSearchParams]);
 
   const handleSyncPayments = async () => {
-    const loadingToastId = toast.loading("Synchronisation en cours...");
-    
-    try {
-      await syncPayments();
-      await refetch();
-      
-      toast.dismiss(loadingToastId);
-      toast.success("Synchronisation terminée", {
-        description: "Les données ont été mises à jour",
-      });
-    } catch (error) {
-      console.error('Sync error:', error);
-      toast.dismiss(loadingToastId);
-      toast.error("Erreur de synchronisation", {
-        description: "Impossible de synchroniser les paiements",
-      });
-    }
+    toast.promise(
+      (async () => {
+        await syncPayments();
+        await refetch();
+      })(),
+      {
+        loading: "Synchronisation en cours...",
+        success: "Synchronisation terminée",
+        error: "Erreur de synchronisation",
+      }
+    );
   };
 
   // Filter transactions by status
