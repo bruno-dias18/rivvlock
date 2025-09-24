@@ -1,39 +1,63 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, CreditCard, BarChart3, Download } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react';
+import { useAdminStats } from '@/hooks/useAdminStats';
+import { useAdminUsers } from '@/hooks/useAdminUsers';
+import { useAdminTransactions } from '@/hooks/useAdminTransactions';
+import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function AdminPage() {
   const { t } = useTranslation();
+  const { data: stats, isLoading: statsLoading } = useAdminStats();
+  const { data: users, isLoading: usersLoading } = useAdminUsers(5);
+  const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
+  const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
 
-  const stats = [
+  const formatTrend = (trend: number) => {
+    const sign = trend >= 0 ? '+' : '';
+    return `${sign}${trend.toFixed(1)}%`;
+  };
+
+  const getTrendIcon = (trend: number) => {
+    return trend >= 0 ? TrendingUp : TrendingDown;
+  };
+
+  const getTrendColor = (trend: number) => {
+    return trend >= 0 ? 'text-green-600' : 'text-red-600';
+  };
+
+  const statsCards = [
     {
       title: t('admin.users'),
-      value: '0',
+      value: stats?.usersCount?.toString() || '0',
       description: 'Utilisateurs enregistrés',
       icon: Users,
-      trend: '+0%',
+      trend: stats?.usersTrend || 0,
     },
     {
       title: t('admin.transactions'),
-      value: '0',
+      value: stats?.transactionsCount?.toString() || '0',
       description: 'Transactions totales',
       icon: CreditCard,
-      trend: '+0%',
+      trend: stats?.transactionsTrend || 0,
     },
     {
       title: t('admin.volume'),
-      value: '€0',
-      description: 'Volume des transactions',
+      value: `€${stats?.totalVolume?.toFixed(2) || '0'}`,
+      description: 'Volume des transactions (30j)',
       icon: BarChart3,
-      trend: '+0%',
+      trend: stats?.volumeTrend || 0,
     },
     {
       title: t('admin.conversion'),
-      value: '0%',
-      description: 'Taux de conversion',
+      value: `${stats?.conversionRate?.toFixed(1) || '0'}%`,
+      description: 'Taux de conversion (30j)',
       icon: Download,
-      trend: '+0%',
+      trend: stats?.conversionTrend || 0,
     },
   ];
 
@@ -48,7 +72,7 @@ export default function AdminPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
+        {statsCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -57,15 +81,34 @@ export default function AdminPage() {
               <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-              <div className="mt-2">
-                <Badge variant="secondary" className="text-xs">
-                  {stat.trend}
-                </Badge>
-              </div>
+              {statsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-16" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-5 w-12" />
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {stat.description}
+                  </p>
+                  <div className="mt-2 flex items-center space-x-1">
+                    {(() => {
+                      const TrendIcon = getTrendIcon(stat.trend);
+                      return (
+                        <TrendIcon className={`h-3 w-3 ${getTrendColor(stat.trend)}`} />
+                      );
+                    })()}
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-xs ${getTrendColor(stat.trend)}`}
+                    >
+                      {formatTrend(stat.trend)}
+                    </Badge>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -73,34 +116,182 @@ export default function AdminPage() {
 
       {/* Management Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Users Management */}
         <Card>
           <CardHeader>
-            <CardTitle>Gestion des utilisateurs</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>Utilisateurs récents</span>
+            </CardTitle>
             <CardDescription>
-              Administrer les comptes utilisateurs
+              Les derniers utilisateurs inscrits
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {usersLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-24" />
+                      <Skeleton className="h-2 w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : users && users.length > 0 ? (
+              <div className="space-y-3">
+                {users.slice(0, 5).map((user) => (
+                  <div key={user.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-medium">
+                          {(user.first_name?.[0] || user.last_name?.[0] || 'U').toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {user.first_name && user.last_name 
+                            ? `${user.first_name} ${user.last_name}` 
+                            : 'Utilisateur'
+                          }
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(user.created_at), 'dd/MM/yyyy', { locale: fr })}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={user.verified ? "default" : "secondary"} className="text-xs">
+                      {user.user_type}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Aucun utilisateur trouvé
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transactions Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <CreditCard className="h-4 w-4" />
+              <span>Transactions récentes</span>
+            </CardTitle>
+            <CardDescription>
+              Les dernières transactions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {transactionsLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-2 w-16" />
+                  </div>
+                ))}
+              </div>
+            ) : transactions && transactions.length > 0 ? (
+              <div className="space-y-3">
+                {transactions.slice(0, 5).map((transaction) => (
+                  <div key={transaction.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium truncate">
+                        {transaction.title}
+                      </p>
+                      <Badge 
+                        variant={
+                          transaction.status === 'validated' ? 'default' :
+                          transaction.status === 'paid' ? 'secondary' : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {transaction.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>€{Number(transaction.price).toFixed(2)}</span>
+                      <span>{format(new Date(transaction.created_at), 'dd/MM', { locale: fr })}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Aucune transaction trouvée
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Activity Logs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="h-4 w-4" />
+              <span>Activité récente</span>
+            </CardTitle>
+            <CardDescription>
+              Les dernières actions système
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {logsLoading ? (
+              <div className="space-y-2">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-2 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : activityLogs && activityLogs.length > 0 ? (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {activityLogs.slice(0, 8).map((log) => (
+                  <div key={log.id} className="space-y-1">
+                    <p className="text-sm font-medium truncate">
+                      {log.title}
+                    </p>
+                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(new Date(log.created_at), 'dd/MM HH:mm', { locale: fr })}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {log.activity_type}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Aucune activité récente
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* System Settings Placeholder */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Paramètres système</CardTitle>
+            <CardDescription>
+              Configuration globale
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Fonctionnalité à implémenter
+              Interface de configuration à développer
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Suivi des transactions</CardTitle>
-            <CardDescription>
-              Monitorer toutes les transactions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Aucune transaction à afficher
-            </p>
-          </CardContent>
-        </Card>
-
+        {/* Reports Placeholder */}
         <Card>
           <CardHeader>
             <CardTitle>Rapports et Analytics</CardTitle>
@@ -115,34 +306,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Paramètres système</CardTitle>
-            <CardDescription>
-              Configuration globale
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Paramètres à configurer
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Logs et monitoring</CardTitle>
-            <CardDescription>
-              Surveillance du système
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Interface de monitoring à développer
-            </p>
-          </CardContent>
-        </Card>
-
+        {/* Export Placeholder */}
         <Card>
           <CardHeader>
             <CardTitle>{t('admin.export')}</CardTitle>
