@@ -17,20 +17,20 @@ export default function AdminPage() {
   const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
   const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
 
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: Record<string, string> = {
+      EUR: '€',
+      USD: '$',
+      CHF: 'CHF',
+      GBP: '£'
+    };
+    return symbols[currency] || currency;
+  };
+
   const formatVolumesByCurrency = (volumesByCurrency: Record<string, number> = {}, trendsByCurrency: Record<string, number> = {}) => {
     const currencies = Object.keys(volumesByCurrency).sort((a, b) => volumesByCurrency[b] - volumesByCurrency[a]);
     
     if (currencies.length === 0) return { display: 'Aucun volume', trend: 0 };
-    
-    const getCurrencySymbol = (currency: string) => {
-      const symbols: Record<string, string> = {
-        EUR: '€',
-        USD: '$',
-        CHF: 'CHF',
-        GBP: '£'
-      };
-      return symbols[currency] || currency;
-    };
 
     const mainCurrencies = currencies.slice(0, 3);
     const display = mainCurrencies
@@ -256,7 +256,18 @@ export default function AdminPage() {
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>€{Number(transaction.price).toFixed(2)}</span>
+                      <span>
+                        {(() => {
+                          const symbol = getCurrencySymbol(transaction.currency);
+                          const amount = Number(transaction.price).toFixed(2);
+                          // Pour les devises avec symbole spécial, ne pas répéter le code
+                          if (symbol !== transaction.currency) {
+                            return `${symbol} ${amount}`;
+                          }
+                          // Pour les devises sans symbole spécial (comme CHF), afficher le code avec espace
+                          return `${transaction.currency} ${amount}`;
+                        })()}
+                      </span>
                       <span>{format(new Date(transaction.created_at), 'dd/MM', { locale: fr })}</span>
                     </div>
                   </div>
