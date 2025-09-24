@@ -276,7 +276,7 @@ export default function TransactionsPage() {
                   className={isMobile ? "justify-center" : ""}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Bloquer' : 'Bloquer l\'argent'}
+                  {isMobile ? 'Payer (bloquer)' : 'Payer (bloquer l\'argent)'}
                 </Button>
               )}
               
