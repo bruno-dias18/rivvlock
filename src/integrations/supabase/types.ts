@@ -125,6 +125,7 @@ export type Database = {
           created_at: string
           first_name: string | null
           id: string
+          is_subject_to_vat: boolean | null
           last_name: string | null
           phone: string | null
           postal_code: string | null
@@ -135,6 +136,7 @@ export type Database = {
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          vat_number: string | null
           vat_rate: number | null
           verified: boolean
         }
@@ -149,6 +151,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          is_subject_to_vat?: boolean | null
           last_name?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -159,6 +162,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          vat_number?: string | null
           vat_rate?: number | null
           verified?: boolean
         }
@@ -173,6 +177,7 @@ export type Database = {
           created_at?: string
           first_name?: string | null
           id?: string
+          is_subject_to_vat?: boolean | null
           last_name?: string | null
           phone?: string | null
           postal_code?: string | null
@@ -183,6 +188,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"]
+          vat_number?: string | null
           vat_rate?: number | null
           verified?: boolean
         }

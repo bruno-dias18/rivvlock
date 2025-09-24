@@ -33,11 +33,28 @@ export default function AuthPage() {
   const [companyAddress, setCompanyAddress] = useState('');
   const [siretUid, setSiretUid] = useState('');
   const [avsNumber, setAvsNumber] = useState('');
-  const [tvaRate, setTvaRate] = useState('');
+  const [isSubjectToVat, setIsSubjectToVat] = useState(false);
+  const [vatNumber, setVatNumber] = useState('');
+  const [vatRate, setVatRate] = useState('');
   const [acceptanceTerms, setAcceptanceTerms] = useState(false);
 
   const { user, login, register } = useAuth();
   const { t } = useTranslation();
+
+  // Set default VAT status based on user type
+  useEffect(() => {
+    if (userType === 'company') {
+      setIsSubjectToVat(true);
+      if (country === 'FR' && !vatRate) setVatRate('20');
+      if (country === 'CH' && !vatRate) setVatRate('8.1');
+    } else if (userType === 'independent') {
+      setIsSubjectToVat(false);
+    } else {
+      setIsSubjectToVat(false);
+      setVatNumber('');
+      setVatRate('');
+    }
+  }, [userType, country]);
 
   // Check for auth state changes and session recovery
   useEffect(() => {
@@ -63,7 +80,7 @@ export default function AuthPage() {
     setError('');
 
     console.log('Form submission - Country:', country, 'UserType:', userType);
-    console.log('Form values:', { firstName, lastName, phone, address, postalCode, city, companyName, siretUid, avsNumber, tvaRate });
+    console.log('Form values:', { firstName, lastName, phone, address, postalCode, city, companyName, siretUid, avsNumber, isSubjectToVat, vatNumber, vatRate });
 
     // Validation for sign up
     if (isSignUp) {
@@ -133,7 +150,10 @@ export default function AuthPage() {
           company_address: companyAddress,
           siret_uid: siretUid,
           avs_number: avsNumber,
-          tva_rate: tvaRate,
+          is_subject_to_vat: isSubjectToVat,
+          vat_number: vatNumber,
+          tva_rate: country === 'FR' ? (vatRate ? parseFloat(vatRate) : null) : null,
+          vat_rate: country === 'CH' ? (vatRate ? parseFloat(vatRate) : null) : null,
           acceptance_terms: acceptanceTerms,
           registration_complete: true
         };
@@ -400,20 +420,92 @@ export default function AuthPage() {
                 </div>
               )}
 
-              {(userType === 'company' || (userType === 'independent' && country === 'FR')) && (
-                <div>
-                  <label htmlFor="tva" className="block text-sm font-medium text-foreground">
-                    Numéro de TVA {userType === 'company' ? '*' : ''}
-                  </label>
-                  <input
-                    id="tva"
-                    type="text"
-                    value={tvaRate}
-                    onChange={(e) => setTvaRate(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder={country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'}
-                    required={userType === 'company'}
-                  />
+              {/* VAT Management for Companies and Independents */}
+              {(userType === 'company' || userType === 'independent') && (
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <input
+                      id="subjectToVat"
+                      type="checkbox"
+                      checked={isSubjectToVat}
+                      onChange={(e) => {
+                        setIsSubjectToVat(e.target.checked);
+                        if (!e.target.checked) {
+                          setVatNumber('');
+                          setVatRate('');
+                        } else {
+                          // Set default VAT rate based on country
+                          if (country === 'FR' && !vatRate) setVatRate('20');
+                          if (country === 'CH' && !vatRate) setVatRate('8.1');
+                        }
+                      }}
+                      className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                    />
+                    <label htmlFor="subjectToVat" className="ml-2 block text-sm text-foreground">
+                      Assujetti à la TVA
+                    </label>
+                  </div>
+
+                  {isSubjectToVat && (
+                    <>
+                      <div>
+                        <label htmlFor="vatNumber" className="block text-sm font-medium text-foreground">
+                          Numéro de TVA {userType === 'company' ? '*' : ''}
+                        </label>
+                        <input
+                          id="vatNumber"
+                          type="text"
+                          value={vatNumber}
+                          onChange={(e) => setVatNumber(e.target.value)}
+                          className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          placeholder={country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'}
+                          required={userType === 'company'}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="vatRate" className="block text-sm font-medium text-foreground">
+                          Taux de TVA (%) *
+                        </label>
+                        <select
+                          id="vatRate"
+                          value={vatRate}
+                          onChange={(e) => setVatRate(e.target.value)}
+                          className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                          required
+                        >
+                          <option value="">Sélectionnez un taux</option>
+                          {country === 'FR' && (
+                            <>
+                              <option value="20">20% (Taux normal)</option>
+                              <option value="10">10% (Taux intermédiaire)</option>
+                              <option value="5.5">5,5% (Taux réduit)</option>
+                              <option value="2.1">2,1% (Taux super réduit)</option>
+                            </>
+                          )}
+                          {country === 'CH' && (
+                            <>
+                              <option value="8.1">8,1% (Taux normal)</option>
+                              <option value="2.6">2,6% (Taux réduit)</option>
+                              <option value="3.8">3,8% (Taux hébergement)</option>
+                            </>
+                          )}
+                          <option value="custom">Autre (saisie manuelle)</option>
+                        </select>
+                        {vatRate === 'custom' && (
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            placeholder="Taux personnalisé"
+                            className="mt-2 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            onChange={(e) => setVatRate(e.target.value)}
+                          />
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 

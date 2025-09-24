@@ -23,7 +23,10 @@ const profileSchema = z.object({
   company_address: z.string().optional(),
   siret_uid: z.string().optional(),
   avs_number: z.string().optional(),
+  is_subject_to_vat: z.boolean().optional(),
+  vat_number: z.string().optional(),
   tva_rate: z.string().optional(),
+  vat_rate: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -37,6 +40,7 @@ interface EditProfileDialogProps {
 
 export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdated }: EditProfileDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [customVatRate, setCustomVatRate] = useState('');
   const { user } = useAuth();
 
   const form = useForm<ProfileFormData>({
@@ -52,13 +56,17 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
       company_address: '',
       siret_uid: '',
       avs_number: '',
+      is_subject_to_vat: false,
+      vat_number: '',
       tva_rate: '',
+      vat_rate: '',
     },
   });
 
-  // Update form when profile changes
+  // Update form when profile changes and set VAT defaults
   useEffect(() => {
     if (profile && open) {
+      const currentVatRate = profile?.country === 'FR' ? profile.tva_rate : profile.vat_rate;
       form.reset({
         first_name: profile.first_name || '',
         last_name: profile.last_name || '',
@@ -70,8 +78,23 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
         company_address: profile.company_address || '',
         siret_uid: profile.siret_uid || '',
         avs_number: profile.avs_number || '',
-        tva_rate: profile.tva_rate?.toString() || '',
+        is_subject_to_vat: profile.is_subject_to_vat || false,
+        vat_number: profile.vat_number || '',
+        tva_rate: profile?.country === 'FR' ? (currentVatRate?.toString() || '') : '',
+        vat_rate: profile?.country === 'CH' ? (currentVatRate?.toString() || '') : '',
       });
+      
+      // Set custom VAT rate if it's not in predefined options
+      if (currentVatRate) {
+        const predefinedRates = profile?.country === 'FR' 
+          ? ['20', '10', '5.5', '2.1']
+          : ['8.1', '2.6', '3.8'];
+        
+        if (!predefinedRates.includes(currentVatRate.toString())) {
+          setCustomVatRate(currentVatRate.toString());
+          form.setValue(profile?.country === 'FR' ? 'tva_rate' : 'vat_rate', 'custom');
+        }
+      }
     }
   }, [profile, open, form]);
 
@@ -80,11 +103,22 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     
     setIsLoading(true);
     try {
-      // Convert tva_rate to number if provided
+      // Convert rates to numbers if provided
       const updateData = {
         ...data,
-        tva_rate: data.tva_rate && data.tva_rate !== '' ? parseFloat(data.tva_rate) : null,
+        tva_rate: data.tva_rate && data.tva_rate !== '' && data.tva_rate !== 'custom' ? parseFloat(data.tva_rate) : null,
+        vat_rate: data.vat_rate && data.vat_rate !== '' && data.vat_rate !== 'custom' ? parseFloat(data.vat_rate) : null,
       };
+
+      // Handle custom VAT rate
+      if (data.tva_rate === 'custom' || data.vat_rate === 'custom') {
+        const customRate = parseFloat(customVatRate);
+        if (profile?.country === 'FR') {
+          updateData.tva_rate = customRate;
+        } else if (profile?.country === 'CH') {
+          updateData.vat_rate = customRate;
+        }
+      }
 
       const { error } = await supabase
         .from('profiles')
@@ -275,22 +309,109 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                   )}
                 />
 
+                {/* VAT Management */}
                 <FormField
                   control={form.control}
-                  name="tva_rate"
+                  name="is_subject_to_vat"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Numéro de TVA</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder={profile?.country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'} 
-                          {...field} 
-                        />
-                      </FormControl>
+                      <div className="flex items-center space-x-2">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => {
+                              field.onChange(e.target.checked);
+                              if (!e.target.checked) {
+                                form.setValue('vat_number', '');
+                                form.setValue('tva_rate', '');
+                                form.setValue('vat_rate', '');
+                              }
+                            }}
+                            className="h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                          />
+                        </FormControl>
+                        <FormLabel>Assujetti à la TVA</FormLabel>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {form.watch('is_subject_to_vat') && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="vat_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Numéro de TVA</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder={profile?.country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'} 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={profile?.country === 'FR' ? 'tva_rate' : 'vat_rate'}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Taux de TVA (%)</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez un taux" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {profile?.country === 'FR' && (
+                                  <>
+                                    <SelectItem value="20">20% (Taux normal)</SelectItem>
+                                    <SelectItem value="10">10% (Taux intermédiaire)</SelectItem>
+                                    <SelectItem value="5.5">5,5% (Taux réduit)</SelectItem>
+                                    <SelectItem value="2.1">2,1% (Taux super réduit)</SelectItem>
+                                  </>
+                                )}
+                                {profile?.country === 'CH' && (
+                                  <>
+                                    <SelectItem value="8.1">8,1% (Taux normal)</SelectItem>
+                                    <SelectItem value="2.6">2,6% (Taux réduit)</SelectItem>
+                                    <SelectItem value="3.8">3,8% (Taux hébergement)</SelectItem>
+                                  </>
+                                )}
+                                <SelectItem value="custom">Autre (saisie manuelle)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {(form.watch('tva_rate') === 'custom' || form.watch('vat_rate') === 'custom') && (
+                      <div>
+                        <label className="block text-sm font-medium text-foreground">
+                          Taux personnalisé (%)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="Taux personnalisé"
+                          value={customVatRate}
+                          onChange={(e) => setCustomVatRate(e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
