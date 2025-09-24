@@ -248,7 +248,7 @@ export default function TransactionsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-muted-foreground mb-4">
-            <div>Partenaire: {displayName}</div>
+            <div>{userRole === 'seller' ? 'Client' : 'Vendeur'}: {displayName}</div>
             <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
             {transaction.service_date && (
               <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')}</div>
