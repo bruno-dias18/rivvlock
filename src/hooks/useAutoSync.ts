@@ -44,8 +44,6 @@ export const useAutoSync = () => {
         // Force refetch instead of just invalidating
         await queryClient.refetchQueries({ queryKey: ['transactions'] });
         await queryClient.refetchQueries({ queryKey: ['transaction-counts'] });
-        
-        toast.success(`${data.transactions_updated} transaction(s) synchronisée(s)`);
       } else {
         console.log('ℹ️ No transactions updated');
       }
