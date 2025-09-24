@@ -34,7 +34,16 @@ export default function AdminPage() {
 
     const mainCurrencies = currencies.slice(0, 3);
     const display = mainCurrencies
-      .map(currency => `${getCurrencySymbol(currency)}${volumesByCurrency[currency]?.toFixed(2) || '0'} ${currency}`)
+      .map(currency => {
+        const symbol = getCurrencySymbol(currency);
+        const amount = (volumesByCurrency[currency]?.toFixed(2) || '0');
+        // Pour les devises avec symbole spécial, ne pas répéter le code
+        if (symbol !== currency) {
+          return `${symbol} ${amount}`;
+        }
+        // Pour les devises sans symbole spécial (comme CHF), afficher le code avec espace
+        return `${currency} ${amount}`;
+      })
       .join(' • ');
     
     // Calculer la tendance moyenne pondérée par le volume
