@@ -53,9 +53,7 @@ export default function TransactionsPage() {
   }, [searchParams, refetch, setSearchParams]);
 
   const handleSyncPayments = async () => {
-    const loadingToastId = toast.loading("Synchronisation en cours...", {
-      description: "Vérification des paiements Stripe",
-    });
+    const loadingToastId = toast.loading("Synchronisation en cours...");
     
     try {
       await syncPayments();
