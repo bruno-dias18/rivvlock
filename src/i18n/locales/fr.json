@@ -98,5 +98,10 @@
     "transactions": "Transactions",
     "profile": "Profil",
     "admin": "Admin"
+  },
+  "roles": {
+    "seller": "Vendeur",
+    "client": "Client",
+    "buyer": "Acheteur"
   }
 }

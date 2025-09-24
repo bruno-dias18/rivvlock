@@ -194,8 +194,8 @@ export default function TransactionsPage() {
         : transaction.seller_display_name || 'Vendeur';
       
       const buyerName = buyerProfile
-        ? `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Acheteur'
-        : transaction.buyer_display_name || 'Acheteur anonyme';
+        ? `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Client'
+        : transaction.buyer_display_name || 'Client anonyme';
 
       const invoiceData = {
         transactionId: transaction.id,
@@ -223,7 +223,7 @@ export default function TransactionsPage() {
   const renderTransactionCard = (transaction: any, showActions = true) => {
     const userRole = getUserRole(transaction);
     const displayName = userRole === 'seller' 
-      ? transaction.buyer_display_name || 'Acheteur anonyme'
+      ? transaction.buyer_display_name || 'Client anonyme'
       : transaction.seller_display_name || 'Vendeur';
 
     return (
@@ -241,7 +241,7 @@ export default function TransactionsPage() {
                 {transaction.price} {transaction.currency?.toUpperCase()}
               </div>
               <Badge variant="outline" className="mt-1">
-                {userRole === 'seller' ? 'Vendeur' : 'Acheteur'}
+                {userRole === 'seller' ? 'Vendeur' : 'Client'}
               </Badge>
             </div>
           </div>
@@ -407,7 +407,7 @@ export default function TransactionsPage() {
             <CardHeader>
               <CardTitle>Transactions en attente</CardTitle>
               <CardDescription>
-                Transactions nécessitant un paiement ou en attente d'un acheteur
+                Transactions nécessitant un paiement ou en attente d'un client
               </CardDescription>
             </CardHeader>
             <CardContent>

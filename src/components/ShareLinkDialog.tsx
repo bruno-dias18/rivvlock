@@ -43,7 +43,7 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
             </div>
             <h3 className="text-lg font-semibold mb-2">"{transactionTitle}"</h3>
             <p className="text-muted-foreground text-sm">
-              Partagez ce lien avec l'acheteur pour qu'il puisse procéder au paiement
+              Partagez ce lien avec le client pour qu'il puisse procéder au paiement
             </p>
           </div>
 
@@ -79,7 +79,7 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">Comment ça marche ?</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• L'acheteur clique sur le lien</li>
+              <li>• Le client clique sur le lien</li>
               <li>• Il se connecte ou crée un compte RivvLock</li>
               <li>• Il procède au paiement via Stripe</li>
               <li>• Vous recevez une notification de paiement</li>
