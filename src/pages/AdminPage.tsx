@@ -17,6 +17,37 @@ export default function AdminPage() {
   const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
   const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
 
+  const formatVolumesByCurrency = (volumesByCurrency: Record<string, number> = {}, trendsByCurrency: Record<string, number> = {}) => {
+    const currencies = Object.keys(volumesByCurrency).sort((a, b) => volumesByCurrency[b] - volumesByCurrency[a]);
+    
+    if (currencies.length === 0) return { display: 'Aucun volume', trend: 0 };
+    
+    const getCurrencySymbol = (currency: string) => {
+      const symbols: Record<string, string> = {
+        EUR: '€',
+        USD: '$',
+        CHF: 'CHF',
+        GBP: '£'
+      };
+      return symbols[currency] || currency;
+    };
+
+    const mainCurrencies = currencies.slice(0, 3);
+    const display = mainCurrencies
+      .map(currency => `${getCurrencySymbol(currency)}${volumesByCurrency[currency]?.toFixed(2) || '0'} ${currency}`)
+      .join(' • ');
+    
+    // Calculer la tendance moyenne pondérée par le volume
+    const totalVolume = currencies.reduce((sum, currency) => sum + (volumesByCurrency[currency] || 0), 0);
+    const weightedTrend = totalVolume > 0 ? currencies.reduce((trend, currency) => {
+      const volume = volumesByCurrency[currency] || 0;
+      const currencyTrend = trendsByCurrency[currency] || 0;
+      return trend + (currencyTrend * volume / totalVolume);
+    }, 0) : 0;
+
+    return { display, trend: weightedTrend };
+  };
+
   const formatTrend = (trend: number) => {
     const sign = trend >= 0 ? '+' : '';
     return `${sign}${trend.toFixed(1)}%`;
@@ -47,10 +78,10 @@ export default function AdminPage() {
     },
     {
       title: t('admin.volume'),
-      value: `€${stats?.totalVolume?.toFixed(2) || '0'}`,
+      value: formatVolumesByCurrency(stats?.volumesByCurrency, stats?.volumeTrendsByCurrency).display,
       description: 'Volume des transactions (30j)',
       icon: BarChart3,
-      trend: stats?.volumeTrend || 0,
+      trend: formatVolumesByCurrency(stats?.volumesByCurrency, stats?.volumeTrendsByCurrency).trend,
     },
     {
       title: t('admin.conversion'),

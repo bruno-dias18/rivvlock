@@ -4,11 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 interface AdminStats {
   usersCount: number;
   transactionsCount: number;
-  totalVolume: number;
+  volumesByCurrency: Record<string, number>;
   conversionRate: number;
   usersTrend: number;
   transactionsTrend: number;
-  volumeTrend: number;
+  volumeTrendsByCurrency: Record<string, number>;
   conversionTrend: number;
 }
 
@@ -54,7 +54,7 @@ export const useAdminStats = () => {
       // Récupérer les transactions des 30 derniers jours
       const { data: transactionsLast30Days, error: trans30Error } = await supabase
         .from('transactions')
-        .select('price, status')
+        .select('price, status, currency')
         .gte('created_at', thirtyDaysAgo.toISOString());
 
       if (trans30Error) throw trans30Error;
@@ -62,20 +62,26 @@ export const useAdminStats = () => {
       // Récupérer les transactions entre 30 et 60 jours
       const { data: transactionsPrevious30Days, error: transPrevError } = await supabase
         .from('transactions')
-        .select('price, status')
+        .select('price, status, currency')
         .gte('created_at', sixtyDaysAgo.toISOString())
         .lt('created_at', thirtyDaysAgo.toISOString());
 
       if (transPrevError) throw transPrevError;
 
-      // Calculer le volume total (transactions payées)
-      const totalVolume = transactionsLast30Days
-        ?.filter(t => t.status === 'paid' || t.status === 'validated')
-        ?.reduce((sum, t) => sum + Number(t.price || 0), 0) || 0;
+      // Calculer les volumes par devise
+      const calculateVolumesByCurrency = (transactions: any[]) => {
+        const volumes: Record<string, number> = {};
+        transactions
+          ?.filter(t => t.status === 'paid' || t.status === 'validated')
+          ?.forEach(t => {
+            const currency = t.currency || 'EUR';
+            volumes[currency] = (volumes[currency] || 0) + Number(t.price || 0);
+          });
+        return volumes;
+      };
 
-      const previousVolume = transactionsPrevious30Days
-        ?.filter(t => t.status === 'paid' || t.status === 'validated')
-        ?.reduce((sum, t) => sum + Number(t.price || 0), 0) || 0;
+      const volumesByCurrency = calculateVolumesByCurrency(transactionsLast30Days || []);
+      const previousVolumesByCurrency = calculateVolumesByCurrency(transactionsPrevious30Days || []);
 
       // Calculer le taux de conversion (transactions payées / total)
       const paidTransactionsLast30 = transactionsLast30Days?.filter(t => t.status === 'paid' || t.status === 'validated').length || 0;
@@ -84,20 +90,27 @@ export const useAdminStats = () => {
       const paidTransactionsPrevious30 = transactionsPrevious30Days?.filter(t => t.status === 'paid' || t.status === 'validated').length || 0;
       const previousConversionRate = transactionsPrevious30Days?.length ? (paidTransactionsPrevious30 / transactionsPrevious30Days.length) * 100 : 0;
 
-      // Calculer les tendances
+      // Calculer les tendances par devise
+      const volumeTrendsByCurrency: Record<string, number> = {};
+      Object.keys(volumesByCurrency).forEach(currency => {
+        const currentVolume = volumesByCurrency[currency] || 0;
+        const previousVolume = previousVolumesByCurrency[currency] || 0;
+        volumeTrendsByCurrency[currency] = previousVolume ? (currentVolume - previousVolume) / previousVolume * 100 : 0;
+      });
+
+      // Calculer les autres tendances
       const usersTrend = usersPrevious30Days ? ((usersLast30Days || 0) - usersPrevious30Days) / usersPrevious30Days * 100 : 0;
       const transactionsTrend = transactionsPrevious30Days?.length ? ((transactionsLast30Days?.length || 0) - transactionsPrevious30Days.length) / transactionsPrevious30Days.length * 100 : 0;
-      const volumeTrend = previousVolume ? (totalVolume - previousVolume) / previousVolume * 100 : 0;
       const conversionTrend = previousConversionRate ? (conversionRate - previousConversionRate) / previousConversionRate * 100 : 0;
 
       return {
         usersCount: usersCount || 0,
         transactionsCount: transactionsCount || 0,
-        totalVolume,
+        volumesByCurrency,
         conversionRate,
         usersTrend,
         transactionsTrend,
-        volumeTrend,
+        volumeTrendsByCurrency,
         conversionTrend,
       };
     },
