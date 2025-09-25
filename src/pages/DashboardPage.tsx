@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw, AlertCircle } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
+import { DashboardLayout } from '@/components/DashboardLayout';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
 
@@ -91,16 +92,11 @@ export default function DashboardPage() {
       icon: User,
       onClick: () => navigate('/dashboard/profile'),
     },
-    {
-      title: 'Actualiser les paiements',
-      description: '',
-      icon: RefreshCw,
-      onClick: handleSyncPayments,
-    },
   ];
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout onSyncPayments={handleSyncPayments}>
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">
           {t('dashboard.welcome')}
@@ -167,10 +163,11 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <RecentActivityCard />
 
-      <NewTransactionDialog 
-        open={isNewTransactionOpen}
-        onOpenChange={setIsNewTransactionOpen}
-      />
-    </div>
+        <NewTransactionDialog 
+          open={isNewTransactionOpen}
+          onOpenChange={setIsNewTransactionOpen}
+        />
+      </div>
+    </DashboardLayout>
   );
 }

@@ -1,14 +1,19 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BottomTabBar } from './BottomTabBar';
 import { UserMenu } from './UserMenu';
+import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { RefreshCw } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: ReactNode;
+  onSyncPayments?: () => Promise<void>;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutProps) {
   const { t } = useTranslation();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen w-full">
@@ -23,7 +28,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <span className="font-bold text-foreground">RIVVLOCK</span>
         </div>
         
-        <div className="ml-auto">
+        <div className="flex items-center gap-2 ml-auto">
+          {onSyncPayments && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={async () => {
+                      setIsRefreshing(true);
+                      try {
+                        await onSyncPayments();
+                      } finally {
+                        setIsRefreshing(false);
+                      }
+                    }}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Actualiser les paiements</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <UserMenu />
         </div>
       </header>
