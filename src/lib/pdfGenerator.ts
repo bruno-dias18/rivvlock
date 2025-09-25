@@ -83,7 +83,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('ÉMETTEUR', margin, yPosition);
-  doc.text('CLIENT', rightColX, yPosition, { align: 'left' });
+  doc.text('CLIENT', tableRightEdge, yPosition, { align: 'right' });
   
   yPosition += 8;
   
@@ -130,12 +130,12 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   }
   
   // Informations client (colonne droite) - aligned to new right column
-  const clientX = rightColX;
+  const clientX = tableRightEdge;
   let rightColumnY = yPosition;
   
   doc.setFont('helvetica', 'bold');
   const buyerNameLines = doc.splitTextToSize(invoiceData.buyerName, rightColWidth);
-  doc.text(buyerNameLines, clientX, rightColumnY, { align: 'left' });
+  doc.text(buyerNameLines, clientX, rightColumnY, { align: 'right' });
   rightColumnY += buyerNameLines.length * 4;
   
   doc.setFont('helvetica', 'normal');
@@ -146,35 +146,35 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     if (profile.first_name || profile.last_name) {
       const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
       const nameLines = doc.splitTextToSize(fullName, rightColWidth);
-      doc.text(nameLines, clientX, rightColumnY, { align: 'left' });
+      doc.text(nameLines, clientX, rightColumnY, { align: 'right' });
       rightColumnY += nameLines.length * 4;
     }
     
     if (invoiceData.buyerEmail) {
       const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, rightColWidth);
-      doc.text(emailLines, clientX, rightColumnY, { align: 'left' });
+      doc.text(emailLines, clientX, rightColumnY, { align: 'right' });
       rightColumnY += emailLines.length * 4;
     }
     
     if (profile.phone) {
-      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY, { align: 'left' });
+      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (profile.company_name) {
       const companyLines = doc.splitTextToSize(profile.company_name, rightColWidth);
-      doc.text(companyLines, clientX, rightColumnY, { align: 'left' });
+      doc.text(companyLines, clientX, rightColumnY, { align: 'right' });
       rightColumnY += companyLines.length * 4;
     }
     
     if (profile.address) {
       const addressLines = doc.splitTextToSize(profile.address, rightColWidth);
-      doc.text(addressLines, clientX, rightColumnY, { align: 'left' });
+      doc.text(addressLines, clientX, rightColumnY, { align: 'right' });
       rightColumnY += addressLines.length * 4;
     }
     
     if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY, { align: 'left' });
+      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
   }
