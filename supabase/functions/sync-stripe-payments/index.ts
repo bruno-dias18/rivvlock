@@ -84,7 +84,7 @@ serve(async (req) => {
     const { data: transactions, error: transactionsError } = await adminClient
       .from("transactions")
       .select("*")
-      .in("status", ["pending", "paid"]); // Only check transactions that might need sync
+      .in("status", ["pending", "paid", "validated"]); // Include validated for backfill
 
     if (transactionsError) {
       throw new Error(`Failed to fetch transactions: ${transactionsError.message}`);
@@ -202,16 +202,50 @@ serve(async (req) => {
                 paymentIntentId: paymentIntent.id 
               });
               
-              // Log activity for funds blocked
+              // Log activity for funds blocked (for both seller and buyer)
               try {
-                await adminClient
+                // Check if logs already exist to avoid duplicates
+                const { data: existingLogs } = await adminClient
                   .from('activity_logs')
-                  .insert({
-                    user_id: matchingTransaction.user_id,
-                    activity_type: 'funds_blocked',
-                    title: 'Fonds bloqués',
-                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`
-                  });
+                  .select('id, user_id')
+                  .eq('activity_type', 'funds_blocked')
+                  .contains('metadata', { transaction_id: matchingTransaction.id });
+
+                const existingUserIds = existingLogs?.map(log => log.user_id) || [];
+
+                // Log for seller if not exists
+                if (!existingUserIds.includes(matchingTransaction.user_id)) {
+                  await adminClient
+                    .from('activity_logs')
+                    .insert({
+                      user_id: matchingTransaction.user_id,
+                      activity_type: 'funds_blocked',
+                      title: 'Fonds bloqués',
+                      description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
+                      metadata: {
+                        transaction_id: matchingTransaction.id,
+                        amount: matchingTransaction.price,
+                        currency: matchingTransaction.currency
+                      }
+                    });
+                }
+
+                // Log for buyer if exists and not already logged
+                if (matchingTransaction.buyer_id && !existingUserIds.includes(matchingTransaction.buyer_id)) {
+                  await adminClient
+                    .from('activity_logs')
+                    .insert({
+                      user_id: matchingTransaction.buyer_id,
+                      activity_type: 'funds_blocked',
+                      title: 'Fonds bloqués',
+                      description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
+                      metadata: {
+                        transaction_id: matchingTransaction.id,
+                        amount: matchingTransaction.price,
+                        currency: matchingTransaction.currency
+                      }
+                    });
+                }
               } catch (logError) {
                 const logErrorMessage = logError instanceof Error ? logError.message : String(logError);
                 logStep("Error logging funds blocked activity", { error: logErrorMessage });
@@ -229,6 +263,65 @@ serve(async (req) => {
               transactionId: matchingTransaction.id,
               status: matchingTransaction.status 
             });
+
+            // Backfill missing activity logs for already processed transactions
+            if (matchingTransaction.status === 'paid') {
+              try {
+                // Check for missing funds_blocked logs
+                const { data: existingLogs } = await adminClient
+                  .from('activity_logs')
+                  .select('id, user_id')
+                  .eq('activity_type', 'funds_blocked')
+                  .contains('metadata', { transaction_id: matchingTransaction.id });
+
+                const existingUserIds = existingLogs?.map(log => log.user_id) || [];
+                const logsToCreate = [];
+
+                // Log for seller if missing
+                if (!existingUserIds.includes(matchingTransaction.user_id)) {
+                  logsToCreate.push({
+                    user_id: matchingTransaction.user_id,
+                    activity_type: 'funds_blocked',
+                    title: 'Fonds bloqués',
+                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
+                    metadata: {
+                      transaction_id: matchingTransaction.id,
+                      amount: matchingTransaction.price,
+                      currency: matchingTransaction.currency
+                    }
+                  });
+                }
+
+                // Log for buyer if missing
+                if (matchingTransaction.buyer_id && !existingUserIds.includes(matchingTransaction.buyer_id)) {
+                  logsToCreate.push({
+                    user_id: matchingTransaction.buyer_id,
+                    activity_type: 'funds_blocked',
+                    title: 'Fonds bloqués',
+                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
+                    metadata: {
+                      transaction_id: matchingTransaction.id,
+                      amount: matchingTransaction.price,
+                      currency: matchingTransaction.currency
+                    }
+                  });
+                }
+
+                if (logsToCreate.length > 0) {
+                  await adminClient.from('activity_logs').insert(logsToCreate);
+                  logStep("Backfilled missing funds_blocked logs", { 
+                    transactionId: matchingTransaction.id, 
+                    logsCreated: logsToCreate.length 
+                  });
+                }
+              } catch (backfillError) {
+                logStep("Error backfilling funds_blocked logs", { 
+                  transactionId: matchingTransaction.id, 
+                  error: backfillError 
+                });
+              }
+            }
+
             syncResults.push({
               paymentIntentId: paymentIntent.id,
               transactionId: matchingTransaction.id,
@@ -256,6 +349,127 @@ serve(async (req) => {
             error: errorMessage
         });
       }
+    }
+
+    // Backfill missing activity logs for existing transactions
+    logStep("Starting backfill for missing activity logs");
+    
+    try {
+      // Get transactions that might be missing logs
+      const paidTransactions = transactions?.filter(t => t.status === 'paid') || [];
+      const validatedTransactions = transactions?.filter(t => t.status === 'validated') || [];
+
+      // Backfill funds_blocked logs for paid transactions
+      for (const transaction of paidTransactions) {
+        try {
+          // Check existing logs for this transaction
+          const { data: existingLogs } = await adminClient
+            .from('activity_logs')
+            .select('id, user_id')
+            .eq('activity_type', 'funds_blocked')
+            .contains('metadata', { transaction_id: transaction.id });
+
+          const existingUserIds = existingLogs?.map(log => log.user_id) || [];
+
+          // Create missing logs
+          const logsToCreate = [];
+
+          // Log for seller
+          if (!existingUserIds.includes(transaction.user_id)) {
+            logsToCreate.push({
+              user_id: transaction.user_id,
+              activity_type: 'funds_blocked',
+              title: 'Fonds bloqués',
+              description: `Les fonds pour "${transaction.title}" ont été bloqués et sont en sécurité`,
+              metadata: {
+                transaction_id: transaction.id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            });
+          }
+
+          // Log for buyer
+          if (transaction.buyer_id && !existingUserIds.includes(transaction.buyer_id)) {
+            logsToCreate.push({
+              user_id: transaction.buyer_id,
+              activity_type: 'funds_blocked',
+              title: 'Fonds bloqués',
+              description: `Les fonds pour "${transaction.title}" ont été bloqués et sont en sécurité`,
+              metadata: {
+                transaction_id: transaction.id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            });
+          }
+
+          if (logsToCreate.length > 0) {
+            await adminClient.from('activity_logs').insert(logsToCreate);
+            logStep("Backfilled funds_blocked logs", { transactionId: transaction.id, logsCreated: logsToCreate.length });
+          }
+        } catch (backfillError) {
+          logStep("Error backfilling funds_blocked logs", { transactionId: transaction.id, error: backfillError });
+        }
+      }
+
+      // Backfill transaction_completed logs for validated transactions
+      for (const transaction of validatedTransactions) {
+        try {
+          // Check existing logs for this transaction
+          const { data: existingLogs } = await adminClient
+            .from('activity_logs')
+            .select('id, user_id')
+            .eq('activity_type', 'transaction_completed')
+            .contains('metadata', { transaction_id: transaction.id });
+
+          const existingUserIds = existingLogs?.map(log => log.user_id) || [];
+
+          // Create missing logs
+          const logsToCreate = [];
+
+          // Log for buyer
+          if (transaction.buyer_id && !existingUserIds.includes(transaction.buyer_id)) {
+            logsToCreate.push({
+              user_id: transaction.buyer_id,
+              activity_type: 'transaction_completed',
+              title: 'Transaction complétée',
+              description: `Transaction "${transaction.title}" terminée avec succès. Fonds transférés au vendeur.`,
+              metadata: {
+                transaction_id: transaction.id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            });
+          }
+
+          // Log for seller
+          if (!existingUserIds.includes(transaction.user_id)) {
+            logsToCreate.push({
+              user_id: transaction.user_id,
+              activity_type: 'transaction_completed',
+              title: 'Transaction complétée',
+              description: `Transaction "${transaction.title}" terminée. ${transaction.price} ${transaction.currency} transférés sur votre compte.`,
+              metadata: {
+                transaction_id: transaction.id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            });
+          }
+
+          if (logsToCreate.length > 0) {
+            await adminClient.from('activity_logs').insert(logsToCreate);
+            logStep("Backfilled transaction_completed logs", { transactionId: transaction.id, logsCreated: logsToCreate.length });
+          }
+        } catch (backfillError) {
+          logStep("Error backfilling transaction_completed logs", { transactionId: transaction.id, error: backfillError });
+        }
+      }
+
+      logStep("Backfill completed successfully");
+    } catch (backfillError) {
+      logStep("Error during backfill process", { error: backfillError });
     }
 
     logStep("Synchronization completed", { 
