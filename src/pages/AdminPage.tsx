@@ -9,6 +9,7 @@ import { useAdminTransactions } from '@/hooks/useAdminTransactions';
 import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -102,7 +103,8 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">{t('navigation.admin')}</h1>
         <p className="text-muted-foreground">
@@ -372,6 +374,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

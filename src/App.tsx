@@ -50,19 +50,19 @@ const App: React.FC = () => {
               React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
               React.createElement(Route, { 
                 path: "/dashboard", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(DashboardPage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
               }),
               React.createElement(Route, { 
                 path: "/dashboard/transactions", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(TransactionsPage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage))
               }),
               React.createElement(Route, { 
                 path: "/dashboard/profile", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardLayout, null, React.createElement(ProfilePage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(ProfilePage))
               }),
               React.createElement(Route, { 
                 path: "/dashboard/admin", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(DashboardLayout, null, React.createElement(AdminPage))))
+                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage)))
               }),
               React.createElement(Route, { 
                 path: "/activity-history", 

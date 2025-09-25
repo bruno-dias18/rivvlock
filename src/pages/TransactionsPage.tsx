@@ -24,6 +24,7 @@ import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
 import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { copyToClipboard } from '@/lib/copyUtils';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -389,7 +390,8 @@ export default function TransactionsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout onSyncPayments={handleSyncPayments}>
+      <div className="space-y-6">
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>Transactions</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
@@ -593,6 +595,7 @@ export default function TransactionsPage() {
         transaction={disputeDialog.transaction}
         onDisputeCreated={() => refetch()}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

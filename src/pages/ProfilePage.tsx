@@ -10,6 +10,7 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
 import { Edit } from 'lucide-react';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -58,7 +59,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout>
+      <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{t('navigation.profile')}</h1>
@@ -289,6 +291,7 @@ export default function ProfilePage() {
         open={isChangePasswordOpen}
         onOpenChange={setIsChangePasswordOpen}
       />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
