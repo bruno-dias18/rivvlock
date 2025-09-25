@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -385,19 +386,19 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                       name="vat_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>
-                            {profile?.country === 'FR' ? 'Numéro de TVA' : 'Numéro de TVA'}
-                          </FormLabel>
+                          <FormLabel>Numéro de TVA</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder={profile?.country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'} 
-                              {...field} 
+                            <MaskedVatInput 
+                              country={(profile?.country as 'FR' | 'CH') || 'FR'}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder={profile?.country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
                             />
                           </FormControl>
                           <FormDescription>
-                            {profile?.country === 'FR' 
-                              ? 'Format : FR + 11 caractères (ex: FR12345678901)' 
-                              : 'Format : CHE-123.456.789 TVA'
+                            {profile?.country === 'CH' 
+                              ? "Saisissez uniquement les chiffres, le format sera appliqué automatiquement"
+                              : "Saisissez uniquement les 11 chiffres, FR sera ajouté automatiquement"
                             }
                           </FormDescription>
                           <FormMessage />

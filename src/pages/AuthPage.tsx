@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { createRegistrationSchema, loginSchema, changePasswordSchema } from '@/lib/validations';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
@@ -466,15 +467,17 @@ export default function AuthPage() {
                                 Numéro de TVA (optionnel)
                               </FormLabel>
                               <FormControl>
-                                <Input 
-                                  {...field} 
-                                  placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'} 
+                                <MaskedVatInput 
+                                  country={country}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
                                 />
                               </FormControl>
                               <FormDescription>
-                                {country === 'FR' 
-                                  ? 'Format : FR + 11 caractères (ex: FR12345678901)' 
-                                  : 'Format : CHE-123.456.789 TVA'
+                                {country === 'CH' 
+                                  ? "Saisissez uniquement les chiffres, le format sera appliqué automatiquement"
+                                  : "Saisissez uniquement les 11 chiffres, FR sera ajouté automatiquement"
                                 }
                               </FormDescription>
                               <FormMessage />
