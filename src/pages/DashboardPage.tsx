@@ -11,10 +11,12 @@ import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialo
 import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
 
@@ -107,26 +109,30 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout onSyncPayments={handleSyncPayments}>
-      <div className="space-y-6">
+      <div className={isMobile ? "space-y-4" : "space-y-6"}>
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
+          <h1 className={`font-bold text-foreground ${isMobile ? "text-2xl" : "text-3xl"}`}>
+            Tableau de bord
+          </h1>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className={`grid gap-4 ${isMobile ? "grid-cols-1" : "md:grid-cols-2 lg:grid-cols-3"}`}>
           {transactionStatuses.map((status, index) => (
             <Card 
               key={status.title} 
               className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
               onClick={status.onClick}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? "pb-1" : "pb-2"}`}>
                 <CardTitle className="text-sm font-medium">
                   {status.title}
                 </CardTitle>
                 <status.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{status.count}</div>
+              <CardContent className={isMobile ? "pt-1" : ""}>
+                <div className={`font-bold ${isMobile ? "text-xl" : "text-2xl"}`}>
+                  {status.count}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {status.description}
                 </p>
@@ -135,26 +141,28 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className={`grid gap-4 ${isMobile ? "grid-cols-1" : "md:grid-cols-2"}`}>
           <Card>
-            <CardHeader>
-              <CardTitle>Actions rapides</CardTitle>
+            <CardHeader className={isMobile ? "pb-3" : ""}>
+              <CardTitle className={isMobile ? "text-lg" : ""}>Actions rapides</CardTitle>
               <CardDescription>
                 Gérez vos transactions et votre profil
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className={isMobile ? "space-y-2" : "space-y-3"}>
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   variant="outline"
-                  className="w-full justify-start h-auto p-4"
+                  className={`w-full justify-start h-auto ${isMobile ? "p-3" : "p-4"}`}
                   onClick={action.onClick}
                 >
-                  <action.icon className="h-5 w-5 mr-3" />
+                  <action.icon className={`mr-3 ${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />
                   <div className="text-left">
-                    <div className="font-medium">{action.label}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className={`font-medium ${isMobile ? "text-sm" : ""}`}>
+                      {action.label}
+                    </div>
+                    <div className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
                       {action.description}
                     </div>
                   </div>
