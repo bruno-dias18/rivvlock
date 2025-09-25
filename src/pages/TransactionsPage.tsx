@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle, Download } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
+import { ValidationCountdown } from '@/components/ValidationCountdown';
+import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
@@ -20,6 +22,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import CompleteTransactionButton from '@/components/CompleteTransactionButton';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
+import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { copyToClipboard } from '@/lib/copyUtils';
 
 export default function TransactionsPage() {
@@ -232,6 +235,7 @@ export default function TransactionsPage() {
 
   const renderTransactionCard = (transaction: any, showActions = true) => {
     const userRole = getUserRole(transaction);
+    const validationStatus = useValidationStatus(transaction, user?.id);
     const displayName = userRole === 'seller' 
       ? transaction.buyer_display_name || 'Client anonyme'
       : transaction.seller_display_name || 'Vendeur';
@@ -268,6 +272,21 @@ export default function TransactionsPage() {
             {userRole === 'buyer' && transaction.status === 'pending' && transaction.payment_deadline && (
               <div className="mt-3">
                 <PaymentCountdown paymentDeadline={transaction.payment_deadline} />
+              </div>
+            )}
+            
+            {/* Validation countdown for buyers during validation phase */}
+            {userRole === 'buyer' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
+              <div className="mt-3">
+                <ValidationCountdown validationDeadline={transaction.validation_deadline} />
+              </div>
+            )}
+            
+            {/* Status indicator for other phases */}
+            {validationStatus.phase === 'service_pending' && (
+              <div className="mt-3 flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">{validationStatus.displayLabel}</span>
               </div>
             )}
           </div>
@@ -312,21 +331,21 @@ export default function TransactionsPage() {
                 </Button>
               )}
               
-              {transaction.status === 'paid' && userRole === 'buyer' && (
-                <div className={`flex ${isMobile ? 'flex-col gap-3' : 'gap-2'}`}>
-                  <CompleteTransactionButtonWithStatus
-                    transaction={transaction}
-                    onTransferComplete={() => refetch()}
-                  />
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={() => setDisputeDialog({ open: true, transaction })}
-                    className={`${isMobile ? "justify-center" : ""} border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground`}
-                  >
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Litige
-                  </Button>
+              {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
+                <ValidationActionButtons
+                  transaction={transaction}
+                  isUserBuyer={true}
+                  onTransferComplete={() => refetch()}
+                  onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                  isMobile={isMobile}
+                  isValidationExpired={validationStatus.phase === 'validation_expired'}
+                  CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                />
+              )}
+              
+              {transaction.status === 'paid' && userRole === 'buyer' && !validationStatus.canFinalize && validationStatus.phase !== 'validation_expired' && (
+                <div className="text-sm text-muted-foreground">
+                  {validationStatus.displayLabel}
                 </div>
               )}
 
