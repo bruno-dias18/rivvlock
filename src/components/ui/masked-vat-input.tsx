@@ -79,78 +79,29 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value
       
-      // If input is empty, clear everything
-      if (!newValue) {
+      // Extract only digits from any input
+      const digits = newValue.replace(/\D/g, '')
+      
+      // If no digits, clear completely
+      if (digits.length === 0) {
         setDisplayValue("")
         onChange?.("")
         return
       }
       
-      // If field was empty and user typed digits, format with prefix
-      if (!displayValue && /^\d/.test(newValue)) {
-        const digits = newValue.replace(/\D/g, '')
-        const formatted = formatDisplayValue(digits)
-        setDisplayValue(formatted)
-        onChange?.(formatted)
-        return
-      }
-      
-      // Always extract digits from the new value and reformat, do not block user edits
-      const digits = extractDigits(newValue)
+      // Format and update with new digits
       const formatted = formatDisplayValue(digits)
       setDisplayValue(formatted)
       onChange?.(formatted)
     }
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      const input = e.currentTarget
-      
-      // If field is empty, allow normal input
-      if (!displayValue) return
-      
-      const prefix = getPrefix()
-      const suffix = getSuffix()
-      
-      // Prevent cursor from going into prefix area
-      if (e.key === 'ArrowLeft' || e.key === 'Home') {
-        setTimeout(() => {
-          if (input.selectionStart !== null && input.selectionStart < prefix.length) {
-            input.setSelectionRange(prefix.length, prefix.length)
-          }
-        }, 0)
-      }
-
-      // Prevent cursor from going into suffix area
-      if (e.key === 'ArrowRight' || e.key === 'End') {
-        setTimeout(() => {
-          const maxPos = displayValue.length - suffix.length
-          if (input.selectionStart !== null && input.selectionStart > maxPos) {
-            input.setSelectionRange(maxPos, maxPos)
-          }
-        }, 0)
-      }
-
-      // Handle deletion: allow clearing when the editable part is fully selected; protect prefix from char-by-char deletion
-      if (e.key === 'Backspace' || e.key === 'Delete') {
-        const start = input.selectionStart ?? 0
-        const end = input.selectionEnd ?? 0
-        const editableStart = prefix.length
-        const editableEnd = displayValue.length - suffix.length
-
-        // If full editable range is selected, clear everything
-        if (start <= editableStart && end >= editableEnd) {
-          setDisplayValue("")
-          onChange?.("")
+      // Allow Ctrl+A to select all editable content
+      if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+        if (displayValue) {
           e.preventDefault()
-          return
-        }
-
-        // Prevent deleting into the prefix when no selection
-        if (e.key === 'Backspace' && start <= editableStart && start === end) {
-          e.preventDefault()
-          setTimeout(() => {
-            input.setSelectionRange(editableStart, editableStart)
-          }, 0)
+          const input = e.currentTarget
+          input.setSelectionRange(0, displayValue.length)
         }
       }
     }
@@ -158,19 +109,27 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true)
       
-      // Only position cursor if there's already content
+      // Select all content if there's a value for easy replacement
       if (displayValue) {
-        const prefix = getPrefix()
-        const suffix = getSuffix()
         setTimeout(() => {
           const input = e.currentTarget
-          const start = prefix.length
-          const end = displayValue.length - suffix.length
-          input.setSelectionRange(start, Math.max(start, end))
+          input.setSelectionRange(0, displayValue.length)
         }, 0)
       }
       
       onFocus?.(e)
+    }
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
+      // On first click in a filled field, select all for easy replacement
+      if (displayValue && !isFocused) {
+        e.preventDefault()
+        const input = e.currentTarget
+        input.focus()
+        setTimeout(() => {
+          input.setSelectionRange(0, displayValue.length)
+        }, 0)
+      }
     }
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -191,6 +150,7 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
         onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         onFocus={handleFocus}
+        onMouseDown={handleMouseDown}
         onBlur={handleBlur}
         {...props}
       />
