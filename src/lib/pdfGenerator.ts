@@ -26,6 +26,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
   const margin = 15;
+  const rightX = pageWidth - margin;
   let yPosition = 20;
   
   // Couleurs
@@ -46,7 +47,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('RIVVLOCK', margin, yPosition);
-  doc.text('FACTURE', pageWidth - 60, yPosition);
+  doc.text('FACTURE', rightX, yPosition, { align: 'right' });
   
   yPosition += 8;
   
@@ -57,8 +58,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('www.rivvlock.com', margin, yPosition + 4);
   
   // Informations facture (à droite)
-  doc.text(`N° ${invoiceNumber}`, pageWidth - 60, yPosition);
-  doc.text(`Date: ${invoiceDate}`, pageWidth - 60, yPosition + 4);
+  doc.text(`N° ${invoiceNumber}`, rightX, yPosition, { align: 'right' });
+  doc.text(`Date: ${invoiceDate}`, rightX, yPosition + 4, { align: 'right' });
   
   yPosition += 15;
   
@@ -78,7 +79,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('ÉMETTEUR', margin, yPosition);
-  doc.text('CLIENT', pageWidth / 2 + 20, yPosition);
+  doc.text('CLIENT', rightX, yPosition, { align: 'right' });
   
   yPosition += 8;
   
@@ -125,11 +126,11 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   }
   
   // Informations client (colonne droite) - aligné tout à droite
-  const clientX = pageWidth - 85;
+  const clientX = rightX;
   let rightColumnY = yPosition;
   
   doc.setFont('helvetica', 'bold');
-  doc.text(invoiceData.buyerName, clientX, rightColumnY);
+  doc.text(invoiceData.buyerName, clientX, rightColumnY, { align: 'right' });
   
   rightColumnY += 4;
   doc.setFont('helvetica', 'normal');
@@ -138,32 +139,32 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     const profile = invoiceData.buyerProfile;
     
     if (profile.first_name || profile.last_name) {
-      doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), clientX, rightColumnY);
+      doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (invoiceData.buyerEmail) {
-      doc.text(invoiceData.buyerEmail, clientX, rightColumnY);
+      doc.text(invoiceData.buyerEmail, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (profile.phone) {
-      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY);
+      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (profile.company_name) {
-      doc.text(profile.company_name, clientX, rightColumnY);
+      doc.text(profile.company_name, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (profile.address) {
-      doc.text(profile.address, clientX, rightColumnY);
+      doc.text(profile.address, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
     
     if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY);
+      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY, { align: 'right' });
       rightColumnY += 4;
     }
   }
@@ -222,34 +223,35 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   // === CALCULS FINANCIERS (alignés à droite) ===
   
-  const calcStartX = pageWidth - 80;
+  const valueX = rightX;
+  const labelRightX = rightX - 5;
   
   // Total HT
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
-  doc.text('Total HT:', calcStartX - 40, yPosition);
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, calcStartX, yPosition);
+  doc.text('Total HT:', labelRightX, yPosition, { align: 'right' });
+  doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 6;
   
   // Frais RivvLock
-  doc.text('Frais RivvLock (5%):', calcStartX - 40, yPosition);
-  doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, calcStartX, yPosition);
-
+  doc.text('Frais RivvLock (5%):', labelRightX, yPosition, { align: 'right' });
+  doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+  
   yPosition += 6;
-
+  
   // À payer (montant total que le client paye)
   doc.setFont('helvetica', 'bold');
-  doc.text('À payer:', calcStartX - 40, yPosition);
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, calcStartX, yPosition);
-
+  doc.text('À payer:', labelRightX, yPosition, { align: 'right' });
+  doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+  
   yPosition += 8;
-
+  
   // Net reçu (montant reçu par le vendeur après frais)
   doc.setFont('helvetica', 'normal');
-  doc.text('Net reçu:', calcStartX - 40, yPosition);
-  doc.text(`${amountReceived.toFixed(2)} ${currency}`, calcStartX, yPosition);
+  doc.text('Net reçu:', labelRightX, yPosition, { align: 'right' });
+  doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 20;
   
