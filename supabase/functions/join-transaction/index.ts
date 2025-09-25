@@ -128,8 +128,9 @@ serve(async (req) => {
 
     console.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
 
-    // Log activity for the buyer
+    // Log activity for both buyer and seller
     try {
+      // Log for the buyer
       await adminClient
         .from('activity_logs')
         .insert({
@@ -137,6 +138,21 @@ serve(async (req) => {
           activity_type: 'transaction_joined',
           title: 'Transaction rejointe',
           description: `Vous avez rejoint la transaction "${transaction.title}"`
+        });
+
+      // Log for the seller
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: transaction.user_id,
+          activity_type: 'buyer_joined_transaction',
+          title: `${buyerDisplayName} a rejoint votre transaction`,
+          description: `Un client a rejoint votre transaction "${transaction.title}"`,
+          metadata: {
+            transaction_id: transaction.id,
+            buyer_id: userData.user.id,
+            buyer_name: buyerDisplayName
+          }
         });
     } catch (logError) {
       console.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);

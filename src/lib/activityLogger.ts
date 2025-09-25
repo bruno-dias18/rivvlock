@@ -5,11 +5,13 @@ export type ActivityType =
   | 'funds_blocked'
   | 'transaction_validated'
   | 'transaction_joined'
+  | 'buyer_joined_transaction'
   | 'seller_validation'
   | 'buyer_validation'
   | 'profile_updated'
   | 'dispute_created'
-  | 'funds_released';
+  | 'funds_released'
+  | 'transaction_completed';
 
 interface LogActivityParams {
   type: ActivityType;

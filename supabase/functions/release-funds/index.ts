@@ -143,9 +143,9 @@ serve(async (req) => {
       .from('activity_logs')
       .insert({
         user_id: transaction.user_id,
-        activity_type: 'TRANSFER_COMPLETED',
-        title: 'Funds transferred to your account',
-        description: `Received ${(transferAmount / 100).toFixed(2)} ${transaction.currency} for transaction: ${transaction.title}`,
+        activity_type: 'funds_released',
+        title: 'Fonds transférés vers votre compte',
+        description: `${(transferAmount / 100).toFixed(2)} ${transaction.currency} reçus pour la transaction "${transaction.title}"`,
         metadata: {
           transaction_id: transaction.id,
           transfer_id: transfer.id,
@@ -160,9 +160,9 @@ serve(async (req) => {
       .from('activity_logs')
       .insert({
         user_id: transaction.buyer_id,
-        activity_type: 'TRANSACTION_COMPLETED',
-        title: 'Transaction completed',
-        description: `Funds transferred to seller for: ${transaction.title}`,
+        activity_type: 'transaction_completed',
+        title: 'Transaction terminée',
+        description: `Fonds transférés au vendeur pour "${transaction.title}"`,
         metadata: {
           transaction_id: transaction.id,
           transfer_id: transfer.id,

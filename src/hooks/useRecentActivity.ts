@@ -14,8 +14,10 @@ export interface ActivityLog {
 const RELEVANT_ACTIVITY_TYPES = [
   'transaction_joined',
   'transaction_created', 
+  'buyer_joined_transaction',
   'funds_blocked',
   'funds_released',
+  'transaction_completed',
   'dispute_created',
   'seller_validation',
   'buyer_validation'

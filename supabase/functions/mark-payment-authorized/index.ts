@@ -96,6 +96,41 @@ serve(async (req) => {
 
     console.log('✅ [MARK-PAYMENT] Transaction marked as paid successfully');
 
+    // Log activity for funds blocked
+    try {
+      // Log for the buyer
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: transaction.buyer_id,
+          activity_type: 'funds_blocked',
+          title: 'Fonds bloqués en séquestre',
+          description: `${transaction.price} ${transaction.currency} bloqués pour la transaction "${transaction.title}"`,
+          metadata: {
+            transaction_id: transaction.id,
+            amount: transaction.price,
+            currency: transaction.currency
+          }
+        });
+
+      // Log for the seller  
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: transaction.user_id,
+          activity_type: 'funds_blocked',
+          title: 'Paiement reçu et bloqué',
+          description: `${transaction.price} ${transaction.currency} reçus et bloqués en attente de validation pour "${transaction.title}"`,
+          metadata: {
+            transaction_id: transaction.id,
+            amount: transaction.price,
+            currency: transaction.currency
+          }
+        });
+    } catch (logError) {
+      console.error('❌ [MARK-PAYMENT] Error logging activity:', logError);
+    }
+
     // Mock notifications
     console.log(`📧 [MARK-PAYMENT] EMAIL: Payment authorized for ${transaction.title}`);
     console.log(`📱 [MARK-PAYMENT] SMS: ${transaction.price} ${transaction.currency} blocked in escrow`);
