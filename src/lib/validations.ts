@@ -3,6 +3,17 @@ import { z } from 'zod';
 // Utility functions for validation
 const cleanNumericString = (value: string) => value.replace(/\s|-|\./g, '');
 
+// Helper functions for cleaning input strings
+const cleanSiretString = (siret: string): string => {
+  // Remove only allowed separators: spaces, hyphens, dots
+  return siret.replace(/[\s\-\.]/g, '');
+};
+
+const cleanUidString = (uid: string): string => {
+  // Remove only extra spaces but preserve CHE-X.X.X structure
+  return uid.replace(/\s+/g, '').toUpperCase();
+};
+
 // French postal code validation (5 digits)
 const frenchPostalCodeRegex = /^[0-9]{5}$/;
 // Swiss postal code validation (4 digits)
@@ -92,14 +103,23 @@ export const postalCodeSchema = (country: 'FR' | 'CH') => {
   }
 };
 
-// SIRET validation with Luhn algorithm
+// SIRET validation with strict format control and Luhn algorithm
 export const siretSchema = z
   .string()
   .trim()
-  .transform(cleanNumericString)
-  .refine((val) => siretRegex.test(val), {
-    message: 'Le numéro SIRET doit contenir exactement 14 chiffres'
+  .min(1, { message: "Le numéro SIRET est requis" })
+  .refine((val) => {
+    // First check: only allowed characters (digits, spaces, hyphens, dots)
+    if (!/^[0-9\s\-\.]+$/.test(val)) {
+      return false;
+    }
+    // Second check: must have exactly 14 digits after cleaning
+    const cleaned = cleanSiretString(val);
+    return /^\d{14}$/.test(cleaned);
+  }, {
+    message: "Le numéro SIRET doit contenir exactement 14 chiffres (exemple: 12345678901234)"
   })
+  .transform(cleanSiretString)
   .refine((val) => {
     // Luhn algorithm validation
     let sum = 0;
@@ -124,11 +144,24 @@ export const siretSchema = z
     message: 'Le numéro SIRET est invalide (échec de la validation de Luhn)'
   });
 
-// Swiss UID validation
+// Swiss UID validation with strict format control
 export const swissUidSchema = z
   .string()
   .trim()
-  .regex(swissUidRegex, 'Le numéro UID doit avoir le format CHE-XXX.XXX.XXX');
+  .min(1, { message: "Le numéro UID est requis" })
+  .refine((val) => {
+    // Check for valid characters and basic structure
+    const cleaned = cleanUidString(val);
+    // Must start with CHE- and have the right structure
+    if (!cleaned.startsWith('CHE-')) {
+      return false;
+    }
+    // Must match exact format: CHE-XXX.XXX.XXX
+    return /^CHE-[0-9]{3}\.[0-9]{3}\.[0-9]{3}$/.test(cleaned);
+  }, {
+    message: "Le numéro UID doit avoir le format CHE-XXX.XXX.XXX (exemple: CHE-123.456.789)"
+  })
+  .transform(cleanUidString);
 
 // Swiss AVS validation
 export const swissAvsSchema = z
