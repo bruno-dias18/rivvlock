@@ -87,7 +87,7 @@ serve(async (req) => {
 
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2024-06-20",
     });
 
     // Create Stripe Connect account
