@@ -14,6 +14,7 @@ interface ValidationStatus {
   isValidationDeadlineActive: boolean;
   canFinalize: boolean;
   canDispute: boolean;
+  canManuallyFinalize: boolean;
   displayLabel: string;
   displayColor: 'default' | 'secondary' | 'destructive';
 }
@@ -26,6 +27,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
+        canManuallyFinalize: false,
         displayLabel: 'En attente',
         displayColor: 'default'
       };
@@ -44,6 +46,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
+        canManuallyFinalize: false,
         displayLabel: 'En litige',
         displayColor: 'destructive'
       };
@@ -56,6 +59,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
+        canManuallyFinalize: false,
         displayLabel: 'Terminé',
         displayColor: 'default'
       };
@@ -68,6 +72,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
+        canManuallyFinalize: false,
         displayLabel: 'En attente de paiement',
         displayColor: 'secondary'
       };
@@ -82,6 +87,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
           isValidationDeadlineActive: false,
           canFinalize: false,
           canDispute: false,
+          canManuallyFinalize: isUserBuyer,
           displayLabel: 'Service en cours',
           displayColor: 'default'
         };
@@ -99,6 +105,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
             isValidationDeadlineActive: false,
             canFinalize: false,
             canDispute: false,
+            canManuallyFinalize: false,
             displayLabel: 'Finalisation automatique',
             displayColor: 'secondary'
           };
@@ -110,6 +117,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
             isValidationDeadlineActive: true,
             canFinalize: isUserBuyer,
             canDispute: isUserBuyer,
+            canManuallyFinalize: false,
             displayLabel: 'Validation en cours',
             displayColor: 'secondary'
           };
@@ -122,6 +130,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
+        canManuallyFinalize: isUserBuyer,
         displayLabel: transaction.seller_validated ? 'Service terminé' : 'En attente validation vendeur',
         displayColor: 'default'
       };
@@ -133,6 +142,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       isValidationDeadlineActive: false,
       canFinalize: false,
       canDispute: false,
+      canManuallyFinalize: false,
       displayLabel: 'Statut inconnu',
       displayColor: 'default'
     };
