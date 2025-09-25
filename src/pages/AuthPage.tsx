@@ -9,6 +9,7 @@ import { createRegistrationSchema, loginSchema, changePasswordSchema } from '@/l
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
+import { MaskedUidInput } from '@/components/ui/masked-uid-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
@@ -400,7 +401,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Numéro UID *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="CHE-123.456.789" />
+                          <MaskedUidInput {...field} />
                         </FormControl>
                         <FormDescription>
                           Format : CHE-XXX.XXX.XXX

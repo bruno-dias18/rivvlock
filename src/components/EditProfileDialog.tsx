@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
+import { MaskedUidInput } from '@/components/ui/masked-uid-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -389,10 +390,14 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {profile?.country === 'FR' ? 'Numéro SIRET' : 'Numéro UID'}
                       </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder={profile?.country === 'FR' ? '14 chiffres' : 'CHE-XXX.XXX.XXX'} 
-                          {...field} 
-                        />
+                        {profile?.country === 'CH' ? (
+                          <MaskedUidInput {...field} />
+                        ) : (
+                          <Input 
+                            placeholder="14 chiffres"
+                            {...field} 
+                          />
+                        )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
