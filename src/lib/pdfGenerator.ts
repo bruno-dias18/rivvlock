@@ -124,8 +124,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
   }
   
-  // Informations client (colonne droite) - aligné avec émetteur
-  const clientX = pageWidth / 2 + 20;
+  // Informations client (colonne droite) - aligné tout à droite
+  const clientX = pageWidth - 85;
   let rightColumnY = yPosition;
   
   doc.setFont('helvetica', 'bold');
@@ -236,12 +236,19 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   // Frais RivvLock
   doc.text('Frais RivvLock (5%):', calcStartX - 40, yPosition);
   doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, calcStartX, yPosition);
-  
+
   yPosition += 6;
-  
-  // Net à payer
+
+  // À payer (montant total que le client paye)
   doc.setFont('helvetica', 'bold');
-  doc.text('Net à payer:', calcStartX - 40, yPosition);
+  doc.text('À payer:', calcStartX - 40, yPosition);
+  doc.text(`${amountPaid.toFixed(2)} ${currency}`, calcStartX, yPosition);
+
+  yPosition += 8;
+
+  // Net reçu (montant reçu par le vendeur après frais)
+  doc.setFont('helvetica', 'normal');
+  doc.text('Net reçu:', calcStartX - 40, yPosition);
   doc.text(`${amountReceived.toFixed(2)} ${currency}`, calcStartX, yPosition);
   
   yPosition += 20;
