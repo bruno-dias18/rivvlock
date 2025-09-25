@@ -63,7 +63,7 @@ serve(async (req) => {
     logStep("Found Payment Intents from Stripe", { count: paymentIntents.data.length });
 
     // Filter for uncaptured payments
-    const uncapturedPayments = paymentIntents.data.filter(pi => 
+    const uncapturedPayments = paymentIntents.data.filter((pi: any) => 
       pi.status === 'requires_capture' && pi.capture_method === 'manual'
     );
 
@@ -213,7 +213,8 @@ serve(async (req) => {
                     description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`
                   });
               } catch (logError) {
-                logStep("Error logging funds blocked activity", { error: logError.message });
+                const logErrorMessage = logError instanceof Error ? logError.message : String(logError);
+                logStep("Error logging funds blocked activity", { error: logErrorMessage });
               }
               
               synchronizedCount++;
@@ -243,15 +244,16 @@ serve(async (req) => {
             status: 'no_match'
           });
         }
-      } catch (error) {
-        logStep("Error processing Payment Intent", { 
-          paymentIntentId: paymentIntent.id, 
-          error: error.message 
-        });
-        syncResults.push({
-          paymentIntentId: paymentIntent.id,
-          status: 'error',
-          error: error.message
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logStep("Error processing Payment Intent", { 
+            paymentIntentId: paymentIntent.id, 
+            error: errorMessage 
+          });
+          syncResults.push({
+            paymentIntentId: paymentIntent.id,
+            status: 'error',
+            error: errorMessage
         });
       }
     }
@@ -274,8 +276,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logStep("ERROR in sync-stripe-payments", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logStep("ERROR in sync-stripe-payments", { message: errorMessage });
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

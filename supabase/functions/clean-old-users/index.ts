@@ -104,13 +104,14 @@ serve(async (req) => {
             success: true
           });
         }
-      } catch (error) {
-        console.error(`❌ Exception deleting user ${userToDelete.email}:`, error);
-        deletionResults.push({
-          email: userToDelete.email,
-          id: userToDelete.id,
-          success: false,
-          error: error.message
+        } catch (error) {
+          console.error(`❌ Exception deleting user ${userToDelete.email}:`, error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          deletionResults.push({
+            email: userToDelete.email,
+            id: userToDelete.id,
+            success: false,
+            error: errorMessage
         });
       }
     }
@@ -141,8 +142,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('❌ Function error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ error: error.message }), 
+      JSON.stringify({ error: errorMessage }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

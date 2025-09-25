@@ -78,8 +78,9 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(`[FIX-TRANSACTION] Error:`, error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`[FIX-TRANSACTION] Error:`, errorMessage);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

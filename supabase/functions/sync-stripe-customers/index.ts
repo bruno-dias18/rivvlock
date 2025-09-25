@@ -151,8 +151,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Error syncing Stripe customers:", error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({
+      error: errorMessage,
       success: false 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
