@@ -70,14 +70,6 @@ export default function CompleteTransactionButton({
 
   return (
     <div className="space-y-3">
-      <Alert>
-        <CheckCircle className="h-4 w-4" />
-        <AlertDescription>
-          Le paiement a été effectué avec succès. Vous pouvez maintenant finaliser 
-          la transaction pour transférer les fonds au vendeur.
-        </AlertDescription>
-      </Alert>
-      
       <Button
         onClick={handleCompleteTransaction}
         disabled={isProcessing}
