@@ -31,6 +31,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const tableRightEdge = pageWidth - margin;
   const rightColWidth = 85; // Largeur de la colonne droite
   const rightColX = tableRightEdge - rightColWidth; // Position pour alignement parfait
+  
+  // Position professionnelle pour la section CLIENT
+  const clientStartX = pageWidth / 2 + 20;
+  const clientWidth = pageWidth / 2 - margin - 30;
   let yPosition = 20;
   
   // Couleurs
@@ -83,7 +87,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('ÉMETTEUR', margin, yPosition);
-  doc.text('CLIENT', tableRightEdge, yPosition, { align: 'right' });
+  doc.text('CLIENT', clientStartX, yPosition);
   
   yPosition += 8;
   
@@ -129,13 +133,13 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
   }
   
-  // Informations client (colonne droite) - aligned to new right column
-  const clientX = tableRightEdge;
+  // Informations client (colonne droite) - positionnée professionnellement
+  const clientX = clientStartX;
   let rightColumnY = yPosition;
   
   doc.setFont('helvetica', 'bold');
-  const buyerNameLines = doc.splitTextToSize(invoiceData.buyerName, rightColWidth);
-  doc.text(buyerNameLines, clientX, rightColumnY, { align: 'right' });
+  const buyerNameLines = doc.splitTextToSize(invoiceData.buyerName, clientWidth);
+  doc.text(buyerNameLines, clientX, rightColumnY);
   rightColumnY += buyerNameLines.length * 4;
   
   doc.setFont('helvetica', 'normal');
@@ -145,36 +149,36 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     
     if (profile.first_name || profile.last_name) {
       const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-      const nameLines = doc.splitTextToSize(fullName, rightColWidth);
-      doc.text(nameLines, clientX, rightColumnY, { align: 'right' });
+      const nameLines = doc.splitTextToSize(fullName, clientWidth);
+      doc.text(nameLines, clientX, rightColumnY);
       rightColumnY += nameLines.length * 4;
     }
     
     if (invoiceData.buyerEmail) {
-      const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, rightColWidth);
-      doc.text(emailLines, clientX, rightColumnY, { align: 'right' });
+      const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, clientWidth);
+      doc.text(emailLines, clientX, rightColumnY);
       rightColumnY += emailLines.length * 4;
     }
     
     if (profile.phone) {
-      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY, { align: 'right' });
+      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY);
       rightColumnY += 4;
     }
     
     if (profile.company_name) {
-      const companyLines = doc.splitTextToSize(profile.company_name, rightColWidth);
-      doc.text(companyLines, clientX, rightColumnY, { align: 'right' });
+      const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
+      doc.text(companyLines, clientX, rightColumnY);
       rightColumnY += companyLines.length * 4;
     }
     
     if (profile.address) {
-      const addressLines = doc.splitTextToSize(profile.address, rightColWidth);
-      doc.text(addressLines, clientX, rightColumnY, { align: 'right' });
+      const addressLines = doc.splitTextToSize(profile.address, clientWidth);
+      doc.text(addressLines, clientX, rightColumnY);
       rightColumnY += addressLines.length * 4;
     }
     
     if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY, { align: 'right' });
+      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY);
       rightColumnY += 4;
     }
   }
