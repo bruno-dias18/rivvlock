@@ -243,6 +243,20 @@ export const createRegistrationSchema = (country: 'FR' | 'CH', userType: 'indivi
   }).refine((data) => data.password === data.confirmPassword, {
     message: 'Les mots de passe ne correspondent pas',
     path: ['confirmPassword']
+  }).superRefine((data, ctx) => {
+    // Make VAT number mandatory when user is subject to VAT
+    const vatRequired = (data.userType === 'company') || (data.userType === 'independent' && data.country === 'CH');
+    if (vatRequired && (data as any).isSubjectToVat) {
+      if (!(data as any).vatNumber || !vatNumberSchema((data as any).country).safeParse((data as any).vatNumber).success) {
+        ctx.addIssue({
+          path: ['vatNumber'],
+          code: 'custom',
+          message: (data as any).country === 'FR'
+            ? 'Le numéro de TVA est obligatoire et doit être au format FRXX123456789'
+            : 'Le numéro de TVA est obligatoire et doit être au format CHE-XXX.XXX.XXX TVA'
+        });
+      }
+    }
   });
 
   return schema;

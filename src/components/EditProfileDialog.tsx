@@ -12,25 +12,59 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { vatNumberSchema } from '@/lib/validations';
 
-const profileSchema = z.object({
-  first_name: z.string().optional(),
-  last_name: z.string().optional(),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  postal_code: z.string().optional(),
-  city: z.string().optional(),
-  company_name: z.string().optional(),
-  company_address: z.string().optional(),
-  siret_uid: z.string().optional(),
-  avs_number: z.string().optional(),
-  is_subject_to_vat: z.boolean().optional(),
-  vat_number: z.string().optional(),
-  tva_rate: z.string().optional(),
-  vat_rate: z.string().optional(),
-});
+const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean) => {
+  const baseSchema = z.object({
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional(),
+    postal_code: z.string().optional(),
+    city: z.string().optional(),
+    company_name: z.string().optional(),
+    company_address: z.string().optional(),
+    siret_uid: z.string().optional(),
+    avs_number: z.string().optional(),
+    is_subject_to_vat: z.boolean().optional(),
+    vat_number: z.string().optional(),
+    tva_rate: z.string().optional(),
+    vat_rate: z.string().optional(),
+  });
 
-type ProfileFormData = z.infer<typeof profileSchema>;
+  if (isSubjectToVat) {
+    return baseSchema.superRefine((data, ctx) => {
+      if (data.is_subject_to_vat && (!data.vat_number || !vatNumberSchema(country).safeParse(data.vat_number).success)) {
+        ctx.addIssue({
+          path: ['vat_number'],
+          code: 'custom',
+          message: country === 'FR'
+            ? 'Le numéro de TVA est obligatoire et doit être au format FRXX123456789'
+            : 'Le numéro de TVA est obligatoire et doit être au format CHE-XXX.XXX.XXX TVA'
+        });
+      }
+    });
+  }
+
+  return baseSchema;
+};
+
+type ProfileFormData = {
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  address?: string;
+  postal_code?: string;
+  city?: string;
+  company_name?: string;
+  company_address?: string;
+  siret_uid?: string;
+  avs_number?: string;
+  is_subject_to_vat?: boolean;
+  vat_number?: string;
+  tva_rate?: string;
+  vat_rate?: string;
+};
 
 interface EditProfileDialogProps {
   open: boolean;
@@ -45,7 +79,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
   const { user } = useAuth();
 
   const form = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
+    resolver: zodResolver(createProfileSchema(profile?.country || 'FR', false)),
     defaultValues: {
       first_name: '',
       last_name: '',
@@ -99,8 +133,31 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     }
   }, [profile, open, form]);
 
+  // Watch for VAT checkbox changes and validate accordingly
+  const watchedIsSubjectToVat = form.watch('is_subject_to_vat');
+  useEffect(() => {
+    if (watchedIsSubjectToVat) {
+      // Trigger validation when VAT checkbox is checked
+      form.trigger('vat_number');
+    }
+  }, [watchedIsSubjectToVat, form]);
+
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) return;
+    
+    // Manual VAT validation when subject to VAT
+    if (data.is_subject_to_vat) {
+      const vatValid = data.vat_number && vatNumberSchema(profile?.country || 'FR').safeParse(data.vat_number).success;
+      if (!vatValid) {
+        form.setError('vat_number', {
+          type: 'manual',
+          message: profile?.country === 'FR'
+            ? 'Le numéro de TVA est obligatoire et doit être au format FRXX123456789'
+            : 'Le numéro de TVA est obligatoire et doit être au format CHE-XXX.XXX.XXX TVA'
+        });
+        return;
+      }
+    }
     
     setIsLoading(true);
     try {
@@ -386,7 +443,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                       name="vat_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Numéro de TVA</FormLabel>
+                          <FormLabel>Numéro de TVA{form.watch('is_subject_to_vat') ? ' *' : ''}</FormLabel>
                           <FormControl>
                             <MaskedVatInput 
                               country={(profile?.country as 'FR' | 'CH') || 'FR'}

@@ -463,9 +463,9 @@ export default function AuthPage() {
                           name="vatNumber"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>
-                                Numéro de TVA (optionnel)
-                              </FormLabel>
+                               <FormLabel>
+                                 Numéro de TVA *
+                               </FormLabel>
                               <FormControl>
                                 <MaskedVatInput 
                                   country={country}
