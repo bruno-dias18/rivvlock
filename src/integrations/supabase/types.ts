@@ -243,14 +243,19 @@ export type Database = {
         Row: {
           buyer_display_name: string | null
           buyer_id: string | null
+          buyer_validated: boolean | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           description: string | null
+          funds_released: boolean | null
+          funds_released_at: string | null
           id: string
+          payment_blocked_at: string | null
           payment_deadline: string | null
           payment_method: string | null
           price: number
           seller_display_name: string | null
+          seller_validated: boolean | null
           service_date: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
@@ -258,18 +263,24 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          validation_deadline: string | null
         }
         Insert: {
           buyer_display_name?: string | null
           buyer_id?: string | null
+          buyer_validated?: boolean | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           description?: string | null
+          funds_released?: boolean | null
+          funds_released_at?: string | null
           id?: string
+          payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
           price: number
           seller_display_name?: string | null
+          seller_validated?: boolean | null
           service_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
@@ -277,18 +288,24 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          validation_deadline?: string | null
         }
         Update: {
           buyer_display_name?: string | null
           buyer_id?: string | null
+          buyer_validated?: boolean | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           description?: string | null
+          funds_released?: boolean | null
+          funds_released_at?: string | null
           id?: string
+          payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
           price?: number
           seller_display_name?: string | null
+          seller_validated?: boolean | null
           service_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
@@ -296,6 +313,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          validation_deadline?: string | null
         }
         Relationships: []
       }
