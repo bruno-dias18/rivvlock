@@ -13,6 +13,7 @@ import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
+import { TransactionCard } from '@/components/TransactionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
@@ -22,7 +23,6 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import CompleteTransactionButton from '@/components/CompleteTransactionButton';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
-import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { copyToClipboard } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
@@ -234,139 +234,6 @@ export default function TransactionsPage() {
     }
   };
 
-  const renderTransactionCard = (transaction: any, showActions = true) => {
-    const userRole = getUserRole(transaction);
-    const validationStatus = useValidationStatus(transaction, user?.id);
-    const displayName = userRole === 'seller' 
-      ? transaction.buyer_display_name || 'Client anonyme'
-      : transaction.seller_display_name || 'Vendeur';
-
-    return (
-      <Card key={transaction.id} className="mb-4">
-        <CardHeader className="pb-3">
-          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
-            <div className="flex-1">
-              <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'}`}>{transaction.title}</CardTitle>
-              <CardDescription className="mt-1">
-                {transaction.description}
-              </CardDescription>
-            </div>
-            <div className={`${isMobile ? 'flex justify-between items-center' : 'text-right ml-4'}`}>
-              <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
-                {transaction.price} {transaction.currency?.toUpperCase()}
-              </div>
-              <Badge variant="outline" className="mt-1">
-                {userRole === 'seller' ? 'Vendeur' : 'Client'}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm text-muted-foreground mb-4">
-            <div>{userRole === 'seller' ? 'Client' : 'Vendeur'}: {displayName}</div>
-            <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
-            {transaction.service_date && (
-              <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
-            )}
-            
-            {/* Payment countdown for buyers on pending transactions */}
-            {userRole === 'buyer' && transaction.status === 'pending' && transaction.payment_deadline && (
-              <div className="mt-3">
-                <PaymentCountdown paymentDeadline={transaction.payment_deadline} />
-              </div>
-            )}
-            
-            {/* Validation countdown for buyers during validation phase */}
-            {userRole === 'buyer' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
-              <div className="mt-3">
-                <ValidationCountdown validationDeadline={transaction.validation_deadline} />
-              </div>
-            )}
-            
-            {/* Status indicator for other phases */}
-            {validationStatus.phase === 'service_pending' && (
-              <div className="mt-3 flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm">{validationStatus.displayLabel}</span>
-              </div>
-            )}
-          </div>
-          
-          {showActions && (
-            <div className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
-              {userRole === 'seller' && transaction.status === 'pending' && (
-                <Button
-                  variant="outline"
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => handleCopyLink(`${window.location.origin}/join/${transaction.shared_link_token}`)}
-                  className={isMobile ? "justify-center" : ""}
-                >
-                  <Copy className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Copier' : 'Copier le lien'}
-                </Button>
-              )}
-              
-              {userRole === 'buyer' && transaction.status === 'pending' && (
-                <Button
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => handlePayment(transaction)}
-                  className={isMobile ? "justify-center" : ""}
-                  disabled={transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date()}
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date() 
-                    ? 'Délai expiré' 
-                    : (isMobile ? 'Payer (bloquer)' : 'Payer (bloquer l\'argent)')
-                  }
-                </Button>
-              )}
-              
-              {transaction.status === 'paid' && userRole === 'seller' && (
-                <Button 
-                  variant="outline" 
-                  size={isMobile ? "default" : "sm"}
-                  className={isMobile ? "justify-center" : ""}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Valider
-                </Button>
-              )}
-              
-              {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
-                <ValidationActionButtons
-                  transaction={transaction}
-                  isUserBuyer={true}
-                  onTransferComplete={() => refetch()}
-                  onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                  isMobile={isMobile}
-                  isValidationExpired={validationStatus.phase === 'validation_expired'}
-                  CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                />
-              )}
-              
-              {transaction.status === 'paid' && userRole === 'buyer' && !validationStatus.canFinalize && validationStatus.phase !== 'validation_expired' && (
-                <div className="text-sm text-muted-foreground">
-                  {validationStatus.displayLabel}
-                </div>
-              )}
-
-              {transaction.status === 'validated' && (
-                <Button 
-                  variant="outline" 
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => handleDownloadInvoice(transaction)}
-                  className={isMobile ? "justify-center" : ""}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Facture' : 'Télécharger la facture'}
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  };
 
   // Component wrapper to handle seller Stripe status
   const CompleteTransactionButtonWithStatus = ({ 
@@ -480,7 +347,20 @@ export default function TransactionsPage() {
 
               {!isLoading && !queryError && pendingTransactions.length > 0 && (
                 <div className="space-y-4">
-                  {pendingTransactions.map(transaction => renderTransactionCard(transaction))}
+                  {pendingTransactions.map(transaction => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      user={user}
+                      showActions={true}
+                      onCopyLink={handleCopyLink}
+                      onPayment={handlePayment}
+                      onRefetch={refetch}
+                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                      onDownloadInvoice={handleDownloadInvoice}
+                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -507,7 +387,20 @@ export default function TransactionsPage() {
 
               {!isLoading && !queryError && blockedTransactions.length > 0 && (
                 <div className="space-y-4">
-                  {blockedTransactions.map(transaction => renderTransactionCard(transaction))}
+                  {blockedTransactions.map(transaction => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      user={user}
+                      showActions={true}
+                      onCopyLink={handleCopyLink}
+                      onPayment={handlePayment}
+                      onRefetch={refetch}
+                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                      onDownloadInvoice={handleDownloadInvoice}
+                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -534,7 +427,20 @@ export default function TransactionsPage() {
 
               {!isLoading && !queryError && completedTransactions.length > 0 && (
                 <div className="space-y-4">
-                  {completedTransactions.map(transaction => renderTransactionCard(transaction, true))}
+                  {completedTransactions.map(transaction => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      user={user}
+                      showActions={true}
+                      onCopyLink={handleCopyLink}
+                      onPayment={handlePayment}
+                      onRefetch={refetch}
+                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                      onDownloadInvoice={handleDownloadInvoice}
+                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -561,7 +467,20 @@ export default function TransactionsPage() {
 
               {!isLoading && !queryError && disputedTransactions.length > 0 && (
                 <div className="space-y-4">
-                  {disputedTransactions.map(transaction => renderTransactionCard(transaction, false))}
+                  {disputedTransactions.map(transaction => (
+                    <TransactionCard
+                      key={transaction.id}
+                      transaction={transaction}
+                      user={user}
+                      showActions={false}
+                      onCopyLink={handleCopyLink}
+                      onPayment={handlePayment}
+                      onRefetch={refetch}
+                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                      onDownloadInvoice={handleDownloadInvoice}
+                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>
