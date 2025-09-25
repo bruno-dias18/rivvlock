@@ -395,12 +395,12 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                               placeholder={profile?.country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
                             />
                           </FormControl>
-                          <FormDescription>
-                            {profile?.country === 'CH' 
-                              ? "Saisissez uniquement les chiffres, le format sera appliqué automatiquement"
-                              : "Saisissez uniquement les 11 chiffres, FR sera ajouté automatiquement"
-                            }
-                          </FormDescription>
+                           <FormDescription>
+                             {profile?.country === 'CH' 
+                               ? "Numéro de TVA suisse" 
+                               : "Numéro de TVA français"
+                             }
+                           </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

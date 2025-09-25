@@ -51,6 +51,9 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
     }
 
     const formatDisplayValue = (digits: string) => {
+      // If no digits, return empty string
+      if (!digits) return ""
+      
       const prefix = getPrefix()
       const suffix = getSuffix()
       
@@ -75,11 +78,28 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const newValue = e.target.value
+      
+      // If input is empty, clear everything
+      if (!newValue) {
+        setDisplayValue("")
+        onChange?.("")
+        return
+      }
+      
+      // If field was empty and user typed digits, format with prefix
+      if (!displayValue && /^\d/.test(newValue)) {
+        const digits = newValue.replace(/\D/g, '')
+        const formatted = formatDisplayValue(digits)
+        setDisplayValue(formatted)
+        onChange?.(formatted)
+        return
+      }
+      
       const prefix = getPrefix()
       const suffix = getSuffix()
 
-      // Prevent deletion of prefix and suffix
-      if (!newValue.startsWith(prefix) || (suffix && !newValue.endsWith(suffix))) {
+      // Prevent deletion of prefix and suffix when field has content
+      if (displayValue && (!newValue.startsWith(prefix) || (suffix && !newValue.endsWith(suffix)))) {
         return
       }
 
@@ -102,6 +122,10 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       const input = e.currentTarget
+      
+      // If field is empty, allow normal input
+      if (!displayValue) return
+      
       const prefix = getPrefix()
       const suffix = getSuffix()
       
@@ -124,25 +148,35 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
         }, 0)
       }
 
-      // Handle backspace - don't allow deleting prefix
+      // Handle backspace - allow clearing completely
       if (e.key === 'Backspace') {
         if (input.selectionStart !== null && input.selectionStart <= prefix.length) {
-          e.preventDefault()
+          // If user is trying to delete the prefix, clear everything
+          const digits = extractDigits(displayValue)
+          if (digits.length <= 1) {
+            setDisplayValue("")
+            onChange?.("")
+            e.preventDefault()
+          } else {
+            e.preventDefault()
+          }
         }
       }
     }
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true)
-      const prefix = getPrefix()
       
-      // Position cursor after prefix if empty or at start
-      setTimeout(() => {
-        const input = e.currentTarget
-        if (input.selectionStart !== null && input.selectionStart < prefix.length) {
-          input.setSelectionRange(prefix.length, prefix.length)
-        }
-      }, 0)
+      // Only position cursor if there's already content
+      if (displayValue) {
+        const prefix = getPrefix()
+        setTimeout(() => {
+          const input = e.currentTarget
+          if (input.selectionStart !== null && input.selectionStart < prefix.length) {
+            input.setSelectionRange(prefix.length, prefix.length)
+          }
+        }, 0)
+      }
       
       onFocus?.(e)
     }
@@ -152,19 +186,11 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
       onBlur?.(e)
     }
 
-    // Initialize display value if empty
-    React.useEffect(() => {
-      if (!displayValue && isFocused) {
-        const initial = formatDisplayValue("")
-        setDisplayValue(initial)
-        onChange?.(initial)
-      }
-    }, [isFocused])
-
     return (
       <input
         ref={inputRef}
         type="text"
+        placeholder={country === 'CH' ? 'CHE-123.456.789 TVA' : 'FR12345678901'}
         className={cn(
           "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           className

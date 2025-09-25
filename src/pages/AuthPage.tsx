@@ -474,12 +474,12 @@ export default function AuthPage() {
                                   placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
                                 />
                               </FormControl>
-                              <FormDescription>
-                                {country === 'CH' 
-                                  ? "Saisissez uniquement les chiffres, le format sera appliqué automatiquement"
-                                  : "Saisissez uniquement les 11 chiffres, FR sera ajouté automatiquement"
-                                }
-                              </FormDescription>
+                               <FormDescription>
+                                 {country === 'CH' 
+                                   ? "Numéro de TVA suisse" 
+                                   : "Numéro de TVA français"
+                                 }
+                               </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
