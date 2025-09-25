@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -13,14 +14,67 @@ interface ShareLinkDialogProps {
 
 export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitle }: ShareLinkDialogProps) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const fallbackCopyTextToClipboard = (text: string): boolean => {
+    if (!document.execCommand) {
+      return false;
+    }
+
+    // Create a temporary textarea element
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    textArea.style.opacity = "0";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return successful;
+    } catch (err) {
+      document.body.removeChild(textArea);
+      return false;
+    }
+  };
 
   const handleCopyLink = async () => {
+    let copySuccessful = false;
+    
     try {
-      await navigator.clipboard.writeText(shareLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // First try the modern Clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareLink);
+        copySuccessful = true;
+      } else {
+        // Fallback to execCommand method
+        copySuccessful = fallbackCopyTextToClipboard(shareLink);
+      }
+      
+      if (copySuccessful) {
+        setCopied(true);
+        toast.success('Lien copié dans le presse-papier !');
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        throw new Error('Copy methods failed');
+      }
     } catch (error) {
       console.error('Failed to copy link:', error);
+      
+      // Select the text in the input for manual copying
+      if (inputRef.current) {
+        inputRef.current.select();
+        inputRef.current.setSelectionRange(0, shareLink.length);
+      }
+      
+      toast.error('Impossible de copier automatiquement. Le texte a été sélectionné pour vous.');
     }
   };
 
@@ -51,6 +105,7 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
             <label className="text-sm font-medium">Lien de paiement</label>
             <div className="flex gap-2">
               <Input
+                ref={inputRef}
                 value={shareLink}
                 readOnly
                 className="flex-1"
