@@ -27,6 +27,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const pageHeight = doc.internal.pageSize.height;
   const margin = 15;
   const rightX = pageWidth - margin;
+  const rightColX = pageWidth - 110; // Position de la colonne droite (30mm du bord droit)
+  const rightColWidth = 80; // Largeur de la colonne droite
   let yPosition = 20;
   
   // Couleurs
@@ -49,10 +51,6 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('RIVVLOCK', margin, yPosition);
   doc.text('FACTURE', rightX, yPosition, { align: 'right' });
   
-  // Calculate the left edge of "FACTURE" for alignment anchor
-  const factureLeftX = rightX - doc.getTextWidth('FACTURE');
-  const rightColWidth = rightX - factureLeftX;
-  
   yPosition += 8;
   
   // Sous-informations RIVVLOCK (à gauche)
@@ -61,9 +59,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('Plateforme d\'escrow sécurisée', margin, yPosition);
   doc.text('www.rivvlock.com', margin, yPosition + 4);
   
-  // Informations facture (à droite) - aligned to FACTURE left edge
-  doc.text(`N° ${invoiceNumber}`, factureLeftX, yPosition, { align: 'left' });
-  doc.text(`Date: ${invoiceDate}`, factureLeftX, yPosition + 4, { align: 'left' });
+  // Informations facture (à droite) - aligned to new right column
+  doc.text(`N° ${invoiceNumber}`, rightColX, yPosition, { align: 'left' });
+  doc.text(`Date: ${invoiceDate}`, rightColX, yPosition + 4, { align: 'left' });
   
   yPosition += 15;
   
@@ -83,7 +81,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('ÉMETTEUR', margin, yPosition);
-  doc.text('CLIENT', factureLeftX, yPosition, { align: 'left' });
+  doc.text('CLIENT', rightColX, yPosition, { align: 'left' });
   
   yPosition += 8;
   
@@ -129,8 +127,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
   }
   
-  // Informations client (colonne droite) - aligned to FACTURE left edge
-  const clientX = factureLeftX;
+  // Informations client (colonne droite) - aligned to new right column
+  const clientX = rightColX;
   let rightColumnY = yPosition;
   
   doc.setFont('helvetica', 'bold');
@@ -231,10 +229,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   yPosition += contentHeight + 15;
   
-  // === CALCULS FINANCIERS (alignés à la colonne CLIENT) ===
+  // === CALCULS FINANCIERS (structure en deux colonnes dans la zone droite) ===
   
-  const labelX = factureLeftX;
-  const valueX = rightX;
+  const labelX = rightColX;
+  const valueX = rightColX + 60; // 60mm pour séparer les colonnes label/valeur
   
   // Total HT
   doc.setFontSize(9);
@@ -243,20 +241,20 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('Total HT:', labelX, yPosition, { align: 'left' });
   doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
-  yPosition += 6;
+  yPosition += 8;
   
   // Frais RivvLock
   doc.text('Frais RivvLock (5%):', labelX, yPosition, { align: 'left' });
   doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
-  yPosition += 6;
+  yPosition += 8;
   
   // À payer (montant total que le client paye)
   doc.setFont('helvetica', 'bold');
   doc.text('À payer:', labelX, yPosition, { align: 'left' });
   doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
-  yPosition += 8;
+  yPosition += 10;
   
   // Net reçu (montant reçu par le vendeur après frais)
   doc.setFont('helvetica', 'normal');
