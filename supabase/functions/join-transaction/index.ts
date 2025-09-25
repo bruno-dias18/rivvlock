@@ -110,9 +110,15 @@ serve(async (req) => {
       `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
       'Acheteur';
 
-    // Calculate payment deadline (24h before service date)
+    // Calculate payment deadline (24h before service date and time)
     const serviceDate = new Date(transaction.service_date);
     const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+    
+    console.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
+      serviceDate: serviceDate.toISOString(),
+      paymentDeadline: paymentDeadline.toISOString(),
+      timeDiff: (serviceDate.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60)
+    });
     
     // Validate that payment deadline is in the future
     const now = new Date();
