@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { copyToClipboard } from '@/lib/copyUtils';
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -16,59 +17,30 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fallbackCopyTextToClipboard = (text: string): boolean => {
-    if (!document.execCommand) {
-      return false;
-    }
-
-    // Create a temporary textarea element
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    
-    // Avoid scrolling to bottom
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    textArea.style.opacity = "0";
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-      const successful = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      return successful;
-    } catch (err) {
-      document.body.removeChild(textArea);
-      return false;
-    }
-  };
-
   const handleCopyLink = async () => {
-    let copySuccessful = false;
-    
     try {
-      // First try the modern Clipboard API
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(shareLink);
-        copySuccessful = true;
-      } else {
-        // Fallback to execCommand method
-        copySuccessful = fallbackCopyTextToClipboard(shareLink);
-      }
+      const result = await copyToClipboard(shareLink, { 
+        inputRef, 
+        fallbackToPrompt: true 
+      });
       
-      if (copySuccessful) {
+      if (result.success) {
         setCopied(true);
-        toast.success('Lien copié dans le presse-papier !');
+        
+        if (result.method === 'prompt') {
+          toast.success('Lien prêt à copier ! Utilisez Ctrl+C ou Cmd+C');
+        } else {
+          toast.success('Lien copié dans le presse-papier !');
+        }
+        
         setTimeout(() => setCopied(false), 2000);
       } else {
-        throw new Error('Copy methods failed');
+        throw new Error(result.error || 'Échec de la copie');
       }
     } catch (error) {
       console.error('Failed to copy link:', error);
       
-      // Select the text in the input for manual copying
+      // Fallback: select text for manual copy
       if (inputRef.current) {
         inputRef.current.select();
         inputRef.current.setSelectionRange(0, shareLink.length);

@@ -19,6 +19,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import CompleteTransactionButton from '@/components/CompleteTransactionButton';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
+import { copyToClipboard } from '@/lib/copyUtils';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -72,9 +73,23 @@ export default function TransactionsPage() {
   const completedTransactions = transactions.filter(t => t.status === 'validated');
   const disputedTransactions = transactions.filter(t => t.status === 'disputed');
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Lien copié dans le presse-papier !');
+  const handleCopyLink = async (text: string) => {
+    try {
+      const result = await copyToClipboard(text, { fallbackToPrompt: true });
+      
+      if (result.success) {
+        if (result.method === 'prompt') {
+          toast.success('Lien prêt à copier ! Utilisez Ctrl+C ou Cmd+C');
+        } else {
+          toast.success('Lien copié dans le presse-papier !');
+        }
+      } else {
+        toast.error('Impossible de copier le lien automatiquement');
+      }
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+      toast.error('Erreur lors de la copie du lien');
+    }
   };
 
   const handlePayment = async (transaction: any) => {
@@ -255,7 +270,7 @@ export default function TransactionsPage() {
                 <Button
                   variant="outline"
                   size={isMobile ? "default" : "sm"}
-                  onClick={() => copyToClipboard(`${window.location.origin}/join/${transaction.shared_link_token}`)}
+                  onClick={() => handleCopyLink(`${window.location.origin}/join/${transaction.shared_link_token}`)}
                   className={isMobile ? "justify-center" : ""}
                 >
                   <Copy className="h-4 w-4 mr-2" />
