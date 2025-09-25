@@ -368,5 +368,42 @@
     "french": "Français",
     "english": "English",
     "german": "Deutsch"
+  },
+  "language": {
+    "selectLanguage": "Select language",
+    "french": "French",
+    "english": "English",
+    "german": "German"
+  },
+  "activity": {
+    "recentActivity": "Recent Activity",
+    "viewAll": "View All",
+    "noRecentActivity": "No recent activity",
+    "configurationInProgress": "Configuration in progress..."
+  },
+  "bankAccount": {
+    "title": "Bank Details",
+    "description": "Set up your bank details to receive payments",
+    "setupRequired": "You need to set up a Stripe Connect account to receive payments. This step is necessary for money to be automatically transferred to your bank account after each completed transaction.",
+    "setupButton": "Set up my bank details",
+    "completeOnboarding": "Complete setup",
+    "processingInProgress": "Setup in progress...",
+    "onboardingOpened": "Stripe registration process opened in a new tab",
+    "statusUpdated": "Account status updated",
+    "createError": "Error creating Stripe account",
+    "accountStatus": "Account status",
+    "refresh": "Refresh",
+    "detailsSubmitted": "Information submitted",
+    "chargesEnabled": "Payments enabled",
+    "payoutsEnabled": "Payouts enabled",
+    "complete": "✓ Complete",
+    "incomplete": "⚠ Incomplete",
+    "enabled": "✓ Enabled",
+    "disabled": "⚠ Disabled",
+    "active": "Active - Ready to receive payments",
+    "pending": "Pending configuration",
+    "onboardingRequiredAlert": "Your account requires additional configuration to receive payments. Click the button below to complete the setup.",
+    "setupCompleteAlert": "✅ Your account is set up! Funds will be automatically transferred to your bank account after each completed transaction.",
+    "commissionNote": "A 5% commission is charged on each transaction to cover platform and payment processing fees."
   }
 }

@@ -373,8 +373,39 @@
   },
   "language": {
     "selectLanguage": "Sprache auswählen",
-    "french": "Français",
-    "english": "English",
+    "french": "Französisch",
+    "english": "Englisch",
     "german": "Deutsch"
+  },
+  "activity": {
+    "recentActivity": "Kürzliche Aktivitäten",
+    "viewAll": "Alle anzeigen",
+    "noRecentActivity": "Keine kürzlichen Aktivitäten",
+    "configurationInProgress": "Konfiguration läuft..."
+  },
+  "bankAccount": {
+    "title": "Bankverbindung",
+    "description": "Richten Sie Ihre Bankverbindung ein, um Zahlungen zu erhalten",
+    "setupRequired": "Sie müssen ein Stripe Connect-Konto einrichten, um Zahlungen zu erhalten. Dieser Schritt ist erforderlich, damit Geld nach jeder abgeschlossenen Transaktion automatisch auf Ihr Bankkonto überwiesen wird.",
+    "setupButton": "Meine Bankverbindung einrichten",
+    "completeOnboarding": "Setup abschließen",
+    "processingInProgress": "Setup läuft...",
+    "onboardingOpened": "Stripe-Registrierungsprozess in neuem Tab geöffnet",
+    "statusUpdated": "Kontostatus aktualisiert",
+    "createError": "Fehler beim Erstellen des Stripe-Kontos",
+    "accountStatus": "Kontostatus",
+    "refresh": "Aktualisieren",
+    "detailsSubmitted": "Informationen übermittelt",
+    "chargesEnabled": "Zahlungen aktiviert",
+    "payoutsEnabled": "Auszahlungen aktiviert",
+    "complete": "✓ Vollständig",
+    "incomplete": "⚠ Unvollständig",
+    "enabled": "✓ Aktiviert",
+    "disabled": "⚠ Deaktiviert",
+    "active": "Aktiv - Bereit für Zahlungen",
+    "pending": "Konfiguration ausstehend",
+    "onboardingRequiredAlert": "Ihr Konto benötigt zusätzliche Konfiguration, um Zahlungen zu erhalten. Klicken Sie auf die Schaltfläche unten, um die Einrichtung abzuschließen.",
+    "setupCompleteAlert": "✅ Ihr Konto ist eingerichtet! Gelder werden nach jeder abgeschlossenen Transaktion automatisch auf Ihr Bankkonto überwiesen.",
+    "commissionNote": "Für jede Transaktion wird eine Provision von 5% erhoben, um Plattform- und Zahlungsabwicklungsgebühren zu decken."
   }
 }

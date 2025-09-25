@@ -4,7 +4,7 @@ import { useRecentActivity } from '@/hooks/useRecentActivity';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS, de } from 'date-fns/locale';
 import { useEffect } from 'react';
 import { 
   Activity,
@@ -80,7 +80,16 @@ const getActivityColor = (activityType: string) => {
 export function RecentActivityCard() {
   const { data: activities, isLoading, refetch } = useRecentActivity();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Get locale for date formatting
+  const getDateLocale = () => {
+    switch (i18n.language) {
+      case 'en': return enUS;
+      case 'de': return de;
+      default: return fr;
+    }
+  };
 
   // Auto-refresh activity data every 15 seconds
   useEffect(() => {
@@ -98,14 +107,14 @@ export function RecentActivityCard() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-base font-medium">Activité récente</CardTitle>
+        <CardTitle className="text-base font-medium">{t('activity.recentActivity')}</CardTitle>
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={handleViewAll}
           className="text-muted-foreground hover:text-foreground"
         >
-          Voir tout <ArrowRight className="ml-1 h-4 w-4" />
+          {t('activity.viewAll')} <ArrowRight className="ml-1 h-4 w-4" />
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -140,12 +149,12 @@ export function RecentActivityCard() {
                       {activity.description}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(activity.created_at), { 
-                      addSuffix: true, 
-                      locale: fr 
-                    })}
-                  </p>
+                   <p className="text-xs text-muted-foreground">
+                     {formatDistanceToNow(new Date(activity.created_at), { 
+                       addSuffix: true, 
+                       locale: getDateLocale() 
+                     })}
+                   </p>
                 </div>
               </div>
             );
@@ -153,7 +162,7 @@ export function RecentActivityCard() {
         ) : (
           <div className="text-center py-6 text-muted-foreground">
             <Activity className="mx-auto h-8 w-8 mb-2 opacity-50" />
-            <p className="text-sm">Aucune activité récente</p>
+            <p className="text-sm">{t('activity.noRecentActivity')}</p>
           </div>
         )}
       </CardContent>

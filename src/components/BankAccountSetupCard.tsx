@@ -6,11 +6,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useStripeAccount, useCreateStripeAccount } from '@/hooks/useStripeAccount';
 import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch } = useStripeAccount();
   const createAccount = useCreateStripeAccount();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { t } = useTranslation();
 
   const handleCreateAccount = async () => {
     try {
@@ -20,11 +22,11 @@ export default function BankAccountSetupCard() {
       if (result.onboarding_url) {
         // Open Stripe onboarding in new tab
         window.open(result.onboarding_url, '_blank');
-        toast.success('Processus d\'enregistrement Stripe ouvert dans un nouvel onglet');
+        toast.success(t('bankAccount.onboardingOpened'));
       }
     } catch (error) {
       console.error('Error creating Stripe account:', error);
-      toast.error('Erreur lors de la création du compte Stripe');
+      toast.error(t('bankAccount.createError'));
     } finally {
       setIsProcessing(false);
     }
@@ -33,13 +35,13 @@ export default function BankAccountSetupCard() {
   const handleCompleteOnboarding = () => {
     if (stripeAccount?.onboarding_url) {
       window.open(stripeAccount.onboarding_url, '_blank');
-      toast.info('Processus d\'enregistrement Stripe ouvert dans un nouvel onglet');
+      toast.info(t('bankAccount.onboardingOpened'));
     }
   };
 
   const handleRefreshStatus = () => {
     refetch();
-    toast.info('Statut du compte mis à jour');
+    toast.info(t('bankAccount.statusUpdated'));
   };
 
   if (isLoading) {
@@ -48,10 +50,10 @@ export default function BankAccountSetupCard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            Coordonnées bancaires
+            {t('bankAccount.title')}
           </CardTitle>
           <CardDescription>
-            Configuration en cours...
+            {t('activity.configurationInProgress')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -69,10 +71,10 @@ export default function BankAccountSetupCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          Coordonnées bancaires
+          {t('bankAccount.title')}
         </CardTitle>
         <CardDescription>
-          Configurez vos coordonnées bancaires pour recevoir les paiements
+          {t('bankAccount.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -82,9 +84,7 @@ export default function BankAccountSetupCard() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Vous devez configurer un compte Stripe Connect pour recevoir les paiements.
-                Cette étape est nécessaire pour que l'argent soit automatiquement transféré
-                sur votre compte bancaire après chaque transaction complétée.
+                {t('bankAccount.setupRequired')}
               </AlertDescription>
             </Alert>
             
@@ -96,12 +96,12 @@ export default function BankAccountSetupCard() {
               {isProcessing ? (
                 <>
                   <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Configuration en cours...
+                  {t('bankAccount.processingInProgress')}
                 </>
               ) : (
                 <>
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Configurer mes coordonnées bancaires
+                  {t('bankAccount.setupButton')}
                 </>
               )}
             </Button>
@@ -111,17 +111,17 @@ export default function BankAccountSetupCard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium">Statut du compte</label>
+                <label className="text-sm font-medium">{t('bankAccount.accountStatus')}</label>
                 <div className="mt-1">
                   {stripeAccount.account_status === 'active' ? (
                     <Badge variant="default" className="bg-green-500">
                       <CheckCircle className="h-3 w-3 mr-1" />
-                      Actif - Prêt à recevoir des paiements
+                      {t('bankAccount.active')}
                     </Badge>
                   ) : (
                     <Badge variant="secondary">
                       <Clock className="h-3 w-3 mr-1" />
-                      En attente de configuration
+                      {t('bankAccount.pending')}
                     </Badge>
                   )}
                 </div>
@@ -131,27 +131,27 @@ export default function BankAccountSetupCard() {
                 size="sm"
                 onClick={handleRefreshStatus}
               >
-                Actualiser
+                {t('bankAccount.refresh')}
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <label className="font-medium">Informations soumises</label>
+                <label className="font-medium">{t('bankAccount.detailsSubmitted')}</label>
                 <p className={stripeAccount.details_submitted ? "text-green-600" : "text-orange-600"}>
-                  {stripeAccount.details_submitted ? "✓ Complètes" : "⚠ Incomplètes"}
+                  {stripeAccount.details_submitted ? t('bankAccount.complete') : t('bankAccount.incomplete')}
                 </p>
               </div>
               <div>
-                <label className="font-medium">Paiements activés</label>
+                <label className="font-medium">{t('bankAccount.chargesEnabled')}</label>
                 <p className={stripeAccount.charges_enabled ? "text-green-600" : "text-orange-600"}>
-                  {stripeAccount.charges_enabled ? "✓ Activés" : "⚠ Désactivés"}
+                  {stripeAccount.charges_enabled ? t('bankAccount.enabled') : t('bankAccount.disabled')}
                 </p>
               </div>
               <div>
-                <label className="font-medium">Virements activés</label>
+                <label className="font-medium">{t('bankAccount.payoutsEnabled')}</label>
                 <p className={stripeAccount.payouts_enabled ? "text-green-600" : "text-orange-600"}>
-                  {stripeAccount.payouts_enabled ? "✓ Activés" : "⚠ Désactivés"}
+                  {stripeAccount.payouts_enabled ? t('bankAccount.enabled') : t('bankAccount.disabled')}
                 </p>
               </div>
             </div>
@@ -160,9 +160,7 @@ export default function BankAccountSetupCard() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Votre compte nécessite une configuration supplémentaire pour pouvoir 
-                  recevoir des paiements. Cliquez sur le bouton ci-dessous pour terminer 
-                  la configuration.
+                  {t('bankAccount.onboardingRequiredAlert')}
                 </AlertDescription>
               </Alert>
             )}
@@ -174,14 +172,13 @@ export default function BankAccountSetupCard() {
                 variant="default"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Terminer la configuration
+                {t('bankAccount.completeOnboarding')}
               </Button>
             ) : (
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  ✅ Votre compte est configuré ! Les fonds seront automatiquement 
-                  transférés sur votre compte bancaire après chaque transaction complétée.
+                  {t('bankAccount.setupCompleteAlert')}
                 </AlertDescription>
               </Alert>
             )}
@@ -190,8 +187,7 @@ export default function BankAccountSetupCard() {
 
         <div className="pt-2 border-t text-xs text-muted-foreground">
           <p>
-            <strong>Note :</strong> Une commission de 5% est prélevée sur chaque transaction 
-            pour couvrir les frais de la plateforme et de traitement des paiements.
+            <strong>Note :</strong> {t('bankAccount.commissionNote')}
           </p>
         </div>
       </CardContent>
