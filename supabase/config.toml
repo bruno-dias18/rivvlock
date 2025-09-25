@@ -103,6 +103,12 @@ verify_jwt = false
 [functions.create-dispute]
 verify_jwt = true
 
+[functions.request-date-change]
+verify_jwt = true
+
+[functions.respond-to-date-change]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

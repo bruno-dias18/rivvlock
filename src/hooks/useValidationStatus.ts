@@ -33,6 +33,19 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       };
     }
 
+    // Check for pending date change first
+    if (transaction.date_change_status === 'pending_approval') {
+      return {
+        phase: 'pending',
+        isValidationDeadlineActive: false,
+        canFinalize: false,
+        canDispute: false,
+        canManuallyFinalize: false,
+        displayLabel: 'Modification de date en attente',
+        displayColor: 'secondary'
+      };
+    }
+
     const now = new Date();
     const serviceDate = transaction.service_date ? new Date(transaction.service_date) : null;
     const validationDeadline = transaction.validation_deadline ? new Date(transaction.validation_deadline) : null;

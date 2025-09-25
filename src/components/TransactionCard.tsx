@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, CreditCard, CheckCircle2, Clock, Download } from 'lucide-react';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
+import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
 
 interface TransactionCardProps {
   transaction: any;
@@ -34,6 +36,7 @@ export function TransactionCard({
 }: TransactionCardProps) {
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
+  const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   
   const getUserRole = (transaction: any) => {
     if (transaction.user_id === user?.id) return 'seller';
@@ -47,7 +50,15 @@ export function TransactionCard({
     : transaction.seller_display_name || 'Vendeur';
 
   return (
-    <Card key={transaction.id} className="mb-4">
+    <>
+      {/* Date Change Approval Card - Show for buyers when there's a pending change */}
+      {userRole === 'buyer' && transaction.date_change_status === 'pending_approval' && (
+        <div className="mb-4">
+          <DateChangeApprovalCard transaction={transaction} onResponse={onRefetch} />
+        </div>
+      )}
+
+      <Card key={transaction.id} className="mb-4">
       <CardHeader className="pb-3">
         <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
           <div className="flex-1">
@@ -71,7 +82,15 @@ export function TransactionCard({
           <div>{userRole === 'seller' ? 'Client' : 'Vendeur'}: {displayName}</div>
           <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
           {transaction.service_date && (
-            <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+              {transaction.date_change_status === 'pending_approval' && userRole === 'seller' && (
+                <Badge variant="outline" className="text-orange-600 border-orange-300">
+                  Modification en attente
+                </Badge>
+              )}
+            </div>
           )}
           
           {/* Payment countdown for buyers on pending transactions */}
@@ -149,6 +168,19 @@ export function TransactionCard({
                 Valider
               </Button>
             )}
+
+            {userRole === 'seller' && (
+              <Button
+                variant="outline"
+                size={isMobile ? "default" : "sm"}
+                onClick={() => setIsDateChangeDialogOpen(true)}
+                className={isMobile ? "justify-center" : ""}
+                disabled={transaction.date_change_count >= 2}
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                {isMobile ? 'Modifier date' : 'Modifier la date'}
+              </Button>
+            )}
             
             {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
               <ValidationActionButtons
@@ -182,6 +214,17 @@ export function TransactionCard({
           </div>
         )}
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Date Change Request Dialog */}
+      <DateChangeRequestDialog
+        isOpen={isDateChangeDialogOpen}
+        onClose={() => setIsDateChangeDialogOpen(false)}
+        transactionId={transaction.id}
+        currentDate={transaction.service_date}
+        maxChangesReached={transaction.date_change_count >= 2}
+        onSuccess={onRefetch}
+      />
+    </>
   );
 }

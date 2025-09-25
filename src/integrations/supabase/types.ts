@@ -246,6 +246,10 @@ export type Database = {
           buyer_validated: boolean | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
+          date_change_count: number | null
+          date_change_message: string | null
+          date_change_requested_at: string | null
+          date_change_status: string | null
           description: string | null
           funds_released: boolean | null
           funds_released_at: string | null
@@ -254,6 +258,7 @@ export type Database = {
           payment_deadline: string | null
           payment_method: string | null
           price: number
+          proposed_service_date: string | null
           seller_display_name: string | null
           seller_validated: boolean | null
           service_date: string | null
@@ -271,6 +276,10 @@ export type Database = {
           buyer_validated?: boolean | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
+          date_change_count?: number | null
+          date_change_message?: string | null
+          date_change_requested_at?: string | null
+          date_change_status?: string | null
           description?: string | null
           funds_released?: boolean | null
           funds_released_at?: string | null
@@ -279,6 +288,7 @@ export type Database = {
           payment_deadline?: string | null
           payment_method?: string | null
           price: number
+          proposed_service_date?: string | null
           seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
@@ -296,6 +306,10 @@ export type Database = {
           buyer_validated?: boolean | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
+          date_change_count?: number | null
+          date_change_message?: string | null
+          date_change_requested_at?: string | null
+          date_change_status?: string | null
           description?: string | null
           funds_released?: boolean | null
           funds_released_at?: string | null
@@ -304,6 +318,7 @@ export type Database = {
           payment_deadline?: string | null
           payment_method?: string | null
           price?: number
+          proposed_service_date?: string | null
           seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
