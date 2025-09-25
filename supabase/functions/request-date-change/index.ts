@@ -45,12 +45,47 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, userId: user.id });
 
-    // Verify the user is the seller of this transaction
+    // First, check if the transaction exists at all
+    const { data: transactionExists, error: existsError } = await supabase
+      .from('transactions')
+      .select('id, user_id, buyer_id, status, date_change_count')
+      .eq('id', transactionId)
+      .single();
+
+    if (existsError) {
+      console.error('[REQUEST-DATE-CHANGE] Transaction lookup error:', existsError);
+      return new Response(JSON.stringify({ error: 'Transaction not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    console.log('[REQUEST-DATE-CHANGE] Transaction found:', { 
+      transactionId: transactionExists.id, 
+      sellerId: transactionExists.user_id, 
+      buyerId: transactionExists.buyer_id,
+      requesterId: user.id,
+      status: transactionExists.status,
+      changeCount: transactionExists.date_change_count 
+    });
+
+    // Check if the user is the seller of this transaction
+    if (transactionExists.user_id !== user.id) {
+      console.error('[REQUEST-DATE-CHANGE] User not authorized - not the seller:', { 
+        sellerId: transactionExists.user_id, 
+        requesterId: user.id 
+      });
+      return new Response(JSON.stringify({ error: 'Not authorized - only the seller can request date changes' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
+    // Now get the full transaction data
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
       .select('*')
       .eq('id', transactionId)
-      .eq('user_id', user.id)
       .single();
 
     if (transactionError || !transaction) {

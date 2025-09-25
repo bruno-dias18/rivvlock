@@ -62,7 +62,21 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
       setProposedDate(currentDate ? new Date(currentDate) : undefined);
     } catch (error: any) {
       console.error('Error requesting date change:', error);
-      toast.error(error.message || 'Erreur lors de la demande de modification');
+      console.log('Full error details:', error);
+      
+      let errorMessage = 'Erreur lors de la demande de modification';
+      
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        errorMessage = 'Transaction introuvable';
+      } else if (error.message?.includes('403') || error.message?.includes('Not authorized')) {
+        errorMessage = 'Non autorisé - seul le vendeur peut modifier la date';
+      } else if (error.message?.includes('400') || error.message?.includes('Maximum number')) {
+        errorMessage = 'Limite de modifications atteinte (2 maximum)';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
