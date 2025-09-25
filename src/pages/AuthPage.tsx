@@ -262,9 +262,9 @@ export default function AuthPage() {
                           {...field}
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
-                          <option value="individual">Particulier</option>
-                          <option value="company">Société</option>
-                          <option value="independent">Indépendant</option>
+                          <option value="individual">{t('user.individual')}</option>
+                          <option value="company">{t('user.company')}</option>
+                          <option value="independent">{t('user.independent')}</option>
                         </select>
                       </FormControl>
                       <FormMessage />
@@ -279,9 +279,9 @@ export default function AuthPage() {
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Prénom *</FormLabel>
+                        <FormLabel>{t('common.firstName')} *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Votre prénom" />
+                          <Input {...field} placeholder={t('auth.firstNamePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -292,9 +292,9 @@ export default function AuthPage() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nom *</FormLabel>
+                        <FormLabel>{t('common.lastName')} *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Votre nom" />
+                          <Input {...field} placeholder={t('auth.lastNamePlaceholder')} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -310,9 +310,9 @@ export default function AuthPage() {
                       name="companyName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nom de l'entreprise *</FormLabel>
+                          <FormLabel>{t('user.companyName')} *</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Nom de votre entreprise" />
+                            <Input {...field} placeholder={t('auth.companyNamePlaceholder')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -323,9 +323,9 @@ export default function AuthPage() {
                       name="companyAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Adresse du siège social *</FormLabel>
+                          <FormLabel>{t('profile.headquarters')} *</FormLabel>
                           <FormControl>
-                            <Textarea {...field} rows={2} placeholder="Adresse complète du siège social" />
+                            <Textarea {...field} rows={2} placeholder={t('auth.headquartersPlaceholder')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -339,9 +339,9 @@ export default function AuthPage() {
                         name="postalCode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Code postal *</FormLabel>
+                            <FormLabel>{t('common.postalCode')} *</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Ex: 75001" />
+                              <Input {...field} placeholder={t('auth.postalCodePlaceholder')} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -352,9 +352,9 @@ export default function AuthPage() {
                         name="city"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Ville *</FormLabel>
+                            <FormLabel>{t('common.city')} *</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Ex: Paris" />
+                              <Input {...field} placeholder={t('auth.cityPlaceholder')} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -370,7 +370,7 @@ export default function AuthPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Téléphone</FormLabel>
+                      <FormLabel>{t('common.phone')}</FormLabel>
                       <FormControl>
                         <Input {...field} type="tel" placeholder="+33 1 23 45 67 89" />
                       </FormControl>
@@ -386,12 +386,12 @@ export default function AuthPage() {
                     name="siretUid"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Numéro SIRET *</FormLabel>
+                        <FormLabel>{t('user.siret')} *</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="12345678901234" />
                         </FormControl>
                         <FormDescription>
-                          Format : 14 chiffres (espaces et tirets autorisés)
+                          {t('auth.siretFormat')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -405,12 +405,12 @@ export default function AuthPage() {
                     name="siretUid"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Numéro UID *</FormLabel>
+                        <FormLabel>{t('user.uid')} *</FormLabel>
                         <FormControl>
                           <MaskedUidInput {...field} />
                         </FormControl>
                         <FormDescription>
-                          Format : CHE-XXX.XXX.XXX
+                          {t('auth.uidFormat')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -424,12 +424,12 @@ export default function AuthPage() {
                     name="avsNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Numéro AVS *</FormLabel>
+                        <FormLabel>{t('user.avs')} *</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="756.1234.5678.90" />
                         </FormControl>
                         <FormDescription>
-                          Format : 756.XXXX.XXXX.XX
+                          {t('auth.avsFormat')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -455,7 +455,7 @@ export default function AuthPage() {
                           </FormControl>
                           <div className="grid gap-1.5 leading-none">
                             <FormLabel className="text-sm font-normal">
-                              {userType === 'company' ? 'Assujetti à la TVA' : 'Indépendant assujetti à la TVA'}
+                              {userType === 'company' ? t('profile.subjectToVat') : t('auth.independentSubjectToVat')}
                             </FormLabel>
                           </div>
                           <FormMessage />
@@ -471,22 +471,22 @@ export default function AuthPage() {
                           render={({ field }) => (
                             <FormItem>
                                <FormLabel>
-                                 Numéro de TVA *
-                               </FormLabel>
-                              <FormControl>
-                                <MaskedVatInput 
-                                  country={country}
-                                  value={field.value}
-                                  onChange={field.onChange}
-                                  placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
-                                />
-                              </FormControl>
-                               <FormDescription>
-                                 {country === 'CH' 
-                                   ? "Numéro de TVA suisse" 
-                                   : "Numéro de TVA français"
-                                 }
-                               </FormDescription>
+                                  {t('user.vat')} *
+                                </FormLabel>
+                               <FormControl>
+                                 <MaskedVatInput 
+                                   country={country}
+                                   value={field.value}
+                                   onChange={field.onChange}
+                                   placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'}
+                                 />
+                               </FormControl>
+                                <FormDescription>
+                                  {country === 'CH' 
+                                    ? t('auth.vatNumberSwiss')
+                                    : t('auth.vatNumberFrench')
+                                  }
+                                </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -497,7 +497,7 @@ export default function AuthPage() {
                           name="vatRate"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Taux de TVA (%)</FormLabel>
+                              <FormLabel>{t('profile.vatRate')}</FormLabel>
                               <FormControl>
                                 <Input 
                                   {...field} 
@@ -529,9 +529,9 @@ export default function AuthPage() {
                       </FormControl>
                       <div className="grid gap-1.5 leading-none">
                         <FormLabel className="text-sm font-normal">
-                          J'accepte les{' '}
+                          {t('auth.iAcceptThe')}{' '}
                           <a href="/terms" className="text-primary hover:underline">
-                            conditions générales d'utilisation
+                            {t('auth.termsOfUse')}
                           </a>
                         </FormLabel>
                       </div>
@@ -548,9 +548,9 @@ export default function AuthPage() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email *</FormLabel>
+                  <FormLabel>{t('common.email')} *</FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" placeholder="votre@email.com" />
+                    <Input {...field} type="email" placeholder={t('auth.emailPlaceholder')} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -563,7 +563,7 @@ export default function AuthPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {isResetPassword ? 'Nouveau mot de passe *' : 'Mot de passe *'}
+                    {isResetPassword ? t('auth.newPassword') + ' *' : t('common.password') + ' *'}
                   </FormLabel>
                   <FormControl>
                     <Input {...field} type="password" />
@@ -579,7 +579,7 @@ export default function AuthPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirmer le mot de passe *</FormLabel>
+                    <FormLabel>{t('auth.confirmPassword')} *</FormLabel>
                     <FormControl>
                       <Input {...field} type="password" />
                     </FormControl>
@@ -595,10 +595,10 @@ export default function AuthPage() {
                 className="w-full"
                 disabled={loading}
               >
-                {loading ? 'Chargement...' : (
-                  isResetPassword ? 'Changer le mot de passe' :
-                  isSignUp ? 'Créer mon compte' :
-                  'Se connecter'
+                {loading ? t('common.loading') : (
+                  isResetPassword ? t('auth.changePassword') :
+                  isSignUp ? t('auth.createMyAccount') :
+                  t('common.login')
                 )}
               </Button>
             </div>
@@ -611,7 +611,7 @@ export default function AuthPage() {
                     onClick={() => setIsSignUp(!isSignUp)}
                     className="text-primary hover:underline text-sm"
                   >
-                    {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
+                    {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.noAccount')}
                   </button>
                 </div>
 
@@ -621,7 +621,7 @@ export default function AuthPage() {
                       href="/auth?mode=reset"
                       className="text-muted-foreground hover:text-primary text-sm"
                     >
-                      Mot de passe oublié ?
+                      {t('auth.forgotPassword')}
                     </a>
                   </div>
                 )}
