@@ -210,7 +210,7 @@ export function TransactionCard({
                 className={isMobile ? "justify-center" : ""}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {isMobile ? t('common.invoice') : t('transactions.downloadInvoice')}
+                {t('common.invoice')}
               </Button>
             )}
           </div>
