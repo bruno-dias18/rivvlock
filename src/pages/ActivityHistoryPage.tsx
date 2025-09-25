@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useActivityHistory } from '@/hooks/useActivityHistory';
+import { useIsMobile } from '@/lib/mobileUtils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
@@ -87,6 +88,7 @@ const getActivityColor = (activityType: string) => {
 
 export default function ActivityHistoryPage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [limit] = useState(50);
   const { data: activities, isLoading } = useActivityHistory(limit);
 
@@ -98,22 +100,24 @@ export default function ActivityHistoryPage() {
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+        <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
+          <div className={`flex items-center ${isMobile ? 'space-x-2' : 'space-x-4'}`}>
             <Button
               variant="ghost"
-              size="sm"
+              size={isMobile ? "sm" : "sm"}
               onClick={handleBack}
-              className="text-muted-foreground hover:text-foreground"
+              className={`text-muted-foreground hover:text-foreground ${isMobile ? 'min-w-0' : ''}`}
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Retour
+              <ArrowLeft className={`${isMobile ? 'h-4 w-4' : 'h-4 w-4 mr-1'}`} />
+              {!isMobile && 'Retour'}
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Historique d'activité</h1>
-              <p className="text-muted-foreground">
-                Toutes vos activités récentes
-              </p>
+              <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>Historique d'activité</h1>
+              {!isMobile && (
+                <p className="text-muted-foreground">
+                  Toutes vos activités récentes
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -146,41 +150,40 @@ export default function ActivityHistoryPage() {
                   return (
                     <div
                       key={activity.id}
-                      className="flex items-start space-x-4 p-4 rounded-lg hover:bg-muted/50 transition-colors"
+                      className={`flex items-start ${isMobile ? 'space-x-3 p-3' : 'space-x-4 p-4'} rounded-lg hover:bg-muted/50 transition-colors`}
                     >
                       <div className={`mt-1 ${iconColor} flex-shrink-0`}>
-                        <IconComponent className="h-6 w-6" />
+                        <IconComponent className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className="font-medium text-foreground">
+                            <p className={`font-medium text-foreground ${isMobile ? 'text-sm' : ''}`}>
                               {activity.title}
                             </p>
                             {activity.description && (
-                              <p className="text-sm text-muted-foreground mt-1">
+                              <p className={`text-muted-foreground mt-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                                 {activity.description}
                               </p>
                             )}
-                            <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
+                            <div className={`flex items-center mt-2 text-muted-foreground ${isMobile ? 'text-xs space-x-2' : 'text-xs space-x-4'}`}>
                               <span>
                                 {formatDistanceToNow(new Date(activity.created_at), {
                                   addSuffix: true,
                                   locale: fr
                                 })}
                               </span>
-                              <span>•</span>
-                              <span>
-                                {format(new Date(activity.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
-                              </span>
+                              {!isMobile && (
+                                <>
+                                  <span>•</span>
+                                  <span>
+                                    {format(new Date(activity.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                                  </span>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
-                        {activity.metadata && Object.keys(activity.metadata).length > 0 && (
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            {JSON.stringify(activity.metadata)}
-                          </div>
-                        )}
                       </div>
                     </div>
                   );
