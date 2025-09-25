@@ -301,10 +301,21 @@ export default function TransactionsPage() {
               )}
               
               {transaction.status === 'paid' && userRole === 'buyer' && (
-                <CompleteTransactionButtonWithStatus
-                  transaction={transaction}
-                  onTransferComplete={() => refetch()}
-                />
+                <div className={`flex ${isMobile ? 'flex-col gap-3' : 'gap-2'}`}>
+                  <CompleteTransactionButtonWithStatus
+                    transaction={transaction}
+                    onTransferComplete={() => refetch()}
+                  />
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "default" : "sm"}
+                    onClick={() => setDisputeDialog({ open: true, transaction })}
+                    className={`${isMobile ? "justify-center" : ""} border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground`}
+                  >
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Litige
+                  </Button>
+                </div>
               )}
 
               {transaction.status === 'validated' && (
