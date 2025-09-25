@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle, Download } from 'lucide-react';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, Check, MessageSquare, AlertTriangle, Download } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -395,15 +395,6 @@ export default function TransactionsPage() {
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>Transactions</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
-          <Button 
-            variant="outline" 
-            onClick={handleSyncPayments}
-            size={isMobile ? "default" : "default"}
-            className={isMobile ? "justify-center" : ""}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            {isMobile ? 'Sync' : 'Actualiser'}
-          </Button>
           <Button 
             onClick={() => setIsNewTransactionOpen(true)}
             size={isMobile ? "default" : "default"}
