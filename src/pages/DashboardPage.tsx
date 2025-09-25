@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CreditCard, User, Settings, Clock, Lock, CheckCircle, Plus, RefreshCw, AlertCircle } from 'lucide-react';
+import { Plus, Users, Clock, CheckCircle2, Lock, Settings } from 'lucide-react';
+import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { DashboardLayout } from '@/components/DashboardLayout';
-import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { toast } from 'sonner';
 
 export default function DashboardPage() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
-  
+  const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
+
   const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
+  const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
 
   // Force sync on dashboard load
@@ -55,41 +57,50 @@ export default function DashboardPage() {
   const transactionStatuses = [
     {
       title: 'En attente',
+      description: 'Transactions en attente de paiement',
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.pending || 0),
       icon: Clock,
-      variant: 'outline' as const,
       onClick: () => navigate('/dashboard/transactions?tab=pending'),
-      hasError: countsError,
     },
     {
       title: 'Fonds bloqués',
+      description: 'Transactions avec paiement effectué',
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
       icon: Lock,
-      variant: 'outline' as const,
       onClick: () => navigate('/dashboard/transactions?tab=blocked'),
-      hasError: countsError,
     },
     {
-      title: 'Complétée',
+      title: 'Complétées',
+      description: 'Transactions terminées avec succès',
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.validated || 0),
-      icon: CheckCircle,
-      variant: 'default' as const,
+      icon: CheckCircle2,
       onClick: () => navigate('/dashboard/transactions?tab=completed'),
-      hasError: countsError,
     },
   ];
 
   const quickActions = [
     {
-      title: 'Nouvelle transaction',
-      description: 'Créer une nouvelle transaction d\'escrow',
+      label: 'Nouvelle transaction',
+      description: 'Créer une nouvelle transaction sécurisée',
       icon: Plus,
-      onClick: () => setIsNewTransactionOpen(true),
+      onClick: () => {
+        // Check if Stripe account is properly configured
+        const isStripeReady = stripeAccount?.has_account && 
+                             stripeAccount?.payouts_enabled && 
+                             stripeAccount?.charges_enabled && 
+                             stripeAccount?.details_submitted;
+        
+        if (!isStripeReady) {
+          setIsBankAccountDialogOpen(true);
+        } else {
+          setIsNewTransactionOpen(true);
+        }
+      },
     },
     {
-      title: t('user.profile'),
-      description: 'Mettre à jour vos informations',
-      icon: User,
+      label: 'Mon profil',
+      description: 'Gérer mes informations personnelles',
+      icon: Users,
       onClick: () => navigate('/dashboard/profile'),
     },
   ];
@@ -97,77 +108,75 @@ export default function DashboardPage() {
   return (
     <DashboardLayout onSyncPayments={handleSyncPayments}>
       <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          {t('dashboard.welcome')}
-        </h1>
-        <p className="text-muted-foreground">
-          Bienvenue, {user?.email}
-        </p>
-      </div>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
+        </div>
 
-      {/* Transactions */}
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-4">Transactions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {transactionStatuses.map((status) => (
-            <Button
-              key={status.title}
-              variant={status.variant}
-              className={`h-auto p-4 flex-col items-start gap-2 ${status.hasError ? 'border-destructive' : ''}`}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {transactionStatuses.map((status, index) => (
+            <Card 
+              key={status.title} 
+              className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
               onClick={status.onClick}
             >
-              <div className="flex items-center gap-2">
-                {status.hasError ? (
-                  <AlertCircle className="h-4 w-4 text-destructive" />
-                ) : (
-                  <status.icon className="h-4 w-4" />
-                )}
-                <span className="font-medium">{status.title}</span>
-              </div>
-              <div className={`text-2xl font-bold ${status.hasError ? 'text-destructive' : ''}`}>
-                {status.count}
-              </div>
-              {status.hasError && (
-                <div className="text-xs text-destructive">Erreur de chargement</div>
-              )}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-semibold text-foreground mb-4">Actions rapides</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quickActions.map((action) => (
-            <Card 
-              key={action.title} 
-              className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={action.onClick}
-            >
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <action.icon className="h-5 w-5" />
-                  {action.title}
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  {status.title}
                 </CardTitle>
-                <CardDescription>
-                  {action.description}
-                </CardDescription>
+                <status.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{status.count}</div>
+                <p className="text-xs text-muted-foreground">
+                  {status.description}
+                </p>
+              </CardContent>
             </Card>
           ))}
         </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Actions rapides</CardTitle>
+              <CardDescription>
+                Gérez vos transactions et votre profil
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {quickActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="w-full justify-start h-auto p-4"
+                  onClick={action.onClick}
+                >
+                  <action.icon className="h-5 w-5 mr-3" />
+                  <div className="text-left">
+                    <div className="font-medium">{action.label}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {action.description}
+                    </div>
+                  </div>
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+
+          <RecentActivityCard />
+        </div>
       </div>
 
-      {/* Recent Activity */}
-      <RecentActivityCard />
+      <BankAccountRequiredDialog
+        open={isBankAccountDialogOpen}
+        onOpenChange={setIsBankAccountDialogOpen}
+        onSetupComplete={() => setIsNewTransactionOpen(true)}
+      />
 
-        <NewTransactionDialog 
-          open={isNewTransactionOpen}
-          onOpenChange={setIsNewTransactionOpen}
-        />
-      </div>
+      <NewTransactionDialog
+        open={isNewTransactionOpen}
+        onOpenChange={setIsNewTransactionOpen}
+      />
     </DashboardLayout>
   );
 }

@@ -11,12 +11,14 @@ import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -32,10 +34,12 @@ export default function TransactionsPage() {
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
+  const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
   const [contactDialog, setContactDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
+  const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   
   const activeTab = searchParams.get('tab') || 'pending';
@@ -242,7 +246,19 @@ export default function TransactionsPage() {
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>Transactions</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
           <Button 
-            onClick={() => setIsNewTransactionOpen(true)}
+            onClick={() => {
+              // Check if Stripe account is properly configured
+              const isStripeReady = stripeAccount?.has_account && 
+                                   stripeAccount?.payouts_enabled && 
+                                   stripeAccount?.charges_enabled && 
+                                   stripeAccount?.details_submitted;
+              
+              if (!isStripeReady) {
+                setIsBankAccountDialogOpen(true);
+              } else {
+                setIsNewTransactionOpen(true);
+              }
+            }}
             size={isMobile ? "default" : "default"}
             className={isMobile ? "justify-center" : ""}
           >
@@ -474,6 +490,12 @@ export default function TransactionsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <BankAccountRequiredDialog
+        open={isBankAccountDialogOpen}
+        onOpenChange={setIsBankAccountDialogOpen}
+        onSetupComplete={() => setIsNewTransactionOpen(true)}
+      />
 
       <NewTransactionDialog 
         open={isNewTransactionOpen}
