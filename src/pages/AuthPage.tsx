@@ -308,6 +308,38 @@ export default function AuthPage() {
                       required={isFieldRequired('companyAddress')}
                     />
                   </div>
+                  
+                  {/* Company Postal Code and City */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="postalCode" className="block text-sm font-medium text-foreground">
+                        Code postal *
+                      </label>
+                      <input
+                        id="postalCode"
+                        type="text"
+                        value={postalCode}
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Ex: 75001"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="city" className="block text-sm font-medium text-foreground">
+                        Ville *
+                      </label>
+                      <input
+                        id="city"
+                        type="text"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Ex: Paris"
+                        required
+                      />
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -325,48 +357,6 @@ export default function AuthPage() {
                 />
               </div>
 
-              <div>
-                <label htmlFor="address" className="block text-sm font-medium text-foreground">
-                  Adresse personnelle
-                </label>
-                <textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  rows={2}
-                />
-              </div>
-
-              {/* Postal Code and City */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="postalCode" className="block text-sm font-medium text-foreground">
-                    Code postal
-                  </label>
-                  <input
-                    id="postalCode"
-                    type="text"
-                    value={postalCode}
-                    onChange={(e) => setPostalCode(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="Ex: 75001"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="city" className="block text-sm font-medium text-foreground">
-                    Ville
-                  </label>
-                  <input
-                    id="city"
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="Ex: Paris"
-                  />
-                </div>
-              </div>
 
               {/* Country and User Type Specific Fields */}
               {country === 'FR' && userType === 'company' && (
