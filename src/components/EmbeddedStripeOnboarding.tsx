@@ -24,27 +24,20 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
         setIsLoading(true);
         setError(null);
 
-        // Create onboarding session
-        const { data, error: sessionError } = await supabase.functions.invoke('create-onboarding-session');
+        // Create Stripe account and get onboarding link
+        const { data: accountData, error: accountError } = await supabase.functions.invoke('create-stripe-account');
         
-        if (sessionError) {
-          throw sessionError;
+        if (accountError) {
+          throw accountError;
         }
 
-        if (data.error) {
-          throw new Error(data.error);
+        if (accountData.error) {
+          throw new Error(accountData.error);
         }
 
-        // Create account link through our edge function
-        const { data: linkData, error: linkError } = await supabase.functions.invoke('create-stripe-account');
-        
-        if (linkError) {
-          throw linkError;
-        }
-
-        if (linkData.onboarding_url) {
-          // Redirect to Stripe onboarding
-          window.open(linkData.onboarding_url, '_blank');
+        if (accountData.onboarding_url) {
+          // Open Stripe onboarding in new tab
+          window.open(accountData.onboarding_url, '_blank');
           
           setIsLoading(false);
           
@@ -79,7 +72,7 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
 
     initializeOnboarding();
 
-    // Cleanup - no need for unmounting since we're using redirect
+    // Cleanup
     return () => {};
   }, [onSuccess, onCancel]);
 
