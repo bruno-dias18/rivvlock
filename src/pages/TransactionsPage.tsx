@@ -47,8 +47,8 @@ export default function TransactionsPage() {
   // Check for success message after joining a transaction
   useEffect(() => {
     if (searchParams.get('joined') === 'success') {
-      toast.success("Transaction rejointe avec succès", {
-        description: "Vous pouvez maintenant effectuer le paiement pour bloquer les fonds.",
+      toast.success(t('transactions.joinedSuccess'), {
+        description: t('transactions.joinedDescription'),
       });
       
       // Clean up URL
@@ -68,9 +68,9 @@ export default function TransactionsPage() {
         await refetch();
       })(),
       {
-        loading: "Synchronisation en cours...",
-        success: "Synchronisation terminée",
-        error: "Erreur de synchronisation",
+        loading: t('transactions.syncInProgress'),
+        success: t('transactions.syncCompleted'),
+        error: t('transactions.syncError'),
       }
     );
   };
@@ -87,16 +87,16 @@ export default function TransactionsPage() {
       
       if (result.success) {
         if (result.method === 'prompt') {
-          toast.success('Lien prêt à copier ! Utilisez Ctrl+C ou Cmd+C');
+          toast.success(t('transactions.linkReady'));
         } else {
-          toast.success('Lien copié dans le presse-papier !');
+          toast.success(t('transactions.linkCopied'));
         }
       } else {
-        toast.error('Impossible de copier le lien automatiquement');
+        toast.error(t('transactions.copyError'));
       }
     } catch (error) {
       console.error('Failed to copy link:', error);
-      toast.error('Erreur lors de la copie du lien');
+      toast.error(t('transactions.copyError'));
     }
   };
 
@@ -125,8 +125,8 @@ export default function TransactionsPage() {
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error("Erreur de paiement", {
-        description: "Impossible de créer la session de paiement. Veuillez réessayer.",
+      toast.error(t('transactions.paymentError'), {
+        description: t('transactions.paymentErrorDescription'),
       });
     }
   };
@@ -141,11 +141,11 @@ export default function TransactionsPage() {
         throw error;
       }
 
-      toast.success('Fonds libérés avec succès !');
+      toast.success(t('transactions.fundsReleased'));
       refetch();
     } catch (error) {
       console.error('Error releasing funds:', error);
-      toast.error('Erreur lors de la libération des fonds');
+      toast.error(t('transactions.releaseError'));
     }
   };
 
@@ -233,7 +233,7 @@ export default function TransactionsPage() {
       generateInvoicePDF(invoiceData);
     } catch (error) {
       console.error('Erreur lors de la génération de la facture:', error);
-      toast.error('Erreur lors de la génération de la facture');
+      toast.error(t('transactions.invoiceError'));
     }
   };
 
@@ -243,7 +243,7 @@ export default function TransactionsPage() {
     <DashboardLayout onSyncPayments={handleSyncPayments}>
       <div className="space-y-6">
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
-        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>Transactions</h1>
+        <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>{t('transactions.title')}</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
           <Button 
             onClick={() => {
@@ -263,7 +263,7 @@ export default function TransactionsPage() {
             className={isMobile ? "justify-center" : ""}
           >
             <Plus className="h-4 w-4 mr-2" />
-            {isMobile ? 'Nouvelle' : 'Nouvelle transaction'}
+            {isMobile ? t('transactions.new') : t('transactions.newTransaction')}
           </Button>
         </div>
       </div>
@@ -273,24 +273,24 @@ export default function TransactionsPage() {
           <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Clock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
-              {isMobile ? `Attente (${pendingTransactions.length})` : `En attente (${pendingTransactions.length})`}
+              {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
           </TabsTrigger>
           <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Lock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
-              {isMobile ? `Bloqués (${blockedTransactions.length})` : `Fonds bloqués (${blockedTransactions.length})`}
+              {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
           </TabsTrigger>
           {!isMobile && (
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
-                Complétées ({completedTransactions.length})
+                {t('transactions.completed')} ({completedTransactions.length})
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Litiges ({disputedTransactions.length})
+                {t('transactions.disputed')} ({disputedTransactions.length})
               </TabsTrigger>
             </>
           )}
@@ -298,11 +298,11 @@ export default function TransactionsPage() {
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3">
                 <CheckCircle2 className="h-4 w-4" />
-                <span className="text-xs">Complétées ({completedTransactions.length})</span>
+                <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-xs">Litiges ({disputedTransactions.length})</span>
+                <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
               </TabsTrigger>
             </>
           )}
@@ -311,23 +311,23 @@ export default function TransactionsPage() {
         <TabsContent value="pending">
           <Card>
             <CardHeader>
-              <CardTitle>Transactions en attente</CardTitle>
+              <CardTitle>{t('transactions.pendingTransactions')}</CardTitle>
               <CardDescription>
-                Transactions nécessitant un paiement ou en attente d'un client
+                {t('transactions.pendingDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading && (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <p className="mt-2 text-sm text-muted-foreground">Chargement...</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{t('transactions.loading')}</p>
                 </div>
               )}
 
               {queryError && (
                 <div className="text-center py-8">
                   <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Erreur de chargement</p>
+                  <p className="text-sm text-muted-foreground">{t('transactions.loadingError')}</p>
                 </div>
               )}
 
@@ -335,7 +335,7 @@ export default function TransactionsPage() {
                 <div className="text-center py-8">
                   <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Aucune transaction en attente
+                    {t('transactions.noPending')}
                   </p>
                 </div>
               )}
