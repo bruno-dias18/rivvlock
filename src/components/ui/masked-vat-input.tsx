@@ -95,28 +95,10 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
         return
       }
       
-      const prefix = getPrefix()
-      const suffix = getSuffix()
-
-      // Prevent deletion of prefix and suffix when field has content
-      if (displayValue && (!newValue.startsWith(prefix) || (suffix && !newValue.endsWith(suffix)))) {
-        return
-      }
-
-      // Extract the user input (remove prefix and suffix)
-      let userInput = newValue.slice(prefix.length)
-      if (suffix) {
-        userInput = userInput.replace(new RegExp(`\\s*${suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`), '')
-      }
-
-      // Extract only digits
-      const digits = userInput.replace(/\D/g, '')
-
-      // Format and update
+      // Always extract digits from the new value and reformat, do not block user edits
+      const digits = extractDigits(newValue)
       const formatted = formatDisplayValue(digits)
       setDisplayValue(formatted)
-      
-      // Call onChange with the formatted value
       onChange?.(formatted)
     }
 
@@ -148,18 +130,27 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
         }, 0)
       }
 
-      // Handle backspace - allow clearing completely
-      if (e.key === 'Backspace') {
-        if (input.selectionStart !== null && input.selectionStart <= prefix.length) {
-          // If user is trying to delete the prefix, clear everything
-          const digits = extractDigits(displayValue)
-          if (digits.length <= 1) {
-            setDisplayValue("")
-            onChange?.("")
-            e.preventDefault()
-          } else {
-            e.preventDefault()
-          }
+      // Handle deletion: allow clearing when the editable part is fully selected; protect prefix from char-by-char deletion
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        const start = input.selectionStart ?? 0
+        const end = input.selectionEnd ?? 0
+        const editableStart = prefix.length
+        const editableEnd = displayValue.length - suffix.length
+
+        // If full editable range is selected, clear everything
+        if (start <= editableStart && end >= editableEnd) {
+          setDisplayValue("")
+          onChange?.("")
+          e.preventDefault()
+          return
+        }
+
+        // Prevent deleting into the prefix when no selection
+        if (e.key === 'Backspace' && start <= editableStart && start === end) {
+          e.preventDefault()
+          setTimeout(() => {
+            input.setSelectionRange(editableStart, editableStart)
+          }, 0)
         }
       }
     }
@@ -170,11 +161,12 @@ const MaskedVatInput = React.forwardRef<HTMLInputElement, MaskedVatInputProps>(
       // Only position cursor if there's already content
       if (displayValue) {
         const prefix = getPrefix()
+        const suffix = getSuffix()
         setTimeout(() => {
           const input = e.currentTarget
-          if (input.selectionStart !== null && input.selectionStart < prefix.length) {
-            input.setSelectionRange(prefix.length, prefix.length)
-          }
+          const start = prefix.length
+          const end = displayValue.length - suffix.length
+          input.setSelectionRange(start, Math.max(start, end))
         }, 0)
       }
       
