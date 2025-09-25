@@ -97,6 +97,9 @@ verify_jwt = false
 [functions.release-funds]
 verify_jwt = true
 
+[functions.process-expired-payment-deadlines]
+verify_jwt = false
+
 [functions.create-dispute]
 verify_jwt = true
 

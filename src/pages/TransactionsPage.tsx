@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, RefreshCw, Check, MessageSquare, AlertTriangle, Download } from 'lucide-react';
+import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
@@ -260,7 +261,14 @@ export default function TransactionsPage() {
             <div>{userRole === 'seller' ? 'Client' : 'Vendeur'}: {displayName}</div>
             <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
             {transaction.service_date && (
-              <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')}</div>
+              <div>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+            )}
+            
+            {/* Payment countdown for buyers on pending transactions */}
+            {userRole === 'buyer' && transaction.status === 'pending' && transaction.payment_deadline && (
+              <div className="mt-3">
+                <PaymentCountdown paymentDeadline={transaction.payment_deadline} />
+              </div>
             )}
           </div>
           
@@ -283,9 +291,13 @@ export default function TransactionsPage() {
                   size={isMobile ? "default" : "sm"}
                   onClick={() => handlePayment(transaction)}
                   className={isMobile ? "justify-center" : ""}
+                  disabled={transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date()}
                 >
                   <CreditCard className="h-4 w-4 mr-2" />
-                  {isMobile ? 'Payer (bloquer)' : 'Payer (bloquer l\'argent)'}
+                  {transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date() 
+                    ? 'Délai expiré' 
+                    : (isMobile ? 'Payer (bloquer)' : 'Payer (bloquer l\'argent)')
+                  }
                 </Button>
               )}
               

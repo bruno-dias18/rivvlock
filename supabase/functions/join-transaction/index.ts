@@ -110,13 +110,28 @@ serve(async (req) => {
       `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
       'Acheteur';
 
+    // Calculate payment deadline (24h before service date)
+    const serviceDate = new Date(transaction.service_date);
+    const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+    
+    // Validate that payment deadline is in the future
+    const now = new Date();
+    if (paymentDeadline <= now) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Service trop proche : le paiement doit être possible au moins 24h avant le service.' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
     // Assign user as buyer (using admin client to bypass RLS)
     const { error: updateError } = await adminClient
       .from('transactions')
       .update({ 
         buyer_id: userData.user.id,
         buyer_display_name: buyerDisplayName,
-        payment_deadline: new Date(Date.now() + (transaction.payment_window_hours || 168) * 60 * 60 * 1000).toISOString(),
+        payment_deadline: paymentDeadline.toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq('id', transaction_id);

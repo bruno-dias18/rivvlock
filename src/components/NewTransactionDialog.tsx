@@ -13,7 +13,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { DateTimePicker } from '@/components/DateTimePicker';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activityLogger';
@@ -24,7 +25,15 @@ const transactionSchema = z.object({
   description: z.string().min(1, 'La description est requise').max(500, 'La description ne peut pas dépasser 500 caractères'),
   price: z.number().min(0.01, 'Le prix doit être supérieur à 0'),
   currency: z.enum(['EUR', 'CHF'], { required_error: 'Veuillez sélectionner une devise' }),
-  serviceDate: z.date({ required_error: 'La date du service est requise' }),
+  serviceDate: z.date({
+    required_error: "La date et l'heure du service sont requises",
+  }).refine((date) => {
+    const now = new Date();
+    const minDate = new Date(now.getTime() + 25 * 60 * 60 * 1000); // 25h minimum
+    return date > minDate;
+  }, {
+    message: "Le service doit être prévu au minimum 25 heures à l'avance",
+  }),
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -199,36 +208,17 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               name="serviceDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date du service</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Sélectionner une date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormLabel>Date et heure du service *</FormLabel>
+                  <FormControl>
+                    <DateTimePicker
+                      date={field.value}
+                      onDateChange={field.onChange}
+                      placeholder="Sélectionner une date et heure"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Le paiement devra être effectué au plus tard 24h avant cette date/heure.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
