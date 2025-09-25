@@ -20,9 +20,8 @@ import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions'
 import { useProfile } from '@/hooks/useProfile';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useIsMobile } from '@/lib/mobileUtils';
-import CompleteTransactionButton from '@/components/CompleteTransactionButton';
-import { useStripeAccount } from '@/hooks/useStripeAccount';
-import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
+import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
+import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
 import { copyToClipboard } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
@@ -235,26 +234,6 @@ export default function TransactionsPage() {
   };
 
 
-  // Component wrapper to handle seller Stripe status
-  const CompleteTransactionButtonWithStatus = ({ 
-    transaction, 
-    onTransferComplete 
-  }: { 
-    transaction: any; 
-    onTransferComplete: () => void; 
-  }) => {
-    const { data: sellerStatus } = useSellerStripeStatus(transaction.user_id);
-    
-    return (
-      <CompleteTransactionButton
-        transactionId={transaction.id}
-        transactionStatus={transaction.status}
-        isUserBuyer={true}
-        sellerHasStripeAccount={sellerStatus?.hasActiveAccount || false}
-        onTransferComplete={onTransferComplete}
-      />
-    );
-  };
 
   return (
     <DashboardLayout onSyncPayments={handleSyncPayments}>
@@ -346,22 +325,24 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && pendingTransactions.length > 0 && (
-                <div className="space-y-4">
-                  {pendingTransactions.map(transaction => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      user={user}
-                      showActions={true}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ))}
-                </div>
+                <LocalErrorBoundary onRetry={refetch}>
+                  <div className="space-y-4">
+                    {pendingTransactions.map(transaction => (
+                      <TransactionCard
+                        key={transaction.id}
+                        transaction={transaction}
+                        user={user}
+                        showActions={true}
+                        onCopyLink={handleCopyLink}
+                        onPayment={handlePayment}
+                        onRefetch={refetch}
+                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                        onDownloadInvoice={handleDownloadInvoice}
+                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                      />
+                    ))}
+                  </div>
+                </LocalErrorBoundary>
               )}
             </CardContent>
           </Card>
@@ -386,22 +367,24 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && blockedTransactions.length > 0 && (
-                <div className="space-y-4">
-                  {blockedTransactions.map(transaction => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      user={user}
-                      showActions={true}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ))}
-                </div>
+                <LocalErrorBoundary onRetry={refetch}>
+                  <div className="space-y-4">
+                    {blockedTransactions.map(transaction => (
+                      <TransactionCard
+                        key={transaction.id}
+                        transaction={transaction}
+                        user={user}
+                        showActions={true}
+                        onCopyLink={handleCopyLink}
+                        onPayment={handlePayment}
+                        onRefetch={refetch}
+                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                        onDownloadInvoice={handleDownloadInvoice}
+                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                      />
+                    ))}
+                  </div>
+                </LocalErrorBoundary>
               )}
             </CardContent>
           </Card>
@@ -426,22 +409,24 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && completedTransactions.length > 0 && (
-                <div className="space-y-4">
-                  {completedTransactions.map(transaction => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      user={user}
-                      showActions={true}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ))}
-                </div>
+                <LocalErrorBoundary onRetry={refetch}>
+                  <div className="space-y-4">
+                    {completedTransactions.map(transaction => (
+                      <TransactionCard
+                        key={transaction.id}
+                        transaction={transaction}
+                        user={user}
+                        showActions={true}
+                        onCopyLink={handleCopyLink}
+                        onPayment={handlePayment}
+                        onRefetch={refetch}
+                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                        onDownloadInvoice={handleDownloadInvoice}
+                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                      />
+                    ))}
+                  </div>
+                </LocalErrorBoundary>
               )}
             </CardContent>
           </Card>
@@ -466,22 +451,24 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && disputedTransactions.length > 0 && (
-                <div className="space-y-4">
-                  {disputedTransactions.map(transaction => (
-                    <TransactionCard
-                      key={transaction.id}
-                      transaction={transaction}
-                      user={user}
-                      showActions={false}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ))}
-                </div>
+                <LocalErrorBoundary onRetry={refetch}>
+                  <div className="space-y-4">
+                    {disputedTransactions.map(transaction => (
+                      <TransactionCard
+                        key={transaction.id}
+                        transaction={transaction}
+                        user={user}
+                        showActions={false}
+                        onCopyLink={handleCopyLink}
+                        onPayment={handlePayment}
+                        onRefetch={refetch}
+                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                        onDownloadInvoice={handleDownloadInvoice}
+                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                      />
+                    ))}
+                  </div>
+                </LocalErrorBoundary>
               )}
             </CardContent>
           </Card>
