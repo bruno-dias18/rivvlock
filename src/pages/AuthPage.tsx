@@ -12,6 +12,7 @@ import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { MaskedUidInput } from '@/components/ui/masked-uid-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';

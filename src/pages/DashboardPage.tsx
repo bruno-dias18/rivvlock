@@ -12,11 +12,13 @@ import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { useTranslation } from 'react-i18next';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
 
@@ -49,31 +51,31 @@ export default function DashboardPage() {
         await refetchCounts();
       })(),
       {
-        loading: "Synchronisation en cours...",
-        success: "Synchronisation terminée",
-        error: "Erreur de synchronisation",
+        loading: t('dashboard.syncInProgress'),
+        success: t('dashboard.syncComplete'),
+        error: t('dashboard.syncError'),
       }
     );
   };
 
   const transactionStatuses = [
     {
-      title: 'En attente',
-      description: 'Transactions en attente de paiement',
+      title: t('dashboard.pending'),
+      description: t('dashboard.pendingDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.pending || 0),
       icon: Clock,
       onClick: () => navigate('/dashboard/transactions?tab=pending'),
     },
     {
-      title: 'Fonds bloqués',
-      description: 'Transactions avec paiement effectué',
+      title: t('dashboard.blocked'),
+      description: t('dashboard.blockedDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
       icon: Lock,
       onClick: () => navigate('/dashboard/transactions?tab=blocked'),
     },
     {
-      title: 'Complétées',
-      description: 'Transactions terminées avec succès',
+      title: t('dashboard.completed'),
+      description: t('dashboard.completedDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.validated || 0),
       icon: CheckCircle2,
       onClick: () => navigate('/dashboard/transactions?tab=completed'),
@@ -82,8 +84,8 @@ export default function DashboardPage() {
 
   const quickActions = [
     {
-      label: 'Nouvelle transaction',
-      description: 'Créer une nouvelle transaction sécurisée',
+      label: t('dashboard.newTransaction'),
+      description: t('dashboard.newTransactionDesc'),
       icon: Plus,
       onClick: () => {
         // Check if Stripe account is properly configured
@@ -100,8 +102,8 @@ export default function DashboardPage() {
       },
     },
     {
-      label: 'Mon profil',
-      description: 'Gérer mes informations personnelles',
+      label: t('dashboard.myProfile'),
+      description: t('dashboard.myProfileDesc'),
       icon: Users,
       onClick: () => navigate('/dashboard/profile'),
     },
@@ -112,7 +114,7 @@ export default function DashboardPage() {
       <div className={isMobile ? "space-y-4" : "space-y-6"}>
         <div className="flex justify-between items-center">
           <h1 className={`font-bold text-foreground ${isMobile ? "text-2xl" : "text-3xl"}`}>
-            Tableau de bord
+            {t('dashboard.title')}
           </h1>
         </div>
 
@@ -144,9 +146,9 @@ export default function DashboardPage() {
         <div className={`grid gap-4 ${isMobile ? "grid-cols-1" : "md:grid-cols-2"}`}>
           <Card>
             <CardHeader className={isMobile ? "pb-3" : ""}>
-              <CardTitle className={isMobile ? "text-lg" : ""}>Actions rapides</CardTitle>
+              <CardTitle className={isMobile ? "text-lg" : ""}>{t('common.quickActions')}</CardTitle>
               <CardDescription>
-                Gérez vos transactions et votre profil
+                {t('dashboard.manageTransactions')}
               </CardDescription>
             </CardHeader>
             <CardContent className={isMobile ? "space-y-2" : "space-y-3"}>

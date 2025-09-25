@@ -51,7 +51,7 @@ export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutPro
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Actualiser les paiements</p>
+                  <p>{t('common.syncPayments')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

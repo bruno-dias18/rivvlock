@@ -5,6 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { LogOut, User, ChevronDown } from 'lucide-react';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
@@ -35,7 +36,7 @@ export function UserMenu() {
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="end">
         <div className="p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium">
               {user?.email ? getInitials(user.email) : 'U'}
             </div>
@@ -44,8 +45,15 @@ export function UserMenu() {
                 {user?.email}
               </p>
               <p className="text-xs text-muted-foreground">
-                Utilisateur connecté
+                {t('common.welcome')}
               </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">{t('language.selectLanguage')}</p>
+              <LanguageSelector variant="full" showIcon={false} />
             </div>
           </div>
         </div>

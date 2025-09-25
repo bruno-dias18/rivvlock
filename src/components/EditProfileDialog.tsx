@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { vatNumberSchema, siretSchema, swissUidSchema } from '@/lib/validations';
+import { useTranslation } from 'react-i18next';
 
 const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean, userType?: string) => {
   const baseSchema = z.object({
@@ -83,6 +84,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
   const [isLoading, setIsLoading] = useState(false);
   const [customVatRate, setCustomVatRate] = useState('');
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(createProfileSchema(profile?.country || 'FR', false, profile?.user_type)),
@@ -207,17 +209,17 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
         .eq('user_id', user.id);
 
       if (error) {
-        toast.error('Erreur lors de la mise à jour du profil');
+        toast.error(t('profile.profileUpdateError'));
         console.error('Profile update error:', error);
         return;
       }
 
-      toast.success('Profil mis à jour avec succès');
+      toast.success(t('profile.profileUpdated'));
       onProfileUpdated();
       onOpenChange(false);
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Une erreur est survenue');
+      toast.error(t('profile.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -232,14 +234,14 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Modifier le profil</DialogTitle>
+          <DialogTitle>{t('profile.editProfile')}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Informations personnelles</h3>
+              <h3 className="text-lg font-medium">{t('profile.personalInfo')}</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
@@ -247,7 +249,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                   name="first_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prénom</FormLabel>
+                      <FormLabel>{t('user.firstName')}</FormLabel>
                       <FormControl>
                         <Input placeholder="Votre prénom" {...field} />
                       </FormControl>
@@ -261,7 +263,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                   name="last_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom</FormLabel>
+                      <FormLabel>{t('user.lastName')}</FormLabel>
                       <FormControl>
                         <Input placeholder="Votre nom" {...field} />
                       </FormControl>
@@ -276,7 +278,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Téléphone</FormLabel>
+                    <FormLabel>{t('common.phone')}</FormLabel>
                     <FormControl>
                       <Input placeholder="Votre numéro de téléphone" {...field} />
                     </FormControl>
@@ -290,7 +292,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adresse</FormLabel>
+                    <FormLabel>{t('common.address')}</FormLabel>
                     <FormControl>
                       <Textarea 
                         placeholder="Votre adresse complète"
@@ -310,7 +312,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     name="postal_code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Code postal</FormLabel>
+                        <FormLabel>{t('common.postalCode')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: 75001" {...field} />
                         </FormControl>
@@ -324,7 +326,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Ville</FormLabel>
+                        <FormLabel>{t('common.city')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Paris" {...field} />
                         </FormControl>
@@ -339,14 +341,14 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             {/* Company Information - Only for companies */}
             {profile?.user_type === 'company' && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Informations d'entreprise</h3>
+                <h3 className="text-lg font-medium">{t('profile.companyInfo')}</h3>
                 
                 <FormField
                   control={form.control}
                   name="company_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom de l'entreprise</FormLabel>
+                      <FormLabel>{t('user.companyName')}</FormLabel>
                       <FormControl>
                         <Input placeholder="Nom de votre entreprise" {...field} />
                       </FormControl>
@@ -360,7 +362,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                   name="company_address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Adresse de l'entreprise</FormLabel>
+                      <FormLabel>{t('profile.companyAddress')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Adresse du siège social"
@@ -379,7 +381,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     name="postal_code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Code postal du siège</FormLabel>
+                        <FormLabel>{t('profile.headquartersPostal')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: 75001" {...field} />
                         </FormControl>
@@ -393,7 +395,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Ville du siège</FormLabel>
+                        <FormLabel>{t('profile.headquartersCity')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Ex: Paris" {...field} />
                         </FormControl>
@@ -428,7 +430,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             {/* Tax Information - For both companies and independents */}
             {(profile?.user_type === 'company' || profile?.user_type === 'independent') && (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Informations fiscales</h3>
+                <h3 className="text-lg font-medium">{t('profile.taxInfo')}</h3>
                 
                 <FormField
                   control={form.control}
@@ -452,7 +454,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                           />
                         </FormControl>
                         <FormLabel>
-                          {profile?.country === 'FR' ? 'Assujetti à la TVA' : 'Assujetti à la TVA'}
+                          {t('profile.subjectToVat')}
                         </FormLabel>
                       </div>
                       <FormMessage />
@@ -467,7 +469,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                       name="vat_number"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Numéro de TVA{form.watch('is_subject_to_vat') ? ' *' : ''}</FormLabel>
+                          <FormLabel>{t('profile.vatNumber')}{form.watch('is_subject_to_vat') ? ' *' : ''}</FormLabel>
                           <FormControl>
                             <MaskedVatInput 
                               country={(profile?.country as 'FR' | 'CH') || 'FR'}

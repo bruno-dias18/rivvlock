@@ -10,6 +10,7 @@ import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
+import { useTranslation } from 'react-i18next';
 
 interface TransactionCardProps {
   transaction: any;
@@ -37,6 +38,7 @@ export function TransactionCard({
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
+  const { t } = useTranslation();
   
   const getUserRole = (transaction: any) => {
     if (transaction.user_id === user?.id) return 'seller';
@@ -46,8 +48,8 @@ export function TransactionCard({
 
   const userRole = getUserRole(transaction);
   const displayName = userRole === 'seller' 
-    ? transaction.buyer_display_name || 'Client anonyme'
-    : transaction.seller_display_name || 'Vendeur';
+    ? transaction.buyer_display_name || t('transactions.anonymousClient')
+    : transaction.seller_display_name || t('common.seller');
 
   return (
     <>
@@ -72,22 +74,22 @@ export function TransactionCard({
               {transaction.price} {transaction.currency?.toUpperCase()}
             </div>
             <Badge variant="outline" className="mt-1">
-              {userRole === 'seller' ? 'Vendeur' : 'Client'}
+              {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
             </Badge>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 text-sm text-muted-foreground mb-4">
-          <div>{userRole === 'seller' ? 'Client' : 'Vendeur'}: {displayName}</div>
-          <div>Créée le: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
+          <div>{userRole === 'seller' ? t('roles.client') : t('roles.seller')}: {displayName}</div>
+          <div>{t('transactions.createdOn')}: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
           {transaction.service_date && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>Service prévu: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
               {transaction.date_change_status === 'pending_approval' && userRole === 'seller' && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
-                  Modification en attente
+                  {t('transactions.modificationPending')}
                 </Badge>
               )}
             </div>
@@ -119,7 +121,7 @@ export function TransactionCard({
           {userRole === 'buyer' && validationStatus.canManuallyFinalize && (
             <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
               <div className="text-sm text-muted-foreground mb-2">
-                Service terminé plus tôt que prévu ? Vous pouvez finaliser le paiement maintenant.
+                {t('transactions.serviceDoneEarly')}
               </div>
               <CompleteButtonComponent
                 transaction={transaction}
@@ -139,7 +141,7 @@ export function TransactionCard({
                 className={isMobile ? "justify-center" : ""}
               >
                 <Copy className="h-4 w-4 mr-2" />
-                {isMobile ? 'Copier' : 'Copier le lien'}
+                {isMobile ? t('common.copy') : t('common.copyLink')}
               </Button>
             )}
             
@@ -152,8 +154,8 @@ export function TransactionCard({
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 {transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date() 
-                  ? 'Délai expiré' 
-                  : (isMobile ? 'Payer (bloquer)' : 'Payer (bloquer l\'argent)')
+                  ? t('transactions.deadlineExpired')
+                  : (isMobile ? t('transactions.payAndBlockMobile') : t('transactions.payAndBlock'))
                 }
               </Button>
             )}
@@ -165,7 +167,7 @@ export function TransactionCard({
                 className={isMobile ? "justify-center" : ""}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Valider
+                {t('common.validate')}
               </Button>
             )}
 
@@ -178,7 +180,7 @@ export function TransactionCard({
                 disabled={transaction.date_change_count >= 2}
               >
                 <Edit3 className="h-4 w-4 mr-2" />
-                {isMobile ? 'Modifier date' : 'Modifier la date'}
+                {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
               </Button>
             )}
             
@@ -208,7 +210,7 @@ export function TransactionCard({
                 className={isMobile ? "justify-center" : ""}
               >
                 <Download className="h-4 w-4 mr-2" />
-                {isMobile ? 'Facture' : 'Télécharger la facture'}
+                {isMobile ? t('common.invoice') : t('transactions.downloadInvoice')}
               </Button>
             )}
           </div>
