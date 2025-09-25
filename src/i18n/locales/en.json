@@ -379,7 +379,41 @@
     "recentActivity": "Recent Activity",
     "viewAll": "View All",
     "noRecentActivity": "No recent activity",
-    "configurationInProgress": "Configuration in progress..."
+    "configurationInProgress": "Configuration in progress...",
+    "types": {
+      "transaction_created": {
+        "title": "Transaction Created",
+        "description": "New transaction \"{{title}}\" created"
+      },
+      "buyer_joined_transaction": {
+        "title": "Buyer Joined",
+        "description": "Buyer joined transaction \"{{title}}\""
+      },
+      "funds_blocked": {
+        "title": "Funds Blocked",
+        "description": "Funds have been blocked for \"{{title}}\""
+      },
+      "funds_released": {
+        "title": "Funds Released",
+        "description": "Funds have been released for \"{{title}}\""
+      },
+      "transaction_completed": {
+        "title": "Transaction Completed",
+        "description": "Transaction \"{{title}}\" is now completed"
+      },
+      "dispute_created": {
+        "title": "Dispute Created",
+        "description": "A dispute has been opened for \"{{title}}\""
+      },
+      "seller_validation": {
+        "title": "Seller Validation",
+        "description": "Seller validated transaction \"{{title}}\""
+      },
+      "buyer_validation": {
+        "title": "Buyer Validation",
+        "description": "Buyer validated transaction \"{{title}}\""
+      }
+    }
   },
   "bankAccount": {
     "title": "Bank Details",

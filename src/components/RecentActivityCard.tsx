@@ -82,6 +82,24 @@ export function RecentActivityCard() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
+  // Get translated title and description for activity
+  const getActivityTitle = (activity: any) => {
+    const translationKey = `activity.types.${activity.activity_type}.title`;
+    if (i18n.exists(translationKey)) {
+      return t(translationKey);
+    }
+    return activity.title; // Fallback to original
+  };
+
+  const getActivityDescription = (activity: any) => {
+    const translationKey = `activity.types.${activity.activity_type}.description`;
+    if (i18n.exists(translationKey)) {
+      const transactionTitle = activity.metadata?.transaction_title || activity.metadata?.title || 'Transaction';
+      return t(translationKey, { title: transactionTitle });
+    }
+    return activity.description; // Fallback to original
+  };
+
   // Get locale for date formatting
   const getDateLocale = () => {
     switch (i18n.language) {
@@ -142,11 +160,11 @@ export function RecentActivityCard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">
-                    {activity.title}
+                    {getActivityTitle(activity)}
                   </p>
-                  {activity.description && (
+                  {getActivityDescription(activity) && (
                     <p className="text-xs text-muted-foreground truncate">
-                      {activity.description}
+                      {getActivityDescription(activity)}
                     </p>
                   )}
                    <p className="text-xs text-muted-foreground">

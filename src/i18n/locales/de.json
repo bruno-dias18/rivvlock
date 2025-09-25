@@ -381,7 +381,41 @@
     "recentActivity": "Kürzliche Aktivitäten",
     "viewAll": "Alle anzeigen",
     "noRecentActivity": "Keine kürzlichen Aktivitäten",
-    "configurationInProgress": "Konfiguration läuft..."
+    "configurationInProgress": "Konfiguration läuft...",
+    "types": {
+      "transaction_created": {
+        "title": "Transaktion erstellt",
+        "description": "Neue Transaktion \"{{title}}\" erstellt"
+      },
+      "buyer_joined_transaction": {
+        "title": "Käufer beigetreten",
+        "description": "Käufer ist der Transaktion \"{{title}}\" beigetreten"
+      },
+      "funds_blocked": {
+        "title": "Gelder blockiert",
+        "description": "Gelder wurden für \"{{title}}\" blockiert"
+      },
+      "funds_released": {
+        "title": "Gelder freigegeben",
+        "description": "Gelder wurden für \"{{title}}\" freigegeben"
+      },
+      "transaction_completed": {
+        "title": "Transaktion abgeschlossen",
+        "description": "Transaktion \"{{title}}\" ist nun abgeschlossen"
+      },
+      "dispute_created": {
+        "title": "Streitfall erstellt",
+        "description": "Ein Streitfall wurde für \"{{title}}\" eröffnet"
+      },
+      "seller_validation": {
+        "title": "Verkäufer-Validierung",
+        "description": "Verkäufer hat Transaktion \"{{title}}\" validiert"
+      },
+      "buyer_validation": {
+        "title": "Käufer-Validierung",
+        "description": "Käufer hat Transaktion \"{{title}}\" validiert"
+      }
+    }
   },
   "bankAccount": {
     "title": "Bankverbindung",
