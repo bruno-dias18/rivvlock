@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { toast } from 'sonner';
 
 const profileSchema = z.object({
@@ -390,10 +390,16 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                           </FormLabel>
                           <FormControl>
                             <Input 
-                              placeholder={profile?.country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'} 
+                              placeholder={profile?.country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'} 
                               {...field} 
                             />
                           </FormControl>
+                          <FormDescription>
+                            {profile?.country === 'FR' 
+                              ? 'Format : FR + 11 caractères (ex: FR12345678901)' 
+                              : 'Format : CHE-123.456.789 TVA'
+                            }
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -467,8 +473,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     <FormItem>
                       <FormLabel>Numéro AVS</FormLabel>
                       <FormControl>
-                        <Input placeholder="756.XXXX.XXXX.XX" {...field} />
+                        <Input placeholder="756.1234.5678.90" {...field} />
                       </FormControl>
+                      <FormDescription>
+                        Format : 756.XXXX.XXXX.XX
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

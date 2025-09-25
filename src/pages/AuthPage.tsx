@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createRegistrationSchema, loginSchema, changePasswordSchema } from '@/lib/validations';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -380,8 +380,11 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Numéro SIRET *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="14 chiffres" />
+                          <Input {...field} placeholder="12345678901234" />
                         </FormControl>
+                        <FormDescription>
+                          Format : 14 chiffres (espaces et tirets autorisés)
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -396,8 +399,11 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Numéro UID *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="CHE-XXX.XXX.XXX" />
+                          <Input {...field} placeholder="CHE-123.456.789" />
                         </FormControl>
+                        <FormDescription>
+                          Format : CHE-XXX.XXX.XXX
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -412,8 +418,11 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>Numéro AVS *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="756.XXXX.XXXX.XX" />
+                          <Input {...field} placeholder="756.1234.5678.90" />
                         </FormControl>
+                        <FormDescription>
+                          Format : 756.XXXX.XXXX.XX
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -454,14 +463,20 @@ export default function AuthPage() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>
-                                Numéro de TVA {country === 'FR' ? '(optionnel)' : '(optionnel)'}
+                                Numéro de TVA (optionnel)
                               </FormLabel>
                               <FormControl>
                                 <Input 
                                   {...field} 
-                                  placeholder={country === 'FR' ? 'FRXX123456789' : 'CHE-XXX.XXX.XXX'} 
+                                  placeholder={country === 'FR' ? 'FR12345678901' : 'CHE-123.456.789 TVA'} 
                                 />
                               </FormControl>
+                              <FormDescription>
+                                {country === 'FR' 
+                                  ? 'Format : FR + 11 caractères (ex: FR12345678901)' 
+                                  : 'Format : CHE-123.456.789 TVA'
+                                }
+                              </FormDescription>
                               <FormMessage />
                             </FormItem>
                           )}
