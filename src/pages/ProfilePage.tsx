@@ -155,7 +155,7 @@ export default function ProfilePage() {
                 </div>
               </>
             )}
-            {profile?.country === 'CH' && (
+            {profile?.country === 'CH' && profile?.user_type !== 'company' && (
               <div>
                 <label className="text-sm font-medium">Numéro AVS</label>
                 <p className="text-sm text-muted-foreground">

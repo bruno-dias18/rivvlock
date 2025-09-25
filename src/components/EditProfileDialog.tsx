@@ -458,7 +458,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             )}
 
             {/* AVS for Swiss users */}
-            {profile?.country === 'CH' && (
+              {profile?.country === 'CH' && profile?.user_type !== 'company' && (
               <div className="space-y-4">
                 <FormField
                   control={form.control}
