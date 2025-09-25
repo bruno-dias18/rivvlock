@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useEffect } from 'react';
 import { 
   Activity,
   ArrowRight,
@@ -77,9 +78,18 @@ const getActivityColor = (activityType: string) => {
 };
 
 export function RecentActivityCard() {
-  const { data: activities, isLoading } = useRecentActivity();
+  const { data: activities, isLoading, refetch } = useRecentActivity();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  // Auto-refresh activity data every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   const handleViewAll = () => {
     navigate('/activity-history');
