@@ -27,8 +27,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const pageHeight = doc.internal.pageSize.height;
   const margin = 15;
   const rightX = pageWidth - margin;
-  const rightColX = pageWidth - 110; // Position de la colonne droite (30mm du bord droit)
-  const rightColWidth = 80; // Largeur de la colonne droite
+  // Alignement parfait avec le bord droit du tableau
+  const tableRightEdge = pageWidth - margin;
+  const rightColWidth = 85; // Largeur de la colonne droite
+  const rightColX = tableRightEdge - rightColWidth; // Position pour alignement parfait
   let yPosition = 20;
   
   // Couleurs
@@ -59,9 +61,9 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.text('Plateforme d\'escrow sécurisée', margin, yPosition);
   doc.text('www.rivvlock.com', margin, yPosition + 4);
   
-  // Informations facture (à droite) - aligned to new right column
-  doc.text(`N° ${invoiceNumber}`, rightColX, yPosition, { align: 'left' });
-  doc.text(`Date: ${invoiceDate}`, rightColX, yPosition + 4, { align: 'left' });
+  // Informations facture (à droite) - sous le titre FACTURE, alignées à droite
+  doc.text(`N° ${invoiceNumber}`, rightX, yPosition, { align: 'right' });
+  doc.text(`Date: ${invoiceDate}`, rightX, yPosition + 4, { align: 'right' });
   
   yPosition += 15;
   
@@ -229,10 +231,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   yPosition += contentHeight + 15;
   
-  // === CALCULS FINANCIERS (structure en deux colonnes dans la zone droite) ===
+  // === CALCULS FINANCIERS (alignés avec le bord droit du tableau) ===
   
   const labelX = rightColX;
-  const valueX = rightColX + 60; // 60mm pour séparer les colonnes label/valeur
+  const valueX = tableRightEdge; // Alignement parfait avec le bord droit du tableau
   
   // Total HT
   doc.setFontSize(9);
