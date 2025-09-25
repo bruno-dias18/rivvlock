@@ -12,7 +12,6 @@ export interface ActivityLog {
 
 // Types d'activités à afficher dans l'activité récente
 const RELEVANT_ACTIVITY_TYPES = [
-  'transaction_joined',
   'transaction_created', 
   'buyer_joined_transaction',
   'funds_blocked',

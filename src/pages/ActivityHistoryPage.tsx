@@ -25,10 +25,20 @@ const getActivityIcon = (activityType: string) => {
       return Plus;
     case 'payment_received':
       return CreditCard;
+    case 'funds_blocked':
+      return CreditCard;
     case 'transaction_validated':
       return CheckCircle;
     case 'transaction_joined':
       return UserPlus;
+    case 'buyer_joined_transaction':
+      return UserPlus;
+    case 'transaction_completed':
+      return CheckCircle;
+    case 'seller_validation':
+      return CheckCircle;
+    case 'buyer_validation':
+      return CheckCircle;
     case 'profile_updated':
       return Settings;
     case 'payment_sync':
@@ -48,10 +58,20 @@ const getActivityColor = (activityType: string) => {
       return 'text-blue-500';
     case 'payment_received':
       return 'text-green-500';
+    case 'funds_blocked':
+      return 'text-orange-500';
     case 'transaction_validated':
       return 'text-emerald-500';
     case 'transaction_joined':
       return 'text-purple-500';
+    case 'buyer_joined_transaction':
+      return 'text-purple-500';
+    case 'transaction_completed':
+      return 'text-green-600';
+    case 'seller_validation':
+      return 'text-blue-600';
+    case 'buyer_validation':
+      return 'text-green-600';
     case 'profile_updated':
       return 'text-gray-500';
     case 'payment_sync':

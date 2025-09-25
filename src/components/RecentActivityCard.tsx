@@ -28,6 +28,10 @@ const getActivityIcon = (activityType: string) => {
       return CheckCircle;
     case 'transaction_joined':
       return UserPlus;
+    case 'buyer_joined_transaction':
+      return UserPlus;
+    case 'transaction_completed':
+      return CheckCircle;
     case 'seller_validation':
       return CheckCircle;
     case 'buyer_validation':
@@ -53,6 +57,10 @@ const getActivityColor = (activityType: string) => {
       return 'text-emerald-500';
     case 'transaction_joined':
       return 'text-purple-500';
+    case 'buyer_joined_transaction':
+      return 'text-purple-500';
+    case 'transaction_completed':
+      return 'text-green-600';
     case 'seller_validation':
       return 'text-blue-600';
     case 'buyer_validation':
