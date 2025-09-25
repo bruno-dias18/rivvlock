@@ -108,6 +108,26 @@ serve(async (req) => {
 
     logStep('Transaction created successfully', { transactionId: transaction.id, token: sharedLinkToken });
 
+    // Log activity for transaction creation
+    try {
+      await supabaseAdmin
+        .from('activity_logs')
+        .insert({
+          user_id: user.id,
+          activity_type: 'transaction_created',
+          title: 'Transaction créée',
+          description: `Nouvelle transaction "${transaction.title}" créée pour ${transaction.price} ${transaction.currency}`,
+          metadata: {
+            transaction_id: transaction.id,
+            price: transaction.price,
+            currency: transaction.currency,
+            service_date: serviceDate
+          }
+        });
+    } catch (logError) {
+      console.error('❌ [CREATE-TRANSACTION] Error logging activity:', logError);
+    }
+
     // Return transaction data with share link - always use the rivvlock domain
     const baseUrl = 'https://rivvlock.lovable.app';
     const shareLink = `${baseUrl}/join/${sharedLinkToken}`;
