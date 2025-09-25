@@ -421,6 +421,24 @@
       }
     }
   },
+  "invoice": {
+    "title": "FACTURE",
+    "sender": "ÉMETTEUR",
+    "client": "CLIENT",
+    "designation": "Désignation",
+    "price": "Prix",
+    "quantity": "Qté",
+    "totalHT": "Total HT",
+    "rivvlockFees": "Frais RivvLock (5%)",
+    "toPay": "À payer",
+    "netReceived": "Net reçu",
+    "servicePerformed": "Service réalisé le",
+    "transactionValidated": "Transaction validée le",
+    "secureEscrowPlatform": "Plateforme d'escrow sécurisée",
+    "contact": "Contact",
+    "invoiceNumber": "Numéro de facture",
+    "invoiceDate": "Date de facture"
+  },
   "bankAccount": {
     "title": "Coordonnées bancaires",
     "description": "Configurez vos coordonnées bancaires pour recevoir les paiements",

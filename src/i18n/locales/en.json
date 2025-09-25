@@ -415,6 +415,24 @@
       }
     }
   },
+  "invoice": {
+    "title": "INVOICE",
+    "sender": "SENDER",
+    "client": "CLIENT",
+    "designation": "Description",
+    "price": "Price",
+    "quantity": "Qty",
+    "totalHT": "Total",
+    "rivvlockFees": "RivvLock fees (5%)",
+    "toPay": "To pay",
+    "netReceived": "Net received",
+    "servicePerformed": "Service performed on",
+    "transactionValidated": "Transaction validated on",
+    "secureEscrowPlatform": "Secure escrow platform",
+    "contact": "Contact",
+    "invoiceNumber": "Invoice number",
+    "invoiceDate": "Invoice date"
+  },
   "bankAccount": {
     "title": "Bank Details",
     "description": "Set up your bank details to receive payments",

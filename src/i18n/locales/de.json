@@ -417,6 +417,24 @@
       }
     }
   },
+  "invoice": {
+    "title": "RECHNUNG",
+    "sender": "ABSENDER",
+    "client": "KUNDE",
+    "designation": "Beschreibung",
+    "price": "Preis",
+    "quantity": "Menge",
+    "totalHT": "Gesamt",
+    "rivvlockFees": "RivvLock Gebühren (5%)",
+    "toPay": "Zu zahlen",
+    "netReceived": "Netto erhalten",
+    "servicePerformed": "Service erbracht am",
+    "transactionValidated": "Transaktion validiert am",
+    "secureEscrowPlatform": "Sichere Escrow-Plattform",
+    "contact": "Kontakt",
+    "invoiceNumber": "Rechnungsnummer",
+    "invoiceDate": "Rechnungsdatum"
+  },
   "bankAccount": {
     "title": "Bankverbindung",
     "description": "Richten Sie Ihre Bankverbindung ein, um Zahlungen zu erhalten",

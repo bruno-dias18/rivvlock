@@ -7,19 +7,22 @@ interface InvoiceData {
   amount: number;
   currency: string;
   sellerName: string;
-  buyerName: string;
+  buyerName: string;  
   serviceDate?: string;
   validatedDate: string;
   sellerProfile?: any;
   buyerProfile?: any;
   sellerEmail?: string;
   buyerEmail?: string;
+  language?: string;
+  t?: any;
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
 const RIVVLOCK_LOGO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAMEAQIGBQf/xAA0EAABAwMBBQYGAQQDAAAAAAABAAIDBBEhBRIxQVFhBhMicYGRFDKhscHR4fAjQlJi8f/EABsBAAIDAQEBAAAAAAAAAAAAAAAGAwQFAgEH/8QALBEAAgECBQIEBwAAAAAAAAAAAAECAwQFESFBIFESYcHwMVKBkbHh8UKSocL/2gAMAwEAAhEDEQA/APEREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf/Z';
 
 export const generateInvoicePDF = (invoiceData: InvoiceData) => {
+  const { language = 'fr', t } = invoiceData;
   const doc = new jsPDF();
   
   // Configuration
@@ -48,21 +51,27 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const sellerUserId = invoiceData.sellerProfile?.user_id || 'UNKNOWN';
   const sequenceNumber = Math.floor(Date.now() / 1000) % 10000;
   const invoiceNumber = `FAC-${sellerUserId.slice(-4).toUpperCase()}-${sequenceNumber.toString().padStart(4, '0')}`;
-  const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString('fr-FR');
+  const dateOptions: Intl.DateTimeFormatOptions = { 
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  };
+  const locale = language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : 'fr-FR';
+  const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
   
   // RIVVLOCK à gauche et FACTURE à droite sur la même ligne
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('RIVVLOCK', margin, yPosition);
-  doc.text('FACTURE', rightX, yPosition, { align: 'right' });
+  doc.text(t?.('invoice.title') || 'FACTURE', rightX, yPosition, { align: 'right' });
   
   yPosition += 8;
   
   // Sous-informations RIVVLOCK (à gauche)
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text('Plateforme d\'escrow sécurisée', margin, yPosition);
+  doc.text(t?.('invoice.secureEscrowPlatform') || 'Plateforme d\'escrow sécurisée', margin, yPosition);
   doc.text('www.rivvlock.com', margin, yPosition + 4);
   
   // Informations facture (à droite) - sous le titre FACTURE, alignées à droite
@@ -86,8 +95,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('ÉMETTEUR', margin, yPosition);
-  doc.text('CLIENT', clientStartX, yPosition);
+  doc.text(t?.('invoice.sender') || 'ÉMETTEUR', margin, yPosition);
+  doc.text(t?.('invoice.client') || 'CLIENT', clientStartX, yPosition);
   
   yPosition += 8;
   
@@ -113,7 +122,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
     
     if (profile.phone) {
-      doc.text(`Tél: ${profile.phone}`, margin, leftColumnY);
+      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+      doc.text(`${phoneLabel}: ${profile.phone}`, margin, leftColumnY);
       leftColumnY += 4;
     }
     
@@ -161,7 +171,8 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
     }
     
     if (profile.phone) {
-      doc.text(`Tél: ${profile.phone}`, clientX, rightColumnY);
+      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+      doc.text(`${phoneLabel}: ${profile.phone}`, clientX, rightColumnY);
       rightColumnY += 4;
     }
     
@@ -204,10 +215,10 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   
-  doc.text('Désignation', margin + 2, yPosition + 5.5);
-  doc.text('Prix', margin + 100, yPosition + 5.5);
-  doc.text('Qté', margin + 130, yPosition + 5.5);
-  doc.text('Total HT', margin + 150, yPosition + 5.5);
+  doc.text(t?.('invoice.designation') || 'Désignation', margin + 2, yPosition + 5.5);
+  doc.text(t?.('invoice.price') || 'Prix', margin + 100, yPosition + 5.5);
+  doc.text(t?.('invoice.quantity') || 'Qté', margin + 130, yPosition + 5.5);
+  doc.text(t?.('invoice.totalHT') || 'Total HT', margin + 150, yPosition + 5.5);
   
   yPosition += 8;
   
@@ -244,27 +255,27 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
-  doc.text('Total HT:', labelX, yPosition, { align: 'left' });
+  doc.text(`${t?.('invoice.totalHT') || 'Total HT'}:`, labelX, yPosition, { align: 'left' });
   doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 8;
   
   // Frais RivvLock
-  doc.text('Frais RivvLock (5%):', labelX, yPosition, { align: 'left' });
+  doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
   doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 8;
   
   // À payer (montant total que le client paye)
   doc.setFont('helvetica', 'bold');
-  doc.text('À payer:', labelX, yPosition, { align: 'left' });
+  doc.text(`${t?.('invoice.toPay') || 'À payer'}:`, labelX, yPosition, { align: 'left' });
   doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 10;
   
   // Net reçu (montant reçu par le vendeur après frais)
   doc.setFont('helvetica', 'normal');
-  doc.text('Net reçu:', labelX, yPosition, { align: 'left' });
+  doc.text(`${t?.('invoice.netReceived') || 'Net reçu'}:`, labelX, yPosition, { align: 'left' });
   doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 20;
@@ -276,11 +287,13 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setTextColor(100, 100, 100);
   
   if (invoiceData.serviceDate) {
-    doc.text(`Service réalisé le: ${new Date(invoiceData.serviceDate).toLocaleDateString('fr-FR')}`, margin, yPosition);
+    const serviceDate = new Date(invoiceData.serviceDate).toLocaleDateString(locale, dateOptions);
+    doc.text(`${t?.('invoice.servicePerformed') || 'Service réalisé le'}: ${serviceDate}`, margin, yPosition);
     yPosition += 5;
   }
   
-  doc.text(`Transaction validée le: ${invoiceDate}`, margin, yPosition);
+  const validatedDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
+  doc.text(`${t?.('invoice.transactionValidated') || 'Transaction validée le'}: ${validatedDate}`, margin, yPosition);
   yPosition += 15;
   
   // === PIED DE PAGE SIMPLIFIÉ ===
@@ -290,11 +303,14 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
-  const footerText = 'RivvLock - Plateforme d\'escrow sécurisée | contact@rivvlock.com | www.rivvlock.com';
+  const platformText = t?.('invoice.secureEscrowPlatform') || 'Plateforme d\'escrow sécurisée';
+  const contactText = t?.('invoice.contact') || 'Contact';
+  const footerText = `RivvLock - ${platformText} | ${contactText}: contact@rivvlock.com | www.rivvlock.com`;
   const footerTextWidth = doc.getTextWidth(footerText);
   doc.text(footerText, (pageWidth - footerTextWidth) / 2, footerY);
   
   // Télécharger le PDF avec numéro de facture automatique
-  const fileName = `Facture-${invoiceNumber}.pdf`;
+  const invoiceLabel = t?.('common.invoice') || 'Facture';
+  const fileName = `${invoiceLabel}-${invoiceNumber}.pdf`;
   doc.save(fileName);
 };

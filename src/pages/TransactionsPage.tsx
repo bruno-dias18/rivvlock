@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -230,7 +231,11 @@ export default function TransactionsPage() {
         buyerEmail,
       };
 
-      generateInvoicePDF(invoiceData);
+      generateInvoicePDF({
+        ...invoiceData,
+        language: i18n.language,
+        t
+      });
     } catch (error) {
       console.error('Erreur lors de la génération de la facture:', error);
       toast.error(t('transactions.invoiceError'));
