@@ -139,18 +139,22 @@ export default function ProfilePage() {
                 {profile?.address || 'Non renseignée'}
               </p>
             </div>
-            <div>
-              <label className="text-sm font-medium">Code postal</label>
-              <p className="text-sm text-muted-foreground">
-                {profile?.postal_code || 'Non renseigné'}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Ville</label>
-              <p className="text-sm text-muted-foreground">
-                {profile?.city || 'Non renseignée'}
-              </p>
-            </div>
+            {profile?.user_type !== 'company' && (
+              <>
+                <div>
+                  <label className="text-sm font-medium">Code postal</label>
+                  <p className="text-sm text-muted-foreground">
+                    {profile?.postal_code || 'Non renseigné'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Ville</label>
+                  <p className="text-sm text-muted-foreground">
+                    {profile?.city || 'Non renseignée'}
+                  </p>
+                </div>
+              </>
+            )}
             {profile?.country === 'CH' && (
               <div>
                 <label className="text-sm font-medium">Numéro AVS</label>
@@ -187,6 +191,18 @@ export default function ProfilePage() {
                 <label className="text-sm font-medium">Adresse de l'entreprise</label>
                 <p className="text-sm text-muted-foreground">
                   {profile?.company_address || 'Non renseignée'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Code postal du siège</label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.postal_code || 'Non renseigné'}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium">Ville du siège</label>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.city || 'Non renseignée'}
                 </p>
               </div>
             </CardContent>
