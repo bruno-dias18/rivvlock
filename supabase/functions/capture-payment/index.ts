@@ -111,6 +111,7 @@ serve(async (req) => {
       .update({ 
         status: 'validated',
         funds_released: true,
+        funds_released_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
       .eq("id", transactionId);
@@ -118,6 +119,41 @@ serve(async (req) => {
     if (updateError) {
       console.error("❌ [CAPTURE-PAYMENT] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction status");
+    }
+
+    // Log activity for transaction completed
+    try {
+      // Log for the buyer
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: transaction.buyer_id,
+          activity_type: 'transaction_completed',
+          title: 'Transaction complétée',
+          description: `Transaction "${transaction.title}" terminée avec succès. Fonds transférés au vendeur.`,
+          metadata: {
+            transaction_id: transaction.id,
+            amount: transaction.price,
+            currency: transaction.currency
+          }
+        });
+
+      // Log for the seller  
+      await adminClient
+        .from('activity_logs')
+        .insert({
+          user_id: transaction.user_id,
+          activity_type: 'transaction_completed',
+          title: 'Transaction complétée',
+          description: `Transaction "${transaction.title}" terminée. ${transaction.price} ${transaction.currency} transférés sur votre compte.`,
+          metadata: {
+            transaction_id: transaction.id,
+            amount: transaction.price,
+            currency: transaction.currency
+          }
+        });
+    } catch (logError) {
+      console.error('❌ [CAPTURE-PAYMENT] Error logging activity:', logError);
     }
 
     // Mock notifications
