@@ -196,7 +196,12 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
+      {/* Language Selector */}
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSelector variant="compact" showIcon={false} />
+      </div>
+      
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mb-8">
@@ -207,10 +212,10 @@ export default function AuthPage() {
             />
           </div>
           <h2 className="text-3xl font-bold text-foreground">
-            {isResetPassword ? 'Nouveau mot de passe' : (isSignUp ? 'Créer un compte' : 'Bienvenue')}
+            {isResetPassword ? t('auth.resetPassword') : (isSignUp ? t('auth.createAccount') : t('auth.welcome'))}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            {isResetPassword ? 'Définissez votre nouveau mot de passe' : (isSignUp ? 'Inscription sur RivvLock' : 'Connectez-vous à votre compte')}
+            {isResetPassword ? t('auth.resetPasswordInfo') : (isSignUp ? t('auth.subtitle') : t('auth.subtitle'))}
           </p>
         </div>
 
@@ -230,14 +235,14 @@ export default function AuthPage() {
                   name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Pays *</FormLabel>
+                      <FormLabel>{t('common.country')} *</FormLabel>
                       <FormControl>
                         <select
                           {...field}
                           className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
-                          <option value="FR">France</option>
-                          <option value="CH">Suisse</option>
+                          <option value="FR">{t('countries.france')}</option>
+                          <option value="CH">{t('countries.switzerland')}</option>
                         </select>
                       </FormControl>
                       <FormMessage />
@@ -251,7 +256,7 @@ export default function AuthPage() {
                   name="userType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type de profil *</FormLabel>
+                      <FormLabel>{t('auth.selectUserType')} *</FormLabel>
                       <FormControl>
                         <select
                           {...field}
