@@ -195,6 +195,10 @@ export default function AuthPage() {
     }
   };
 
+  const getPhonePlaceholder = (country: Country): string => {
+    return country === 'CH' ? '+41 22 123 45 67' : '+33 1 23 45 67 89';
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
       {/* Language Selector */}
@@ -372,7 +376,7 @@ export default function AuthPage() {
                     <FormItem>
                       <FormLabel>{t('common.phone')}</FormLabel>
                       <FormControl>
-                        <Input {...field} type="tel" placeholder="+33 1 23 45 67 89" />
+                        <Input {...field} type="tel" placeholder={getPhonePlaceholder(country)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
