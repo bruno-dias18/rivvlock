@@ -8,14 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { MaskedUidInput } from '@/components/ui/masked-uid-input';
+import { MaskedSiretInput } from '@/components/ui/masked-siret-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { toast } from 'sonner';
-import { vatNumberSchema } from '@/lib/validations';
+import { vatNumberSchema, siretSchema, swissUidSchema } from '@/lib/validations';
 
-const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean) => {
+const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean, userType?: string) => {
   const baseSchema = z.object({
     first_name: z.string().optional(),
     last_name: z.string().optional(),
@@ -25,7 +26,11 @@ const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean) => {
     city: z.string().optional(),
     company_name: z.string().optional(),
     company_address: z.string().optional(),
-    siret_uid: z.string().optional(),
+    siret_uid: userType === 'company' 
+      ? country === 'FR' 
+        ? siretSchema 
+        : swissUidSchema
+      : z.string().optional(),
     avs_number: z.string().optional(),
     is_subject_to_vat: z.boolean().optional(),
     vat_number: z.string().optional(),
@@ -80,7 +85,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
   const { user } = useAuth();
 
   const form = useForm<ProfileFormData>({
-    resolver: zodResolver(createProfileSchema(profile?.country || 'FR', false)),
+    resolver: zodResolver(createProfileSchema(profile?.country || 'FR', false, profile?.user_type)),
     defaultValues: {
       first_name: '',
       last_name: '',
@@ -155,6 +160,23 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
           message: profile?.country === 'FR'
             ? 'Le numéro de TVA est obligatoire et doit être au format FRXX123456789'
             : 'Le numéro de TVA est obligatoire et doit être au format CHE-XXX.XXX.XXX TVA'
+        });
+        return;
+      }
+    }
+    
+    // Manual SIRET/UID validation for companies
+    if (profile?.user_type === 'company' && data.siret_uid) {
+      const businessNumberValid = profile?.country === 'FR' 
+        ? siretSchema.safeParse(data.siret_uid).success
+        : swissUidSchema.safeParse(data.siret_uid).success;
+      
+      if (!businessNumberValid) {
+        form.setError('siret_uid', {
+          type: 'manual',
+          message: profile?.country === 'FR'
+            ? 'Le numéro SIRET doit contenir exactement 14 chiffres'
+            : 'Le numéro UID doit avoir le format CHE-XXX.XXX.XXX'
         });
         return;
       }
@@ -390,14 +412,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                         {profile?.country === 'FR' ? 'Numéro SIRET' : 'Numéro UID'}
                       </FormLabel>
                       <FormControl>
-                        {profile?.country === 'CH' ? (
-                          <MaskedUidInput {...field} />
-                        ) : (
-                          <Input 
-                            placeholder="14 chiffres"
-                            {...field} 
-                          />
-                        )}
+                         {profile?.country === 'CH' ? (
+                           <MaskedUidInput {...field} />
+                         ) : (
+                           <MaskedSiretInput {...field} />
+                         )}
                       </FormControl>
                       <FormMessage />
                     </FormItem>
