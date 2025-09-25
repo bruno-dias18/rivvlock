@@ -3,6 +3,13 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createRegistrationSchema, loginSchema, changePasswordSchema } from '@/lib/validations';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';
@@ -14,47 +21,89 @@ export default function AuthPage() {
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(resetMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  // Registration form fields
-  const [country, setCountry] = useState<Country>('FR');
-  const [userType, setUserType] = useState<UserType>('individual');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [postalCode, setPostalCode] = useState('');
-  const [city, setCity] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [companyAddress, setCompanyAddress] = useState('');
-  const [siretUid, setSiretUid] = useState('');
-  const [avsNumber, setAvsNumber] = useState('');
-  const [isSubjectToVat, setIsSubjectToVat] = useState(false);
-  const [vatNumber, setVatNumber] = useState('');
-  const [vatRate, setVatRate] = useState('');
-  const [acceptanceTerms, setAcceptanceTerms] = useState(false);
+  // Watch form values for dynamic validation
+  const [country, setCountry] = useState<'FR' | 'CH'>('FR');
+  const [userType, setUserType] = useState<'individual' | 'company' | 'independent'>('individual');
 
   const { user, login, register } = useAuth();
   const { t } = useTranslation();
 
-  // Set default VAT status based on user type
-  useEffect(() => {
-    if (userType === 'company') {
-      setIsSubjectToVat(true);
-      if (country === 'FR' && !vatRate) setVatRate('20');
-      if (country === 'CH' && !vatRate) setVatRate('8.1');
-    } else if (userType === 'independent') {
-      setIsSubjectToVat(false);
+  // Dynamic form schema based on current selections
+  const getFormSchema = () => {
+    if (isResetPassword) {
+      return changePasswordSchema;
+    } else if (isSignUp) {
+      return createRegistrationSchema(country, userType);
     } else {
-      setIsSubjectToVat(false);
-      setVatNumber('');
-      setVatRate('');
+      return loginSchema;
     }
-  }, [userType, country]);
+  };
+
+  const form = useForm({
+    resolver: zodResolver(getFormSchema()),
+    defaultValues: {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      country: 'FR' as const,
+      userType: 'individual' as const,
+      firstName: '',
+      lastName: '',
+      phone: '',
+      companyName: '',
+      companyAddress: '',
+      postalCode: '',
+      city: '',
+      siretUid: '',
+      avsNumber: '',
+      isSubjectToVat: false,
+      vatNumber: '',
+      vatRate: '',
+      acceptanceTerms: false
+    }
+  });
+
+  // Watch for country and userType changes to update schema
+  const watchedCountry = form.watch('country');
+  const watchedUserType = form.watch('userType');
+  const watchedIsSubjectToVat = form.watch('isSubjectToVat');
+
+  // Update local state when form values change
+  useEffect(() => {
+    if (watchedCountry && watchedCountry !== country) {
+      setCountry(watchedCountry);
+    }
+  }, [watchedCountry, country]);
+
+  useEffect(() => {
+    if (watchedUserType && watchedUserType !== userType) {
+      setUserType(watchedUserType);
+    }
+  }, [watchedUserType, userType]);
+
+  // Set default VAT status and rates based on user type and country
+  useEffect(() => {
+    if (isSignUp) {
+      if (userType === 'company') {
+        form.setValue('isSubjectToVat', true);
+        if (country === 'FR' && !form.getValues('vatRate')) {
+          form.setValue('vatRate', '20');
+        }
+        if (country === 'CH' && !form.getValues('vatRate')) {
+          form.setValue('vatRate', '8.1');
+        }
+      } else if (userType === 'independent') {
+        form.setValue('isSubjectToVat', false);
+      } else {
+        form.setValue('isSubjectToVat', false);
+        form.setValue('vatNumber', '');
+        form.setValue('vatRate', '');
+      }
+    }
+  }, [userType, country, isSignUp, form]);
 
   // Check for auth state changes and session recovery
   useEffect(() => {
@@ -74,62 +123,19 @@ export default function AuthPage() {
     return <Navigate to={destination} replace />;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: any) => {
     setLoading(true);
     setError('');
 
-    console.log('Form submission - Country:', country, 'UserType:', userType);
-    console.log('Form values:', { firstName, lastName, phone, address, postalCode, city, companyName, siretUid, avsNumber, isSubjectToVat, vatNumber, vatRate });
-
-    // Validation for sign up
-    if (isSignUp) {
-      if (!acceptanceTerms) {
-        setError('Vous devez accepter les conditions générales');
-        setLoading(false);
-        return;
-      }
-
-      console.log('Validating fields for:', country, userType);
-
-      // Country/UserType specific validations
-      if (country === 'FR' && userType === 'company' && !siretUid) {
-        setError('Le numéro SIRET est obligatoire pour les sociétés françaises');
-        setLoading(false);
-        return;
-      }
-
-      if (country === 'CH' && userType === 'independent' && !avsNumber) {
-        console.log('AVS validation failed - avsNumber:', avsNumber);
-        setError('Le numéro AVS est obligatoire pour les indépendants suisses');
-        setLoading(false);
-        return;
-      }
-    }
-
     try {
       if (isResetPassword) {
-        // Handle password reset
-        if (!password || !confirmPassword) {
-          setError('Veuillez remplir tous les champs');
-          setLoading(false);
-          return;
-        }
-
-        if (password !== confirmPassword) {
-          setError('Les mots de passe ne correspondent pas');
-          setLoading(false);
-          return;
-        }
-
         const { error: updateError } = await supabase.auth.updateUser({
-          password: password
+          password: data.password
         });
 
         if (updateError) {
           setError('Erreur lors de la mise à jour du mot de passe');
           console.error('Password update error:', updateError);
-          setLoading(false);
           return;
         }
 
@@ -138,29 +144,29 @@ export default function AuthPage() {
       } else if (isSignUp) {
         // Prepare registration metadata
         const metadata = {
-          user_type: userType,
-          country,
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          address,
-          postal_code: postalCode,
-          city,
-          company_name: companyName,
-          company_address: companyAddress,
-          siret_uid: siretUid,
-          avs_number: avsNumber,
-          is_subject_to_vat: isSubjectToVat,
-          vat_number: vatNumber,
-          tva_rate: country === 'FR' ? (vatRate ? parseFloat(vatRate) : null) : null,
-          vat_rate: country === 'CH' ? (vatRate ? parseFloat(vatRate) : null) : null,
-          acceptance_terms: acceptanceTerms,
+          user_type: data.userType,
+          country: data.country,
+          first_name: data.firstName,
+          last_name: data.lastName,
+          phone: data.phone || '',
+          address: '',
+          postal_code: data.postalCode || '',
+          city: data.city || '',
+          company_name: data.companyName || '',
+          company_address: data.companyAddress || '',
+          siret_uid: data.siretUid || '',
+          avs_number: data.avsNumber || '',
+          is_subject_to_vat: data.isSubjectToVat || false,
+          vat_number: data.vatNumber || '',
+          tva_rate: data.country === 'FR' ? (data.vatRate ? parseFloat(data.vatRate) : null) : null,
+          vat_rate: data.country === 'CH' ? (data.vatRate ? parseFloat(data.vatRate) : null) : null,
+          acceptance_terms: data.acceptanceTerms,
           registration_complete: true
         };
 
-        await register(email, password, metadata);
+        await register(data.email, data.password, metadata);
       } else {
-        await login(email, password);
+        await login(data.email, data.password);
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -205,397 +211,399 @@ export default function AuthPage() {
           </p>
         </div>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-destructive/15 border border-destructive/20 p-4">
-              <div className="text-destructive text-sm">{error}</div>
-            </div>
-          )}
-
-          {isSignUp && (
-            <>
-              {/* Country Selection */}
-              <div>
-                <label htmlFor="country" className="block text-sm font-medium text-foreground">
-                  Pays *
-                </label>
-                <select
-                  id="country"
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value as Country)}
-                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  required
-                >
-                  <option value="FR">France</option>
-                  <option value="CH">Suisse</option>
-                </select>
+        <Form {...form}>
+          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+            {error && (
+              <div className="rounded-md bg-destructive/15 border border-destructive/20 p-4">
+                <div className="text-destructive text-sm">{error}</div>
               </div>
+            )}
 
-              {/* User Type Selection */}
-              <div>
-                <label htmlFor="userType" className="block text-sm font-medium text-foreground">
-                  Type de profil *
-                </label>
-                <select
-                  id="userType"
-                  value={userType}
-                  onChange={(e) => setUserType(e.target.value as UserType)}
-                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  required
-                >
-                  <option value="individual">Particulier</option>
-                  <option value="company">Société</option>
-                  <option value="independent">Indépendant</option>
-                </select>
-              </div>
-
-              {/* Personal Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-foreground">
-                    Prénom *
-                  </label>
-                  <input
-                    id="firstName"
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-foreground">
-                    Nom *
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Company Information */}
-              {userType === 'company' && (
-                <>
-                  <div>
-                    <label htmlFor="companyName" className="block text-sm font-medium text-foreground">
-                      Nom de l'entreprise *
-                    </label>
-                    <input
-                      id="companyName"
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      required={isFieldRequired('companyName')}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="companyAddress" className="block text-sm font-medium text-foreground">
-                      Adresse du siège social *
-                    </label>
-                    <textarea
-                      id="companyAddress"
-                      value={companyAddress}
-                      onChange={(e) => setCompanyAddress(e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                      rows={2}
-                      required={isFieldRequired('companyAddress')}
-                    />
-                  </div>
-                  
-                  {/* Company Postal Code and City */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="postalCode" className="block text-sm font-medium text-foreground">
-                        Code postal *
-                      </label>
-                      <input
-                        id="postalCode"
-                        type="text"
-                        value={postalCode}
-                        onChange={(e) => setPostalCode(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        placeholder="Ex: 75001"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="city" className="block text-sm font-medium text-foreground">
-                        Ville *
-                      </label>
-                      <input
-                        id="city"
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                        placeholder="Ex: Paris"
-                        required
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Contact Information */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-foreground">
-                  Téléphone
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                />
-              </div>
-
-
-              {/* Country and User Type Specific Fields */}
-              {country === 'FR' && userType === 'company' && (
-                <div>
-                  <label htmlFor="siret" className="block text-sm font-medium text-foreground">
-                    Numéro SIRET *
-                  </label>
-                  <input
-                    id="siret"
-                    type="text"
-                    value={siretUid}
-                    onChange={(e) => setSiretUid(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="14 chiffres"
-                    required={isFieldRequired('siret')}
-                  />
-                </div>
-              )}
-
-              {country === 'CH' && userType === 'company' && (
-                <div>
-                  <label htmlFor="uid" className="block text-sm font-medium text-foreground">
-                    Numéro UID *
-                  </label>
-                  <input
-                    id="uid"
-                    type="text"
-                    value={siretUid}
-                    onChange={(e) => setSiretUid(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="CHE-XXX.XXX.XXX"
-                    required
-                  />
-                </div>
-              )}
-
-              {country === 'CH' && userType === 'independent' && (
-                <div>
-                  <label htmlFor="avs" className="block text-sm font-medium text-foreground">
-                    Numéro AVS *
-                  </label>
-                  <input
-                    id="avs"
-                    type="text"
-                    value={avsNumber}
-                    onChange={(e) => setAvsNumber(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder="756.XXXX.XXXX.XX"
-                    required={isFieldRequired('avs')}
-                  />
-                </div>
-              )}
-
-              {/* VAT Management for Companies and Independents */}
-              {(userType === 'company' || userType === 'independent') && (
-                <div className="space-y-4">
-                  <div className="flex items-start">
-                    <input
-                      id="subjectToVat"
-                      type="checkbox"
-                      checked={isSubjectToVat}
-                      onChange={(e) => {
-                        setIsSubjectToVat(e.target.checked);
-                        if (!e.target.checked) {
-                          setVatNumber('');
-                          setVatRate('');
-                        } else {
-                          // Set default VAT rate based on country
-                          if (country === 'FR' && !vatRate) setVatRate('20');
-                          if (country === 'CH' && !vatRate) setVatRate('8.1');
-                        }
-                      }}
-                      className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
-                    />
-                    <label htmlFor="subjectToVat" className="ml-2 block text-sm text-foreground">
-                      Assujetti à la TVA
-                    </label>
-                  </div>
-
-                  {isSubjectToVat && (
-                    <>
-                      <div>
-                        <label htmlFor="vatNumber" className="block text-sm font-medium text-foreground">
-                          Numéro de TVA {userType === 'company' ? '*' : ''}
-                        </label>
-                        <input
-                          id="vatNumber"
-                          type="text"
-                          value={vatNumber}
-                          onChange={(e) => setVatNumber(e.target.value)}
-                          className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          placeholder={country === 'FR' ? 'FR XX XXX XXX XXX' : 'CHE-XXX.XXX.XXX TVA'}
-                          required={userType === 'company'}
-                        />
-                      </div>
-
-                      <div>
-                        <label htmlFor="vatRate" className="block text-sm font-medium text-foreground">
-                          Taux de TVA (%) *
-                        </label>
+            {isSignUp && (
+              <>
+                {/* Country Selection */}
+                <FormField
+                  control={form.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pays *</FormLabel>
+                      <FormControl>
                         <select
-                          id="vatRate"
-                          value={vatRate}
-                          onChange={(e) => setVatRate(e.target.value)}
-                          className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                          required
+                          {...field}
+                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
-                          <option value="">Sélectionnez un taux</option>
-                          {country === 'FR' && (
-                            <>
-                              <option value="20">20% (Taux normal)</option>
-                              <option value="10">10% (Taux intermédiaire)</option>
-                              <option value="5.5">5,5% (Taux réduit)</option>
-                              <option value="2.1">2,1% (Taux super réduit)</option>
-                            </>
-                          )}
-                          {country === 'CH' && (
-                            <>
-                              <option value="8.1">8,1% (Taux normal)</option>
-                              <option value="2.6">2,6% (Taux réduit)</option>
-                              <option value="3.8">3,8% (Taux hébergement)</option>
-                            </>
-                          )}
-                          <option value="custom">Autre (saisie manuelle)</option>
+                          <option value="FR">France</option>
+                          <option value="CH">Suisse</option>
                         </select>
-                        {vatRate === 'custom' && (
-                          <input
-                            type="number"
-                            step="0.1"
-                            min="0"
-                            max="100"
-                            placeholder="Taux personnalisé"
-                            className="mt-2 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                            onChange={(e) => setVatRate(e.target.value)}
-                          />
-                        )}
-                      </div>
-                    </>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
-              )}
-
-              {/* Terms and Conditions */}
-              <div className="flex items-start">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  checked={acceptanceTerms}
-                  onChange={(e) => setAcceptanceTerms(e.target.checked)}
-                  className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
-                  required
                 />
-                <label htmlFor="terms" className="ml-2 block text-sm text-foreground">
-                  J'accepte les <a href="#" className="text-primary hover:text-primary/90">conditions générales</a> et la <a href="#" className="text-primary hover:text-primary/90">politique de confidentialité</a> *
-                </label>
-              </div>
-            </>
-          )}
 
-        {!isResetPassword && (
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
-              Email *
-            </label>
-            <input
-              id="email"
+                {/* User Type Selection */}
+                <FormField
+                  control={form.control}
+                  name="userType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type de profil *</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="w-full px-3 py-2 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        >
+                          <option value="individual">Particulier</option>
+                          <option value="company">Société</option>
+                          <option value="independent">Indépendant</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Personal Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prénom *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Votre prénom" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nom *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Votre nom" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Company Information */}
+                {userType === 'company' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="companyName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nom de l'entreprise *</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Nom de votre entreprise" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="companyAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Adresse du siège social *</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} rows={2} placeholder="Adresse complète du siège social" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {/* Company Postal Code and City */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="postalCode"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Code postal *</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: 75001" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ville *</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Ex: Paris" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Contact Information */}
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Téléphone</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="tel" placeholder="+33 1 23 45 67 89" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Country and User Type Specific Fields */}
+                {country === 'FR' && userType === 'company' && (
+                  <FormField
+                    control={form.control}
+                    name="siretUid"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Numéro SIRET *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="14 chiffres" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {country === 'CH' && userType === 'company' && (
+                  <FormField
+                    control={form.control}
+                    name="siretUid"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Numéro UID *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="CHE-XXX.XXX.XXX" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {country === 'CH' && userType === 'independent' && (
+                  <FormField
+                    control={form.control}
+                    name="avsNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Numéro AVS *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="756.XXXX.XXXX.XX" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* VAT Management for Companies and Independents */}
+                {(userType === 'company' || userType === 'independent') && (
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="isSubjectToVat"
+                      render={({ field }) => (
+                        <FormItem className="flex items-start space-x-3">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                            />
+                          </FormControl>
+                          <div className="grid gap-1.5 leading-none">
+                            <FormLabel className="text-sm font-normal">
+                              {userType === 'company' ? 'Assujetti à la TVA' : 'Indépendant assujetti à la TVA'}
+                            </FormLabel>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {watchedIsSubjectToVat && (
+                      <>
+                        <FormField
+                          control={form.control}
+                          name="vatNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>
+                                Numéro de TVA {country === 'FR' ? '(optionnel)' : '(optionnel)'}
+                              </FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  placeholder={country === 'FR' ? 'FRXX123456789' : 'CHE-XXX.XXX.XXX'} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="vatRate"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Taux de TVA (%)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  {...field} 
+                                  placeholder={country === 'FR' ? '20' : '8.1'} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Terms and Conditions */}
+                <FormField
+                  control={form.control}
+                  name="acceptanceTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start space-x-3">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="mt-1 h-4 w-4 text-primary focus:ring-primary border-border rounded"
+                        />
+                      </FormControl>
+                      <div className="grid gap-1.5 leading-none">
+                        <FormLabel className="text-sm font-normal">
+                          J'accepte les{' '}
+                          <a href="/terms" className="text-primary hover:underline">
+                            conditions générales d'utilisation
+                          </a>
+                        </FormLabel>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {/* Email and Password Fields */}
+            <FormField
+              control={form.control}
               name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Votre email"
-            />
-          </div>
-        )}
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-foreground">
-            {isResetPassword ? 'Nouveau mot de passe *' : 'Mot de passe *'}
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete={isSignUp ? "new-password" : "current-password"}
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder={isResetPassword ? "Votre nouveau mot de passe" : "Votre mot de passe"}
-          />
-        </div>
-
-        {isResetPassword && (
-          <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
-              Confirmer le mot de passe *
-            </label>
-            <input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Confirmer votre nouveau mot de passe"
-            />
-          </div>
-        )}
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Chargement...' : (
-                isResetPassword ? 'Définir le nouveau mot de passe' : 
-                (isSignUp ? 'Créer le compte' : 'Se connecter')
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email *</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" placeholder="votre@email.com" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </button>
-          </div>
+            />
 
-          {!isResetPassword && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm text-primary hover:text-primary/90"
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    {isResetPassword ? 'Nouveau mot de passe *' : 'Mot de passe *'}
+                  </FormLabel>
+                  <FormControl>
+                    <Input {...field} type="password" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {(isSignUp || isResetPassword) && (
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmer le mot de passe *</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
               >
-                {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
-              </button>
+                {loading ? 'Chargement...' : (
+                  isResetPassword ? 'Changer le mot de passe' :
+                  isSignUp ? 'Créer mon compte' :
+                  'Se connecter'
+                )}
+              </Button>
             </div>
-          )}
-        </form>
+
+            {!isResetPassword && (
+              <>
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    className="text-primary hover:underline text-sm"
+                  >
+                    {isSignUp ? 'Déjà un compte ? Se connecter' : 'Pas de compte ? S\'inscrire'}
+                  </button>
+                </div>
+
+                {!isSignUp && (
+                  <div className="text-center">
+                    <a
+                      href="/auth?mode=reset"
+                      className="text-muted-foreground hover:text-primary text-sm"
+                    >
+                      Mot de passe oublié ?
+                    </a>
+                  </div>
+                )}
+              </>
+            )}
+          </form>
+        </Form>
       </div>
     </div>
   );
