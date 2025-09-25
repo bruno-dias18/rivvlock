@@ -24,7 +24,7 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
         setIsLoading(true);
         setError(null);
 
-        // Create Stripe account and get onboarding link
+        // Create Stripe account first
         const { data: accountData, error: accountError } = await supabase.functions.invoke('create-stripe-account');
         
         if (accountError) {
@@ -35,17 +35,36 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
           throw new Error(accountData.error);
         }
 
-        if (accountData.onboarding_url) {
+        // Now check account status to get onboarding URL or verify completion
+        const { data: statusData, error: statusError } = await supabase.functions.invoke('check-stripe-account-status');
+        
+        if (statusError) {
+          throw statusError;
+        }
+
+        if (statusData.error) {
+          throw new Error(statusData.error);
+        }
+
+        // If account is already fully set up
+        if (statusData.charges_enabled && statusData.payouts_enabled) {
+          toast.success('Configuration terminée avec succès !');
+          onSuccess();
+          return;
+        }
+
+        // If we have an onboarding URL, open it
+        if (statusData.onboarding_url) {
           // Open Stripe onboarding in new tab
-          window.open(accountData.onboarding_url, '_blank');
+          window.open(statusData.onboarding_url, '_blank');
           
           setIsLoading(false);
           
           // Set up polling to check account status
           const pollAccountStatus = setInterval(async () => {
             try {
-              const { data: statusData } = await supabase.functions.invoke('check-stripe-account-status');
-              if (statusData?.charges_enabled && statusData?.payouts_enabled) {
+              const { data: pollStatusData } = await supabase.functions.invoke('check-stripe-account-status');
+              if (pollStatusData?.charges_enabled && pollStatusData?.payouts_enabled) {
                 clearInterval(pollAccountStatus);
                 toast.success('Configuration terminée avec succès !');
                 onSuccess();
