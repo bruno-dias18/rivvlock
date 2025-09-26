@@ -114,6 +114,7 @@ serve(async (req) => {
       currency: transaction.currency.toLowerCase(),
       destination: sellerStripeAccount.stripe_account_id,
       source_transaction: chargeId,
+      application_fee_amount: platformFee,
       description: `Transfer for transaction: ${transaction.title}`,
       metadata: {
         transaction_id: transaction.id,
