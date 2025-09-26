@@ -277,178 +277,28 @@
     "accountStatus": "Statut du compte",
     "active": "Actif - Prêt à recevoir des paiements",
     "pendingSetup": "En attente de configuration",
+    "pending": "En attente",
     "refresh": "Actualiser",
-    "detailsSubmitted": "Informations soumises",
-    "complete": "✓ Complètes",
-    "incomplete": "⚠ Incomplètes",
-    "paymentsEnabled": "Paiements activés",
-    "enabled": "✓ Activés",
-    "disabled": "⚠ Désactivés",
+    "detailsSubmitted": "Détails soumis",
+    "chargesEnabled": "Paiements activés",
     "payoutsEnabled": "Virements activés",
-    "onboardingRequired": "Votre compte nécessite une configuration supplémentaire pour pouvoir recevoir des paiements. Cliquez sur le bouton ci-dessous pour terminer la configuration.",
-    "completeSetup": "Terminer la configuration",
-    "setupComplete": "✅ Votre compte est configuré ! Les fonds seront automatiquement transférés sur votre compte bancaire après chaque transaction complétée.",
-    "commission": "Une commission de 5% est prélevée sur chaque transaction pour couvrir les frais de la plateforme et de traitement des paiements.",
-    "stripeOpened": "Processus d'enregistrement Stripe ouvert dans un nouvel onglet",
-    "stripeError": "Erreur lors de la création du compte Stripe",
-    "statusUpdated": "Statut du compte mis à jour"
-  },
-  "changePassword": {
-    "title": "Modifier le mot de passe",
-    "forgotTitle": "Mot de passe oublié",
-    "currentPassword": "Mot de passe actuel",
-    "currentPasswordPlaceholder": "Votre mot de passe actuel",
-    "newPassword": "Nouveau mot de passe",
-    "newPasswordPlaceholder": "Votre nouveau mot de passe",
-    "confirmPassword": "Confirmer le nouveau mot de passe",
-    "confirmPasswordPlaceholder": "Confirmer le nouveau mot de passe",
-    "forgotPassword": "Mot de passe oublié ?",
-    "resetEmail": "Un email de réinitialisation sera envoyé à votre adresse :",
-    "back": "Retour",
-    "sendEmail": "Envoyer l'email",
-    "sending": "Envoi...",
-    "cancel": "Annuler",
-    "change": "Modifier le mot de passe",
-    "changing": "Modification...",
-    "userNotFound": "Utilisateur non trouvé",
-    "incorrectPassword": "Mot de passe actuel incorrect",
-    "updateError": "Erreur lors de la mise à jour du mot de passe",
-    "updateSuccess": "Mot de passe mis à jour avec succès",
-    "error": "Une erreur est survenue",
-    "resetEmailError": "Erreur lors de l'envoi de l'email",
-    "resetEmailSent": "Email de réinitialisation envoyé ! Vérifiez votre boîte de réception."
-  },
-  "contactSeller": {
-    "title": "Contacter le vendeur",
-    "description": "Envoyez un message au vendeur concernant la transaction",
-    "messagePlaceholder": "Décrivez votre demande ou question...",
-    "messageRequired": "Veuillez saisir un message",
-    "cancel": "Annuler",
-    "send": "Envoyer le message",
-    "sending": "Envoi...",
-    "success": "Message envoyé au vendeur avec succès",
-    "error": "Erreur lors de l'envoi du message"
-  },
-  "dispute": {
-    "title": "Ouvrir un litige",
-    "description": "Signaler un problème avec la transaction",
-    "problemType": "Type de problème",
-    "selectProblem": "Sélectionnez le type de problème",
-    "detailedDescription": "Description détaillée",
-    "descriptionPlaceholder": "Décrivez précisément le problème rencontré...",
-    "reasonRequired": "Veuillez décrire la raison du litige",
-    "cancel": "Annuler",
-    "create": "Créer le litige",
-    "creating": "Création...",
-    "success": "Litige créé avec succès. Un administrateur va examiner votre demande.",
-    "error": "Erreur lors de la création du litige",
-    "types": {
-      "qualityIssue": "Problème de qualité",
-      "notReceived": "Service non reçu",
-      "notAsDescribed": "Non conforme à la description",
-      "fraud": "Fraude suspectée",
-      "other": "Autre"
-    }
-  },
-  "dateChange": {
-    "title": "Demande de modification de date",
-    "description": "Le vendeur souhaite modifier la date de service de cette transaction.",
-    "responseRequired": "Une réponse de votre part est attendue. Si vous ne répondez pas, la transaction suivra son cours normal.",
-    "currentDate": "Date actuelle",
-    "proposedDate": "Nouvelle date proposée",
-    "notDefined": "Non définie",
-    "sellerMessage": "Message du vendeur",
-    "accept": "Accepter",
-    "refuse": "Refuser",
-    "processing": "Traitement...",
-    "accepted": "Modification de date acceptée",
-    "refused": "Modification de date refusée",
-    "error": "Erreur lors de la réponse"
-  },
-  "status": {
-    "yes": "Oui",
-    "no": "Non"
-  },
-  "language": {
-    "selectLanguage": "Choisir la langue",
-    "french": "Français",
-    "english": "English", 
-    "german": "Deutsch"
-  },
-  "language": {
-    "selectLanguage": "Sélectionner la langue",
-    "french": "Français",
-    "english": "Anglais",
-    "german": "Allemand"
-  },
-  "activity": {
-    "recentActivity": "Activité récente",
-    "viewAll": "Voir tout",
-    "noRecentActivity": "Aucune activité récente",
-    "configurationInProgress": "Configuration en cours...",
-    "types": {
-      "transaction_created": {
-        "title": "Transaction créée",
-        "description": "Nouvelle transaction «{{title}}» créée"
-      },
-      "buyer_joined_transaction": {
-        "title": "Acheteur rejoint",
-        "description": "L'acheteur a rejoint la transaction «{{title}}»"
-      },
-      "funds_blocked": {
-        "title": "Fonds bloqués",
-        "description": "Les fonds ont été bloqués pour «{{title}}»"
-      },
-      "funds_released": {
-        "title": "Fonds libérés",
-        "description": "Les fonds ont été libérés pour «{{title}}»"
-      },
-      "transaction_completed": {
-        "title": "Transaction terminée",
-        "description": "La transaction «{{title}}» est maintenant terminée"
-      },
-      "dispute_created": {
-        "title": "Litige créé",
-        "description": "Un litige a été ouvert pour «{{title}}»"
-      },
-      "seller_validation": {
-        "title": "Validation vendeur",
-        "description": "Le vendeur a validé la transaction «{{title}}»"
-      },
-      "buyer_validation": {
-        "title": "Validation acheteur",
-        "description": "L'acheteur a validé la transaction «{{title}}»"
-      }
-    }
-  },
-  "invoice": {
-    "title": "FACTURE",
-    "sender": "ÉMETTEUR",
-    "client": "CLIENT",
-    "designation": "Désignation",
-    "price": "Prix",
-    "quantity": "Qté",
-    "totalHT": "Total HT",
-    "rivvlockFees": "Frais RivvLock (5%)",
-    "toPay": "À payer",
-    "netReceived": "Net reçu",
-    "servicePerformed": "Service réalisé le",
-    "transactionValidated": "Transaction validée le",
-    "secureEscrowPlatform": "Plateforme d'escrow sécurisée",
-    "contact": "Contact",
-    "invoiceNumber": "Numéro de facture",
-    "invoiceDate": "Date de facture"
-  },
-  "bankAccount": {
-    "title": "Coordonnées bancaires",
-    "description": "Configurez vos coordonnées bancaires pour recevoir les paiements",
-    "setupRequired": "Vous devez configurer un compte Stripe Connect pour recevoir les paiements. Cette étape est nécessaire pour que l'argent soit automatiquement transféré sur votre compte bancaire après chaque transaction complétée.",
-    "setupButton": "Configurer mes coordonnées bancaires",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
+    "complete": "Complet",
+    "incomplete": "Incomplet",
+    "onboardingRequired": "Configuration requise",
+    "onboardingRequiredAlert": "Votre compte nécessite une configuration supplémentaire pour recevoir des paiements.",
+    "setupCompleteAlert": "Votre compte est configuré et prêt à recevoir des paiements.",
     "completeOnboarding": "Terminer la configuration",
     "processingInProgress": "Configuration en cours...",
     "onboardingOpened": "Processus d'enregistrement Stripe ouvert dans un nouvel onglet",
     "statusUpdated": "Statut du compte mis à jour",
     "createError": "Erreur lors de la création du compte Stripe",
+    "modifyBankDetails": "Configurer mes coordonnées bancaires",
+    "modificationOpened": "Interface de modification ouverte dans un nouvel onglet",
+    "modificationError": "Erreur lors de l'ouverture de l'interface de modification",
+    "commissionNote": "Une commission de 5% est appliquée sur chaque transaction.",
+    "accountNotFound": "Votre compte Stripe n'existe plus. Veuillez recréer votre compte.",
     "accountStatus": "Statut du compte",
     "refresh": "Actualiser",
     "detailsSubmitted": "Informations soumises",
@@ -462,10 +312,8 @@
     "pending": "En attente de configuration",
     "onboardingRequiredAlert": "Votre compte nécessite une configuration supplémentaire pour pouvoir recevoir des paiements. Cliquez sur le bouton ci-dessous pour terminer la configuration.",
     "setupCompleteAlert": "✅ Votre compte est configuré ! Les fonds seront automatiquement transférés sur votre compte bancaire après chaque transaction complétée.",
-    "commissionNote": "Une commission de 5% est prélevée sur chaque transaction pour couvrir les frais de la plateforme et de traitement des paiements.",
-    "modifyBankDetails": "Modifier mes coordonnées bancaires",
-    "modifyBankDetailsDescription": "Mettre à jour vos informations bancaires sur Stripe",
-    "modificationOpened": "Interface de modification Stripe ouverte dans un nouvel onglet",
+    "modifyBankDetails": "Configurer mes coordonnées bancaires",
+    "modificationOpened": "Interface de modification ouverte dans un nouvel onglet",
     "modificationError": "Erreur lors de l'ouverture de l'interface de modification"
   }
 }

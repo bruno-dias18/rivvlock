@@ -48,17 +48,31 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
+      console.log('Starting bank details modification...');
+      
       const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
       
+      console.log('Bank details modification response:', { data, error });
+      
       if (error) {
+        console.error('Edge function error:', error);
+        // Check if it's an account not found error
+        if (error.message?.includes('account not found') || error.message?.includes('No account found')) {
+          toast.error(t('bankAccount.accountNotFound'));
+          // Refetch to update the UI state
+          refetch();
+          return;
+        }
         throw error;
       }
       
-      if (data?.url) {
+      if (data?.success && data?.url) {
+        console.log('Opening account modification URL:', data.url);
         window.open(data.url, '_blank');
         toast.success(t('bankAccount.modificationOpened'));
       } else {
-        throw new Error('No URL returned');
+        console.error('Invalid response data:', data);
+        throw new Error('No URL returned from edge function');
       }
     } catch (error) {
       console.error('Error opening bank details modification:', error);

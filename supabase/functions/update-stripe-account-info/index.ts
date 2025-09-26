@@ -60,6 +60,21 @@ serve(async (req) => {
       throw new Error('No Stripe account found for user');
     }
 
+     // Check if account still exists in Stripe
+    let stripeAccountExists = true;
+    try {
+      await stripe.accounts.retrieve(stripeAccount.stripe_account_id);
+      logStep("Stripe account verified in Stripe API");
+    } catch (stripeError: any) {
+      logStep("Stripe account not found in Stripe API", { error: stripeError.message });
+      stripeAccountExists = false;
+      
+      if (stripeError.code === 'account_invalid' || stripeError.code === 'resource_missing') {
+        throw new Error('No account found - account may have been deleted');
+      }
+      throw stripeError;
+    }
+
     if (stripeAccount.account_status !== 'active') {
       throw new Error('Stripe account is not active. Complete setup first.');
     }
