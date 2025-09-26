@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useStripeAccount, useCreateStripeAccount } from '@/hooks/useStripeAccount';
-import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock } from 'lucide-react';
+import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch } = useStripeAccount();
@@ -42,6 +43,29 @@ export default function BankAccountSetupCard() {
   const handleRefreshStatus = () => {
     refetch();
     toast.info(t('bankAccount.statusUpdated'));
+  };
+
+  const handleModifyBankDetails = async () => {
+    try {
+      setIsProcessing(true);
+      const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast.success(t('bankAccount.modificationOpened'));
+      } else {
+        throw new Error('No URL returned');
+      }
+    } catch (error) {
+      console.error('Error opening bank details modification:', error);
+      toast.error(t('bankAccount.modificationError'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (isLoading) {
@@ -175,12 +199,35 @@ export default function BankAccountSetupCard() {
                 {t('bankAccount.completeOnboarding')}
               </Button>
             ) : (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {t('bankAccount.setupCompleteAlert')}
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {t('bankAccount.setupCompleteAlert')}
+                  </AlertDescription>
+                </Alert>
+
+                {stripeAccount.account_status === 'active' && (
+                  <Button 
+                    onClick={handleModifyBankDetails}
+                    disabled={isProcessing}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        {t('bankAccount.processingInProgress')}
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="h-4 w-4 mr-2" />
+                        {t('bankAccount.modifyBankDetails')}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         )}

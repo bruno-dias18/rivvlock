@@ -462,6 +462,10 @@
     "pending": "En attente de configuration",
     "onboardingRequiredAlert": "Votre compte nécessite une configuration supplémentaire pour pouvoir recevoir des paiements. Cliquez sur le bouton ci-dessous pour terminer la configuration.",
     "setupCompleteAlert": "✅ Votre compte est configuré ! Les fonds seront automatiquement transférés sur votre compte bancaire après chaque transaction complétée.",
-    "commissionNote": "Une commission de 5% est prélevée sur chaque transaction pour couvrir les frais de la plateforme et de traitement des paiements."
+    "commissionNote": "Une commission de 5% est prélevée sur chaque transaction pour couvrir les frais de la plateforme et de traitement des paiements.",
+    "modifyBankDetails": "Modifier mes coordonnées bancaires",
+    "modifyBankDetailsDescription": "Mettre à jour vos informations bancaires sur Stripe",
+    "modificationOpened": "Interface de modification Stripe ouverte dans un nouvel onglet",
+    "modificationError": "Erreur lors de l'ouverture de l'interface de modification"
   }
 }
