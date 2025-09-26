@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
@@ -58,6 +58,21 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       currency: 'EUR',
     },
   });
+
+  // Watch price and currency for net amount calculation
+  const watchedPrice = useWatch({
+    control: form.control,
+    name: 'price'
+  });
+
+  const watchedCurrency = useWatch({
+    control: form.control,
+    name: 'currency'
+  });
+
+  // Calculate net amount (after 5% platform fee)
+  const platformFee = watchedPrice * 0.05;
+  const netAmount = watchedPrice - platformFee;
 
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
@@ -202,6 +217,24 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                 )}
               />
             </div>
+
+            {/* Net amount display for seller */}
+            {watchedPrice > 0 && (
+              <div className="rounded-lg bg-muted/50 p-4 border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Prix demandé :</span>
+                  <span>{watchedPrice.toFixed(2)} {watchedCurrency}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Frais plateforme (5%) :</span>
+                  <span>-{platformFee.toFixed(2)} {watchedCurrency}</span>
+                </div>
+                <div className="flex items-center justify-between font-medium text-primary border-t pt-2 mt-2">
+                  <span>Vous recevrez :</span>
+                  <span>{netAmount.toFixed(2)} {watchedCurrency}</span>
+                </div>
+              </div>
+            )}
 
             <FormField
               control={form.control}
