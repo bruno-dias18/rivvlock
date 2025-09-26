@@ -83,11 +83,43 @@ serve(async (req) => {
       payoutsEnabled: sellerStripeAccount.payouts_enabled 
     });
 
-    // Capture the payment intent to release funds to seller
-    const paymentIntent = await stripe.paymentIntents.capture(
+    // Check if funds have already been released to avoid duplicate transfers
+    if (transaction.funds_released) {
+      logStep("Funds already released for this transaction");
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: "Funds were already released for this transaction",
+          transactionId: transaction.id
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
+
+    // Retrieve the payment intent to check its current status
+    let paymentIntent = await stripe.paymentIntents.retrieve(
       transaction.stripe_payment_intent_id
     );
-    logStep("Payment intent captured", { paymentIntentId: paymentIntent.id });
+    logStep("Payment intent retrieved", { 
+      paymentIntentId: paymentIntent.id, 
+      status: paymentIntent.status 
+    });
+
+    // Handle payment intent based on its current status
+    if (paymentIntent.status === 'requires_capture') {
+      // Capture the payment intent if it requires capturing
+      paymentIntent = await stripe.paymentIntents.capture(
+        transaction.stripe_payment_intent_id
+      );
+      logStep("Payment intent captured", { paymentIntentId: paymentIntent.id });
+    } else if (paymentIntent.status === 'succeeded') {
+      logStep("Payment intent already succeeded, proceeding to transfer");
+    } else {
+      throw new Error(`Payment intent status '${paymentIntent.status}' is not valid for fund release`);
+    }
 
     // Get the charge ID from the payment intent for the transfer
     const chargeId = paymentIntent.latest_charge as string;
@@ -124,11 +156,13 @@ serve(async (req) => {
 
     logStep("Transfer created", { transferId: transfer.id });
 
-    // Update transaction status to validated
+    // Update transaction status to validated and mark funds as released
     const { error: updateError } = await supabaseClient
       .from("transactions")
       .update({
         status: "validated",
+        funds_released: true,
+        funds_released_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", transactionId);
@@ -136,7 +170,7 @@ serve(async (req) => {
     if (updateError) {
       throw new Error(`Failed to update transaction: ${updateError.message}`);
     }
-    logStep("Transaction updated to validated");
+    logStep("Transaction updated to validated and funds marked as released");
 
     // Log the activity for seller
     await supabaseClient
