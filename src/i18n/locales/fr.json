@@ -268,6 +268,28 @@
     "releaseError": "Erreur lors de la libération des fonds",
     "invoiceError": "Erreur lors de la génération de la facture"
   },
+  "deleteAccount": {
+    "dangerZone": "Zone de danger",
+    "dangerZoneDescription": "Actions irréversibles sur votre compte",
+    "deleteAccount": "Supprimer mon compte",
+    "title": "Supprimer le compte",
+    "description": "Cette action est définitive et irréversible. Tous vos données seront supprimées.",
+    "warning": "⚠️ ATTENTION : Cette action est irréversible !",
+    "confirmLabel": "Tapez SUPPRIMER pour confirmer",
+    "confirmHelp": "Vous devez taper exactement « SUPPRIMER » en majuscules",
+    "confirmTextError": "Vous devez taper exactement « SUPPRIMER » pour confirmer",
+    "consequencesTitle": "Conséquences de la suppression",
+    "consequence1": "Suppression définitive de toutes vos données personnelles",
+    "consequence2": "Suppression de vos comptes bancaires Stripe",
+    "consequence3": "Anonymisation de l'historique des transactions existantes",
+    "consequence4": "Impossibilité de récupérer votre compte",
+    "confirmDelete": "Supprimer définitivement",
+    "deleting": "Suppression...",
+    "success": "Compte supprimé",
+    "successMessage": "Votre compte a été supprimé avec succès",
+    "error": "Erreur",
+    "errorMessage": "Impossible de supprimer le compte. Veuillez réessayer."
+  },
   "bankAccount": {
     "title": "Coordonnées bancaires",
     "description": "Configurez vos coordonnées bancaires pour recevoir les paiements",
@@ -301,5 +323,27 @@
     "accountNotFound": "Votre compte Stripe n'existe plus. Veuillez recréer votre compte.",
     "accountRecreated": "Votre compte Stripe a été recréé. Veuillez compléter la configuration.",
     "accountAlreadyActive": "Votre compte Stripe est déjà actif et configuré."
+  },
+  "deleteAccount": {
+    "dangerZone": "Zone de danger",
+    "dangerZoneDescription": "Actions irréversibles sur votre compte",
+    "deleteAccount": "Supprimer mon compte",
+    "title": "Supprimer le compte",
+    "description": "Cette action est définitive et irréversible. Toutes vos données seront supprimées.",
+    "warning": "⚠️ ATTENTION : Cette action est irréversible !",
+    "confirmLabel": "Tapez SUPPRIMER pour confirmer",
+    "confirmHelp": "Vous devez taper exactement « SUPPRIMER » en majuscules",
+    "confirmTextError": "Vous devez taper exactement « SUPPRIMER » pour confirmer",
+    "consequencesTitle": "Conséquences de la suppression",
+    "consequence1": "Suppression définitive de toutes vos données personnelles",
+    "consequence2": "Suppression de vos comptes bancaires Stripe",
+    "consequence3": "Anonymisation de l'historique des transactions existantes",
+    "consequence4": "Impossibilité de récupérer votre compte",
+    "confirmDelete": "Supprimer définitivement",
+    "deleting": "Suppression...",
+    "success": "Compte supprimé",
+    "successMessage": "Votre compte a été supprimé avec succès",
+    "error": "Erreur",
+    "errorMessage": "Impossible de supprimer le compte. Veuillez réessayer."
   }
 }

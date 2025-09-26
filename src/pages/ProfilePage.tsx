@@ -9,8 +9,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
-import { Edit } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const { data: profile, isLoading, error, refetch } = useProfile();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -294,6 +296,26 @@ export default function ProfilePage() {
         </Card>
 
         <BankAccountSetupCard />
+
+        {/* Zone de danger */}
+        <Card className="border-destructive/50">
+          <CardHeader>
+            <CardTitle className="text-destructive">{t('deleteAccount.dangerZone')}</CardTitle>
+            <CardDescription>
+              {t('deleteAccount.dangerZoneDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t('deleteAccount.deleteAccount')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
       <EditProfileDialog 
@@ -306,6 +328,11 @@ export default function ProfilePage() {
       <ChangePasswordDialog 
         open={isChangePasswordOpen}
         onOpenChange={setIsChangePasswordOpen}
+      />
+
+      <DeleteAccountDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
       />
       </div>
     </DashboardLayout>

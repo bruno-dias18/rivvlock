@@ -91,6 +91,9 @@ verify_jwt = false
 [functions.send-validation-reminders]
 verify_jwt = false
 
+[functions.delete-user-account]
+verify_jwt = true
+
 [functions.activate-validation-deadlines]
 verify_jwt = false
 
