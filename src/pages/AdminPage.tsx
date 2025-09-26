@@ -10,6 +10,7 @@ import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -329,18 +330,22 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* System Settings Placeholder */}
+        {/* System Settings */}
         <Card>
           <CardHeader>
             <CardTitle>Paramètres système</CardTitle>
             <CardDescription>
-              Configuration globale
+              Configuration et maintenance du système
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Interface de configuration à développer
-            </p>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">Validation des comptes Stripe</h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Vérifier la validité de tous les comptes Stripe Connect et synchroniser leur statut
+              </p>
+              <ValidateStripeAccountsButton />
+            </div>
           </CardContent>
         </Card>
 

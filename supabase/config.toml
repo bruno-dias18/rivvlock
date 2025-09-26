@@ -109,6 +109,27 @@ verify_jwt = true
 [functions.respond-to-date-change]
 verify_jwt = true
 
+[functions.validate-stripe-accounts]
+verify_jwt = true
+
+[functions.process-automatic-transfer]
+verify_jwt = true
+
+[functions.check-stripe-account-status]
+verify_jwt = true
+
+[functions.sync-stripe-customers]
+verify_jwt = true
+
+[functions.create-payment-checkout]
+verify_jwt = true
+
+[functions.create-transaction]
+verify_jwt = true
+
+[functions.get-user-emails]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

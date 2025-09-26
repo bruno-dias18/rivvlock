@@ -78,10 +78,50 @@ serve(async (req) => {
       throw new Error("Seller's Stripe account is not ready for transfers");
     }
 
-    logStep("Seller Stripe account validated", { 
-      accountId: sellerStripeAccount.stripe_account_id,
-      payoutsEnabled: sellerStripeAccount.payouts_enabled 
-    });
+    // Validate that the Stripe account still exists before proceeding
+    try {
+      const stripeAccount = await stripe.accounts.retrieve(sellerStripeAccount.stripe_account_id);
+      logStep("Stripe account validated on Stripe", { 
+        accountId: sellerStripeAccount.stripe_account_id,
+        payoutsEnabled: stripeAccount.payouts_enabled,
+        chargesEnabled: stripeAccount.charges_enabled
+      });
+
+      // Double-check that the account is still active for transfers
+      if (!stripeAccount.payouts_enabled || !stripeAccount.charges_enabled) {
+        throw new Error("Seller's Stripe account is no longer active for transfers");
+      }
+
+      // Update our database with the latest status
+      await supabaseClient
+        .from('stripe_accounts')
+        .update({
+          account_status: stripeAccount.payouts_enabled && stripeAccount.charges_enabled ? 'active' : 'pending',
+          payouts_enabled: stripeAccount.payouts_enabled,
+          charges_enabled: stripeAccount.charges_enabled,
+          last_status_check: new Date().toISOString(),
+        })
+        .eq('user_id', transaction.user_id);
+
+    } catch (stripeError: any) {
+      logStep("ERROR - Stripe account validation failed", { 
+        accountId: sellerStripeAccount.stripe_account_id,
+        error: stripeError.message 
+      });
+
+      // Mark the account as inactive in our database
+      await supabaseClient
+        .from('stripe_accounts')
+        .update({
+          account_status: 'inactive',
+          payouts_enabled: false,
+          charges_enabled: false,
+          last_status_check: new Date().toISOString(),
+        })
+        .eq('user_id', transaction.user_id);
+
+      throw new Error(`Le compte Stripe du vendeur n'existe plus ou n'est plus actif. Veuillez contacter le support.`);
+    }
 
     // Check if funds have already been released to avoid duplicate transfers
     if (transaction.funds_released) {

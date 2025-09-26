@@ -75,12 +75,42 @@ serve(async (req) => {
     });
 
     logStep("Fetching Stripe account details", { accountId: stripeAccount.stripe_account_id });
-    const account = await stripe.accounts.retrieve(stripeAccount.stripe_account_id);
-    logStep("Stripe account retrieved", { 
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      detailsSubmitted: account.details_submitted 
-    });
+    
+    let account;
+    try {
+      account = await stripe.accounts.retrieve(stripeAccount.stripe_account_id);
+      logStep("Stripe account retrieved", { 
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted 
+      });
+    } catch (stripeError: any) {
+      logStep("ERROR - Stripe account not found", { 
+        accountId: stripeAccount.stripe_account_id,
+        error: stripeError.message 
+      });
+
+      // Mark account as inactive in database
+      await supabaseClient
+        .from('stripe_accounts')
+        .update({
+          account_status: 'inactive',
+          payouts_enabled: false,
+          charges_enabled: false,
+          last_status_check: new Date().toISOString(),
+        })
+        .eq('user_id', user.id);
+
+      return new Response(JSON.stringify({
+        has_account: false,
+        account_status: 'inactive',
+        onboarding_required: true,
+        error: "Votre compte Stripe n'existe plus. Veuillez recréer votre compte."
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     // Update database with latest status
     const { error: updateError } = await supabaseClient
