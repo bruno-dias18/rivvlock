@@ -16,17 +16,50 @@ export default function BankAccountSetupCard() {
   const { t } = useTranslation();
 
   const handleCreateAccount = async () => {
+    // Open new tab immediately to avoid popup blockers
+    const newTab = window.open('', '_blank');
+    
     try {
       setIsProcessing(true);
+      console.log('Creating/accessing Stripe account...');
+      
       const result = await createAccount.mutateAsync();
+      console.log('Create account result:', result);
       
       if (result.onboarding_url) {
-        // Open Stripe onboarding in new tab
-        window.open(result.onboarding_url, '_blank');
-        toast.success(t('bankAccount.onboardingOpened'));
+        // Redirect the opened tab to the onboarding URL
+        if (newTab) {
+          newTab.location.href = result.onboarding_url;
+        } else {
+          // Fallback if popup was blocked
+          window.location.href = result.onboarding_url;
+        }
+        
+        if (result.recreated) {
+          toast.success(t('bankAccount.accountRecreated'));
+        } else {
+          toast.success(t('bankAccount.onboardingOpened'));
+        }
+      } else {
+        // Close the tab if no URL needed
+        if (newTab) {
+          newTab.close();
+        }
+        
+        if (result.existing) {
+          toast.info(t('bankAccount.accountAlreadyActive'));
+          // Refresh status to update UI
+          refetch();
+        }
       }
     } catch (error) {
       console.error('Error creating Stripe account:', error);
+      
+      // Close the tab on error
+      if (newTab) {
+        newTab.close();
+      }
+      
       toast.error(t('bankAccount.createError'));
     } finally {
       setIsProcessing(false);
