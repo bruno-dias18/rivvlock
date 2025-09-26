@@ -20,6 +20,9 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
 
   useEffect(() => {
     const initializeOnboarding = async () => {
+      // Open new tab immediately to avoid popup blockers on mobile
+      const newTab = window.open('', '_blank');
+      
       try {
         setIsLoading(true);
         setError(null);
@@ -28,10 +31,18 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
         const { data: accountData, error: accountError } = await supabase.functions.invoke('create-stripe-account');
         
         if (accountError) {
+          // Close the tab on error
+          if (newTab) {
+            newTab.close();
+          }
           throw accountError;
         }
 
         if (accountData.error) {
+          // Close the tab on error
+          if (newTab) {
+            newTab.close();
+          }
           throw new Error(accountData.error);
         }
 
@@ -39,24 +50,41 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
         const { data: statusData, error: statusError } = await supabase.functions.invoke('check-stripe-account-status');
         
         if (statusError) {
+          // Close the tab on error
+          if (newTab) {
+            newTab.close();
+          }
           throw statusError;
         }
 
         if (statusData.error) {
+          // Close the tab on error
+          if (newTab) {
+            newTab.close();
+          }
           throw new Error(statusData.error);
         }
 
         // If account is already fully set up
         if (statusData.charges_enabled && statusData.payouts_enabled) {
+          // Close the tab as it's not needed
+          if (newTab) {
+            newTab.close();
+          }
           toast.success('Configuration terminée avec succès !');
           onSuccess();
           return;
         }
 
-        // If we have an onboarding URL, open it
+        // If we have an onboarding URL, redirect the opened tab
         if (statusData.onboarding_url) {
-          // Open Stripe onboarding in new tab
-          window.open(statusData.onboarding_url, '_blank');
+          // Redirect the opened tab to the onboarding URL
+          if (newTab) {
+            newTab.location.href = statusData.onboarding_url;
+          } else {
+            // Fallback if popup was blocked
+            window.location.href = statusData.onboarding_url;
+          }
           
           setIsLoading(false);
           
@@ -79,11 +107,21 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
             clearInterval(pollAccountStatus);
           }, 300000);
         } else {
+          // Close the tab if no URL available
+          if (newTab) {
+            newTab.close();
+          }
           throw new Error('URL d\'onboarding non disponible');
         }
 
       } catch (err: any) {
         console.error('Error initializing Stripe onboarding:', err);
+        
+        // Close the tab on error
+        if (newTab) {
+          newTab.close();
+        }
+        
         setError(err.message || 'Erreur lors de l\'initialisation');
         setIsLoading(false);
       }
