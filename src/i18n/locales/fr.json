@@ -345,5 +345,79 @@
     "successMessage": "Votre compte a été supprimé avec succès",
     "error": "Erreur",
     "errorMessage": "Impossible de supprimer le compte. Veuillez réessayer."
+  },
+  "terms": {
+    "title": "Conditions Générales d'Utilisation",
+    "lastUpdated": "Dernière mise à jour",
+    "tableOfContents": "Sommaire",
+    "backToRegistration": "Retour à l'inscription",
+    "sections": {
+      "introduction": "Introduction et acceptation des conditions",
+      "serviceDescription": "Description du service RIVVLOCK",
+      "serviceConditions": "Conditions d'utilisation du service",
+      "feesPricing": "Frais et tarification",
+      "userResponsibilities": "Responsabilités des utilisateurs",
+      "dataProtection": "Protection des données personnelles",
+      "intellectualProperty": "Propriété intellectuelle",
+      "liabilityLimitation": "Limitation de responsabilité",
+      "serviceTermination": "Résiliation du service",
+      "applicableLaw": "Droit applicable et juridiction",
+      "contactSupport": "Contact et support"
+    },
+    "content": {
+      "introduction": {
+        "welcome": "Bienvenue sur RIVVLOCK, la plateforme de transactions sécurisées par séquestre (escrow). Ces Conditions Générales d'Utilisation (CGU) régissent votre utilisation de nos services.",
+        "acceptance": "En créant un compte et en utilisant nos services, vous acceptez pleinement et sans réserve ces conditions. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services."
+      },
+      "serviceDescription": {
+        "main": "RIVVLOCK est une plateforme d'intermédiation financière qui sécurise les transactions entre particuliers et professionnels en agissant comme tiers de confiance. Nos services incluent :",
+        "escrow": "Service de séquestre (escrow) pour sécuriser les fonds",
+        "payments": "Traitement des paiements via notre partenaire Stripe",
+        "security": "Vérification et sécurisation des transactions",
+        "mediation": "Médiation en cas de litige entre les parties"
+      },
+      "serviceConditions": {
+        "eligibility": "Nos services sont accessibles à toute personne majeure (18 ans minimum) ou entité juridique capable de contracter selon la législation applicable.",
+        "account": "La création d'un compte nécessite de fournir des informations exactes et à jour. Vous êtes responsable de la confidentialité de vos identifiants de connexion.",
+        "verification": "Nous nous réservons le droit de vérifier votre identité et de demander des documents justificatifs pour valider votre compte."
+      },
+      "feesPricing": {
+        "commission": "RIVVLOCK prélève une commission de 5% sur chaque transaction réalisée via la plateforme. Cette commission couvre les frais de traitement, de sécurisation et de médiation.",
+        "payment": "Les frais de traitement des paiements (Stripe) sont inclus dans cette commission de 5%.",
+        "included": "Cette commission inclut tous les frais de service : sécurisation des fonds, support client, médiation en cas de litige, et frais bancaires."
+      },
+      "userResponsibilities": {
+        "accurate": "Fournir des informations exactes et maintenir vos données à jour",
+        "security": "Maintenir la confidentialité de vos identifiants de connexion",
+        "compliance": "Respecter toutes les lois et réglementations applicables",
+        "prohibited": "Ne pas utiliser le service pour des activités illégales ou frauduleuses"
+      },
+      "dataProtection": {
+        "gdpr": "Nous respectons le Règlement Général sur la Protection des Données (RGPD) et protégeons vos données personnelles selon les plus hauts standards de sécurité.",
+        "collection": "Nous collectons uniquement les données nécessaires au fonctionnement du service et ne les partageons jamais avec des tiers sans votre consentement explicite.",
+        "rights": "Vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données personnelles."
+      },
+      "intellectualProperty": {
+        "ownership": "RIVVLOCK et ses éléments (logo, interface, textes) sont protégés par le droit de la propriété intellectuelle. Toute reproduction non autorisée est interdite.",
+        "license": "Nous vous accordons une licence limitée, non exclusive et révocable pour utiliser notre plateforme dans le cadre de nos CGU."
+      },
+      "liabilityLimitation": {
+        "intermediary": "RIVVLOCK agit en tant qu'intermédiaire technique et financier. Nous ne sommes pas partie aux contrats conclus entre utilisateurs.",
+        "limitation": "Notre responsabilité est limitée au montant des commissions perçues pour la transaction concernée.",
+        "disputes": "En cas de litige entre utilisateurs, nous offrons un service de médiation mais ne garantissons pas la résolution de tous les conflits."
+      },
+      "serviceTermination": {
+        "userRight": "Vous pouvez résilier votre compte à tout moment via les paramètres de votre profil.",
+        "platformRight": "Nous nous réservons le droit de suspendre ou fermer un compte en cas de violation de ces CGU ou d'activité suspecte.",
+        "consequences": "La fermeture d'un compte n'affecte pas les transactions en cours, qui seront menées à leur terme selon les conditions initiales."
+      },
+      "applicableLaw": {
+        "governing": "Ces CGU sont régies par le droit français. Tout litige sera soumis à la juridiction des tribunaux français.",
+        "jurisdiction": "En cas de litige, les tribunaux de Paris seront seuls compétents."
+      },
+      "contactSupport": {
+        "questions": "Pour toute question concernant ces CGU ou nos services, contactez-nous :"
+      }
+    }
   }
 }

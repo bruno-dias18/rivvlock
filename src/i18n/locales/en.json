@@ -457,5 +457,79 @@
     "onboardingRequiredAlert": "Your account requires additional configuration to receive payments. Click the button below to complete the setup.",
     "setupCompleteAlert": "✅ Your account is set up! Funds will be automatically transferred to your bank account after each completed transaction.",
     "commissionNote": "A 5% commission is charged on each transaction to cover platform and payment processing fees."
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated",
+    "tableOfContents": "Table of Contents",
+    "backToRegistration": "Back to registration",
+    "sections": {
+      "introduction": "Introduction and acceptance of terms",
+      "serviceDescription": "RIVVLOCK service description",
+      "serviceConditions": "Service usage conditions",
+      "feesPricing": "Fees and pricing",
+      "userResponsibilities": "User responsibilities",
+      "dataProtection": "Personal data protection",
+      "intellectualProperty": "Intellectual property",
+      "liabilityLimitation": "Liability limitation",
+      "serviceTermination": "Service termination",
+      "applicableLaw": "Applicable law and jurisdiction",
+      "contactSupport": "Contact and support"
+    },
+    "content": {
+      "introduction": {
+        "welcome": "Welcome to RIVVLOCK, the secure escrow transaction platform. These Terms of Service (ToS) govern your use of our services.",
+        "acceptance": "By creating an account and using our services, you fully and unreservedly accept these terms. If you do not accept these terms, please do not use our services."
+      },
+      "serviceDescription": {
+        "main": "RIVVLOCK is a financial intermediation platform that secures transactions between individuals and professionals by acting as a trusted third party. Our services include:",
+        "escrow": "Escrow service to secure funds",
+        "payments": "Payment processing via our partner Stripe",
+        "security": "Transaction verification and security",
+        "mediation": "Mediation in case of disputes between parties"
+      },
+      "serviceConditions": {
+        "eligibility": "Our services are accessible to any adult (18 years minimum) or legal entity capable of contracting under applicable legislation.",
+        "account": "Creating an account requires providing accurate and up-to-date information. You are responsible for the confidentiality of your login credentials.",
+        "verification": "We reserve the right to verify your identity and request supporting documents to validate your account."
+      },
+      "feesPricing": {
+        "commission": "RIVVLOCK charges a 5% commission on each transaction made via the platform. This commission covers processing, security and mediation costs.",
+        "payment": "Payment processing fees (Stripe) are included in this 5% commission.",
+        "included": "This commission includes all service fees: fund security, customer support, dispute mediation, and banking fees."
+      },
+      "userResponsibilities": {
+        "accurate": "Provide accurate information and keep your data up to date",
+        "security": "Maintain the confidentiality of your login credentials",
+        "compliance": "Comply with all applicable laws and regulations",
+        "prohibited": "Do not use the service for illegal or fraudulent activities"
+      },
+      "dataProtection": {
+        "gdpr": "We comply with the General Data Protection Regulation (GDPR) and protect your personal data according to the highest security standards.",
+        "collection": "We only collect data necessary for service operation and never share it with third parties without your explicit consent.",
+        "rights": "You have the right to access, rectify, delete and port your personal data."
+      },
+      "intellectualProperty": {
+        "ownership": "RIVVLOCK and its elements (logo, interface, texts) are protected by intellectual property law. Any unauthorized reproduction is prohibited.",
+        "license": "We grant you a limited, non-exclusive and revocable license to use our platform within the framework of our ToS."
+      },
+      "liabilityLimitation": {
+        "intermediary": "RIVVLOCK acts as a technical and financial intermediary. We are not party to contracts concluded between users.",
+        "limitation": "Our liability is limited to the amount of commissions received for the transaction concerned.",
+        "disputes": "In case of disputes between users, we offer a mediation service but do not guarantee the resolution of all conflicts."
+      },
+      "serviceTermination": {
+        "userRight": "You can terminate your account at any time via your profile settings.",
+        "platformRight": "We reserve the right to suspend or close an account in case of violation of these ToS or suspicious activity.",
+        "consequences": "Account closure does not affect ongoing transactions, which will be completed according to initial conditions."
+      },
+      "applicableLaw": {
+        "governing": "These ToS are governed by French law. Any dispute will be subject to the jurisdiction of French courts.",
+        "jurisdiction": "In case of dispute, the courts of Paris will have sole jurisdiction."
+      },
+      "contactSupport": {
+        "questions": "For any questions about these ToS or our services, contact us:"
+      }
+    }
   }
 }

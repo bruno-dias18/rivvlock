@@ -12,6 +12,7 @@ import AdminPage from "./pages/AdminPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
 import TransactionJoinPage from "./pages/TransactionJoinPage";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -45,6 +46,7 @@ const App: React.FC = () => {
               null,
               React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
               React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
+              React.createElement(Route, { path: "/terms", element: React.createElement(TermsOfServicePage) }),
               React.createElement(Route, { path: "/join/:token", element: React.createElement(TransactionJoinPage) }),
               React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(TransactionJoinPage) }),
               React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),

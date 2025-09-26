@@ -459,5 +459,79 @@
     "onboardingRequiredAlert": "Ihr Konto benötigt zusätzliche Konfiguration, um Zahlungen zu erhalten. Klicken Sie auf die Schaltfläche unten, um die Einrichtung abzuschließen.",
     "setupCompleteAlert": "✅ Ihr Konto ist eingerichtet! Gelder werden nach jeder abgeschlossenen Transaktion automatisch auf Ihr Bankkonto überwiesen.",
     "commissionNote": "Für jede Transaktion wird eine Provision von 5% erhoben, um Plattform- und Zahlungsabwicklungsgebühren zu decken."
+  },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "lastUpdated": "Letzte Aktualisierung",
+    "tableOfContents": "Inhaltsverzeichnis",
+    "backToRegistration": "Zurück zur Registrierung",
+    "sections": {
+      "introduction": "Einführung und Annahme der Bedingungen",
+      "serviceDescription": "RIVVLOCK Service-Beschreibung",
+      "serviceConditions": "Service-Nutzungsbedingungen",
+      "feesPricing": "Gebühren und Preise",
+      "userResponsibilities": "Benutzerverantwortlichkeiten",
+      "dataProtection": "Datenschutz",
+      "intellectualProperty": "Geistiges Eigentum",
+      "liabilityLimitation": "Haftungsbeschränkung",
+      "serviceTermination": "Service-Kündigung",
+      "applicableLaw": "Anwendbares Recht und Gerichtsstand",
+      "contactSupport": "Kontakt und Support"
+    },
+    "content": {
+      "introduction": {
+        "welcome": "Willkommen bei RIVVLOCK, der sicheren Escrow-Transaktionsplattform. Diese Nutzungsbedingungen regeln Ihre Nutzung unserer Services.",
+        "acceptance": "Durch das Erstellen eines Kontos und die Nutzung unserer Services akzeptieren Sie diese Bedingungen vollständig und uneingeschränkt."
+      },
+      "serviceDescription": {
+        "main": "RIVVLOCK ist eine Finanzintermediationsplattform, die Transaktionen zwischen Privatpersonen und Unternehmen durch Handeln als vertrauenswürdiger Dritter sichert. Unsere Services umfassen:",
+        "escrow": "Escrow-Service zur Sicherung von Geldern",
+        "payments": "Zahlungsabwicklung über unseren Partner Stripe",
+        "security": "Transaktionsverifikation und -sicherheit",
+        "mediation": "Mediation bei Streitigkeiten zwischen Parteien"
+      },
+      "serviceConditions": {
+        "eligibility": "Unsere Services sind für alle Erwachsenen (mindestens 18 Jahre) oder juristische Personen zugänglich, die nach geltendem Recht vertragsfähig sind.",
+        "account": "Das Erstellen eines Kontos erfordert die Bereitstellung genauer und aktueller Informationen. Sie sind für die Vertraulichkeit Ihrer Anmeldedaten verantwortlich.",
+        "verification": "Wir behalten uns das Recht vor, Ihre Identität zu überprüfen und unterstützende Dokumente zur Validierung Ihres Kontos anzufordern."
+      },
+      "feesPricing": {
+        "commission": "RIVVLOCK erhebt eine Provision von 5% auf jede über die Plattform durchgeführte Transaktion. Diese Provision deckt Verarbeitungs-, Sicherheits- und Mediationskosten ab.",
+        "payment": "Zahlungsverarbeitungsgebühren (Stripe) sind in dieser 5%-Provision enthalten.",
+        "included": "Diese Provision umfasst alle Service-Gebühren: Geldsicherheit, Kundensupport, Streitmediation und Bankgebühren."
+      },
+      "userResponsibilities": {
+        "accurate": "Genaue Informationen bereitstellen und Ihre Daten aktuell halten",
+        "security": "Die Vertraulichkeit Ihrer Anmeldedaten wahren",
+        "compliance": "Alle anwendbaren Gesetze und Vorschriften einhalten",
+        "prohibited": "Den Service nicht für illegale oder betrügerische Aktivitäten nutzen"
+      },
+      "dataProtection": {
+        "gdpr": "Wir entsprechen der Datenschutz-Grundverordnung (DSGVO) und schützen Ihre persönlichen Daten nach höchsten Sicherheitsstandards.",
+        "collection": "Wir sammeln nur Daten, die für den Servicebetrieb notwendig sind, und teilen sie niemals ohne Ihre ausdrückliche Zustimmung mit Dritten.",
+        "rights": "Sie haben das Recht auf Zugang, Berichtigung, Löschung und Portabilität Ihrer persönlichen Daten."
+      },
+      "intellectualProperty": {
+        "ownership": "RIVVLOCK und seine Elemente (Logo, Interface, Texte) sind durch Urheberrecht geschützt. Jede unbefugte Vervielfältigung ist verboten.",
+        "license": "Wir gewähren Ihnen eine begrenzte, nicht-exklusive und widerrufbare Lizenz zur Nutzung unserer Plattform im Rahmen unserer Nutzungsbedingungen."
+      },
+      "liabilityLimitation": {
+        "intermediary": "RIVVLOCK handelt als technischer und finanzieller Vermittler. Wir sind nicht Partei bei Verträgen zwischen Benutzern.",
+        "limitation": "Unsere Haftung ist auf den Betrag der für die betreffende Transaktion erhaltenen Provisionen beschränkt.",
+        "disputes": "Bei Streitigkeiten zwischen Benutzern bieten wir einen Mediationsservice, garantieren aber nicht die Lösung aller Konflikte."
+      },
+      "serviceTermination": {
+        "userRight": "Sie können Ihr Konto jederzeit über Ihre Profileinstellungen kündigen.",
+        "platformRight": "Wir behalten uns das Recht vor, ein Konto bei Verletzung dieser Nutzungsbedingungen oder verdächtiger Aktivität zu sperren oder zu schließen.",
+        "consequences": "Die Schließung eines Kontos betrifft nicht laufende Transaktionen, die nach den ursprünglichen Bedingungen abgeschlossen werden."
+      },
+      "applicableLaw": {
+        "governing": "Diese Nutzungsbedingungen unterliegen französischem Recht. Alle Streitigkeiten unterliegen der Gerichtsbarkeit französischer Gerichte.",
+        "jurisdiction": "Bei Streitigkeiten haben die Gerichte von Paris alleinige Zuständigkeit."
+      },
+      "contactSupport": {
+        "questions": "Für Fragen zu diesen Nutzungsbedingungen oder unseren Services kontaktieren Sie uns:"
+      }
+    }
   }
 }
