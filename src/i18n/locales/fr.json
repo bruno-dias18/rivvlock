@@ -419,5 +419,45 @@
         "questions": "Pour toute question concernant ces CGU ou nos services, contactez-nous :"
       }
     }
+  },
+  "activity": {
+    "recentActivity": "Activité récente",
+    "viewAll": "Voir tout",
+    "noRecentActivity": "Aucune activité récente",
+    "configurationInProgress": "Configuration en cours...",
+    "types": {
+      "transaction_created": {
+        "title": "Transaction créée",
+        "description": "Nouvelle transaction \"{{title}}\" créée"
+      },
+      "buyer_joined_transaction": {
+        "title": "Acheteur rejoint",
+        "description": "L'acheteur a rejoint la transaction \"{{title}}\""
+      },
+      "funds_blocked": {
+        "title": "Fonds bloqués",
+        "description": "Les fonds ont été bloqués pour \"{{title}}\""
+      },
+      "funds_released": {
+        "title": "Fonds libérés",
+        "description": "Les fonds ont été libérés pour \"{{title}}\""
+      },
+      "transaction_completed": {
+        "title": "Transaction terminée",
+        "description": "La transaction \"{{title}}\" est maintenant terminée"
+      },
+      "dispute_created": {
+        "title": "Litige créé",
+        "description": "Un litige a été ouvert pour \"{{title}}\""
+      },
+      "seller_validation": {
+        "title": "Validation vendeur",
+        "description": "Le vendeur a validé la transaction \"{{title}}\""
+      },
+      "buyer_validation": {
+        "title": "Validation acheteur",
+        "description": "L'acheteur a validé la transaction \"{{title}}\""
+      }
+    }
   }
 }
