@@ -531,5 +531,34 @@
         "questions": "For any questions about these ToS or our services, contact us:"
       }
     }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question? An issue? Contact us!",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Your full name",
+      "email": "Email",
+      "emailPlaceholder": "your@email.com",
+      "subject": "Subject",
+      "subjectPlaceholder": "Subject of your message",
+      "message": "Message",
+      "messagePlaceholder": "Describe your request or issue...",
+      "submit": "Send Message"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Invalid email",
+      "subjectRequired": "Subject is required",
+      "messageRequired": "Message is required"
+    },
+    "success": "Your message has been sent successfully! We will respond as soon as possible.",
+    "error": "Error sending message. Please try again."
+  },
+  "footer": {
+    "terms": "Terms of Service",
+    "contact": "Contact",
+    "copyright": "© 2024 RivvLock. All rights reserved."
   }
 }

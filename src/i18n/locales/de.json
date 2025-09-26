@@ -533,5 +533,34 @@
         "questions": "Für Fragen zu diesen Nutzungsbedingungen oder unseren Services kontaktieren Sie uns:"
       }
     }
+  },
+  "contact": {
+    "title": "Kontakt",
+    "subtitle": "Haben Sie eine Frage? Ein Problem? Kontaktieren Sie uns!",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Ihr vollständiger Name",
+      "email": "E-Mail",
+      "emailPlaceholder": "ihre@email.com",
+      "subject": "Betreff",
+      "subjectPlaceholder": "Betreff Ihrer Nachricht",
+      "message": "Nachricht",
+      "messagePlaceholder": "Beschreiben Sie Ihre Anfrage oder Ihr Problem...",
+      "submit": "Nachricht senden"
+    },
+    "validation": {
+      "nameRequired": "Name ist erforderlich",
+      "emailRequired": "E-Mail ist erforderlich",
+      "emailInvalid": "Ungültige E-Mail",
+      "subjectRequired": "Betreff ist erforderlich",
+      "messageRequired": "Nachricht ist erforderlich"
+    },
+    "success": "Ihre Nachricht wurde erfolgreich gesendet! Wir werden so schnell wie möglich antworten.",
+    "error": "Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut."
+  },
+  "footer": {
+    "terms": "Nutzungsbedingungen",
+    "contact": "Kontakt",
+    "copyright": "© 2024 RivvLock. Alle Rechte vorbehalten."
   }
 }

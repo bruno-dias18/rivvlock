@@ -459,5 +459,34 @@
         "description": "L'acheteur a validé la transaction \"{{title}}\""
       }
     }
+  },
+  "contact": {
+    "title": "Nous contacter",
+    "subtitle": "Une question ? Un problème ? Contactez-nous !",
+    "form": {
+      "name": "Nom",
+      "namePlaceholder": "Votre nom complet",
+      "email": "Email",
+      "emailPlaceholder": "votre@email.com",
+      "subject": "Sujet",
+      "subjectPlaceholder": "Sujet de votre message",
+      "message": "Message",
+      "messagePlaceholder": "Décrivez votre demande ou problème...",
+      "submit": "Envoyer le message"
+    },
+    "validation": {
+      "nameRequired": "Le nom est requis",
+      "emailRequired": "L'email est requis",
+      "emailInvalid": "Email invalide",
+      "subjectRequired": "Le sujet est requis",
+      "messageRequired": "Le message est requis"
+    },
+    "success": "Votre message a été envoyé avec succès ! Nous vous répondrons dans les plus brefs délais.",
+    "error": "Erreur lors de l'envoi du message. Veuillez réessayer."
+  },
+  "footer": {
+    "terms": "Conditions Générales",
+    "contact": "Contact",
+    "copyright": "© 2024 RivvLock. Tous droits réservés."
   }
 }
