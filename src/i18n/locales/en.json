@@ -545,6 +545,28 @@
       }
     }
   },
+  "deleteAccount": {
+    "dangerZone": "Danger Zone",
+    "dangerZoneDescription": "Irreversible actions on your account",
+    "deleteAccount": "Delete my account",
+    "title": "Delete Account",
+    "description": "This action is final and irreversible. All your data will be deleted.",
+    "warning": "⚠️ WARNING: This action is irreversible!",
+    "confirmLabel": "Enter your password to confirm:",
+    "confirmHelp": "Confirm your identity with your password.",
+    "passwordPlaceholder": "Your password",
+    "passwordRequired": "Password is required.",
+    "incorrectPassword": "Incorrect password.",
+    "consequencesTitle": "Deletion consequences",
+    "consequence1": "Permanent deletion of all your personal data",
+    "consequence2": "Deletion of your Stripe bank accounts",
+    "consequence3": "Anonymization of existing transaction history",
+    "consequence4": "Inability to recover your account",
+    "confirmDelete": "Delete permanently",
+    "deleting": "Deleting...",
+    "success": "Your account has been successfully deleted.",
+    "error": "An error occurred while deleting your account."
+  },
   "contact": {
     "title": "Contact Us",
     "subtitle": "Have a question? An issue? Contact us!",

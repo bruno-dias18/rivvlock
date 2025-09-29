@@ -547,6 +547,28 @@
       }
     }
   },
+  "deleteAccount": {
+    "dangerZone": "Gefahrenbereich",
+    "dangerZoneDescription": "Unumkehrbare Aktionen auf Ihrem Konto",
+    "deleteAccount": "Mein Konto löschen",
+    "title": "Konto löschen",
+    "description": "Diese Aktion ist endgültig und unumkehrbar. Alle Ihre Daten werden gelöscht.",
+    "warning": "⚠️ WARNUNG: Diese Aktion ist unumkehrbar!",
+    "confirmLabel": "Geben Sie Ihr Passwort zur Bestätigung ein:",
+    "confirmHelp": "Bestätigen Sie Ihre Identität mit Ihrem Passwort.",
+    "passwordPlaceholder": "Ihr Passwort",
+    "passwordRequired": "Passwort ist erforderlich.",
+    "incorrectPassword": "Falsches Passwort.",
+    "consequencesTitle": "Folgen der Löschung",
+    "consequence1": "Endgültige Löschung aller Ihrer persönlichen Daten",
+    "consequence2": "Löschung Ihrer Stripe-Bankkonten",
+    "consequence3": "Anonymisierung der vorhandenen Transaktionshistorie",
+    "consequence4": "Unmöglichkeit der Wiederherstellung Ihres Kontos",
+    "confirmDelete": "Endgültig löschen",
+    "deleting": "Löschen...",
+    "success": "Ihr Konto wurde erfolgreich gelöscht.",
+    "error": "Beim Löschen Ihres Kontos ist ein Fehler aufgetreten."
+  },
   "contact": {
     "title": "Kontakt",
     "subtitle": "Haben Sie eine Frage? Ein Problem? Kontaktieren Sie uns!",
