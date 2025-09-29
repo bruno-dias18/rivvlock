@@ -11,7 +11,8 @@ export type ActivityType =
   | 'profile_updated'
   | 'dispute_created'
   | 'funds_released'
-  | 'transaction_completed';
+  | 'transaction_completed'
+  | 'transaction_deleted';
 
 interface LogActivityParams {
   type: ActivityType;

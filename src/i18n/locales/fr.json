@@ -459,6 +459,10 @@
         "title": "Transaction terminée",
         "description": "La transaction \"{{title}}\" est maintenant terminée"
       },
+      "transaction_deleted": {
+        "title": "Transaction supprimée",
+        "description": "La transaction expirée \"{{title}}\" a été supprimée"
+      },
       "dispute_created": {
         "title": "Litige créé",
         "description": "Un litige a été ouvert pour \"{{title}}\""

@@ -22,6 +22,7 @@ interface TransactionCardProps {
   onRefetch: () => void;
   onOpenDispute: (transaction: any) => void;
   onDownloadInvoice: (transaction: any) => void;
+  onDeleteExpired?: (transaction: any) => void;
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
@@ -34,6 +35,7 @@ export function TransactionCard({
   onRefetch,
   onOpenDispute,
   onDownloadInvoice,
+  onDeleteExpired,
   CompleteButtonComponent
 }: TransactionCardProps) {
   const isMobile = useIsMobile();
@@ -127,7 +129,10 @@ export function TransactionCard({
           {/* Expired payment notification */}
           {validationStatus.phase === 'expired' && (
             <div className="mt-3">
-              <ExpiredPaymentNotification userRole={userRole as 'seller' | 'buyer'} />
+              <ExpiredPaymentNotification 
+                userRole={userRole as 'seller' | 'buyer'} 
+                onDelete={onDeleteExpired ? () => onDeleteExpired(transaction) : undefined}
+              />
             </div>
           )}
           

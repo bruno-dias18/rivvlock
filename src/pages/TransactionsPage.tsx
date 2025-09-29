@@ -161,6 +161,30 @@ export default function TransactionsPage() {
     return null;
   };
 
+  const handleDeleteExpiredTransaction = async (transaction: any) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette transaction expirée ? Cette action est irréversible.')) {
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-expired-transaction', {
+        body: { transactionId: transaction.id }
+      });
+
+      if (error) {
+        console.error('Error deleting transaction:', error);
+        toast.error('Erreur lors de la suppression de la transaction');
+        return;
+      }
+
+      toast.success('Transaction supprimée avec succès');
+      refetch(); // Refresh the transactions list
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast.error('Erreur lors de la suppression de la transaction');
+    }
+  };
+
   const handleDownloadInvoice = async (transaction: any) => {
     try {
       // Récupérer les profils vendeur et acheteur
@@ -364,6 +388,7 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        onDeleteExpired={handleDeleteExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}
@@ -406,6 +431,7 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        onDeleteExpired={handleDeleteExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}
@@ -448,6 +474,7 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        onDeleteExpired={handleDeleteExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}
