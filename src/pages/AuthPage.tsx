@@ -10,6 +10,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { MaskedUidInput } from '@/components/ui/masked-uid-input';
+import { MaskedAvsInput } from '@/components/ui/masked-avs-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -430,7 +431,7 @@ export default function AuthPage() {
                       <FormItem>
                         <FormLabel>{t('user.avs')} *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="756.1234.5678.90" />
+                          <MaskedAvsInput {...field} />
                         </FormControl>
                         <FormDescription>
                           {t('auth.avsFormat')}

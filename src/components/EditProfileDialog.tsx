@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
 import { MaskedUidInput } from '@/components/ui/masked-uid-input';
 import { MaskedSiretInput } from '@/components/ui/masked-siret-input';
+import { MaskedAvsInput } from '@/components/ui/masked-avs-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -559,7 +560,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                     <FormItem>
                       <FormLabel>Numéro AVS</FormLabel>
                       <FormControl>
-                        <Input placeholder="756.1234.5678.90" {...field} />
+                        <MaskedAvsInput {...field} />
                       </FormControl>
                       <FormDescription>
                         Format : 756.XXXX.XXXX.XX
