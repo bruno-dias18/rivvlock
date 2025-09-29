@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Settings, BarChart3, Users } from 'lucide-react';
+import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -41,6 +41,11 @@ const adminItems = [
     title: 'navigation.admin',
     url: '/dashboard/admin',
     icon: Users,
+  },
+  {
+    title: 'Litiges',
+    url: '/dashboard/admin/disputes',
+    icon: AlertTriangle,
   },
 ];
 

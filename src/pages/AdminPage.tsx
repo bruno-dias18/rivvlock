@@ -1,12 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock } from 'lucide-react';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { useAdminTransactions } from '@/hooks/useAdminTransactions';
 import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
+import { useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -18,6 +21,7 @@ export default function AdminPage() {
   const { data: users, isLoading: usersLoading } = useAdminUsers(5);
   const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
   const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
+  const { data: disputeStats, isLoading: disputeStatsLoading } = useAdminDisputeStats();
 
   const getCurrencySymbol = (currency: string) => {
     const symbols: Record<string, string> = {
@@ -326,6 +330,62 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">
                 Aucune activité récente
               </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Disputes Management */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Gestion des Litiges</span>
+            </CardTitle>
+            <CardDescription>
+              Suivi et résolution des litiges clients
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {disputeStatsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : disputeStats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">{disputeStats.open}</div>
+                    <div className="text-xs text-muted-foreground">Ouverts</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600">{disputeStats.escalated}</div>
+                    <div className="text-xs text-muted-foreground">Escaladés</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{disputeStats.resolved}</div>
+                    <div className="text-xs text-muted-foreground">Résolus</div>
+                  </div>
+                </div>
+                <Link to="/dashboard/admin/disputes">
+                  <Button className="w-full">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Gérer les Litiges
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Aucune donnée de litige disponible
+                </p>
+                <Link to="/dashboard/admin/disputes">
+                  <Button variant="outline" className="w-full">
+                    Voir les Litiges
+                  </Button>
+                </Link>
+              </div>
             )}
           </CardContent>
         </Card>

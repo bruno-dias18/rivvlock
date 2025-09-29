@@ -9,6 +9,7 @@ import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import AdminDisputesPage from "./pages/AdminDisputesPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
 import TransactionJoinPage from "./pages/TransactionJoinPage";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
@@ -67,6 +68,10 @@ const App: React.FC = () => {
               React.createElement(Route, { 
                 path: "/dashboard/admin", 
                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage)))
+              }),
+              React.createElement(Route, { 
+                path: "/dashboard/admin/disputes", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage)))
               }),
               React.createElement(Route, { 
                 path: "/activity-history", 
