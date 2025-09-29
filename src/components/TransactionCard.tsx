@@ -39,7 +39,21 @@ export function TransactionCard({
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  
+  // Map language to appropriate locale
+  const getLocale = () => {
+    switch (i18n.language) {
+      case 'de':
+        return 'de-DE';
+      case 'en':
+        return 'en-US';
+      default:
+        return 'fr-FR';
+    }
+  };
+  
+  const locale = getLocale();
   
   const getUserRole = (transaction: any) => {
     if (transaction.user_id === user?.id) return 'seller';
@@ -83,11 +97,11 @@ export function TransactionCard({
       <CardContent>
         <div className="space-y-2 text-sm text-muted-foreground mb-4">
           <div>{userRole === 'seller' ? t('roles.client') : t('roles.seller')}: {displayName}</div>
-          <div>{t('transactions.createdOn')}: {new Date(transaction.created_at).toLocaleDateString('fr-FR')}</div>
+          <div>{t('transactions.createdOn')}: {new Date(transaction.created_at).toLocaleDateString(locale)}</div>
           {transaction.service_date && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString('fr-FR')} à {new Date(transaction.service_date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString(locale)} à {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
               {transaction.date_change_status === 'pending_approval' && userRole === 'seller' && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
                   {t('transactions.modificationPending')}
