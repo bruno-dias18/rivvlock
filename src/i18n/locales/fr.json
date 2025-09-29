@@ -196,27 +196,18 @@
     "unexpectedError": "Une erreur est survenue",
     "vatRequired": "Le numéro de TVA est obligatoire et doit être au format",
     "siretRequired": "Le numéro SIRET doit contenir exactement 14 chiffres",
-    "uidRequired": "Le numéro UID doit avoir le format CHE-XXX.XXX.XXX"
-  },
-  "profile": {
+    "uidRequired": "Le numéro UID doit avoir le format CHE-XXX.XXX.XXX",
     "managePersonalInfo": "Gérez vos informations personnelles",
-    "editProfile": "Modifier le profil",
     "accountInfo": "Informations du compte",
     "basicInfo": "Vos informations de base",
     "userType": "Type d'utilisateur",
-    "personalInfo": "Informations personnelles",
     "personalData": "Vos données personnelles",
     "notProvided": "Non renseigné",
     "notProvidedFeminine": "Non renseignée",
-    "companyInfo": "Informations d'entreprise",
     "companyData": "Données de votre entreprise",
-    "companyAddress": "Adresse de l'entreprise",
     "headOfficePostalCode": "Code postal du siège",
     "headOfficeCity": "Ville du siège",
-    "taxInfo": "Informations fiscales",
     "vatInfo": "Vos informations de TVA",
-    "subjectToVat": "Assujetti à la TVA",
-    "vatRate": "Taux de TVA (%)",
     "accountSettings": "Paramètres du compte",
     "accountConfiguration": "Configuration de votre compte",
     "registrationComplete": "Inscription complète",
@@ -233,7 +224,12 @@
       "title": "Suppression du compte",
       "description": "Cette action est définitive et supprimera toutes vos données de façon irréversible.",
       "deleteButton": "Supprimer mon compte"
-    }
+    },
+    "helpSupport": "Aide & Support",
+    "helpDescription": "Accédez aux ressources d'aide",
+    "termsOfService": "Conditions générales",
+    "contactUs": "Nous contacter",
+    "website": "Site web"
   },
   "transactions": {
     "title": "Transactions",
