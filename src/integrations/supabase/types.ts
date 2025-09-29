@@ -154,6 +154,69 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_sequences: {
+        Row: {
+          created_at: string
+          current_sequence: number
+          id: string
+          seller_id: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          current_sequence?: number
+          id?: string
+          seller_id: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          current_sequence?: number
+          id?: string
+          seller_id?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          buyer_id: string | null
+          currency: string
+          generated_at: string
+          id: string
+          invoice_number: string
+          pdf_metadata: Json | null
+          seller_id: string
+          transaction_id: string
+        }
+        Insert: {
+          amount: number
+          buyer_id?: string | null
+          currency: string
+          generated_at?: string
+          id?: string
+          invoice_number: string
+          pdf_metadata?: Json | null
+          seller_id: string
+          transaction_id: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string | null
+          currency?: string
+          generated_at?: string
+          id?: string
+          invoice_number?: string
+          pdf_metadata?: Json | null
+          seller_id?: string
+          transaction_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           acceptance_terms: boolean | null
