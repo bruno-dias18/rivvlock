@@ -94,7 +94,7 @@ export function RecentActivityCard() {
   const getActivityDescription = (activity: any) => {
     const translationKey = `activity.types.${activity.activity_type}.description`;
     if (i18n.exists(translationKey)) {
-      const transactionTitle = activity.metadata?.transaction_title || activity.metadata?.title || 'Transaction';
+      const transactionTitle = activity.transaction?.title || activity.metadata?.transaction_title || activity.metadata?.title || 'Transaction';
       return t(translationKey, { title: transactionTitle });
     }
     return activity.description; // Fallback to original
