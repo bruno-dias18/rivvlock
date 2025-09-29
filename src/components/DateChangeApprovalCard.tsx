@@ -39,7 +39,11 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
       }
 
       toast.success(approved ? 'Modification de date acceptée' : 'Modification de date refusée');
-      onResponse?.();
+      
+      // Force refresh after successful response with a slight delay to ensure backend is updated
+      setTimeout(() => {
+        onResponse?.();
+      }, 500);
     } catch (error: any) {
       console.error('Error responding to date change:', error);
       toast.error(error.message || 'Erreur lors de la réponse');

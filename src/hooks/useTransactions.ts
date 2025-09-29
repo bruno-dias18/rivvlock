@@ -32,12 +32,13 @@ export const useTransactions = () => {
       }
       
       console.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
-      console.log('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title })));
+      console.log('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
       
       return data || [];
     },
     enabled: !!user?.id,
     staleTime: 0, // Always fetch fresh data
+    gcTime: 0, // Don't cache data
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
