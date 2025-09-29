@@ -227,7 +227,12 @@
       "title": "Account deletion",
       "description": "This action is permanent and will irreversibly delete all your data.",
       "deleteButton": "Delete my account"
-    }
+    },
+    "helpSupport": "Help & Support",
+    "helpDescription": "Access help resources",
+    "termsOfService": "Terms of Service",
+    "contactUs": "Contact Us",
+    "website": "Website"
   },
   "transactions": {
     "title": "Transactions",

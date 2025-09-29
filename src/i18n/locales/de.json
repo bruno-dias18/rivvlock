@@ -218,7 +218,12 @@
       "title": "Konto löschen", 
       "description": "Diese Aktion ist endgültig und löscht unwiderruflich alle Ihre Daten.",
       "deleteButton": "Mein Konto löschen"
-    }
+    },
+    "helpSupport": "Hilfe & Support",
+    "helpDescription": "Zugang zu Hilferessourcen",
+    "termsOfService": "Allgemeine Geschäftsbedingungen",
+    "contactUs": "Kontaktieren Sie uns",
+    "website": "Website"
   },
   "transactions": {
     "title": "Transaktionen",

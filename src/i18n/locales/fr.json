@@ -329,7 +329,12 @@
     "commissionNote": "Une commission de 5% est appliquée sur chaque transaction.",
     "accountNotFound": "Votre compte Stripe n'existe plus. Veuillez recréer votre compte.",
     "accountRecreated": "Votre compte Stripe a été recréé. Veuillez compléter la configuration.",
-    "accountAlreadyActive": "Votre compte Stripe est déjà actif et configuré."
+    "accountAlreadyActive": "Votre compte Stripe est déjà actif et configuré.",
+    "helpSupport": "Aide & Support",
+    "helpDescription": "Accédez aux ressources d'aide",
+    "termsOfService": "Conditions générales",
+    "contactUs": "Nous contacter",
+    "website": "Site web"
   },
   "deleteAccount": {
     "dangerZone": "Zone de danger",

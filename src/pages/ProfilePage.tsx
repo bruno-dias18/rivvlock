@@ -9,7 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, FileText, Mail, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 
@@ -292,6 +293,35 @@ export default function ProfilePage() {
                 {t('profile.changePassword')}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.helpSupport')}</CardTitle>
+            <CardDescription>
+              {t('profile.helpDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link to="/terms">
+              <Button variant="ghost" className="w-full justify-start h-auto p-3">
+                <FileText className="h-4 w-4 mr-3" />
+                <span>{t('profile.termsOfService')}</span>
+              </Button>
+            </Link>
+            <a href="mailto:contact@rivvlock.com">
+              <Button variant="ghost" className="w-full justify-start h-auto p-3">
+                <Mail className="h-4 w-4 mr-3" />
+                <span>{t('profile.contactUs')}</span>
+              </Button>
+            </a>
+            <a href="https://rivvlock.com" target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" className="w-full justify-start h-auto p-3">
+                <ExternalLink className="h-4 w-4 mr-3" />
+                <span>{t('profile.website')}</span>
+              </Button>
+            </a>
           </CardContent>
         </Card>
 
