@@ -445,6 +445,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      get_next_invoice_sequence: {
+        Args: { p_seller_id: string; p_year: number }
+        Returns: number
+      }
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean

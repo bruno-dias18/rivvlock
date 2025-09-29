@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceData {
   transactionId: string;
@@ -21,8 +22,36 @@ interface InvoiceData {
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
 const RIVVLOCK_LOGO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAMEAQIGBQf/xAA0EAABAwMBBQYGAQQDAAAAAAABAAIDBBEhBRIxQVFhBhMicYGRFDKhscHR4fAjQlJi8f/EABsBAAIDAQEBAAAAAAAAAAAAAAAGAwQFAgEH/8QALBEAAgECBQIEBwAAAAAAAAAAAAECAwQFESFBIFESYcHwMVKBkbHh8UKSocL/2gAMAwEAAhEDEQA/APEREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf/Z';
 
-export const generateInvoicePDF = (invoiceData: InvoiceData) => {
+export const generateInvoicePDF = async (invoiceData: InvoiceData) => {
   const { language = 'fr', t } = invoiceData;
+  
+  // Generate unique invoice number
+  let invoiceNumber: string;
+  
+  try {
+    const { data: response, error } = await supabase.functions.invoke('generate-invoice-number', {
+      body: {
+        transactionId: invoiceData.transactionId,
+        sellerId: invoiceData.sellerProfile?.user_id,
+        buyerId: invoiceData.buyerProfile?.user_id,
+        amount: invoiceData.amount,
+        currency: invoiceData.currency
+      }
+    });
+
+    if (error) {
+      console.error('Error generating invoice number:', error);
+      // Fallback to timestamp-based number if service fails
+      invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
+    } else {
+      invoiceNumber = response.invoiceNumber;
+    }
+  } catch (error) {
+    console.error('Failed to call invoice number service:', error);
+    // Fallback to timestamp-based number
+    invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
+  }
+
   const doc = new jsPDF();
   
   // Configuration
@@ -47,10 +76,7 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   
   // === EN-TÊTE SIMPLIFIÉ (selon modèle) ===
   
-  // Numérotation automatique par vendeur
-  const sellerUserId = invoiceData.sellerProfile?.user_id || 'UNKNOWN';
-  const sequenceNumber = Math.floor(Date.now() / 1000) % 10000;
-  const invoiceNumber = `FAC-${sellerUserId.slice(-4).toUpperCase()}-${sequenceNumber.toString().padStart(4, '0')}`;
+  // Invoice number is now generated above before creating PDF
   const dateOptions: Intl.DateTimeFormatOptions = { 
     year: 'numeric',
     month: '2-digit',
