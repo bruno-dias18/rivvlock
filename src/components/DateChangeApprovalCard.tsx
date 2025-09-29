@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Calendar, Check, X, Clock, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -50,6 +50,7 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
 
   const currentDate = transaction.service_date ? new Date(transaction.service_date) : null;
   const proposedDate = transaction.proposed_service_date ? new Date(transaction.proposed_service_date) : null;
+  const isExpired = transaction.status === 'expired';
 
   return (
     <Card className="border-orange-200 bg-orange-50/50">
@@ -64,6 +65,15 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {isExpired && (
+          <Alert className="bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-blue-800">
+              Cette transaction est expirée. En acceptant cette modification, elle sera réactivée avec un nouveau délai de paiement de 24h.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>

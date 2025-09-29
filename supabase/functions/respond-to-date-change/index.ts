@@ -35,7 +35,8 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     const authHeader = req.headers.get('Authorization')!;
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
       console.error('Authentication error:', authError);
@@ -73,6 +74,15 @@ const handler = async (req: Request): Promise<Response> => {
     // If approved, update the service_date to the proposed date
     if (approved) {
       updateData.service_date = transaction.proposed_service_date;
+      
+      // If transaction was expired, reactivate it with new payment deadline
+      if (transaction.status === 'expired') {
+        updateData.status = 'pending';
+        // Set new payment deadline to 24 hours from now
+        const newDeadline = new Date();
+        newDeadline.setHours(newDeadline.getHours() + 24);
+        updateData.payment_deadline = newDeadline.toISOString();
+      }
     }
 
     // Update transaction
