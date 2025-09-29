@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,7 @@ import { ShareLinkDialog } from './ShareLinkDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activityLogger';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/useProfile';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -48,6 +49,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [transactionTitle, setTransactionTitle] = useState('');
+  
+  const { data: profile } = useProfile();
+  
+  // Determine default currency based on seller's country
+  const getDefaultCurrency = () => {
+    if (profile?.country === 'CH') return 'CHF';
+    return 'EUR'; // Default for FR and fallback
+  };
 
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
@@ -55,9 +64,16 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       title: '',
       description: '',
       price: 0,
-      currency: 'EUR',
+      currency: getDefaultCurrency(),
     },
   });
+
+  // Update currency when profile loads
+  useEffect(() => {
+    if (profile?.country) {
+      form.setValue('currency', getDefaultCurrency());
+    }
+  }, [profile?.country, form]);
 
   // Watch price and currency for net amount calculation
   const watchedPrice = useWatch({
