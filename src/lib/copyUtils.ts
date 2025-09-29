@@ -5,7 +5,7 @@ interface CopyOptions {
 
 interface CopyResult {
   success: boolean;
-  method: 'clipboard' | 'execCommand' | 'textarea' | 'prompt' | 'failed';
+  method: 'clipboard' | 'execCommand' | 'textarea' | 'prompt' | 'share' | 'failed';
   error?: string;
 }
 
@@ -93,8 +93,15 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
 
 // Mobile share fallback (bonus feature)
 export const shareOrCopy = async (text: string, title: string = '', options: CopyOptions = {}): Promise<CopyResult> => {
-  // Try native sharing first on mobile
-  if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+  // Environment detection for better mobile handling
+  const isInIframe = window.top !== window;
+  const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  console.debug('[SHARE] Environment:', { isMobile, isIOS, isInIframe, hasShare: !!navigator.share });
+
+  // Try native sharing first on mobile (prioritize on iOS and when not in iframe)
+  if (navigator.share && isMobile && !isInIframe) {
     try {
       await navigator.share({
         title,
@@ -102,12 +109,12 @@ export const shareOrCopy = async (text: string, title: string = '', options: Cop
         url: text
       });
       console.debug('[SHARE] Success with native share');
-      return { success: true, method: 'clipboard' }; // Using clipboard as method name for consistency
+      return { success: true, method: 'share' }; // Return 'share' to differentiate from clipboard
     } catch (error) {
       console.debug('[SHARE] Native share failed, falling back to copy:', error);
     }
   }
 
-  // Fallback to copy
+  // Fallback to copy with improved mobile handling
   return copyToClipboard(text, options);
 };

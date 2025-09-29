@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { copyToClipboard } from '@/lib/copyUtils';
+import { shareOrCopy } from '@/lib/copyUtils';
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -19,34 +19,47 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
 
   const handleCopyLink = async () => {
     try {
-      const result = await copyToClipboard(shareLink, { 
-        inputRef, 
-        fallbackToPrompt: true 
+      const result = await shareOrCopy(shareLink, transactionTitle, {
+        inputRef,
+        fallbackToPrompt: true
       });
       
       if (result.success) {
         setCopied(true);
         
-        if (result.method === 'prompt') {
-          toast.success('Lien prêt à copier ! Utilisez Ctrl+C ou Cmd+C');
+        if (result.method === 'share') {
+          toast.success("Lien partagé avec succès !", {
+            description: "Le partage a été effectué"
+          });
+        } else if (result.method === 'prompt') {
+          toast.success("Lien prêt à copier !", {
+            description: "Le lien a été sélectionné, copiez-le manuellement"
+          });
         } else {
-          toast.success('Lien copié dans le presse-papier !');
+          toast.success("Lien copié !", {
+            description: "Vous pouvez maintenant le partager"
+          });
         }
         
         setTimeout(() => setCopied(false), 2000);
       } else {
-        throw new Error(result.error || 'Échec de la copie');
+        // Fallback: try to select the input manually
+        if (inputRef.current) {
+          // On iOS, temporarily make input writable to allow selection
+          const wasReadOnly = inputRef.current.readOnly;
+          inputRef.current.readOnly = false;
+          inputRef.current.focus();
+          inputRef.current.select();
+          inputRef.current.setSelectionRange(0, shareLink.length);
+          inputRef.current.readOnly = wasReadOnly;
+        }
+        toast.error("Appui long pour copier", {
+          description: "Le lien est sélectionné, maintenez appuyé pour copier"
+        });
       }
     } catch (error) {
-      console.error('Failed to copy link:', error);
-      
-      // Fallback: select text for manual copy
-      if (inputRef.current) {
-        inputRef.current.select();
-        inputRef.current.setSelectionRange(0, shareLink.length);
-      }
-      
-      toast.error('Impossible de copier automatiquement. Le texte a été sélectionné pour vous.');
+      console.error('Error copying/sharing link:', error);
+      toast.error("Erreur lors de l'opération");
     }
   };
 
@@ -81,6 +94,18 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
                 value={shareLink}
                 readOnly
                 className="flex-1"
+                type="url"
+                onClick={() => {
+                  // Auto-select on tap/click for easier manual copy
+                  if (inputRef.current) {
+                    const wasReadOnly = inputRef.current.readOnly;
+                    inputRef.current.readOnly = false;
+                    inputRef.current.focus();
+                    inputRef.current.select();
+                    inputRef.current.setSelectionRange(0, shareLink.length);
+                    inputRef.current.readOnly = wasReadOnly;
+                  }
+                }}
               />
               <Button
                 type="button"

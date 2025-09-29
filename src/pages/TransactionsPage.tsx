@@ -27,7 +27,7 @@ import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
 import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
-import { copyToClipboard } from '@/lib/copyUtils';
+import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
 
 export default function TransactionsPage() {
@@ -87,10 +87,12 @@ export default function TransactionsPage() {
 
   const handleCopyLink = async (text: string) => {
     try {
-      const result = await copyToClipboard(text, { fallbackToPrompt: true });
+      const result = await shareOrCopy(text, 'RivvLock - Paiement sécurisé', { fallbackToPrompt: true });
       
       if (result.success) {
-        if (result.method === 'prompt') {
+        if (result.method === 'share') {
+          toast.success('Lien partagé avec succès !');
+        } else if (result.method === 'prompt') {
           toast.success(t('transactions.linkReady'));
         } else {
           toast.success(t('transactions.linkCopied'));
@@ -99,7 +101,7 @@ export default function TransactionsPage() {
         toast.error(t('transactions.copyError'));
       }
     } catch (error) {
-      console.error('Failed to copy link:', error);
+      console.error('Failed to copy/share link:', error);
       toast.error(t('transactions.copyError'));
     }
   };
