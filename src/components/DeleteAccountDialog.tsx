@@ -25,14 +25,44 @@ interface DeleteAccountDialogProps {
 export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogProps) => {
   const { t } = useTranslation();
   const { logout } = useAuth();
-  const [confirmText, setConfirmText] = useState('');
+  const [password, setPassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   const handleDelete = async () => {
-      if (confirmText !== 'SUPPRIMER') {
-        toast.error(t('deleteAccount.confirmTextError'));
+    if (!password) {
+      toast.error(t('deleteAccount.passwordRequired'));
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      // Validate password with current user's email
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) {
+        toast.error(t('deleteAccount.errorMessage'));
         return;
       }
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: password,
+      });
+
+      if (authError) {
+        toast.error(t('deleteAccount.incorrectPassword'));
+        setIsValidating(false);
+        return;
+      }
+    } catch (error) {
+      console.error('Password validation error:', error);
+      toast.error(t('deleteAccount.incorrectPassword'));
+      setIsValidating(false);
+      return;
+    }
+
+    setIsValidating(false);
 
     setIsDeleting(true);
 
@@ -63,8 +93,8 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
   };
 
   const handleClose = () => {
-    if (!isDeleting) {
-      setConfirmText('');
+    if (!isDeleting && !isValidating) {
+      setPassword('');
       onOpenChange(false);
     }
   };
@@ -95,11 +125,12 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
               {t('deleteAccount.confirmLabel')}
             </Label>
             <Input
-              id="confirm-text"
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="SUPPRIMER"
-              disabled={isDeleting}
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('deleteAccount.passwordPlaceholder')}
+              disabled={isDeleting || isValidating}
             />
             <p className="text-sm text-muted-foreground">
               {t('deleteAccount.confirmHelp')}
@@ -122,7 +153,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
             type="button"
             variant="outline"
             onClick={handleClose}
-            disabled={isDeleting}
+            disabled={isDeleting || isValidating}
           >
             {t('common.cancel')}
           </Button>
@@ -130,7 +161,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
             type="button"
             variant="destructive"
             onClick={handleDelete}
-            disabled={confirmText !== 'SUPPRIMER' || isDeleting}
+            disabled={!password || isDeleting || isValidating}
           >
             {isDeleting ? (
               <>
