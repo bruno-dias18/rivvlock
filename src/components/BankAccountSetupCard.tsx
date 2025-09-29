@@ -307,12 +307,6 @@ export default function BankAccountSetupCard() {
             )}
           </div>
         )}
-
-        <div className="pt-2 border-t text-xs text-muted-foreground">
-          <p>
-            <strong>Note :</strong> {t('bankAccount.commissionNote')}
-          </p>
-        </div>
       </CardContent>
     </Card>
   );
