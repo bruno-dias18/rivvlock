@@ -71,43 +71,84 @@ export type Database = {
         }
         Relationships: []
       }
+      dispute_messages: {
+        Row: {
+          created_at: string
+          dispute_id: string
+          id: string
+          message: string
+          message_type: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          dispute_id: string
+          id?: string
+          message: string
+          message_type?: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          message?: string
+          message_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           admin_notes: string | null
           created_at: string
+          dispute_deadline: string | null
           dispute_type: string
+          escalated_at: string | null
           id: string
           reason: string
           reporter_id: string
           resolution: string | null
           resolved_at: string | null
-          status: string
+          status: Database["public"]["Enums"]["dispute_status"]
           transaction_id: string
           updated_at: string
         }
         Insert: {
           admin_notes?: string | null
           created_at?: string
+          dispute_deadline?: string | null
           dispute_type?: string
+          escalated_at?: string | null
           id?: string
           reason: string
           reporter_id: string
           resolution?: string | null
           resolved_at?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["dispute_status"]
           transaction_id: string
           updated_at?: string
         }
         Update: {
           admin_notes?: string | null
           created_at?: string
+          dispute_deadline?: string | null
           dispute_type?: string
+          escalated_at?: string | null
           id?: string
           reason?: string
           reporter_id?: string
           resolution?: string | null
           resolved_at?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["dispute_status"]
           transaction_id?: string
           updated_at?: string
         }
@@ -349,6 +390,14 @@ export type Database = {
     Enums: {
       country_code: "FR" | "CH"
       currency_code: "EUR" | "CHF"
+      dispute_status:
+        | "open"
+        | "responded"
+        | "resolved"
+        | "negotiating"
+        | "escalated"
+        | "resolved_refund"
+        | "resolved_release"
       transaction_status: "pending" | "paid" | "validated" | "disputed"
       user_type: "individual" | "company" | "independent"
     }
@@ -480,6 +529,15 @@ export const Constants = {
     Enums: {
       country_code: ["FR", "CH"],
       currency_code: ["EUR", "CHF"],
+      dispute_status: [
+        "open",
+        "responded",
+        "resolved",
+        "negotiating",
+        "escalated",
+        "resolved_refund",
+        "resolved_release",
+      ],
       transaction_status: ["pending", "paid", "validated", "disputed"],
       user_type: ["individual", "company", "independent"],
     },

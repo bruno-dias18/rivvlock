@@ -115,6 +115,9 @@ verify_jwt = true
 [functions.respond-to-dispute]
 verify_jwt = true
 
+[functions.process-dispute-deadlines]
+verify_jwt = false
+
 [functions.validate-stripe-accounts]
 verify_jwt = true
 

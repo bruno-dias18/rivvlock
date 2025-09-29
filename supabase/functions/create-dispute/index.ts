@@ -67,7 +67,10 @@ serve(async (req) => {
       throw new Error("A dispute already exists for this transaction");
     }
 
-    // Create the dispute
+    // Create the dispute with 48h deadline
+    const disputeDeadline = new Date();
+    disputeDeadline.setHours(disputeDeadline.getHours() + 48);
+
     const { data: dispute, error: disputeError } = await supabaseClient
       .from("disputes")
       .insert({
@@ -76,6 +79,7 @@ serve(async (req) => {
         dispute_type: disputeType || "quality_issue",
         reason: reason,
         status: "open",
+        dispute_deadline: disputeDeadline.toISOString(),
       })
       .select()
       .single();
