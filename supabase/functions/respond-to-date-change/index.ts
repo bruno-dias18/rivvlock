@@ -78,9 +78,10 @@ const handler = async (req: Request): Promise<Response> => {
       // If transaction was expired, reactivate it with new payment deadline
       if (transaction.status === 'expired') {
         updateData.status = 'pending';
-        // Set new payment deadline to 24 hours from now
+        // Set new payment deadline to 22:00 tomorrow to give enough time
         const newDeadline = new Date();
-        newDeadline.setHours(newDeadline.getHours() + 24);
+        newDeadline.setDate(newDeadline.getDate() + 1); // Tomorrow
+        newDeadline.setHours(22, 0, 0, 0); // 22:00 sharp
         updateData.payment_deadline = newDeadline.toISOString();
       }
     }
