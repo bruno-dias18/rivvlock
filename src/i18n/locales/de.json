@@ -435,7 +435,14 @@
     "secureEscrowPlatform": "Sichere Escrow-Plattform",
     "contact": "Kontakt",
     "invoiceNumber": "Rechnungsnummer",
-    "invoiceDate": "Rechnungsdatum"
+    "invoiceDate": "Rechnungsdatum",
+    "avsNumber": "AHV-Nummer",
+    "vatSubject": "Mehrwertsteuerpflichtig",
+    "vatNumber": "MWST-Nummer",
+    "siretUid": "SIRET/UID",
+    "vatAmount": "MWST",
+    "totalTTC": "Total inkl. MWST",
+    "vatRate": "MWST-Satz"
   },
   "bankAccount": {
     "title": "Bankverbindung",

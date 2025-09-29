@@ -111,35 +111,98 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   if (invoiceData.sellerProfile) {
     const profile = invoiceData.sellerProfile;
     
-    if (profile.first_name || profile.last_name) {
-      doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), margin, leftColumnY);
-      leftColumnY += 4;
-    }
-    
-    if (invoiceData.sellerEmail) {
-      doc.text(invoiceData.sellerEmail, margin, leftColumnY);
-      leftColumnY += 4;
-    }
-    
-    if (profile.phone) {
-      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
-      doc.text(`${phoneLabel}: ${profile.phone}`, margin, leftColumnY);
-      leftColumnY += 4;
-    }
-    
-    if (profile.company_name) {
-      doc.text(profile.company_name, margin, leftColumnY);
-      leftColumnY += 4;
-    }
-    
-    if (profile.address) {
-      doc.text(profile.address, margin, leftColumnY);
-      leftColumnY += 4;
-    }
-    
-    if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, margin, leftColumnY);
-      leftColumnY += 4;
+    // Affichage adapté selon le type d'utilisateur
+    if (profile.user_type === 'company') {
+      // Pour les entreprises
+      if (profile.company_name) {
+        doc.text(profile.company_name, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.siret_uid) {
+        const siretLabel = profile.country === 'CH' ? 'UID' : 'SIRET';
+        doc.text(`${siretLabel}: ${profile.siret_uid}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.vat_number) {
+        doc.text(`${t?.('invoice.vatNumber') || 'N° TVA'}: ${profile.vat_number}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (invoiceData.sellerEmail) {
+        doc.text(invoiceData.sellerEmail, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.phone) {
+        const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+        doc.text(`${phoneLabel}: ${profile.phone}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      // Utiliser l'adresse d'entreprise pour les sociétés
+      if (profile.company_address) {
+        doc.text(profile.company_address, margin, leftColumnY);
+        leftColumnY += 4;
+      } else if (profile.address) {
+        doc.text(profile.address, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.postal_code && profile.city) {
+        doc.text(`${profile.postal_code} ${profile.city}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+    } else {
+      // Pour les particuliers et indépendants
+      if (profile.first_name || profile.last_name) {
+        doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (invoiceData.sellerEmail) {
+        doc.text(invoiceData.sellerEmail, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.phone) {
+        const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+        doc.text(`${phoneLabel}: ${profile.phone}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      // Pour les indépendants, ajouter le numéro AVS si disponible
+      if (profile.user_type === 'independent' && profile.avs_number) {
+        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${profile.avs_number}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      // Afficher le statut d'assujettissement TVA pour les indépendants
+      if (profile.user_type === 'independent' && profile.is_subject_to_vat) {
+        doc.text(`${t?.('invoice.vatSubject') || 'Assujetti TVA'}`, margin, leftColumnY);
+        leftColumnY += 4;
+        
+        if (profile.tva_rate) {
+          doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${profile.tva_rate}%`, margin, leftColumnY);
+          leftColumnY += 4;
+        }
+      }
+      
+      if (profile.company_name) {
+        doc.text(profile.company_name, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.address) {
+        doc.text(profile.address, margin, leftColumnY);
+        leftColumnY += 4;
+      }
+      
+      if (profile.postal_code && profile.city) {
+        doc.text(`${profile.postal_code} ${profile.city}`, margin, leftColumnY);
+        leftColumnY += 4;
+      }
     }
   }
   
@@ -157,40 +220,107 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   if (invoiceData.buyerProfile) {
     const profile = invoiceData.buyerProfile;
     
-    if (profile.first_name || profile.last_name) {
-      const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-      const nameLines = doc.splitTextToSize(fullName, clientWidth);
-      doc.text(nameLines, clientX, rightColumnY);
-      rightColumnY += nameLines.length * 4;
-    }
-    
-    if (invoiceData.buyerEmail) {
-      const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, clientWidth);
-      doc.text(emailLines, clientX, rightColumnY);
-      rightColumnY += emailLines.length * 4;
-    }
-    
-    if (profile.phone) {
-      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
-      doc.text(`${phoneLabel}: ${profile.phone}`, clientX, rightColumnY);
-      rightColumnY += 4;
-    }
-    
-    if (profile.company_name) {
-      const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
-      doc.text(companyLines, clientX, rightColumnY);
-      rightColumnY += companyLines.length * 4;
-    }
-    
-    if (profile.address) {
-      const addressLines = doc.splitTextToSize(profile.address, clientWidth);
-      doc.text(addressLines, clientX, rightColumnY);
-      rightColumnY += addressLines.length * 4;
-    }
-    
-    if (profile.postal_code && profile.city) {
-      doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY);
-      rightColumnY += 4;
+    // Affichage adapté selon le type d'utilisateur
+    if (profile.user_type === 'company') {
+      // Pour les entreprises
+      if (profile.company_name) {
+        const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
+        doc.text(companyLines, clientX, rightColumnY);
+        rightColumnY += companyLines.length * 4;
+      }
+      
+      if (profile.siret_uid) {
+        const siretLabel = profile.country === 'CH' ? 'UID' : 'SIRET';
+        doc.text(`${siretLabel}: ${profile.siret_uid}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+      
+      if (profile.vat_number) {
+        doc.text(`${t?.('invoice.vatNumber') || 'N° TVA'}: ${profile.vat_number}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+      
+      if (invoiceData.buyerEmail) {
+        const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, clientWidth);
+        doc.text(emailLines, clientX, rightColumnY);
+        rightColumnY += emailLines.length * 4;
+      }
+      
+      if (profile.phone) {
+        const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+        doc.text(`${phoneLabel}: ${profile.phone}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+      
+      // Utiliser l'adresse d'entreprise pour les sociétés
+      if (profile.company_address) {
+        const addressLines = doc.splitTextToSize(profile.company_address, clientWidth);
+        doc.text(addressLines, clientX, rightColumnY);
+        rightColumnY += addressLines.length * 4;
+      } else if (profile.address) {
+        const addressLines = doc.splitTextToSize(profile.address, clientWidth);
+        doc.text(addressLines, clientX, rightColumnY);
+        rightColumnY += addressLines.length * 4;
+      }
+      
+      if (profile.postal_code && profile.city) {
+        doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+    } else {
+      // Pour les particuliers et indépendants
+      if (profile.first_name || profile.last_name) {
+        const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+        const nameLines = doc.splitTextToSize(fullName, clientWidth);
+        doc.text(nameLines, clientX, rightColumnY);
+        rightColumnY += nameLines.length * 4;
+      }
+      
+      if (invoiceData.buyerEmail) {
+        const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, clientWidth);
+        doc.text(emailLines, clientX, rightColumnY);
+        rightColumnY += emailLines.length * 4;
+      }
+      
+      if (profile.phone) {
+        const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+        doc.text(`${phoneLabel}: ${profile.phone}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+      
+      // Pour les indépendants, ajouter le numéro AVS si disponible
+      if (profile.user_type === 'independent' && profile.avs_number) {
+        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${profile.avs_number}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
+      
+      // Afficher le statut d'assujettissement TVA pour les indépendants
+      if (profile.user_type === 'independent' && profile.is_subject_to_vat) {
+        doc.text(`${t?.('invoice.vatSubject') || 'Assujetti TVA'}`, clientX, rightColumnY);
+        rightColumnY += 4;
+        
+        if (profile.tva_rate) {
+          doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${profile.tva_rate}%`, clientX, rightColumnY);
+          rightColumnY += 4;
+        }
+      }
+      
+      if (profile.company_name) {
+        const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
+        doc.text(companyLines, clientX, rightColumnY);
+        rightColumnY += companyLines.length * 4;
+      }
+      
+      if (profile.address) {
+        const addressLines = doc.splitTextToSize(profile.address, clientWidth);
+        doc.text(addressLines, clientX, rightColumnY);
+        rightColumnY += addressLines.length * 4;
+      }
+      
+      if (profile.postal_code && profile.city) {
+        doc.text(`${profile.postal_code} ${profile.city}`, clientX, rightColumnY);
+        rightColumnY += 4;
+      }
     }
   }
   
@@ -251,14 +381,45 @@ export const generateInvoicePDF = (invoiceData: InvoiceData) => {
   const labelX = rightColX;
   const valueX = tableRightEdge; // Alignement parfait avec le bord droit du tableau
   
+  // Déterminer si on doit afficher la TVA
+  const sellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && 
+                       invoiceData.sellerProfile?.is_subject_to_vat && 
+                       invoiceData.sellerProfile?.vat_rate;
+  
+  let baseAmount = amountPaid;
+  let vatAmount = 0;
+  let totalTTC = amountPaid;
+  
+  if (sellerHasVat) {
+    // Calcul inverse : le montant payé contient déjà la TVA
+    const vatRate = invoiceData.sellerProfile.vat_rate / 100;
+    baseAmount = amountPaid / (1 + vatRate);
+    vatAmount = amountPaid - baseAmount;
+  }
+  
   // Total HT
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
   doc.text(`${t?.('invoice.totalHT') || 'Total HT'}:`, labelX, yPosition, { align: 'left' });
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+  doc.text(`${baseAmount.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   
   yPosition += 8;
+  
+  // TVA (si applicable)
+  if (sellerHasVat) {
+    const vatRate = invoiceData.sellerProfile.vat_rate;
+    doc.text(`${t?.('invoice.vatAmount') || 'TVA'} (${vatRate}%):`, labelX, yPosition, { align: 'left' });
+    doc.text(`${vatAmount.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 8;
+    
+    // Total TTC
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${t?.('invoice.totalTTC') || 'Total TTC'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${totalTTC.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 8;
+    doc.setFont('helvetica', 'normal');
+  }
   
   // Frais RivvLock
   doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });

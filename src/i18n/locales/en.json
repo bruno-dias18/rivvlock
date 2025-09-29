@@ -428,7 +428,14 @@
     "secureEscrowPlatform": "Secure escrow platform",
     "contact": "Contact",
     "invoiceNumber": "Invoice number",
-    "invoiceDate": "Invoice date"
+    "invoiceDate": "Invoice date",
+    "avsNumber": "AVS Number",
+    "vatSubject": "VAT Subject",
+    "vatNumber": "VAT Number",
+    "siretUid": "SIRET/UID",
+    "vatAmount": "VAT",
+    "totalTTC": "Total incl. VAT",
+    "vatRate": "VAT Rate"
   },
   "bankAccount": {
     "title": "Bank Details",
