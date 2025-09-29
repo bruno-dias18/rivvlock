@@ -179,7 +179,7 @@ export function TransactionCard({
               </Button>
             )}
 
-            {userRole === 'seller' && (
+            {userRole === 'seller' && transaction.status !== 'validated' && (
               <Button
                 variant="outline"
                 size={isMobile ? "default" : "sm"}
