@@ -501,7 +501,7 @@
       },
       "disputesRefunds": {
         "policy": "In case of dispute between parties, RIVVLOCK applies a fair refund policy based on the dispute resolution:",
-        "customerWins": "• If the dispute is resolved in favor of the buyer: full 100% refund of the amount paid, including platform fees. RivvLock absorbs the loss of its 5% commission in this case.",
+        "customerWins": "• If the dispute is resolved in favor of the buyer: full 100% refund of the amount paid. RivvLock waives its share of the commission in this case, only Stripe processing fees (approximately 2.9% + €0.25) remain non-refundable.",
         "sellerWins": "• If the dispute is resolved in favor of the seller: the 5% commission is maintained and 95% is paid to the seller under normal conditions.",
         "stripeFeesNote": "Important: Stripe processing fees (approximately 2.9% + €0.25) are never refundable, in accordance with our payment partner's terms.",
         "mediation": "Our mediation service examines each dispute impartially based on evidence provided by both parties."
