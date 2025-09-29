@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 export type ValidationPhase = 
   | 'pending'           // En attente de paiement
+  | 'expired'           // Délai de paiement expiré
   | 'service_pending'   // Service pas encore rendu (paid mais service futur)
   | 'validation_active' // En phase de validation (48h countdown)
   | 'validation_expired'// Délai de validation expiré
@@ -78,8 +79,35 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       };
     }
 
+    // Expired payment deadline
+    if (transaction.status === 'expired') {
+      return {
+        phase: 'expired',
+        isValidationDeadlineActive: false,
+        canFinalize: false,
+        canDispute: false,
+        canManuallyFinalize: false,
+        displayLabel: 'Délai de paiement expiré',
+        displayColor: 'destructive'
+      };
+    }
+
     // Pending payment
     if (transaction.status === 'pending') {
+      // Check if payment deadline has passed (for real-time detection)
+      const paymentDeadline = transaction.payment_deadline ? new Date(transaction.payment_deadline) : null;
+      if (paymentDeadline && paymentDeadline <= now) {
+        return {
+          phase: 'expired',
+          isValidationDeadlineActive: false,
+          canFinalize: false,
+          canDispute: false,
+          canManuallyFinalize: false,
+          displayLabel: 'Délai de paiement expiré',
+          displayColor: 'destructive'
+        };
+      }
+      
       return {
         phase: 'pending',
         isValidationDeadlineActive: false,

@@ -398,7 +398,12 @@ export type Database = {
         | "escalated"
         | "resolved_refund"
         | "resolved_release"
-      transaction_status: "pending" | "paid" | "validated" | "disputed"
+      transaction_status:
+        | "pending"
+        | "paid"
+        | "validated"
+        | "disputed"
+        | "expired"
       user_type: "individual" | "company" | "independent"
     }
     CompositeTypes: {
@@ -538,7 +543,13 @@ export const Constants = {
         "resolved_refund",
         "resolved_release",
       ],
-      transaction_status: ["pending", "paid", "validated", "disputed"],
+      transaction_status: [
+        "pending",
+        "paid",
+        "validated",
+        "disputed",
+        "expired",
+      ],
       user_type: ["individual", "company", "independent"],
     },
   },

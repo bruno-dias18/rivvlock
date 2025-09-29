@@ -10,6 +10,7 @@ import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
+import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
 import { useTranslation } from 'react-i18next';
 
 interface TransactionCardProps {
@@ -106,6 +107,13 @@ export function TransactionCard({
           {userRole === 'buyer' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
             <div className="mt-3">
               <ValidationCountdown validationDeadline={transaction.validation_deadline} />
+            </div>
+          )}
+          
+          {/* Expired payment notification */}
+          {validationStatus.phase === 'expired' && (
+            <div className="mt-3">
+              <ExpiredPaymentNotification userRole={userRole as 'seller' | 'buyer'} />
             </div>
           )}
           
