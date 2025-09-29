@@ -213,7 +213,12 @@
     "unexpectedError": "Ein Fehler ist aufgetreten",
     "vatRequired": "MwSt-Nummer ist erforderlich und muss im Format",
     "siretRequired": "SIRET-Nummer muss genau 14 Ziffern enthalten",
-    "uidRequired": "UID-Nummer muss das Format CHE-XXX.XXX.XXX haben"
+    "uidRequired": "UID-Nummer muss das Format CHE-XXX.XXX.XXX haben",
+    "deleteAccount": {
+      "title": "Konto löschen", 
+      "description": "Diese Aktion ist endgültig und löscht unwiderruflich alle Ihre Daten.",
+      "deleteButton": "Mein Konto löschen"
+    }
   },
   "transactions": {
     "title": "Transaktionen",

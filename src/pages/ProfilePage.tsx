@@ -297,25 +297,6 @@ export default function ProfilePage() {
 
         <BankAccountSetupCard />
 
-        {/* Zone de danger */}
-        <Card className="border-destructive/50">
-          <CardHeader>
-            <CardTitle className="text-destructive">{t('deleteAccount.dangerZone')}</CardTitle>
-            <CardDescription>
-              {t('deleteAccount.dangerZoneDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="destructive"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              {t('deleteAccount.deleteAccount')}
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       <EditProfileDialog 
@@ -323,6 +304,7 @@ export default function ProfilePage() {
         onOpenChange={setIsEditDialogOpen}
         profile={profile}
         onProfileUpdated={() => refetch()}
+        onDeleteAccount={() => setIsDeleteDialogOpen(true)}
       />
 
       <ChangePasswordDialog 

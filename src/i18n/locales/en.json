@@ -222,7 +222,12 @@
     "stripeCustomer": "Stripe customer",
     "configured": "Configured",
     "changePassword": "Change password",
-    "loadingError": "Error loading profile"
+    "loadingError": "Error loading profile",
+    "deleteAccount": {
+      "title": "Account deletion",
+      "description": "This action is permanent and will irreversibly delete all your data.",
+      "deleteButton": "Delete my account"
+    }
   },
   "transactions": {
     "title": "Transactions",

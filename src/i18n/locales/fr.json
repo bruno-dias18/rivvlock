@@ -228,7 +228,12 @@
     "stripeCustomer": "Client Stripe",
     "configured": "Configuré",
     "changePassword": "Modifier le mot de passe",
-    "loadingError": "Erreur lors du chargement du profil"
+    "loadingError": "Erreur lors du chargement du profil",
+    "deleteAccount": {
+      "title": "Suppression du compte",
+      "description": "Cette action est définitive et supprimera toutes vos données de façon irréversible.",
+      "deleteButton": "Supprimer mon compte"
+    }
   },
   "transactions": {
     "title": "Transactions",

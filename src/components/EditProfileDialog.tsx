@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { toast } from 'sonner';
 import { vatNumberSchema, siretSchema, swissUidSchema } from '@/lib/validations';
 import { useTranslation } from 'react-i18next';
+import { UserX } from 'lucide-react';
 
 const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean, userType?: string) => {
   const baseSchema = z.object({
@@ -78,9 +79,10 @@ interface EditProfileDialogProps {
   onOpenChange: (open: boolean) => void;
   profile: any;
   onProfileUpdated: () => void;
+  onDeleteAccount?: () => void;
 }
 
-export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdated }: EditProfileDialogProps) {
+export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdated, onDeleteAccount }: EditProfileDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [customVatRate, setCustomVatRate] = useState('');
   const { user } = useAuth();
@@ -569,7 +571,33 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
               </div>
             )}
 
-            <DialogFooter>
+            {/* Separator and Delete Account Section */}
+            {onDeleteAccount && (
+              <>
+                <div className="border-t pt-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <UserX className="h-4 w-4 text-destructive" />
+                    <span className="text-sm font-medium text-destructive">
+                      {t('profile.deleteAccount.title')}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {t('profile.deleteAccount.description')}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onDeleteAccount}
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <UserX className="h-4 w-4 mr-2" />
+                    {t('profile.deleteAccount.deleteButton')}
+                  </Button>
+                </div>
+              </>
+            )}
+
+            <DialogFooter className="mt-6">
               <Button
                 type="button"
                 variant="outline"
