@@ -88,10 +88,6 @@ export default function CompleteTransactionButton({
           </>
         )}
       </Button>
-      
-      <p className="text-xs text-muted-foreground text-center">
-        Une commission de 5% sera prélevée sur le montant total.
-      </p>
     </div>
   );
 }
