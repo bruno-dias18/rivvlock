@@ -65,6 +65,23 @@ export default function TransactionsPage() {
     }
   }, [searchParams, refetch, setSearchParams]);
 
+  // Auto-fix reactivated transactions that may still show a past deadline
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('fix-reactivated-transactions', { body: {} });
+        if (error) throw error;
+        if (data?.fixedCount > 0) {
+          toast.info('Transactions mises à jour automatiquement');
+          refetch();
+        }
+      } catch (e) {
+        console.warn('Auto-fix skipped:', e);
+      }
+    })();
+  }, [user]);
+
   const handleSyncPayments = async () => {
     toast.promise(
       (async () => {

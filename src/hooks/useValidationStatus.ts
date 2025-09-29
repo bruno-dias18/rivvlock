@@ -96,7 +96,15 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
     if (transaction.status === 'pending') {
       // Check if payment deadline has passed (for real-time detection)
       const paymentDeadline = transaction.payment_deadline ? new Date(transaction.payment_deadline) : null;
-      if (paymentDeadline && paymentDeadline <= now) {
+      const updatedAt = transaction.updated_at ? new Date(transaction.updated_at) : null;
+      // Grace period: if transaction was recently reactivated via date change approval,
+      // don't mark as expired immediately even if deadline seems past
+      const recentlyReactivated = (
+        transaction.date_change_status === 'approved' &&
+        !!updatedAt && (now.getTime() - updatedAt.getTime()) <= (2 * 60 * 60 * 1000) // 2 hours
+      );
+
+      if (paymentDeadline && paymentDeadline <= now && !recentlyReactivated) {
         return {
           phase: 'expired',
           isValidationDeadlineActive: false,
