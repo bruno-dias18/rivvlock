@@ -85,6 +85,58 @@ serve(async (req) => {
     }
     logStep("Dispute created", { disputeId: dispute.id });
 
+    // Update transaction status to 'disputed'
+    const { error: updateError } = await supabaseClient
+      .from('transactions')
+      .update({ status: 'disputed' })
+      .eq('id', transactionId);
+
+    if (updateError) {
+      logStep("Error updating transaction status", updateError);
+      // Don't throw here, dispute is already created
+    } else {
+      logStep("Transaction status updated to disputed");
+    }
+
+    // Log activity
+    const { error: activityError } = await supabaseClient
+      .from('activity_logs')
+      .insert({
+        user_id: user.id,
+        activity_type: 'dispute_created',
+        title: `Litige créé pour "${transaction.title}"`,
+        description: `Type: ${disputeType}, Raison: ${reason}`,
+        metadata: {
+          dispute_id: dispute.id,
+          transaction_id: transactionId,
+          dispute_type: disputeType
+        }
+      });
+
+    if (activityError) {
+      logStep("Error logging activity", activityError);
+    }
+
+    // Send notification to seller via send-notifications function
+    try {
+      const { error: notificationError } = await supabaseClient.functions.invoke('send-notifications', {
+        body: {
+          type: 'dispute_created',
+          transactionId: transactionId,
+          message: `Un client a ouvert un litige sur votre transaction "${transaction.title}". Type: ${disputeType}`,
+          recipients: [transaction.user_id] // Seller ID
+        }
+      });
+      
+      if (notificationError) {
+        logStep("Error sending notification", notificationError);
+      } else {
+        logStep("Notification sent to seller");
+      }
+    } catch (error) {
+      logStep("Error invoking notification function", error);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 

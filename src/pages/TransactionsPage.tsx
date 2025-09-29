@@ -16,6 +16,8 @@ import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialo
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
+import { DisputeCard } from '@/components/DisputeCard';
+import { useDisputes } from '@/hooks/useDisputes';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
@@ -40,6 +42,7 @@ export default function TransactionsPage() {
   const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
+  const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   
@@ -456,36 +459,32 @@ export default function TransactionsPage() {
         <TabsContent value="disputed">
           <Card>
             <CardHeader>
-              <CardTitle>Transactions en litige</CardTitle>
+              <CardTitle>Litiges</CardTitle>
               <CardDescription>
-                Transactions faisant l'objet d'un litige ouvert
+                Transactions avec litiges ouverts
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {!isLoading && !queryError && disputedTransactions.length === 0 && (
+              {!isLoading && !queryError && disputes.length === 0 && (
                 <div className="text-center py-8">
                   <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Aucune transaction en litige
+                    Aucun litige
                   </p>
                 </div>
               )}
 
-              {!isLoading && !queryError && disputedTransactions.length > 0 && (
-                <LocalErrorBoundary onRetry={refetch}>
+              {!isLoading && !queryError && disputes.length > 0 && (
+                <LocalErrorBoundary onRetry={() => { refetch(); refetchDisputes(); }}>
                   <div className="space-y-4">
-                    {disputedTransactions.map(transaction => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        user={user}
-                        showActions={false}
-                        onCopyLink={handleCopyLink}
-                        onPayment={handlePayment}
-                        onRefetch={refetch}
-                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                        onDownloadInvoice={handleDownloadInvoice}
-                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                    {disputes.map(dispute => (
+                      <DisputeCard
+                        key={dispute.id}
+                        dispute={dispute}
+                        onRefetch={() => {
+                          refetch();
+                          refetchDisputes();
+                        }}
                       />
                     ))}
                   </div>

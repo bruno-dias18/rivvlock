@@ -50,7 +50,9 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
         throw error;
       }
 
-      toast.success('Litige créé avec succès. Un administrateur va examiner votre demande.');
+      toast.success('Litige créé avec succès', {
+        description: 'Le vendeur a été notifié et peut maintenant répondre à votre litige.'
+      });
       setReason('');
       setDisputeType('quality_issue');
       onOpenChange(false);
