@@ -356,6 +356,7 @@
       "serviceDescription": "Description du service RIVVLOCK",
       "serviceConditions": "Conditions d'utilisation du service",
       "feesPricing": "Frais et tarification",
+      "disputesRefunds": "Litiges et remboursements",
       "userResponsibilities": "Responsabilités des utilisateurs",
       "dataProtection": "Protection des données personnelles",
       "intellectualProperty": "Propriété intellectuelle",
@@ -385,6 +386,13 @@
         "commission": "RIVVLOCK prélève une commission de 5% sur chaque transaction réalisée via la plateforme. Cette commission couvre les frais de traitement, de sécurisation et de médiation.",
         "payment": "Les frais de traitement des paiements (Stripe) sont inclus dans cette commission de 5%.",
         "included": "Cette commission inclut tous les frais de service : sécurisation des fonds, support client, médiation en cas de litige, et frais bancaires."
+      },
+      "disputesRefunds": {
+        "policy": "En cas de litige entre les parties, RIVVLOCK applique une politique de remboursement équitable selon la résolution du litige :",
+        "customerWins": "• Si le litige est résolu en faveur de l'acheteur : remboursement intégral à 100% du montant payé, frais de plateforme inclus. RivvLock absorbe la perte de sa commission de 5% dans ce cas.",
+        "sellerWins": "• Si le litige est résolu en faveur du vendeur : maintien de la commission de 5% et versement de 95% au vendeur selon les conditions normales.",
+        "stripeFeesNote": "Important : les frais de traitement Stripe (environ 2,9% + 0,25€) ne sont jamais remboursables, conformément aux conditions de notre partenaire de paiement.",
+        "mediation": "Notre service de médiation examine chaque litige de manière impartiale en se basant sur les preuves fournies par les deux parties."
       },
       "userResponsibilities": {
         "accurate": "Fournir des informations exactes et maintenir vos données à jour",

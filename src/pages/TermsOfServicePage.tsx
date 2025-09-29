@@ -38,13 +38,14 @@ const TermsOfServicePage: React.FC = () => {
             <a href="#service-description" className="block text-primary hover:underline">2. {t('terms.sections.serviceDescription')}</a>
             <a href="#service-conditions" className="block text-primary hover:underline">3. {t('terms.sections.serviceConditions')}</a>
             <a href="#fees-pricing" className="block text-primary hover:underline">4. {t('terms.sections.feesPricing')}</a>
-            <a href="#user-responsibilities" className="block text-primary hover:underline">5. {t('terms.sections.userResponsibilities')}</a>
-            <a href="#data-protection" className="block text-primary hover:underline">6. {t('terms.sections.dataProtection')}</a>
-            <a href="#intellectual-property" className="block text-primary hover:underline">7. {t('terms.sections.intellectualProperty')}</a>
-            <a href="#liability-limitation" className="block text-primary hover:underline">8. {t('terms.sections.liabilityLimitation')}</a>
-            <a href="#service-termination" className="block text-primary hover:underline">9. {t('terms.sections.serviceTermination')}</a>
-            <a href="#applicable-law" className="block text-primary hover:underline">10. {t('terms.sections.applicableLaw')}</a>
-            <a href="#contact-support" className="block text-primary hover:underline">11. {t('terms.sections.contactSupport')}</a>
+            <a href="#disputes-refunds" className="block text-primary hover:underline">5. {t('terms.sections.disputesRefunds')}</a>
+            <a href="#user-responsibilities" className="block text-primary hover:underline">6. {t('terms.sections.userResponsibilities')}</a>
+            <a href="#data-protection" className="block text-primary hover:underline">7. {t('terms.sections.dataProtection')}</a>
+            <a href="#intellectual-property" className="block text-primary hover:underline">8. {t('terms.sections.intellectualProperty')}</a>
+            <a href="#liability-limitation" className="block text-primary hover:underline">9. {t('terms.sections.liabilityLimitation')}</a>
+            <a href="#service-termination" className="block text-primary hover:underline">10. {t('terms.sections.serviceTermination')}</a>
+            <a href="#applicable-law" className="block text-primary hover:underline">11. {t('terms.sections.applicableLaw')}</a>
+            <a href="#contact-support" className="block text-primary hover:underline">12. {t('terms.sections.contactSupport')}</a>
           </CardContent>
         </Card>
 
@@ -101,10 +102,24 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 5: User Responsibilities */}
+          {/* Section 5: Disputes and Refunds */}
+          <Card id="disputes-refunds">
+            <CardHeader>
+              <CardTitle>5. {t('terms.sections.disputesRefunds')}</CardTitle>
+            </CardHeader>
+            <CardContent className="prose prose-sm max-w-none">
+              <p>{t('terms.content.disputesRefunds.policy')}</p>
+              <p>{t('terms.content.disputesRefunds.customerWins')}</p>
+              <p>{t('terms.content.disputesRefunds.sellerWins')}</p>
+              <p className="font-semibold text-amber-700 dark:text-amber-400">{t('terms.content.disputesRefunds.stripeFeesNote')}</p>
+              <p>{t('terms.content.disputesRefunds.mediation')}</p>
+            </CardContent>
+          </Card>
+
+          {/* Section 6: User Responsibilities */}
           <Card id="user-responsibilities">
             <CardHeader>
-              <CardTitle>5. {t('terms.sections.userResponsibilities')}</CardTitle>
+              <CardTitle>6. {t('terms.sections.userResponsibilities')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <ul>
@@ -116,10 +131,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 6: Data Protection */}
+          {/* Section 7: Data Protection */}
           <Card id="data-protection">
             <CardHeader>
-              <CardTitle>6. {t('terms.sections.dataProtection')}</CardTitle>
+              <CardTitle>7. {t('terms.sections.dataProtection')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.dataProtection.gdpr')}</p>
@@ -128,10 +143,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 7: Intellectual Property */}
+          {/* Section 8: Intellectual Property */}
           <Card id="intellectual-property">
             <CardHeader>
-              <CardTitle>7. {t('terms.sections.intellectualProperty')}</CardTitle>
+              <CardTitle>8. {t('terms.sections.intellectualProperty')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.intellectualProperty.ownership')}</p>
@@ -139,10 +154,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 8: Liability Limitation */}
+          {/* Section 9: Liability Limitation */}
           <Card id="liability-limitation">
             <CardHeader>
-              <CardTitle>8. {t('terms.sections.liabilityLimitation')}</CardTitle>
+              <CardTitle>9. {t('terms.sections.liabilityLimitation')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.liabilityLimitation.intermediary')}</p>
@@ -151,10 +166,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 9: Service Termination */}
+          {/* Section 10: Service Termination */}
           <Card id="service-termination">
             <CardHeader>
-              <CardTitle>9. {t('terms.sections.serviceTermination')}</CardTitle>
+              <CardTitle>10. {t('terms.sections.serviceTermination')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.serviceTermination.userRight')}</p>
@@ -163,10 +178,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 10: Applicable Law */}
+          {/* Section 11: Applicable Law */}
           <Card id="applicable-law">
             <CardHeader>
-              <CardTitle>10. {t('terms.sections.applicableLaw')}</CardTitle>
+              <CardTitle>11. {t('terms.sections.applicableLaw')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.applicableLaw.governing')}</p>
@@ -174,10 +189,10 @@ const TermsOfServicePage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Section 11: Contact and Support */}
+          {/* Section 12: Contact and Support */}
           <Card id="contact-support">
             <CardHeader>
-              <CardTitle>11. {t('terms.sections.contactSupport')}</CardTitle>
+              <CardTitle>12. {t('terms.sections.contactSupport')}</CardTitle>
             </CardHeader>
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.contactSupport.questions')}</p>
