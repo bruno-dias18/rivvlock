@@ -101,7 +101,7 @@ export function TransactionCard({
           {transaction.service_date && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString(locale)} à {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString(locale)} {t('transactions.at')} {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
               {transaction.date_change_status === 'pending_approval' && userRole === 'seller' && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
                   {t('transactions.modificationPending')}
