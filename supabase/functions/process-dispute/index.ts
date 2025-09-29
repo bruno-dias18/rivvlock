@@ -50,14 +50,14 @@ serve(async (req) => {
     let disputeStatus;
 
     if (action === 'refund') {
-      // Refund the buyer (platform keeps 5% fee)
+      // Full refund to buyer when dispute is resolved in their favor
       const totalAmount = Math.round(transaction.price * 100);
       const platformFee = Math.round(totalAmount * 0.05);
-      const refundAmount = totalAmount - platformFee;
+      const refundAmount = totalAmount; // Full refund including platform fee
 
       result = await stripe.refunds.create({
         payment_intent: transaction.stripe_payment_intent_id,
-        amount: refundAmount, // Refund minus platform fee
+        amount: refundAmount, // Full refund to customer
         reason: 'requested_by_customer',
         metadata: {
           dispute_id: disputeId,
@@ -68,8 +68,9 @@ serve(async (req) => {
       newTransactionStatus = 'disputed';
       disputeStatus = 'resolved_refund';
 
-      console.log(`💰 REFUND: ${(refundAmount / 100).toFixed(2)} ${transaction.currency} refunded to buyer`);
-      console.log(`💰 FEE RETAINED: ${(platformFee / 100).toFixed(2)} ${transaction.currency} platform fee`);
+      console.log(`💰 FULL REFUND: ${(refundAmount / 100).toFixed(2)} ${transaction.currency} refunded to buyer (100%)`);
+      console.log(`💸 PLATFORM LOSS: ${(platformFee / 100).toFixed(2)} ${transaction.currency} RivvLock fee absorbed (dispute cost)`);
+      console.log(`💳 STRIPE FEES: Non-refundable processing fees remain with Stripe`);
 
     } else if (action === 'release') {
       // Release funds to seller minus platform fee
