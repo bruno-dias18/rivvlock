@@ -1,11 +1,20 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
 
 const TermsOfServicePage: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [searchParams] = useSearchParams();
+
+  // Synchronize language with URL parameter
+  useEffect(() => {
+    const langParam = searchParams.get('lang');
+    if (langParam && langParam !== i18n.language) {
+      i18n.changeLanguage(langParam);
+    }
+  }, [searchParams, i18n]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-secondary/20 p-4">

@@ -32,7 +32,7 @@ export default function AuthPage() {
   const [userType, setUserType] = useState<'individual' | 'company' | 'independent'>('individual');
 
   const { user, login, register } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Dynamic form schema based on current selections
   const getFormSchema = () => {
@@ -534,7 +534,7 @@ export default function AuthPage() {
                       <div className="grid gap-1.5 leading-none">
                         <FormLabel className="text-sm font-normal">
                           {t('auth.iAcceptThe')}{' '}
-                          <a href="/terms" className="text-primary hover:underline">
+                          <a href={`/terms?lang=${i18n.language}`} className="text-primary hover:underline">
                             {t('auth.termsOfUse')}
                           </a>
                         </FormLabel>
