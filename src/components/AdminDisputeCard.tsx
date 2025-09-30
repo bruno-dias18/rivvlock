@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { DisputeMessaging } from './DisputeMessaging';
+import { AdminDisputeMessaging } from './AdminDisputeMessaging';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -389,16 +389,19 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
           </div>
         )}
 
-        {/* Conversation History */}
+        {/* Private Conversations with Seller and Buyer */}
         <div>
           <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
-            Historique de la conversation
+            Conversations privées
           </h4>
           
-          <DisputeMessaging
+          <AdminDisputeMessaging
             disputeId={dispute.id}
-            disputeDeadline={dispute.dispute_deadline}
+            sellerId={transaction?.user_id || ''}
+            buyerId={transaction?.buyer_id || ''}
+            sellerName={sellerProfile ? `${sellerProfile.first_name} ${sellerProfile.last_name}` : transaction?.seller_display_name || 'Vendeur'}
+            buyerName={buyerProfile ? `${buyerProfile.first_name} ${buyerProfile.last_name}` : transaction?.buyer_display_name || 'Acheteur'}
             status={dispute.status}
           />
         </div>
