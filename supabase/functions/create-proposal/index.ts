@@ -11,13 +11,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const authHeader = req.headers.get("Authorization") ?? "";
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false },
+    }
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
     const { data: userData } = await supabaseClient.auth.getUser(token);
     const user = userData.user;
@@ -29,6 +33,13 @@ serve(async (req) => {
     const { disputeId, proposalType, refundPercentage, message } = await req.json();
 
     console.log("Creating proposal:", { disputeId, proposalType, refundPercentage, userId: user.id });
+
+    // Simple validation for partial refunds
+    if (proposalType === 'partial_refund') {
+      if (typeof refundPercentage !== 'number' || refundPercentage < 0 || refundPercentage > 100) {
+        throw new Error("Invalid refundPercentage. Must be between 0 and 100.");
+      }
+    }
 
     // Get the dispute
     const { data: dispute, error: disputeError } = await supabaseClient
