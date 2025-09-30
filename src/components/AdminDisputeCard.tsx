@@ -38,7 +38,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
       if (!dispute.transactions && dispute.transaction_id) {
         const { data } = await supabase
           .from('transactions')
-          .select('id, title, price, currency, service_date, status, seller_display_name, buyer_display_name')
+          .select('id, title, price, currency, service_date, status, seller_display_name, buyer_display_name, user_id, buyer_id')
           .eq('id', dispute.transaction_id)
           .maybeSingle();
         if (data) setTransaction(data);
