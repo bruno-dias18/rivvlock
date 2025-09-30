@@ -364,13 +364,44 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         </div>
       )}
 
-      {/* Expired State - No input */}
-      {isExpired && (
+      {/* Escalated State - Admin communication only */}
+      {isExpired && !status.startsWith('resolved') && (
+        <div className="flex-shrink-0 border-t bg-background">
+          <div className="p-2 border-b bg-purple-50 dark:bg-purple-950/20">
+            <p className="text-xs text-purple-700 dark:text-purple-300 text-center">
+              🛡️ Communication avec l'admin uniquement
+            </p>
+          </div>
+          
+          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
+            <Textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Répondre à l'admin..."
+              className={`resize-none ${isMobile ? 'min-h-[50px] max-h-[100px]' : 'min-h-[60px] max-h-[120px]'}`}
+              disabled={isSendingMessage}
+              aria-label="Message pour l'admin"
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || isSendingMessage}
+              size="icon"
+              className={`flex-shrink-0 ${isMobile ? 'h-[50px] w-[50px]' : 'h-[60px] w-[60px]'}`}
+              aria-label="Envoyer le message à l'admin"
+            >
+              <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Resolved State - No input */}
+      {isExpired && status.startsWith('resolved') && (
         <div className="flex-shrink-0 border-t bg-muted/30 p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            {(status === 'escalated' || isDeadlinePassed)
-              ? 'La messagerie est fermée. Le litige est en cours d\'arbitrage.'
-              : status === 'resolved_agreement'
+            {status === 'resolved_agreement'
               ? '✅ Litige résolu par accord mutuel. La conversation est fermée.'
               : '✅ Litige résolu. La conversation est fermée.'
             }
