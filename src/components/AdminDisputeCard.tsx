@@ -241,7 +241,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             <div>
               <span className="text-muted-foreground">Montant:</span>
               <span className="ml-2 font-medium">
-                {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
+                {transaction?.price} {transaction?.currency?.toUpperCase()}
               </span>
             </div>
             <div>

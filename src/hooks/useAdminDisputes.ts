@@ -15,12 +15,7 @@ export const useAdminDisputes = (status?: string) => {
 
       let query = supabase
         .from('disputes')
-        .select(`
-          *,
-          transactions (
-            id, title, price, currency, service_date, status, seller_display_name, buyer_display_name, user_id, buyer_id
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (status && status !== 'all') {
