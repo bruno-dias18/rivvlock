@@ -368,7 +368,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {isExpired && (
         <div className="flex-shrink-0 border-t bg-muted/30 p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            {status === 'escalated' 
+            {(status === 'escalated' || isDeadlinePassed)
               ? 'La messagerie est fermée. Le litige est en cours d\'arbitrage.'
               : status === 'resolved_agreement'
               ? '✅ Litige résolu par accord mutuel. La conversation est fermée.'
