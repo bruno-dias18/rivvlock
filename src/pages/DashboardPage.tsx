@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Clock, CheckCircle2, Lock, Settings } from 'lucide-react';
+import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle } from 'lucide-react';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
+  const { data: disputes } = useDisputes();
 
   // Force sync on dashboard load
   useEffect(() => {
@@ -72,6 +74,13 @@ export default function DashboardPage() {
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
       icon: Lock,
       onClick: () => navigate('/dashboard/transactions?tab=blocked'),
+    },
+    {
+      title: t('transactions.disputed'),
+      description: t('transactions.disputedDescription'),
+      count: String(disputes?.length || 0),
+      icon: AlertTriangle,
+      onClick: () => navigate('/dashboard/transactions?tab=disputed'),
     },
     {
       title: t('dashboard.completed'),
