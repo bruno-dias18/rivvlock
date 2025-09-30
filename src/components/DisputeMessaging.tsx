@@ -61,11 +61,9 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
 
-  // Filtrer les messages : 
-  // - Afficher mes propres messages
-  // - Afficher les messages de l'admin qui me sont adressés
+  // Filtrer les messages strictement destinés à l'utilisateur courant
   const displayMessages = messages.filter(
-    (m) => m.sender_id === user?.id || (m.message_type === 'admin' && m.recipient_id === user?.id)
+    (m) => m.sender_id === user?.id || m.recipient_id === user?.id
   );
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -251,7 +249,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           <>
             {displayMessages.map((message) => {
               const isOwnMessage = message.sender_id === user?.id;
-              const isAdminMessage = message.message_type === 'admin';
+              const isAdminMessage = message.message_type?.startsWith('admin');
               
               return (
                 <div
