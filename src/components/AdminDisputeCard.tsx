@@ -461,7 +461,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
         </div>
 
         {/* Admin Actions */}
-        {dispute.status === 'escalated' && (
+        {isExpired && (
           <div>
             <Separator />
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">

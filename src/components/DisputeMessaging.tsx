@@ -152,7 +152,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   };
 
   const timeRemaining = getTimeRemaining();
-  const isExpired = status === 'escalated' || status.startsWith('resolved');
+  const isDeadlinePassed = disputeDeadline && new Date(disputeDeadline) < new Date();
+  const isExpired = status === 'escalated' 
+    || status.startsWith('resolved')
+    || (isDeadlinePassed && ['open', 'negotiating', 'responded'].includes(status));
   
   const pendingProposals = proposals.filter(p => p.status === 'pending');
   const canAcceptProposals = pendingProposals.some(p => p.proposer_id !== user?.id);
