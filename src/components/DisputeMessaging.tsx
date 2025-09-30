@@ -321,18 +321,20 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {/* Input Area - Fixed at bottom */}
       {!isExpired && (
         <div className="flex-shrink-0 border-t bg-background">
-          {/* Official Proposal Button */}
-          <div className="p-2 border-b bg-primary/5">
-            <Button
-              variant="default"
-              size="sm"
-              className="w-full"
-              onClick={() => setShowProposalDialog(true)}
-              disabled={isCreating}
-            >
-              📝 Faire une proposition officielle
-            </Button>
-          </div>
+          {/* Official Proposal Button - Hidden when escalated */}
+          {status !== 'escalated' && (
+            <div className="p-2 border-b bg-primary/5">
+              <Button
+                variant="default"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowProposalDialog(true)}
+                disabled={isCreating}
+              >
+                📝 Faire une proposition officielle
+              </Button>
+            </div>
+          )}
 
           {/* Message Input */}
           <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
