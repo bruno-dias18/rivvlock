@@ -5,7 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 const ACTIVITY_TYPES_MAP = {
   pending: ['transaction_created', 'buyer_joined_transaction'],
   blocked: ['funds_blocked'],
-  disputed: ['dispute_created'],
+  disputed: [
+    'dispute_created',
+    'dispute_message_received',
+    'dispute_proposal_created',
+    'dispute_proposal_accepted',
+    'dispute_proposal_rejected',
+    'dispute_admin_message',
+    'dispute_status_changed'
+  ],
   completed: ['funds_released', 'transaction_completed', 'seller_validation', 'buyer_validation']
 };
 

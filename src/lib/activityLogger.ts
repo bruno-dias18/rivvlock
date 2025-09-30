@@ -10,6 +10,12 @@ export type ActivityType =
   | 'buyer_validation'
   | 'profile_updated'
   | 'dispute_created'
+  | 'dispute_message_received'
+  | 'dispute_proposal_created'
+  | 'dispute_proposal_accepted'
+  | 'dispute_proposal_rejected'
+  | 'dispute_admin_message'
+  | 'dispute_status_changed'
   | 'funds_released'
   | 'transaction_completed'
   | 'transaction_deleted';

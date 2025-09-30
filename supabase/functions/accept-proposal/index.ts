@@ -346,7 +346,25 @@ serve(async (req) => {
 
     console.log("✅ Proposal accepted and processed successfully");
 
-    return new Response(JSON.stringify({ 
+    // Log activity for all other participants
+    const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
+    
+    for (const participantId of participants) {
+      await adminClient.from('activity_logs').insert({
+        user_id: participantId,
+        activity_type: 'dispute_proposal_accepted',
+        title: `Proposition acceptée pour "${transaction.title}"`,
+        description: confirmationText,
+        metadata: {
+          dispute_id: dispute.id,
+          transaction_id: transaction.id,
+          proposal_id: proposalId,
+          proposal_type: proposal.proposal_type
+        }
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true,
       dispute_status: disputeStatus,
       transaction_status: newTransactionStatus

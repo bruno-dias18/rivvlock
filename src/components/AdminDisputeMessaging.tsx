@@ -71,6 +71,18 @@ export const AdminDisputeMessaging = ({
 
       setMessage('');
       toast.success("Message envoyé avec succès");
+      
+      // Log activity for the recipient
+      const { supabase } = await import('@/integrations/supabase/client');
+      await supabase.from('activity_logs').insert({
+        user_id: recipientId,
+        activity_type: 'dispute_admin_message',
+        title: 'Message de l\'administrateur',
+        description: 'L\'administrateur vous a envoyé un message concernant le litige',
+        metadata: {
+          dispute_id: disputeId
+        }
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Impossible d'envoyer le message");

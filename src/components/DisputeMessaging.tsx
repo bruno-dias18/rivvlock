@@ -124,6 +124,46 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       setNewMessage('');
       textareaRef.current?.focus({ preventScroll: true });
       onProposalSent?.();
+      
+      // Log activity for the other participant
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        // Get dispute and transaction to find other participants
+        const { data: dispute } = await supabase
+          .from('disputes')
+          .select('transaction_id')
+          .eq('id', disputeId)
+          .single();
+        
+        if (dispute) {
+          const { data: transaction } = await supabase
+            .from('transactions')
+            .select('id, user_id, buyer_id, title')
+            .eq('id', dispute.transaction_id)
+            .single();
+          
+          if (transaction) {
+            const recipientId = user?.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;
+            
+            if (recipientId) {
+              await supabase.from('activity_logs').insert({
+                user_id: recipientId,
+                activity_type: 'dispute_message_received',
+                title: `Nouveau message dans le litige "${transaction.title}"`,
+                description: 'Vous avez reçu un nouveau message',
+                metadata: {
+                  dispute_id: disputeId,
+                  transaction_id: transaction.id
+                }
+              });
+            }
+          }
+        }
+      } catch (logError) {
+        console.error('Error logging activity:', logError);
+        // Don't fail the message send if logging fails
+      }
     } catch (error) {
       console.error('Error sending message:', error);
     }

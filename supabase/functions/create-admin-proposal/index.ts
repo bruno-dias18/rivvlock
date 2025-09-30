@@ -156,7 +156,26 @@ serve(async (req) => {
 
     console.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
 
-    return new Response(JSON.stringify({ 
+    // Log activity for both seller and buyer
+    const participants = [transaction.user_id, transaction.buyer_id].filter(id => id);
+    
+    for (const participantId of participants) {
+      await adminClient.from('activity_logs').insert({
+        user_id: participantId,
+        activity_type: 'dispute_proposal_created',
+        title: `Proposition officielle de l'administration "${transaction.title}"`,
+        description: `L'administration propose : ${proposalText}`,
+        metadata: {
+          dispute_id: disputeId,
+          transaction_id: transaction.id,
+          proposal_id: proposal.id,
+          proposal_type: proposalType,
+          admin_created: true
+        }
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true,
       proposal
     }), {

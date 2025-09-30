@@ -357,7 +357,24 @@ serve(async (req) => {
 
     console.log("[VALIDATE-ADMIN-PROPOSAL] Validation recorded, waiting for other party");
 
-    return new Response(JSON.stringify({ 
+    // Log activity for the other participant (they need to know someone validated)
+    const otherParticipantId = user.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;
+    
+    if (otherParticipantId) {
+      await supabaseClient.from('activity_logs').insert({
+        user_id: otherParticipantId,
+        activity_type: 'dispute_proposal_accepted',
+        title: `Validation de proposition pour "${transaction.title}"`,
+        description: 'L\'autre partie a validé la proposition officielle de l\'administration. En attente de votre validation.',
+        metadata: {
+          dispute_id: dispute.id,
+          transaction_id: transaction.id,
+          proposal_id: proposalId
+        }
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true,
       status: 'pending',
       both_validated: false,

@@ -114,7 +114,25 @@ serve(async (req) => {
         message_type: 'proposal',
       });
 
-    return new Response(JSON.stringify({ 
+    // Log activity for all other participants
+    const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
+    
+    for (const participantId of participants) {
+      await supabaseClient.from('activity_logs').insert({
+        user_id: participantId,
+        activity_type: 'dispute_proposal_created',
+        title: `Nouvelle proposition dans le litige "${transaction.title}"`,
+        description: proposalText,
+        metadata: {
+          dispute_id: disputeId,
+          transaction_id: transaction.id,
+          proposal_id: proposal.id,
+          proposal_type: proposalType
+        }
+      });
+    }
+
+    return new Response(JSON.stringify({
       success: true,
       proposal 
     }), {
