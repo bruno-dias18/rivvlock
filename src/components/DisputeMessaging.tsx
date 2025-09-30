@@ -39,13 +39,19 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   };
 
   // Auto-focus on textarea when component mounts (without scrolling)
@@ -143,7 +149,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       </div>
 
       {/* Messages - Scrollable center area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
