@@ -333,28 +333,13 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               <h4 className="font-medium text-sm">Litige escaladé au support</h4>
             </div>
             <p className="text-sm text-muted-foreground">
-              Ce litige n'a pas pu être résolu à l'amiable dans les 48h. 
-              Il est maintenant traité par l'équipe support pour arbitrage.
+              Vous allez être contacté par les équipes de Rivvlock pour trouver une solution.
             </p>
             {dispute.escalated_at && (
               <p className="text-xs text-muted-foreground mt-2">
                 Escaladé le {format(new Date(dispute.escalated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
               </p>
             )}
-            
-            <Separator className="my-3" />
-            
-            {/* Show messaging history even when escalated */}
-            <div>
-              <h5 className="font-medium text-sm mb-2">Historique de la conversation:</h5>
-              <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
-                <DisputeMessaging
-                  disputeId={dispute.id}
-                  disputeDeadline={dispute.dispute_deadline}
-                  status={dispute.status}
-                />
-              </div>
-            </div>
           </div>
         )}
 
