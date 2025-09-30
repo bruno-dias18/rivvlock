@@ -17,6 +17,7 @@ export const useDisputeMessages = (disputeId: string) => {
         .from('dispute_messages')
         .select('*')
         .eq('dispute_id', disputeId)
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
