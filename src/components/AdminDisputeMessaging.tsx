@@ -39,14 +39,19 @@ export const AdminDisputeMessaging = ({
 
   const isResolved = status.startsWith('resolved');
 
-  // Filtrer les messages par destinataire
-  const sellerMessages = messages?.filter(
-    msg => msg.recipient_id === sellerId || msg.sender_id === sellerId
-  ) || [];
+  // Filtrer strictement: uniquement les messages entre l'admin et le vendeur
+  const sellerMessages = (messages || []).filter(
+    (msg) =>
+      (msg.sender_id === sellerId && msg.recipient_id === user?.id) ||
+      (msg.sender_id === user?.id && msg.recipient_id === sellerId)
+  );
 
-  const buyerMessages = messages?.filter(
-    msg => msg.recipient_id === buyerId || msg.sender_id === buyerId
-  ) || [];
+  // Filtrer strictement: uniquement les messages entre l'admin et l'acheteur
+  const buyerMessages = (messages || []).filter(
+    (msg) =>
+      (msg.sender_id === buyerId && msg.recipient_id === user?.id) ||
+      (msg.sender_id === user?.id && msg.recipient_id === buyerId)
+  );
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
