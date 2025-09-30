@@ -1,15 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsAdmin } from './useIsAdmin';
 
 export const useAdminDisputes = (status?: string) => {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   return useQuery({
     queryKey: ['admin-disputes', status],
     queryFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
+      if (!user?.id || !isAdmin) {
+        throw new Error('User not authenticated or not admin');
       }
 
       let query = supabase
@@ -49,18 +51,19 @@ export const useAdminDisputes = (status?: string) => {
 
       return data || [];
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!isAdmin,
   });
 };
 
 export const useAdminDisputeStats = () => {
   const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
 
   return useQuery({
     queryKey: ['admin-dispute-stats'],
     queryFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
+      if (!user?.id || !isAdmin) {
+        throw new Error('User not authenticated or not admin');
       }
 
       const { data, error } = await supabase
@@ -85,6 +88,6 @@ export const useAdminDisputeStats = () => {
 
       return stats;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!isAdmin,
   });
 };
