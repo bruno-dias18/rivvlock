@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 
-export const useDisputeMessages = (disputeId: string) => {
+export const useDisputeMessages = (disputeId: string, options?: { scope?: 'participant' | 'all' }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -13,12 +13,17 @@ export const useDisputeMessages = (disputeId: string) => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('dispute_messages')
         .select('*')
-        .eq('dispute_id', disputeId)
-        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .order('created_at', { ascending: true });
+        .eq('dispute_id', disputeId) as any;
+
+      const scope = options?.scope ?? 'participant';
+      if (scope === 'participant') {
+        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
       return data || [];

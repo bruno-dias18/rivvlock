@@ -33,7 +33,7 @@ export const AdminDisputeMessaging = ({
   const queryClient = useQueryClient();
   const [messageToSeller, setMessageToSeller] = useState('');
   const [messageToBuyer, setMessageToBuyer] = useState('');
-  const { messages, isLoading } = useDisputeMessages(disputeId);
+  const { messages, isLoading } = useDisputeMessages(disputeId, { scope: 'all' });
   const sellerMessagesRef = useRef<HTMLDivElement>(null);
   const buyerMessagesRef = useRef<HTMLDivElement>(null);
 
