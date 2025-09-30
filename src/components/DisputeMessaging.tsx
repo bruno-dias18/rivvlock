@@ -68,6 +68,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     (m) => {
       const isMyMessage = m.sender_id === user?.id;
       const isToMe = m.recipient_id === user?.id;
+      const isAdminMessage = m.message_type?.startsWith('admin');
+      const isPublicMessage = !m.recipient_id && !isAdminMessage; // public (two-party) messages, exclude admin
       const isSystemMessage = m.message_type === 'system' && !m.recipient_id;
       
       console.log('[DisputeMessaging] Message filter:', {
@@ -78,11 +80,12 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         userId: user?.id,
         isMyMessage,
         isToMe,
+        isPublicMessage,
         isSystemMessage,
-        willDisplay: isMyMessage || isToMe || isSystemMessage
+        willDisplay: isMyMessage || isToMe || isPublicMessage || isSystemMessage
       });
       
-      return isMyMessage || isToMe || isSystemMessage;
+      return isMyMessage || isToMe || isPublicMessage || isSystemMessage;
     }
   );
   const scrollToBottom = () => {
