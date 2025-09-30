@@ -1,17 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useIsAdmin } from './useIsAdmin';
+
 
 export const useAdminDisputes = (status?: string) => {
   const { user } = useAuth();
-  const { isAdmin } = useIsAdmin();
 
   return useQuery({
     queryKey: ['admin-disputes', status],
     queryFn: async () => {
-      if (!user?.id || !isAdmin) {
-        throw new Error('User not authenticated or not admin');
+      if (!user?.id) {
+        throw new Error('User not authenticated');
       }
 
       let query = supabase
@@ -19,22 +18,7 @@ export const useAdminDisputes = (status?: string) => {
         .select(`
           *,
           transactions (
-            *,
-            profiles!transactions_user_id_fkey (
-              first_name,
-              last_name,
-              user_type
-            ),
-            buyer_profiles:profiles!transactions_buyer_id_fkey (
-              first_name,
-              last_name,
-              user_type
-            )
-          ),
-          reporter_profiles:profiles!disputes_reporter_id_fkey (
-            first_name,
-            last_name,
-            user_type
+            id, title, price, currency, service_date, status, seller_display_name, buyer_display_name, user_id, buyer_id
           )
         `)
         .order('created_at', { ascending: false });
@@ -51,19 +35,19 @@ export const useAdminDisputes = (status?: string) => {
 
       return data || [];
     },
-    enabled: !!user?.id && !!isAdmin,
+    enabled: !!user?.id,
   });
 };
 
 export const useAdminDisputeStats = () => {
   const { user } = useAuth();
-  const { isAdmin } = useIsAdmin();
+  
 
   return useQuery({
     queryKey: ['admin-dispute-stats'],
     queryFn: async () => {
-      if (!user?.id || !isAdmin) {
-        throw new Error('User not authenticated or not admin');
+      if (!user?.id) {
+        throw new Error('User not authenticated');
       }
 
       const { data, error } = await supabase
@@ -88,6 +72,6 @@ export const useAdminDisputeStats = () => {
 
       return stats;
     },
-    enabled: !!user?.id && !!isAdmin,
+    enabled: !!user?.id,
   });
 };
