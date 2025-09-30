@@ -117,7 +117,10 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
   };
 
   const timeRemaining = getTimeRemaining();
-  const isExpired = dispute.status === 'escalated';
+  
+  // Check if deadline has passed (even if not yet escalated in DB)
+  const isDeadlinePassed = dispute.dispute_deadline && new Date(dispute.dispute_deadline) < new Date();
+  const isExpired = dispute.status === 'escalated' || (isDeadlinePassed && ['open', 'negotiating', 'responded'].includes(dispute.status));
 
   const handleSubmitResponse = async () => {
     if (!responseText.trim()) return;
@@ -284,8 +287,8 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
           </Collapsible>
         )}
 
-        {/* Unified Conversation */}
-        {['open', 'negotiating', 'responded'].includes(dispute.status) && (
+        {/* Unified Conversation - Hide if expired */}
+        {['open', 'negotiating', 'responded'].includes(dispute.status) && !isExpired && (
           <div>
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
               <Users className="h-4 w-4" />
