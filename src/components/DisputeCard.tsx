@@ -148,8 +148,8 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
   return (
     <Card className="border-red-200 dark:border-red-800">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
             <CardTitle className="text-sm md:text-lg flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               Litige #{dispute.id.slice(0, 8)}
@@ -174,7 +174,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               </div>
             )}
           </div>
-          <Badge className={getStatusColor(dispute.status)}>
+          <Badge className={`${getStatusColor(dispute.status)} flex-shrink-0 text-xs md:text-sm`}>
             {getStatusText(dispute.status)}
           </Badge>
         </div>
