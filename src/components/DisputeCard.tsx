@@ -223,46 +223,22 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
           </p>
         </div>
 
-        {/* Integrated Messaging System */}
+        {/* Unified Conversation */}
         {!isExpired && (dispute.status === 'open' || dispute.status === 'negotiating' || dispute.status === 'responded') && (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-sm flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Négociation amiable
-              </h4>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowMessaging(!showMessaging)}
-              >
-                {showMessaging ? 'Masquer' : 'Afficher'} la conversation
-              </Button>
-            </div>
+            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Conversation
+            </h4>
             
-            {showMessaging && (
-              <DisputeMessaging
-                disputeId={dispute.id}
-                disputeDeadline={dispute.dispute_deadline}
-                status={dispute.status}
-                onProposalSent={() => {
-                  onRefetch?.();
-                }}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Seller Response (Legacy) */}
-        {dispute.resolution && (
-          <div>
-            <h4 className="font-medium text-sm mb-2">Réponse du vendeur:</h4>
-            <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3 rounded-lg">
-              <p className="text-sm whitespace-pre-wrap">{dispute.resolution}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Répondu le {format(new Date(dispute.updated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-              </p>
-            </div>
+            <DisputeMessaging
+              disputeId={dispute.id}
+              disputeDeadline={dispute.dispute_deadline}
+              status={dispute.status}
+              onProposalSent={() => {
+                onRefetch?.();
+              }}
+            />
           </div>
         )}
 
@@ -304,59 +280,6 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
             <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
               <p className="text-sm whitespace-pre-wrap">{dispute.admin_notes}</p>
             </div>
-          </div>
-        )}
-
-        {/* Legacy Response Form for Seller (fallback) */}
-        {canRespond && dispute.status === 'open' && !showMessaging && (
-          <div className="border-t pt-4">
-            {!isResponding ? (
-              <div className="space-y-2">
-                <Button
-                  onClick={() => setShowMessaging(true)}
-                  className="w-full"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Ouvrir la négociation
-                </Button>
-                <Button
-                  onClick={() => setIsResponding(true)}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  Réponse rapide
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Votre réponse:</h4>
-                <Textarea
-                  value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  placeholder="Expliquez votre position concernant ce litige..."
-                  className="min-h-[100px]"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleSubmitResponse}
-                    disabled={!responseText.trim() || isSubmitting}
-                    className="flex-1"
-                  >
-                    {isSubmitting ? 'Envoi...' : 'Envoyer la réponse'}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsResponding(false);
-                      setResponseText('');
-                    }}
-                    variant="outline"
-                  >
-                    Annuler
-                  </Button>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </CardContent>

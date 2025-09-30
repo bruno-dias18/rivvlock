@@ -266,27 +266,16 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
 
         {/* Conversation History */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-sm flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Historique de la conversation
-            </h4>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMessaging(!showMessaging)}
-            >
-              {showMessaging ? 'Masquer' : 'Afficher'} la conversation
-            </Button>
-          </div>
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Historique de la conversation
+          </h4>
           
-          {showMessaging && (
-            <DisputeMessaging
-              disputeId={dispute.id}
-              disputeDeadline={dispute.dispute_deadline}
-              status={dispute.status}
-            />
-          )}
+          <DisputeMessaging
+            disputeId={dispute.id}
+            disputeDeadline={dispute.dispute_deadline}
+            status={dispute.status}
+          />
         </div>
 
         {/* Admin Notes Section */}
