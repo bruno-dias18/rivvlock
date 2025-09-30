@@ -186,12 +186,10 @@ export default function BankAccountSetupCard() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {t('bankAccount.setupRequired')}
-                <br />
-                <span className="text-sm text-muted-foreground mt-1 block">
-                  {t('bankAccount.paymentTimingNote')}
-                </span>
               </AlertDescription>
             </Alert>
+            
+            <PaymentTimingInfo />
             
             <Button 
               onClick={handleCreateAccount}
@@ -210,8 +208,6 @@ export default function BankAccountSetupCard() {
                 </>
               )}
             </Button>
-            
-            <PaymentTimingInfo />
           </div>
         ) : (
           // Account exists - show status
@@ -287,10 +283,6 @@ export default function BankAccountSetupCard() {
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
                     {t('bankAccount.setupCompleteAlert')}
-                    <br />
-                    <span className="text-sm mt-1 block opacity-90">
-                      {t('bankAccount.paymentTimingConfigured')}
-                    </span>
                   </AlertDescription>
                 </Alert>
 

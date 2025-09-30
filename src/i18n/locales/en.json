@@ -282,20 +282,11 @@
     "commission": "A 5% commission is charged on each transaction to cover platform and payment processing fees.",
     "stripeOpened": "Stripe onboarding process opened in a new tab",
     "stripeError": "Error creating Stripe account",
-    "statusUpdated": "Account status updated",
-    "paymentTimingNote": "Once configured, you will receive payments within 2-3 business days.",
-    "paymentTimingConfigured": "Payments will be available in your account within 2-3 business days after validation."
+    "statusUpdated": "Account status updated"
   },
   "paymentTiming": {
-    "title": "Payment timeline",
-    "description": "Information about transfer delays after transaction validation",
-    "standardDelay": "Standard delay: 2-3 business days",
-    "standardDelayDesc": "Funds will be available in your bank account within 2 to 3 business days after the buyer validates the transaction.",
-    "firstPayment": "First payment: up to 7 business days",
-    "firstPaymentDesc": "Your very first payment may take up to 7 business days for security reasons.",
-    "businessDays": "Business days",
-    "businessDaysDesc": "Business days are Monday to Friday, excluding public holidays. Transactions validated on Friday will be received early the following week.",
-    "process": "The transfer to your Stripe balance is made immediately upon validation. The 2-3 day delay is imposed by Stripe for the bank transfer.",
+    "note": "Payment timing",
+    "noteDesc": "Payments will be available in your account within 2-3 business days after validation (up to 7 days for the first payment).",
     "sellerNote": "💰 Funds will arrive in your bank account within 2-3 business days"
   },
   "changePassword": {
