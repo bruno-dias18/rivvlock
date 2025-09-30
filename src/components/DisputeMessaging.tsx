@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Send, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -44,7 +44,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const [newMessage, setNewMessage] = useState('');
-  const [showQuickActions, setShowQuickActions] = useState(!isMobile);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -104,11 +103,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const handleQuickAction = (text: string) => {
-    setNewMessage(text);
-    textareaRef.current?.focus({ preventScroll: true });
   };
 
   const getTimeRemaining = () => {
@@ -303,87 +297,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               📝 Faire une proposition officielle
             </Button>
           </div>
-
-          {/* Quick Action Buttons - Collapsible on mobile */}
-          {isMobile ? (
-            <div className="border-b bg-muted/30">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs h-8 justify-between"
-                onClick={() => setShowQuickActions(!showQuickActions)}
-              >
-                <span>Réponses rapides</span>
-                {showQuickActions ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
-              {showQuickActions && (
-                <div className="p-2 pt-0 flex flex-col gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7 justify-start"
-                    onClick={() => {
-                      handleQuickAction('Je propose un remboursement de 50% pour compenser le problème.');
-                      setShowQuickActions(false);
-                    }}
-                  >
-                    💰 Remboursement partiel
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7 justify-start"
-                    onClick={() => {
-                      handleQuickAction('Je peux renvoyer le produit ou en envoyer un nouveau.');
-                      setShowQuickActions(false);
-                    }}
-                  >
-                    📦 Renvoi produit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-7 justify-start"
-                    onClick={() => {
-                      handleQuickAction('Je propose un remboursement complet pour résoudre ce litige.');
-                      setShowQuickActions(false);
-                    }}
-                  >
-                    ↩️ Remboursement complet
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="p-2 border-b bg-muted/30">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-8"
-                  onClick={() => handleQuickAction('Je propose un remboursement de 50% pour compenser le problème.')}
-                >
-                  💰 Remboursement partiel
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-8"
-                  onClick={() => handleQuickAction('Je peux renvoyer le produit ou en envoyer un nouveau.')}
-                >
-                  📦 Renvoi produit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-8"
-                  onClick={() => handleQuickAction('Je propose un remboursement complet pour résoudre ce litige.')}
-                >
-                  ↩️ Remboursement complet
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* Message Input */}
           <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
