@@ -123,7 +123,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                 {t('dispute.timeRemaining', { 
                   hours: timeRemaining.hours, 
                   minutes: timeRemaining.minutes 
-                })} pour résoudre à l'amiable
+                })}
               </span>
             </div>
           </div>

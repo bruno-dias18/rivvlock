@@ -351,6 +351,7 @@
     "creating": "Erstellen...",
     "success": "Streitfall erfolgreich erstellt. Ein Administrator wird Ihre Anfrage prüfen.",
     "error": "Fehler beim Erstellen des Streitfalls",
+    "timeRemaining": "{{hours}}h {{minutes}}min verbleibend für gütliche Lösung",
     "types": {
       "qualityIssue": "Qualitätsproblem",
       "notReceived": "Service nicht erhalten",

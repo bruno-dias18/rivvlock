@@ -338,6 +338,7 @@
     "creating": "Creating...",
     "success": "Dispute created successfully. An administrator will review your request.",
     "error": "Error creating dispute",
+    "timeRemaining": "{{hours}}h {{minutes}}min remaining to resolve amicably",
     "types": {
       "qualityIssue": "Quality issue",
       "notReceived": "Service not received",
