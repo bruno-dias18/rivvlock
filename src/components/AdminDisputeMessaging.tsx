@@ -60,7 +60,10 @@ export const AdminDisputeMessaging = ({
   }, [messages]);
 
   const sendMessage = async (recipientId: string, message: string, setMessage: (val: string) => void) => {
-    if (!message.trim() || !user) return;
+    if (!message.trim() || !user || !recipientId) {
+      toast.error("Impossible d'envoyer le message - destinataire invalide");
+      return;
+    }
 
     try {
       const { error } = await supabase

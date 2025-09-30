@@ -396,14 +396,20 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             Conversations privées
           </h4>
           
-          <AdminDisputeMessaging
-            disputeId={dispute.id}
-            sellerId={transaction?.user_id || ''}
-            buyerId={transaction?.buyer_id || ''}
-            sellerName={sellerProfile ? `${sellerProfile.first_name} ${sellerProfile.last_name}` : transaction?.seller_display_name || 'Vendeur'}
-            buyerName={buyerProfile ? `${buyerProfile.first_name} ${buyerProfile.last_name}` : transaction?.buyer_display_name || 'Acheteur'}
-            status={dispute.status}
-          />
+          {transaction?.user_id && transaction?.buyer_id ? (
+            <AdminDisputeMessaging
+              disputeId={dispute.id}
+              sellerId={transaction.user_id}
+              buyerId={transaction.buyer_id}
+              sellerName={sellerProfile ? `${sellerProfile.first_name} ${sellerProfile.last_name}` : transaction?.seller_display_name || 'Vendeur'}
+              buyerName={buyerProfile ? `${buyerProfile.first_name} ${buyerProfile.last_name}` : transaction?.buyer_display_name || 'Acheteur'}
+              status={dispute.status}
+            />
+          ) : (
+            <div className="bg-muted/30 p-4 rounded-lg text-center text-sm text-muted-foreground">
+              Chargement des informations de la transaction...
+            </div>
+          )}
         </div>
 
         {/* Admin Notes Section */}
