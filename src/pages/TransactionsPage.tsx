@@ -65,28 +65,8 @@ export default function TransactionsPage() {
     }
   }, [searchParams, refetch, setSearchParams]);
 
-  // Sync expired payment deadlines on mount
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        // First, process any expired payment deadlines
-        await supabase.functions.invoke('process-expired-payment-deadlines', { body: {} });
-        
-        // Then, auto-fix reactivated transactions
-        const { data, error } = await supabase.functions.invoke('fix-reactivated-transactions', { body: {} });
-        if (error) throw error;
-        if (data?.fixedCount > 0) {
-          toast.info('Transactions mises à jour automatiquement');
-        }
-        
-        // Refresh transactions after all updates
-        refetch();
-      } catch (e) {
-        console.warn('Auto-sync skipped:', e);
-      }
-    })();
-  }, [user]);
+  // Auto-sync disabled - transactions stay pending until user explicitly pays
+  // Manual sync is still available via the sync button in DashboardLayout
 
   const handleSyncPayments = async () => {
     toast.promise(
