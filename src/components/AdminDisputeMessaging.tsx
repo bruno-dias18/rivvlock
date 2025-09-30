@@ -4,13 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Send, User, ShieldAlert } from 'lucide-react';
-import { useDisputeMessages } from '@/hooks/useDisputeMessages';
+import { useAdminDisputeMessaging } from '@/hooks/useAdminDisputeMessaging';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQueryClient } from '@tanstack/react-query';
 
 interface AdminDisputeMessagingProps {
   disputeId: string;
@@ -30,24 +28,17 @@ export const AdminDisputeMessaging = ({
   status
 }: AdminDisputeMessagingProps) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [messageToSeller, setMessageToSeller] = useState('');
   const [messageToBuyer, setMessageToBuyer] = useState('');
-  const { messages, isLoading } = useDisputeMessages(disputeId, { scope: 'all' });
+  const { messagesToSeller, messagesToBuyer, isLoading, sendToSeller, sendToBuyer, isSendingToSeller, isSendingToBuyer } = useAdminDisputeMessaging({ disputeId, sellerId, buyerId });
   const sellerMessagesRef = useRef<HTMLDivElement>(null);
   const buyerMessagesRef = useRef<HTMLDivElement>(null);
 
   const isResolved = status.startsWith('resolved');
 
-  // Conversation Admin ↔ Vendeur UNIQUEMENT (privée)
-  const sellerMessages = (messages || []).filter(
-    (msg) => msg.message_type === 'admin_to_seller'
-  );
-
-  // Conversation Admin ↔ Acheteur UNIQUEMENT (privée)
-  const buyerMessages = (messages || []).filter(
-    (msg) => msg.message_type === 'admin_to_buyer'
-  );
+  // Conversations privées strictes
+  const sellerMessages = messagesToSeller;
+  const buyerMessages = messagesToBuyer;
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
     if (ref.current) {
@@ -58,7 +49,7 @@ export const AdminDisputeMessaging = ({
   useEffect(() => {
     scrollToBottom(sellerMessagesRef);
     scrollToBottom(buyerMessagesRef);
-  }, [messages]);
+  }, [messagesToSeller, messagesToBuyer]);
 
   const sendMessage = async (
     recipientId: string,
@@ -72,21 +63,13 @@ export const AdminDisputeMessaging = ({
     }
 
     try {
-      const { error } = await supabase
-        .from('dispute_messages')
-        .insert({
-          dispute_id: disputeId,
-          sender_id: user.id,
-          recipient_id: recipientId,
-          message: message.trim(),
-          message_type: messageType
-        });
-
-      if (error) throw error;
+      if (messageType === 'admin_to_seller') {
+        await sendToSeller({ message: message.trim() });
+      } else {
+        await sendToBuyer({ message: message.trim() });
+      }
 
       setMessage('');
-      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
-      
       toast.success("Message envoyé avec succès");
     } catch (error) {
       console.error('Error sending message:', error);
@@ -164,7 +147,7 @@ export const AdminDisputeMessaging = ({
               />
               <Button
                 onClick={() => sendMessage(sellerId, messageToSeller, 'admin_to_seller', setMessageToSeller)}
-                disabled={!messageToSeller.trim()}
+                disabled={!messageToSeller.trim() || isSendingToSeller}
                 className="w-full"
                 size="sm"
               >
@@ -240,7 +223,7 @@ export const AdminDisputeMessaging = ({
               />
               <Button
                 onClick={() => sendMessage(buyerId, messageToBuyer, 'admin_to_buyer', setMessageToBuyer)}
-                disabled={!messageToBuyer.trim()}
+                disabled={!messageToBuyer.trim() || isSendingToBuyer}
                 className="w-full"
                 size="sm"
               >

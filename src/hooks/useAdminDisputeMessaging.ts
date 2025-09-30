@@ -1,0 +1,124 @@
+import { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AdminDisputeMessagingOptions {
+  disputeId: string;
+  sellerId: string;
+  buyerId: string;
+}
+
+export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: AdminDisputeMessagingOptions) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: allMessages = [], isLoading } = useQuery({
+    queryKey: ['admin-dispute-messages', disputeId],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('dispute_messages')
+        .select('*')
+        .eq('dispute_id', disputeId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      console.log('[useAdminDisputeMessaging] fetched', {
+        disputeId,
+        count: data?.length || 0,
+      });
+
+      return data || [];
+    },
+    enabled: !!user?.id && !!disputeId,
+  });
+
+  // Split messages into two private threads
+  const messagesToSeller = allMessages.filter(
+    (msg: any) =>
+      // Admin -> Seller strictly private
+      msg.message_type === 'admin_to_seller' ||
+      // Seller -> Admin legacy (no recipient, public thread)
+      (msg.sender_id === sellerId && !msg.recipient_id)
+  );
+
+  const messagesToBuyer = allMessages.filter(
+    (msg: any) =>
+      // Admin -> Buyer strictly private
+      msg.message_type === 'admin_to_buyer' ||
+      // Buyer -> Admin legacy (no recipient, public thread)
+      (msg.sender_id === buyerId && !msg.recipient_id)
+  );
+
+  const sendToSeller = useMutation({
+    mutationFn: async ({ message }: { message: string }) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('dispute_messages')
+        .insert({
+          dispute_id: disputeId,
+          sender_id: user.id,
+          recipient_id: sellerId,
+          message: message.trim(),
+          message_type: 'admin_to_seller',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+    },
+  });
+
+  const sendToBuyer = useMutation({
+    mutationFn: async ({ message }: { message: string }) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      const { error } = await supabase
+        .from('dispute_messages')
+        .insert({
+          dispute_id: disputeId,
+          sender_id: user.id,
+          recipient_id: buyerId,
+          message: message.trim(),
+          message_type: 'admin_to_buyer',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+    },
+  });
+
+  useEffect(() => {
+    if (!disputeId) return;
+    const channel = supabase
+      .channel(`admin-dispute-messages-${disputeId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispute_messages', filter: `dispute_id=eq.${disputeId}` },
+        (payload) => {
+          console.log('[useAdminDisputeMessaging] realtime insert', payload.new);
+          queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', disputeId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [disputeId, queryClient]);
+
+  return {
+    isLoading,
+    messagesToSeller,
+    messagesToBuyer,
+    sendToSeller: sendToSeller.mutateAsync,
+    sendToBuyer: sendToBuyer.mutateAsync,
+    isSendingToSeller: sendToSeller.isPending,
+    isSendingToBuyer: sendToBuyer.isPending,
+  };
+};
