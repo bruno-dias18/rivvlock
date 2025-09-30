@@ -154,7 +154,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               <MessageSquare className="h-5 w-5" />
               Litige #{dispute.id.slice(0, 8)}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 truncate">
               Transaction: {dispute.transactions?.title}
             </p>
             {timeRemaining && !isExpired && !dispute.status.startsWith('resolved') && (
