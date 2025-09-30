@@ -12,22 +12,38 @@ export const useDisputes = () => {
         throw new Error('User not authenticated');
       }
 
-      // Fetch disputes - RLS policies will handle filtering
-      const { data, error } = await supabase
+      // Step 1: fetch disputes only (RLS restricts to reporter/seller/buyer)
+      const { data: disputesData, error: disputesError } = await supabase
         .from('disputes')
-        .select(`
-          *,
-          transactions (
-            *
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
+      if (disputesError) {
+        throw disputesError;
       }
 
-      return data || [];
+      const disputes = disputesData || [];
+      if (disputes.length === 0) return [];
+
+      // Step 2: fetch related transactions separately (no FK relation defined)
+      const transactionIds = Array.from(new Set(disputes.map((d: any) => d.transaction_id).filter(Boolean)));
+      if (transactionIds.length === 0) return disputes;
+
+      const { data: transactions, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .in('id', transactionIds);
+
+      if (txError) {
+        // Do not break the page; return disputes without embedded transaction
+        console.warn('Failed to fetch transactions for disputes:', txError);
+        return disputes;
+      }
+
+      const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
+      const enriched = disputes.map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }));
+      return enriched;
+
     },
     enabled: !!user?.id,
   });
