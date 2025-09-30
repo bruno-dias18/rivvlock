@@ -18,6 +18,7 @@ import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
 import { DisputeCard } from '@/components/DisputeCard';
 import { useDisputes } from '@/hooks/useDisputes';
+import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
@@ -45,6 +46,7 @@ export default function TransactionsPage() {
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
+  const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   
   const activeTab = searchParams.get('tab') || 'pending';
 
@@ -67,6 +69,22 @@ export default function TransactionsPage() {
 
   // Auto-sync disabled - transactions stay pending until user explicitly pays
   // Manual sync is still available via the sync button in DashboardLayout
+
+  // Mark as seen when tab changes
+  useEffect(() => {
+    const tabToCategoryMap: Record<string, 'pending' | 'blocked' | 'disputed' | 'completed'> = {
+      pending: 'pending',
+      blocked: 'blocked',
+      disputed: 'disputed',
+      completed: 'completed',
+    };
+    
+    const category = tabToCategoryMap[activeTab];
+    if (category) {
+      markAsSeen(category);
+      refetchNotifications();
+    }
+  }, [activeTab, markAsSeen, refetchNotifications]);
 
   const handleSyncPayments = async () => {
     toast.promise(
@@ -321,22 +339,42 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
+            {newCounts.pending > 0 && (
+              <Badge className="bg-blue-500 text-white hover:bg-blue-600 ml-1">
+                {newCounts.pending}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Lock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
+            {newCounts.blocked > 0 && (
+              <Badge className="bg-orange-500 text-white hover:bg-orange-600 ml-1">
+                {newCounts.blocked}
+              </Badge>
+            )}
           </TabsTrigger>
           {!isMobile && (
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('transactions.completed')} ({completedTransactions.length})
+                {newCounts.completed > 0 && (
+                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
+                    {newCounts.completed}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 {t('transactions.disputed')} ({disputedTransactions.length})
+                {newCounts.disputed > 0 && (
+                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
+                    {newCounts.disputed}
+                  </Badge>
+                )}
               </TabsTrigger>
             </>
           )}
@@ -345,10 +383,20 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
+                {newCounts.completed > 0 && (
+                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
+                    {newCounts.completed}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
+                {newCounts.disputed > 0 && (
+                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
+                    {newCounts.disputed}
+                  </Badge>
+                )}
               </TabsTrigger>
             </>
           )}
