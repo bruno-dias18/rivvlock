@@ -39,17 +39,21 @@ export const AdminDisputeMessaging = ({
 
   const isResolved = status.startsWith('resolved');
 
-  // L'admin voit: tous les messages du vendeur + ses propres messages adressés au vendeur
+  // Conversation Admin ↔ Vendeur UNIQUEMENT
   const sellerMessages = (messages || []).filter(
     (msg) =>
-      msg.sender_id === sellerId ||
+      // Messages du vendeur vers l'admin (pas de recipient_id spécifique)
+      (msg.sender_id === sellerId && !msg.recipient_id) ||
+      // Messages de l'admin vers le vendeur spécifiquement
       (msg.sender_id === user?.id && msg.recipient_id === sellerId)
   );
 
-  // L'admin voit: tous les messages de l'acheteur + ses propres messages adressés à l'acheteur
+  // Conversation Admin ↔ Acheteur UNIQUEMENT
   const buyerMessages = (messages || []).filter(
     (msg) =>
-      msg.sender_id === buyerId ||
+      // Messages de l'acheteur vers l'admin (pas de recipient_id spécifique)
+      (msg.sender_id === buyerId && !msg.recipient_id) ||
+      // Messages de l'admin vers l'acheteur spécifiquement
       (msg.sender_id === user?.id && msg.recipient_id === buyerId)
   );
 
