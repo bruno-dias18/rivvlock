@@ -130,6 +130,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     try {
       await acceptProposal(proposalId);
       toast.success('Proposition acceptée ! Le remboursement sera traité automatiquement.');
+      // Demander un rafraîchissement (transactions + litiges) pour fermer la messagerie et mettre à jour les montants
+      onProposalSent?.();
     } catch (error) {
       console.error('Error accepting proposal:', error);
       toast.error('Erreur lors de l\'acceptation de la proposition');
