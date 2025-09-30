@@ -61,13 +61,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
 
-  // Messages privés envoyés par l'admin à l'utilisateur courant
-  const adminPrivateMessages = messages.filter(
-    (m) => m.message_type === 'admin' && m.recipient_id === user?.id
-  );
-  // Le flux principal exclut ces messages (on les affiche séparément)
+  // Filtrer les messages : afficher les messages publics (recipient_id null) 
+  // ET les messages privés de l'admin destinés à l'utilisateur courant
   const displayMessages = messages.filter(
-    (m) => !(m.message_type === 'admin' && m.recipient_id === user?.id)
+    (m) => m.recipient_id === null || m.recipient_id === user?.id
   );
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -241,23 +238,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       )}
 
       {/* Messages - Scrollable center area */}
-      {/* Messages privés de l'admin (affichés en haut) */}
-      {adminPrivateMessages.length > 0 && (
-        <div className="flex-shrink-0 border-b bg-purple-50 dark:bg-purple-950/20">
-          <div className="p-3 space-y-2">
-            <div className="text-purple-700 dark:text-purple-300 font-medium text-sm">Messages de l'admin</div>
-            <div className="space-y-2">
-              {adminPrivateMessages.map((m) => (
-                <div key={m.id} className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
-                  <div className="text-xs text-muted-foreground mb-1">Reçu le {format(new Date(m.created_at), 'dd/MM à HH:mm', { locale: fr })}</div>
-                  <div className="text-sm whitespace-pre-wrap">{m.message}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -268,28 +248,31 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           </div>
         ) : (
           <>
-            {messages.map((message) => {
+            {displayMessages.map((message) => {
               const isOwnMessage = message.sender_id === user?.id;
+              const isAdminMessage = message.message_type === 'admin';
               
               return (
                 <div
                   key={message.id}
                   className={`flex gap-3 animate-fade-in ${isOwnMessage ? 'flex-row-reverse' : ''}`}
                 >
-                  <Avatar className="h-8 w-8 flex-shrink-0">
-                    <AvatarFallback className="text-xs font-semibold">
-                      {isOwnMessage ? 'V' : 'A'}
+                  <Avatar className={`h-8 w-8 flex-shrink-0 ${isAdminMessage ? 'bg-purple-100 dark:bg-purple-900' : ''}`}>
+                    <AvatarFallback className={`text-xs font-semibold ${isAdminMessage ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300' : ''}`}>
+                      {isAdminMessage ? '👮' : isOwnMessage ? 'V' : 'A'}
                     </AvatarFallback>
                   </Avatar>
                   
                   <div className={`flex flex-col gap-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     <span className="text-xs text-muted-foreground px-1">
-                      {isOwnMessage ? 'Vous' : 'Autre partie'}
+                      {isAdminMessage ? '🛡️ Admin RivvLock' : isOwnMessage ? 'Vous' : 'Autre partie'}
                     </span>
                     
                     <div
                       className={`rounded-2xl px-4 py-2.5 shadow-sm ${
-                        isOwnMessage
+                        isAdminMessage
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 border border-purple-300 dark:border-purple-700'
+                          : isOwnMessage
                           ? 'bg-primary text-primary-foreground rounded-br-sm'
                           : 'bg-card border rounded-bl-sm'
                       }`}
