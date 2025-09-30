@@ -22,6 +22,12 @@ serve(async (req) => {
     }
   );
 
+  // Admin client to bypass RLS for server-side writes after business checks
+  const adminClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
     const token = authHeader.replace("Bearer ", "");
     const { data: userData } = await supabaseClient.auth.getUser(token);
@@ -171,18 +177,32 @@ serve(async (req) => {
 
         const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
 
-        await stripe.refunds.create({
+        // Idempotency: avoid double refunds if already refunded previously
+        const existingRefunds = await stripe.refunds.list({
           payment_intent: transaction.stripe_payment_intent_id,
-          amount: refundAmount,
-          reason: 'requested_by_customer',
-          metadata: {
-            dispute_id: dispute.id,
-            proposal_id: proposalId,
-            refund_percentage: String(refundPercentage)
-          }
+          limit: 100,
         });
+        const alreadyRefunded = existingRefunds.data
+          .filter((r) => r.status !== 'failed')
+          .reduce((sum, r) => sum + (r.amount || 0), 0);
 
-        console.log(`✅ Refund processed: ${refundPercentage}%`);
+        if (alreadyRefunded >= refundAmount) {
+          console.log(`⏭️ Refund already processed (amount_refunded=${alreadyRefunded}). Skipping.`);
+        } else {
+          const amountToRefund = refundAmount - alreadyRefunded;
+          await stripe.refunds.create({
+            payment_intent: transaction.stripe_payment_intent_id,
+            amount: amountToRefund,
+            reason: 'requested_by_customer',
+            metadata: {
+              dispute_id: dispute.id,
+              proposal_id: proposalId,
+              refund_percentage: String(refundPercentage)
+            }
+          });
+        }
+
+        console.log(`✅ Refund processed/check completed: ${refundPercentage}%`);
       } else {
         throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
@@ -237,16 +257,19 @@ serve(async (req) => {
     }
 
     // Update proposal status
-    await supabaseClient
+    const { error: proposalUpdateError } = await adminClient
       .from("dispute_proposals")
       .update({ 
         status: 'accepted',
         updated_at: new Date().toISOString()
       })
       .eq("id", proposalId);
+    if (proposalUpdateError) {
+      console.error("Error updating proposal status:", proposalUpdateError);
+    }
 
     // Update dispute status
-    await supabaseClient
+    const { error: disputeUpdateError } = await adminClient
       .from("disputes")
       .update({ 
         status: disputeStatus,
@@ -255,6 +278,9 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       })
       .eq("id", dispute.id);
+    if (disputeUpdateError) {
+      console.error("Error updating dispute:", disputeUpdateError);
+    }
 
     // Calculate updated price for partial refund
     let updatedPrice = transaction.price;
@@ -265,7 +291,7 @@ serve(async (req) => {
     }
 
     // Update transaction status and price
-    await supabaseClient
+    const { error: txUpdateError } = await adminClient
       .from("transactions")
       .update({ 
         status: newTransactionStatus,
@@ -274,6 +300,9 @@ serve(async (req) => {
         updated_at: new Date().toISOString()
       })
       .eq("id", transaction.id);
+    if (txUpdateError) {
+      console.error("Error updating transaction:", txUpdateError);
+    }
 
     // Create confirmation message
     const confirmationText = proposal.proposal_type === 'partial_refund'
@@ -282,7 +311,7 @@ serve(async (req) => {
       ? `✅ Accord accepté : Remboursement intégral effectué automatiquement`
       : `✅ Accord accepté : Fonds libérés au vendeur`;
 
-    await supabaseClient
+    const { error: messageInsertError } = await adminClient
       .from("dispute_messages")
       .insert({
         dispute_id: dispute.id,
@@ -290,6 +319,9 @@ serve(async (req) => {
         message: confirmationText,
         message_type: 'system',
       });
+    if (messageInsertError) {
+      console.error("Error inserting system message:", messageInsertError);
+    }
 
     console.log("✅ Proposal accepted and processed successfully");
 
