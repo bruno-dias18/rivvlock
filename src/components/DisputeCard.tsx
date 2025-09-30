@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible';
+import { useDisputeProposals } from '@/hooks/useDisputeProposals';
+import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 
 interface DisputeCardProps {
   dispute: any;
@@ -31,6 +33,9 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
   const [isTransactionDetailsOpen, setIsTransactionDetailsOpen] = useState(!isMobile);
   const [isDisputeMessageExpanded, setIsDisputeMessageExpanded] = useState(!isMobile);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const { proposals } = useDisputeProposals(dispute.id);
+  const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -308,6 +313,20 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
             </CollapsibleContent>
           </div>
           </Collapsible>
+        )}
+
+        {/* Admin Official Proposals */}
+        {adminOfficialProposals.length > 0 && !dispute.status.startsWith('resolved') && (
+          <div className="space-y-3">
+            {adminOfficialProposals.map((proposal) => (
+              <AdminOfficialProposalCard
+                key={proposal.id}
+                proposal={proposal}
+                transaction={transaction}
+                onRefetch={onRefetch}
+              />
+            ))}
+          </div>
         )}
 
         {/* Unified Conversation - Visible only for non-resolved disputes */}

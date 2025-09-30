@@ -13,6 +13,7 @@ import { AdminDisputeMessaging } from './AdminDisputeMessaging';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { AdminOfficialProposalDialog } from './AdminOfficialProposalDialog';
 
 interface AdminDisputeCardProps {
   dispute: any;
@@ -27,6 +28,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const [adminNotes, setAdminNotes] = useState(dispute.admin_notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showOfficialProposal, setShowOfficialProposal] = useState(false);
 
   const { proposals } = useDisputeProposals(dispute.id);
 
@@ -460,38 +462,57 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
 
         {/* Admin Actions */}
         {dispute.status === 'escalated' && (
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-4 rounded-lg">
+          <div>
+            <Separator />
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Actions administratives
             </h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Ce litige nécessite une décision administrative. Choisissez l'action appropriée :
-            </p>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => handleProcessDispute('refund')}
-                disabled={isProcessing}
-                variant="destructive"
-                className="flex-1 flex items-center gap-2"
-              >
-                <XCircle className="h-4 w-4" />
-                {isProcessing ? 'Traitement...' : 'Rembourser l\'acheteur'}
-              </Button>
-              <Button
-                onClick={() => handleProcessDispute('release')}
-                disabled={isProcessing}
-                className="flex-1 flex items-center gap-2"
-              >
-                <CheckCircle className="h-4 w-4" />
-                {isProcessing ? 'Traitement...' : 'Libérer les fonds'}
-              </Button>
+            <div className="space-y-3">
+              <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
+                <p className="text-sm text-purple-800 dark:text-purple-200 mb-3">
+                  Le litige a été escaladé au support. Vous pouvez faire une proposition officielle qui nécessitera la validation des deux parties, ou arbitrer directement.
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="default"
+                    onClick={() => setShowOfficialProposal(true)}
+                    disabled={isProcessing}
+                    className="w-full"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Faire une proposition officielle
+                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleProcessDispute('refund')}
+                      disabled={isProcessing}
+                      className="flex-1"
+                    >
+                      Rembourser directement
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleProcessDispute('release')}
+                      disabled={isProcessing}
+                      className="flex-1"
+                    >
+                      Libérer directement
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              ⚠️ Cette action est irréversible et traitera définitivement le litige.
-            </p>
           </div>
         )}
+
+        <AdminOfficialProposalDialog
+          open={showOfficialProposal}
+          onOpenChange={setShowOfficialProposal}
+          disputeId={dispute.id}
+          onSuccess={onRefetch}
+        />
 
         {/* Legacy Response (if exists) */}
         {dispute.resolution && (

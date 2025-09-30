@@ -111,6 +111,8 @@ export type Database = {
       }
       dispute_proposals: {
         Row: {
+          admin_created: boolean | null
+          buyer_validated: boolean | null
           created_at: string | null
           dispute_id: string
           expires_at: string | null
@@ -119,10 +121,14 @@ export type Database = {
           proposal_type: string
           proposer_id: string
           refund_percentage: number | null
+          requires_both_parties: boolean | null
+          seller_validated: boolean | null
           status: string
           updated_at: string | null
         }
         Insert: {
+          admin_created?: boolean | null
+          buyer_validated?: boolean | null
           created_at?: string | null
           dispute_id: string
           expires_at?: string | null
@@ -131,10 +137,14 @@ export type Database = {
           proposal_type: string
           proposer_id: string
           refund_percentage?: number | null
+          requires_both_parties?: boolean | null
+          seller_validated?: boolean | null
           status?: string
           updated_at?: string | null
         }
         Update: {
+          admin_created?: boolean | null
+          buyer_validated?: boolean | null
           created_at?: string | null
           dispute_id?: string
           expires_at?: string | null
@@ -143,6 +153,8 @@ export type Database = {
           proposal_type?: string
           proposer_id?: string
           refund_percentage?: number | null
+          requires_both_parties?: boolean | null
+          seller_validated?: boolean | null
           status?: string
           updated_at?: string | null
         }
