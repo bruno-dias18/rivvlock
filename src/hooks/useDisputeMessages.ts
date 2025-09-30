@@ -20,12 +20,32 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
 
       const scope = options?.scope ?? 'participant';
       if (scope === 'participant') {
+        // Only get messages where:
+        // 1. I'm the sender (my own messages)
+        // 2. I'm the explicit recipient (messages addressed to me)
+        // This prevents seeing messages sent by the other party or messages addressed to them
         query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
+      
+      // Debug logging
+      console.log('[useDisputeMessages] Fetched messages:', {
+        disputeId,
+        userId: user.id,
+        scope,
+        messageCount: data?.length || 0,
+        messages: data?.map(m => ({
+          id: m.id,
+          sender_id: m.sender_id,
+          recipient_id: m.recipient_id,
+          message_type: m.message_type,
+          preview: m.message.substring(0, 30)
+        }))
+      });
+      
       return data || [];
     },
     enabled: !!user?.id && !!disputeId,
