@@ -68,7 +68,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     logStep('Admin privileges confirmed');
 
-    const { action, disputeId, message, notes } = await req.json();
+    const { action, disputeId, message, notes, recipientId } = await req.json();
     logStep('Request parsed', { action, disputeId });
 
     if (!action || !disputeId) {
@@ -100,14 +100,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (action) {
       case 'add_message':
-        // Add admin message to dispute
+        // Add admin message to dispute (private to a specific recipient)
+        if (!recipientId || ![dispute.transactions?.user_id, dispute.transactions?.buyer_id].includes(recipientId)) {
+          logStep('Invalid recipient for admin message', { recipientId });
+          return new Response(
+            JSON.stringify({ error: 'Invalid recipientId' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         const { error: messageError } = await supabase
           .from('dispute_messages')
           .insert({
             dispute_id: disputeId,
             sender_id: user.id,
+            recipient_id: recipientId,
             message: message || '',
-            message_type: 'admin_response'
+            message_type: 'admin'
           });
 
         if (messageError) {
