@@ -30,24 +30,30 @@ serve(async (req) => {
 
     console.log("Creating proposal:", { disputeId, proposalType, refundPercentage, userId: user.id });
 
-    // Verify user is involved in the dispute
+    // Get the dispute
     const { data: dispute, error: disputeError } = await supabaseClient
       .from("disputes")
-      .select(`
-        *,
-        transactions (
-          user_id,
-          buyer_id
-        )
-      `)
+      .select("*")
       .eq("id", disputeId)
       .single();
 
     if (disputeError || !dispute) {
+      console.error("Error fetching dispute:", disputeError);
       throw new Error("Dispute not found");
     }
 
-    const transaction = dispute.transactions;
+    // Get the associated transaction
+    const { data: transaction, error: transactionError } = await supabaseClient
+      .from("transactions")
+      .select("*")
+      .eq("id", dispute.transaction_id)
+      .single();
+
+    if (transactionError || !transaction) {
+      console.error("Error fetching transaction:", transactionError);
+      throw new Error("Transaction not found");
+    }
+
     const isInvolved = 
       user.id === dispute.reporter_id ||
       user.id === transaction.user_id ||

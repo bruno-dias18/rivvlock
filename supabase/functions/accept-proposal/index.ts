@@ -31,30 +31,15 @@ serve(async (req) => {
 
     console.log("Accepting proposal:", proposalId, "by user:", user.id);
 
-    // Get proposal with dispute and transaction data
+    // Get the proposal
     const { data: proposal, error: proposalError } = await supabaseClient
       .from("dispute_proposals")
-      .select(`
-        *,
-        disputes!inner (
-          id,
-          transaction_id,
-          reporter_id,
-          transactions!inner (
-            id,
-            user_id,
-            buyer_id,
-            price,
-            currency,
-            stripe_payment_intent_id,
-            status
-          )
-        )
-      `)
+      .select("*")
       .eq("id", proposalId)
       .single();
 
     if (proposalError || !proposal) {
+      console.error("Error fetching proposal:", proposalError);
       throw new Error("Proposal not found");
     }
 
@@ -63,8 +48,29 @@ serve(async (req) => {
       throw new Error("Cannot accept your own proposal");
     }
 
-    const dispute = proposal.disputes;
-    const transaction = dispute.transactions;
+    // Get the dispute
+    const { data: dispute, error: disputeError } = await supabaseClient
+      .from("disputes")
+      .select("*")
+      .eq("id", proposal.dispute_id)
+      .single();
+
+    if (disputeError || !dispute) {
+      console.error("Error fetching dispute:", disputeError);
+      throw new Error("Dispute not found");
+    }
+
+    // Get the transaction
+    const { data: transaction, error: transactionError } = await supabaseClient
+      .from("transactions")
+      .select("*")
+      .eq("id", dispute.transaction_id)
+      .single();
+
+    if (transactionError || !transaction) {
+      console.error("Error fetching transaction:", transactionError);
+      throw new Error("Transaction not found");
+    }
 
     // Verify user is involved in the dispute
     const isInvolved = 
