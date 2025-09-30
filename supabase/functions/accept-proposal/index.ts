@@ -130,13 +130,37 @@ serve(async (req) => {
           const capturePercentage = 100 - refundPercentage;
           const captureAmount = Math.round((totalAmount * capturePercentage) / 100);
           const platformFee = Math.round(totalAmount * 0.05);
+          const currency = String(transaction.currency).toLowerCase();
+
+          // Ensure seller has a connected Stripe account before capturing
+          const { data: sellerAccount, error: sellerAccountError } = await supabaseClient
+            .from('stripe_accounts')
+            .select('stripe_account_id')
+            .eq('user_id', transaction.user_id)
+            .maybeSingle();
+          if (sellerAccountError) throw sellerAccountError;
+          if (!sellerAccount?.stripe_account_id) {
+            throw new Error('Seller Stripe account not found');
+          }
 
           console.log(`Capturing ${capturePercentage}% (${captureAmount / 100} ${transaction.currency})`);
 
+          // Capture on platform account (no application_fee_amount for separate charges + transfers)
           await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
             amount_to_capture: captureAmount,
-            application_fee_amount: platformFee,
           });
+
+          // Transfer net amount to the seller's connected account
+          const transferAmount = captureAmount - platformFee;
+          if (transferAmount > 0) {
+            await stripe.transfers.create({
+              amount: transferAmount,
+              currency,
+              destination: sellerAccount.stripe_account_id,
+              transfer_group: `txn_${transaction.id}`,
+            });
+            console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+          }
 
           console.log(`✅ Partial capture processed: ${capturePercentage}% to seller, ${refundPercentage}% refunded to buyer`);
         }
@@ -170,18 +194,40 @@ serve(async (req) => {
         throw new Error("No payment intent found for this transaction");
       }
 
-      // Release funds to seller - capture the payment
+      // Release funds to seller - capture the payment on platform, then transfer net to seller
       const totalAmount = Math.round(transaction.price * 100);
       const platformFee = Math.round(totalAmount * 0.05);
+      const currency = String(transaction.currency).toLowerCase();
+
+      // Ensure seller has a connected Stripe account before proceeding
+      const { data: sellerAccount, error: sellerAccountError } = await supabaseClient
+        .from('stripe_accounts')
+        .select('stripe_account_id')
+        .eq('user_id', transaction.user_id)
+        .maybeSingle();
+      if (sellerAccountError) throw sellerAccountError;
+      if (!sellerAccount?.stripe_account_id) {
+        throw new Error('Seller Stripe account not found');
+      }
 
       console.log(`Capturing full amount for seller (no refund)`);
 
+      // Capture without application_fee_amount (separate charges + transfers)
       await stripe.paymentIntents.capture(
-        transaction.stripe_payment_intent_id,
-        {
-          application_fee_amount: platformFee,
-        }
+        transaction.stripe_payment_intent_id
       );
+
+      // Transfer net amount to seller
+      const transferAmount = totalAmount - platformFee;
+      if (transferAmount > 0) {
+        await stripe.transfers.create({
+          amount: transferAmount,
+          currency,
+          destination: sellerAccount.stripe_account_id,
+          transfer_group: `txn_${transaction.id}`,
+        });
+        console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+      }
 
       newTransactionStatus = 'completed';
       console.log(`✅ Funds released to seller (no refund)`);
