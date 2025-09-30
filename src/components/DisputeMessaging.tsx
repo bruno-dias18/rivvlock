@@ -112,7 +112,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="h-[400px] flex items-center justify-center">
+      <Card className="h-full flex items-center justify-center">
         <div className="animate-pulse space-y-2 text-center">
           <div className="h-4 bg-muted rounded w-32 mx-auto"></div>
           <div className="h-20 bg-muted rounded w-48 mx-auto"></div>
@@ -122,7 +122,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   }
 
   return (
-    <Card className="h-[400px] flex flex-col overflow-hidden">
+    <Card className="h-full flex flex-col overflow-hidden">{/* Changed to h-full to adapt to parent container */}
       {/* Header: Timer/Alerts - Fixed at top */}
       <div className="flex-shrink-0 border-b">
         {timeRemaining && !isExpired && (

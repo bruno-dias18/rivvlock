@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, Clock, AlertTriangle, Send, Users } from 'lucide-react';
+import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { DisputeMessaging } from './DisputeMessaging';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useIsMobile } from '@/lib/mobileUtils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible';
 
 interface DisputeCardProps {
   dispute: any;
@@ -21,10 +23,13 @@ interface DisputeCardProps {
 export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [isResponding, setIsResponding] = useState(false);
   const [responseText, setResponseText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMessaging, setShowMessaging] = useState(false);
+  const [isTransactionDetailsOpen, setIsTransactionDetailsOpen] = useState(!isMobile);
+  const [isDisputeMessageExpanded, setIsDisputeMessageExpanded] = useState(!isMobile);
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -176,52 +181,104 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Transaction Details */}
-        <div className="bg-muted/50 p-3 rounded-lg">
-          <h4 className="font-medium text-sm mb-2">Détails de la transaction</h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Montant:</span>
-              <span className="ml-2 font-medium">
-                {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Date du service:</span>
-              <span className="ml-2">
-                {dispute.transactions?.service_date 
-                  ? format(new Date(dispute.transactions.service_date), 'dd/MM/yyyy', { locale: fr })
-                  : 'Non définie'
-                }
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Vendeur:</span>
-              <span className="ml-2">{dispute.transactions?.seller_display_name || 'N/A'}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Acheteur:</span>
-              <span className="ml-2">{dispute.transactions?.buyer_display_name || 'N/A'}</span>
-            </div>
+        {/* Transaction Details - Collapsible on mobile */}
+        <Collapsible open={isTransactionDetailsOpen} onOpenChange={setIsTransactionDetailsOpen}>
+          <div className="bg-muted/50 rounded-lg">
+            <CollapsibleTrigger asChild>
+              <button className="w-full p-3 flex items-center justify-between text-left hover:bg-muted/70 transition-colors rounded-lg">
+                <h4 className="font-medium text-sm">Détails de la transaction</h4>
+                {isMobile && (
+                  isTransactionDetailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <div className="px-3 pb-3">
+                {isMobile ? (
+                  // Mobile: Compact view - only essential info
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Montant:</span>
+                      <span className="font-medium">
+                        {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Statut:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {dispute.transactions?.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  // Desktop: Full grid view
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Montant:</span>
+                      <span className="ml-2 font-medium">
+                        {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Date du service:</span>
+                      <span className="ml-2">
+                        {dispute.transactions?.service_date 
+                          ? format(new Date(dispute.transactions.service_date), 'dd/MM/yyyy', { locale: fr })
+                          : 'Non définie'
+                        }
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Vendeur:</span>
+                      <span className="ml-2">{dispute.transactions?.seller_display_name || 'N/A'}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Acheteur:</span>
+                      <span className="ml-2">{dispute.transactions?.buyer_display_name || 'N/A'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
           </div>
-        </div>
+        </Collapsible>
 
-        {/* Dispute Information */}
-        <div>
-          <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Type de litige: {getDisputeTypeText(dispute.dispute_type)}
-          </h4>
-          <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3 rounded-lg">
-            <p className="text-sm">
-              <strong>Message initial du client:</strong>
-            </p>
-            <p className="text-sm mt-1 whitespace-pre-wrap">{dispute.reason}</p>
+        {/* Dispute Information - Collapsible on mobile */}
+        <Collapsible open={isDisputeMessageExpanded} onOpenChange={setIsDisputeMessageExpanded}>
+          <div>
+            <CollapsibleTrigger asChild>
+              <button className="w-full text-left mb-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <h4 className="font-medium text-sm">Type: {getDisputeTypeText(dispute.dispute_type)}</h4>
+                  </div>
+                  {isMobile && (
+                    isDisputeMessageExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                  )}
+                </div>
+              </button>
+            </CollapsibleTrigger>
+            
+            <CollapsibleContent>
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3 rounded-lg">
+                <p className="text-sm">
+                  <strong>Message initial du client:</strong>
+                </p>
+                <p className="text-sm mt-1 whitespace-pre-wrap">
+                  {isMobile && !isDisputeMessageExpanded && dispute.reason.length > 100
+                    ? `${dispute.reason.substring(0, 100)}...`
+                    : dispute.reason
+                  }
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Signalé le {format(new Date(dispute.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+              </p>
+            </CollapsibleContent>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Signalé le {format(new Date(dispute.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-          </p>
-        </div>
+        </Collapsible>
 
         {/* Unified Conversation */}
         {!isExpired && (dispute.status === 'open' || dispute.status === 'negotiating' || dispute.status === 'responded') && (
@@ -231,14 +288,16 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               Conversation
             </h4>
             
-            <DisputeMessaging
-              disputeId={dispute.id}
-              disputeDeadline={dispute.dispute_deadline}
-              status={dispute.status}
-              onProposalSent={() => {
-                onRefetch?.();
-              }}
-            />
+            <div className={isMobile ? "h-[250px]" : "h-[400px]"}>
+              <DisputeMessaging
+                disputeId={dispute.id}
+                disputeDeadline={dispute.dispute_deadline}
+                status={dispute.status}
+                onProposalSent={() => {
+                  onRefetch?.();
+                }}
+              />
+            </div>
           </div>
         )}
 
@@ -264,11 +323,13 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
             {/* Show messaging history even when escalated */}
             <div>
               <h5 className="font-medium text-sm mb-2">Historique de la conversation:</h5>
-              <DisputeMessaging
-                disputeId={dispute.id}
-                disputeDeadline={dispute.dispute_deadline}
-                status={dispute.status}
-              />
+              <div className={isMobile ? "h-[250px]" : "h-[400px]"}>
+                <DisputeMessaging
+                  disputeId={dispute.id}
+                  disputeDeadline={dispute.dispute_deadline}
+                  status={dispute.status}
+                />
+              </div>
             </div>
           </div>
         )}
