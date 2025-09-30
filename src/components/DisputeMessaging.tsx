@@ -38,36 +38,14 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
-
-  const isUserAtBottom = () => {
-    const container = messagesContainerRef.current;
-    if (!container) return true;
-    const threshold = 100; // pixels from bottom
-    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
 
   // Auto-focus on textarea when component mounts (without scrolling)
   useEffect(() => {
     textareaRef.current?.focus({ preventScroll: true });
   }, []);
-
-  // Smart scroll: only when NEW messages arrive and user is already at bottom
-  useEffect(() => {
-    if (messages.length > previousMessageCountRef.current && isUserAtBottom()) {
-      setTimeout(scrollToBottom, 100);
-    }
-    previousMessageCountRef.current = messages.length;
-  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -151,7 +129,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       </div>
 
       {/* Messages - Scrollable center area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -195,9 +173,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                     </span>
                   </div>
                 </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
+                );
+              })}
           </>
         )}
       </div>
