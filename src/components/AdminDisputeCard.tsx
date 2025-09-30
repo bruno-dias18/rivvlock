@@ -218,12 +218,12 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="space-y-1">
               <span className="text-muted-foreground font-medium">Vendeur:</span>
-              <p>{sellerProfile ? `${sellerProfile.first_name} ${sellerProfile.last_name}` : transaction.seller_display_name || 'N/A'}</p>
+              <p>{sellerProfile ? `${sellerProfile.first_name} ${sellerProfile.last_name}` : transaction?.seller_display_name || 'N/A'}</p>
               <p className="text-xs text-muted-foreground">{sellerProfile?.user_type}</p>
             </div>
             <div className="space-y-1">
               <span className="text-muted-foreground font-medium">Acheteur:</span>
-              <p>{buyerProfile ? `${buyerProfile.first_name} ${buyerProfile.last_name}` : transaction.buyer_display_name || 'N/A'}</p>
+              <p>{buyerProfile ? `${buyerProfile.first_name} ${buyerProfile.last_name}` : transaction?.buyer_display_name || 'N/A'}</p>
               <p className="text-xs text-muted-foreground">{buyerProfile?.user_type}</p>
             </div>
             <div className="space-y-1">
