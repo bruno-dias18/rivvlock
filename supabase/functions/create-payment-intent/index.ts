@@ -95,9 +95,7 @@ serve(async (req) => {
         platform: 'rivvlock',
         rivvlock_escrow: 'true',
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+      payment_method_types: ['card'],
     };
 
     // Use existing Stripe customer if available (buyer's customer)
