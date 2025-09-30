@@ -155,7 +155,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               Litige #{dispute.id.slice(0, 8)}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1 truncate">
-              Transaction: {dispute.transactions?.title}
+              {dispute.transactions?.title}
             </p>
             {timeRemaining && !isExpired && !dispute.status.startsWith('resolved') && (
               <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400 overflow-hidden">
