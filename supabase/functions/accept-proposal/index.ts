@@ -110,28 +110,71 @@ serve(async (req) => {
 
       const totalAmount = Math.round(transaction.price * 100);
       const refundPercentage = proposal.refund_percentage || 100;
-      const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
 
-      console.log(`Processing ${refundPercentage}% refund: ${refundAmount / 100} ${transaction.currency}`);
+      console.log(`Processing ${refundPercentage}% refund for transaction ${transaction.id}`);
 
-      await stripe.refunds.create({
-        payment_intent: transaction.stripe_payment_intent_id,
-        amount: refundAmount,
-        reason: 'requested_by_customer',
-        metadata: {
-          dispute_id: dispute.id,
-          proposal_id: proposalId,
-          refund_percentage: String(refundPercentage)
+      // First, retrieve the PaymentIntent to check its status
+      const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+      console.log(`PaymentIntent status: ${paymentIntent.status}`);
+
+      if (paymentIntent.status === 'requires_capture') {
+        // PaymentIntent is not captured yet - we need to cancel or capture partially
+        console.log(`PaymentIntent not captured - handling authorization`);
+
+        if (proposal.proposal_type === 'full_refund') {
+          // Full refund = cancel the authorization completely
+          await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+          console.log(`✅ Authorization cancelled (full refund)`);
+        } else {
+          // Partial refund = capture only the remaining amount (100% - refund%)
+          const capturePercentage = 100 - refundPercentage;
+          const captureAmount = Math.round((totalAmount * capturePercentage) / 100);
+          const platformFee = Math.round(captureAmount * 0.05);
+
+          console.log(`Capturing ${capturePercentage}% (${captureAmount / 100} ${transaction.currency})`);
+
+          await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
+            amount_to_capture: captureAmount,
+            application_fee_amount: platformFee,
+          });
+
+          console.log(`✅ Partial capture processed: ${capturePercentage}% to seller, ${refundPercentage}% refunded to buyer`);
         }
-      });
+
+      } else if (paymentIntent.status === 'succeeded') {
+        // PaymentIntent already captured - create a refund
+        console.log(`PaymentIntent already captured - creating refund`);
+
+        const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
+
+        await stripe.refunds.create({
+          payment_intent: transaction.stripe_payment_intent_id,
+          amount: refundAmount,
+          reason: 'requested_by_customer',
+          metadata: {
+            dispute_id: dispute.id,
+            proposal_id: proposalId,
+            refund_percentage: String(refundPercentage)
+          }
+        });
+
+        console.log(`✅ Refund processed: ${refundPercentage}%`);
+      } else {
+        throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
+      }
 
       newTransactionStatus = 'disputed';
-      console.log(`✅ Refund processed: ${refundPercentage}%`);
 
     } else if (proposal.proposal_type === 'no_refund') {
-      // Release funds to seller
+      if (!transaction.stripe_payment_intent_id) {
+        throw new Error("No payment intent found for this transaction");
+      }
+
+      // Release funds to seller - capture the payment
       const totalAmount = Math.round(transaction.price * 100);
       const platformFee = Math.round(totalAmount * 0.05);
+
+      console.log(`Capturing full amount for seller (no refund)`);
 
       await stripe.paymentIntents.capture(
         transaction.stripe_payment_intent_id,
