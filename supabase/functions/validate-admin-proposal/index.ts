@@ -43,22 +43,7 @@ serve(async (req) => {
     // Get the proposal
     const { data: proposal, error: proposalError } = await supabaseClient
       .from("dispute_proposals")
-      .select(`
-        *,
-        disputes (
-          id,
-          status,
-          transaction_id,
-          transactions (
-            id,
-            user_id,
-            buyer_id,
-            stripe_payment_intent_id,
-            price,
-            currency
-          )
-        )
-      `)
+      .select("*")
       .eq("id", proposalId)
       .single();
 
@@ -72,10 +57,27 @@ serve(async (req) => {
       throw new Error("This is not an admin official proposal");
     }
 
-    const dispute = proposal.disputes;
-    const transaction = dispute?.transactions;
+    // Get dispute details separately
+    const { data: dispute, error: disputeError } = await supabaseClient
+      .from("disputes")
+      .select("id, status, transaction_id")
+      .eq("id", proposal.dispute_id)
+      .single();
 
-    if (!transaction) {
+    if (disputeError || !dispute) {
+      console.error("Error fetching dispute:", disputeError);
+      throw new Error("Dispute not found");
+    }
+
+    // Get transaction details separately
+    const { data: transaction, error: transactionError } = await supabaseClient
+      .from("transactions")
+      .select("id, user_id, buyer_id, stripe_payment_intent_id, price, currency, status")
+      .eq("id", dispute.transaction_id)
+      .single();
+
+    if (transactionError || !transaction) {
+      console.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
