@@ -69,8 +69,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       const isPublicMessage = !m.recipient_id && !isAdminMessage; // public (two-party) messages, exclude admin
       const isSystemMessage = m.message_type === 'system' && !m.recipient_id;
       
-      // Hard block: never show admin_* messages not addressed to me
-      if (isAdminMessage && !isMyMessage && !isToMe) {
+      // Strict rule: hide all admin messages not explicitly addressed to current user
+      if (isAdminMessage && m.recipient_id !== user?.id) {
         return false;
       }
       
