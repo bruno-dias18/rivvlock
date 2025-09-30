@@ -61,9 +61,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
 
-  // Filter messages strictly for the current user
-  // Show only: my own messages OR messages explicitly addressed to me
-  // DO NOT show messages from the other party that have no recipient (those are for admin view only)
   const displayMessages = messages.filter(
     (m) => {
       const isMyMessage = m.sender_id === user?.id;
@@ -71,6 +68,13 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       const isAdminMessage = m.message_type?.startsWith('admin');
       const isPublicMessage = !m.recipient_id && !isAdminMessage; // public (two-party) messages, exclude admin
       const isSystemMessage = m.message_type === 'system' && !m.recipient_id;
+      
+      // Hard block: never show admin_* messages not addressed to me
+      if (isAdminMessage && !isMyMessage && !isToMe) {
+        return false;
+      }
+      
+      const willDisplay = isMyMessage || isToMe || isPublicMessage || isSystemMessage;
       
       console.log('[DisputeMessaging] Message filter:', {
         messageId: m.id,
@@ -82,10 +86,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         isToMe,
         isPublicMessage,
         isSystemMessage,
-        willDisplay: isMyMessage || isToMe || isPublicMessage || isSystemMessage
+        willDisplay
       });
       
-      return isMyMessage || isToMe || isPublicMessage || isSystemMessage;
+      return willDisplay;
     }
   );
   const scrollToBottom = () => {
