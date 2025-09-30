@@ -287,26 +287,24 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
           </Collapsible>
         )}
 
-        {/* Unified Conversation - Hide if expired */}
-        {['open', 'negotiating', 'responded'].includes(dispute.status) && !isExpired && (
-          <div>
-            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Conversation
-            </h4>
-            
-            <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
-              <DisputeMessaging
-                disputeId={dispute.id}
-                disputeDeadline={dispute.dispute_deadline}
-                status={dispute.status}
-                onProposalSent={() => {
-                  onRefetch?.();
-                }}
-              />
-            </div>
+        {/* Unified Conversation - Always visible */}
+        <div>
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Conversation
+          </h4>
+          
+          <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
+            <DisputeMessaging
+              disputeId={dispute.id}
+              disputeDeadline={dispute.dispute_deadline}
+              status={dispute.status}
+              onProposalSent={() => {
+                onRefetch?.();
+              }}
+            />
           </div>
-        )}
+        </div>
 
         {/* Résumé condensé - Litige résolu */}
         {dispute.status.startsWith('resolved') && (
