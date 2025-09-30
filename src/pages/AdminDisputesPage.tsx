@@ -104,7 +104,10 @@ export default function AdminDisputesPage() {
             ))
           ) : (
             <>
-              <Card>
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+                onClick={() => setStatusFilter('all')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Total
@@ -114,7 +117,10 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold">{stats?.total || 0}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'open' ? 'ring-2 ring-red-600' : ''}`}
+                onClick={() => setStatusFilter('open')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Ouverts
@@ -124,7 +130,10 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold text-red-600">{stats?.open || 0}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'negotiating' ? 'ring-2 ring-yellow-600' : ''}`}
+                onClick={() => setStatusFilter('negotiating')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     En négociation
@@ -134,7 +143,10 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold text-yellow-600">{stats?.negotiating || 0}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'escalated' ? 'ring-2 ring-purple-600' : ''}`}
+                onClick={() => setStatusFilter('escalated')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Escaladés
@@ -144,7 +156,10 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold text-purple-600">{stats?.escalated || 0}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'resolved' ? 'ring-2 ring-green-600' : ''}`}
+                onClick={() => setStatusFilter('resolved')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Résolus
@@ -154,7 +169,7 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold text-green-600">{stats?.resolved || 0}</div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="cursor-default">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Récents (30j)

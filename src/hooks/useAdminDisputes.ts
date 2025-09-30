@@ -19,7 +19,12 @@ export const useAdminDisputes = (status?: string) => {
         .order('created_at', { ascending: false });
 
       if (status && status !== 'all') {
-        query = query.eq('status', status as any);
+        if (status === 'resolved') {
+          // Filter all resolved statuses
+          query = query.in('status', ['resolved', 'resolved_refund', 'resolved_release']);
+        } else {
+          query = query.eq('status', status as any);
+        }
       }
 
       const { data, error } = await query;
