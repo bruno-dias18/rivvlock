@@ -90,7 +90,7 @@ serve(async (req) => {
       throw new Error("Proposal is no longer pending");
     }
 
-    if (dispute.status !== 'open') {
+    if (!['open', 'responded', 'negotiating'].includes(dispute.status)) {
       throw new Error("Dispute is no longer open");
     }
 
