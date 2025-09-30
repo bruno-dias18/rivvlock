@@ -157,7 +157,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
             <p className="text-sm text-muted-foreground mt-1">
               Transaction: {dispute.transactions?.title}
             </p>
-            {timeRemaining && !isExpired && (
+            {timeRemaining && !isExpired && !dispute.status.startsWith('resolved') && (
               <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400 overflow-hidden">
                 <Clock className="h-4 w-4 flex-shrink-0" />
                 <span className="text-xs md:text-sm font-medium whitespace-nowrap">
@@ -181,8 +181,9 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Transaction Details - Collapsible on mobile */}
-        <Collapsible open={isTransactionDetailsOpen} onOpenChange={setIsTransactionDetailsOpen}>
+        {/* Transaction Details - Only show for non-resolved disputes */}
+        {!dispute.status.startsWith('resolved') && (
+          <Collapsible open={isTransactionDetailsOpen} onOpenChange={setIsTransactionDetailsOpen}>
           <div className="bg-muted/50 rounded-lg">
             <CollapsibleTrigger asChild>
               <button className="w-full p-3 flex items-center justify-between text-left hover:bg-muted/70 transition-colors rounded-lg">
@@ -242,10 +243,12 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               </div>
             </CollapsibleContent>
           </div>
-        </Collapsible>
+          </Collapsible>
+        )}
 
-        {/* Dispute Information - Collapsible on mobile */}
-        <Collapsible open={isDisputeMessageExpanded} onOpenChange={setIsDisputeMessageExpanded}>
+        {/* Dispute Information - Only show for non-resolved disputes */}
+        {!dispute.status.startsWith('resolved') && (
+          <Collapsible open={isDisputeMessageExpanded} onOpenChange={setIsDisputeMessageExpanded}>
           <div>
             <CollapsibleTrigger asChild>
               <button className="w-full text-left mb-2">
@@ -278,7 +281,8 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               </p>
             </CollapsibleContent>
           </div>
-        </Collapsible>
+          </Collapsible>
+        )}
 
         {/* Unified Conversation */}
         {['open', 'negotiating', 'responded'].includes(dispute.status) && (
@@ -301,23 +305,22 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
           </div>
         )}
 
-        {/* Résumé - Litige résolu */}
+        {/* Résumé condensé - Litige résolu */}
         {dispute.status.startsWith('resolved') && (
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <h4 className="font-medium text-sm">Litige résolu</h4>
+              <h4 className="font-medium">Litige résolu</h4>
             </div>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-1 text-sm">
               {dispute.resolution && (
                 <p className="text-foreground">{dispute.resolution}</p>
               )}
-              <p className="text-muted-foreground">
-                Montant final de la transaction: <span className="font-medium">{dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}</span>
-              </p>
-              <p className="text-muted-foreground">
-                La transaction a été déplacée dans l'onglet « complétées ».
-              </p>
+              {dispute.resolved_at && (
+                <p className="text-xs text-muted-foreground">
+                  Résolu le {format(new Date(dispute.resolved_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                </p>
+              )}
             </div>
           </div>
         )}
