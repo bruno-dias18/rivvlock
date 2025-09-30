@@ -150,7 +150,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-sm md:text-lg flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               Litige #{dispute.id.slice(0, 8)}
             </CardTitle>
@@ -158,9 +158,9 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               Transaction: {dispute.transactions?.title}
             </p>
             {timeRemaining && !isExpired && (
-              <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400">
-                <Clock className="h-4 w-4" />
-                <span className="text-sm font-medium">
+              <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400 overflow-hidden">
+                <Clock className="h-4 w-4 flex-shrink-0" />
+                <span className="text-xs md:text-sm font-medium whitespace-nowrap">
                   {timeRemaining.hours}h {timeRemaining.minutes}min restantes pour la résolution amiable
                 </span>
               </div>
