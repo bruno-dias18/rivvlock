@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Clock, AlertTriangle, Send, Users, Settings, CheckCircle, XCircle, FileText } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -30,11 +30,25 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
 
   const { proposals } = useDisputeProposals(dispute.id);
 
-  const transaction = dispute.transactions;
-  if (!transaction) return null;
+  // Ensure transaction data is available even if join is not returned by Supabase
+  const [transaction, setTransaction] = useState<any>(dispute.transactions);
 
-  const sellerProfile = transaction.profiles;
-  const buyerProfile = transaction.buyer_profiles;
+  useEffect(() => {
+    const fetchTx = async () => {
+      if (!dispute.transactions && dispute.transaction_id) {
+        const { data } = await supabase
+          .from('transactions')
+          .select('id, title, price, currency, service_date, status, seller_display_name, buyer_display_name')
+          .eq('id', dispute.transaction_id)
+          .maybeSingle();
+        if (data) setTransaction(data);
+      }
+    };
+    fetchTx();
+  }, [dispute.transactions, dispute.transaction_id]);
+
+  const sellerProfile = transaction?.profiles;
+  const buyerProfile = transaction?.buyer_profiles;
   const reporterProfile = dispute.reporter_profiles;
 
   const getStatusColor = (status: string) => {
@@ -169,7 +183,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
               [ADMIN] Litige #{dispute.id.slice(0, 8)}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Transaction: {dispute.transactions?.title}
+              Transaction: {transaction?.title || '-'}
             </p>
             {timeRemaining && !isExpired && (
               <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400">
@@ -233,19 +247,19 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             <div>
               <span className="text-muted-foreground">Date du service:</span>
               <span className="ml-2">
-                {dispute.transactions?.service_date 
-                  ? format(new Date(dispute.transactions.service_date), 'dd/MM/yyyy', { locale: fr })
+                {transaction?.service_date 
+                  ? format(new Date(transaction.service_date), 'dd/MM/yyyy', { locale: fr })
                   : 'Non définie'
                 }
               </span>
             </div>
             <div>
               <span className="text-muted-foreground">Statut transaction:</span>
-              <span className="ml-2">{dispute.transactions?.status}</span>
+              <span className="ml-2">{transaction?.status || '-'}</span>
             </div>
             <div>
               <span className="text-muted-foreground">ID Transaction:</span>
-              <span className="ml-2 font-mono text-xs">{dispute.transactions?.id.slice(0, 8)}</span>
+              <span className="ml-2 font-mono text-xs">{transaction?.id?.slice(0, 8) || '-'}</span>
             </div>
           </div>
         </div>
