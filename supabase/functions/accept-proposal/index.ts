@@ -253,11 +253,20 @@ serve(async (req) => {
       })
       .eq("id", dispute.id);
 
-    // Update transaction status
+    // Calculate updated price for partial refund
+    let updatedPrice = transaction.price;
+    if (proposal.proposal_type === 'partial_refund') {
+      const refundPercentage = proposal.refund_percentage || 0;
+      const remainingPercentage = 100 - refundPercentage;
+      updatedPrice = (transaction.price * remainingPercentage) / 100;
+    }
+
+    // Update transaction status and price
     await supabaseClient
       .from("transactions")
       .update({ 
         status: newTransactionStatus,
+        price: updatedPrice,
         funds_released: proposal.proposal_type === 'no_refund',
         updated_at: new Date().toISOString()
       })

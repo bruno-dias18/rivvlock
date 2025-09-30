@@ -121,7 +121,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   };
 
   const timeRemaining = getTimeRemaining();
-  const isExpired = status === 'escalated';
+  const isExpired = status === 'escalated' || status.startsWith('resolved');
   
   const pendingProposals = proposals.filter(p => p.status === 'pending');
   const canAcceptProposals = pendingProposals.some(p => p.proposer_id !== user?.id);
@@ -323,11 +323,16 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         </div>
       )}
 
-      {/* Escalated State - No input */}
+      {/* Expired State - No input */}
       {isExpired && (
         <div className="flex-shrink-0 border-t bg-muted/30 p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            La messagerie est fermée. Le litige est en cours d'arbitrage.
+            {status === 'escalated' 
+              ? 'La messagerie est fermée. Le litige est en cours d\'arbitrage.'
+              : status === 'resolved_agreement'
+              ? '✅ Litige résolu par accord mutuel. La conversation est fermée.'
+              : '✅ Litige résolu. La conversation est fermée.'
+            }
           </p>
         </div>
       )}

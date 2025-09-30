@@ -281,7 +281,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
         </Collapsible>
 
         {/* Unified Conversation */}
-        {!isExpired && (dispute.status === 'open' || dispute.status === 'negotiating' || dispute.status === 'responded') && (
+        {['open', 'negotiating', 'responded'].includes(dispute.status) && (
           <div>
             <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
               <Users className="h-4 w-4" />
