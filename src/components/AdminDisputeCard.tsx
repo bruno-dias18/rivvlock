@@ -173,6 +173,62 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
     }
   };
 
+  const isResolved = dispute.status.startsWith('resolved');
+
+  // Version condensée pour les litiges résolus
+  if (isResolved) {
+    return (
+      <Card className="border-green-200 dark:border-green-800 bg-green-50/30 dark:bg-green-950/10">
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                Litige #{dispute.id.slice(0, 8)} - Résolu
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Transaction: {transaction?.title || '-'}
+              </p>
+            </div>
+            <Badge className={getStatusColor(dispute.status)}>
+              {getStatusText(dispute.status)}
+            </Badge>
+          </div>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <span className="text-muted-foreground">Type:</span>
+              <span className="ml-2">{getDisputeTypeText(dispute.dispute_type)}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Montant:</span>
+              <span className="ml-2 font-medium">
+                {transaction?.price} {transaction?.currency?.toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Créé le:</span>
+              <span className="ml-2">{format(new Date(dispute.created_at), 'dd/MM/yyyy', { locale: fr })}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Résolu le:</span>
+              <span className="ml-2">{dispute.resolved_at ? format(new Date(dispute.resolved_at), 'dd/MM/yyyy', { locale: fr }) : '-'}</span>
+            </div>
+          </div>
+          
+          {adminNotes && (
+            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg text-sm">
+              <strong>Notes admin:</strong> {adminNotes}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Version complète pour les litiges actifs
   return (
     <Card className="border-orange-200 dark:border-orange-800">
       <CardHeader>
