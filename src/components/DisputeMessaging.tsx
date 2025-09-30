@@ -19,9 +19,13 @@ const AvatarFallback = ({ children, className = '' }: { children: React.ReactNod
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDisputeMessages } from '@/hooks/useDisputeMessages';
+import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { CreateProposalDialog } from './CreateProposalDialog';
+import { toast } from 'sonner';
+import { CheckCircle2, XCircle, Clock as ClockIcon } from 'lucide-react';
 
 interface DisputeMessagingProps {
   disputeId: string;
@@ -41,12 +45,22 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const isMobile = useIsMobile();
   const [newMessage, setNewMessage] = useState('');
   const [showQuickActions, setShowQuickActions] = useState(!isMobile);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
+  const { 
+    proposals, 
+    createProposal, 
+    acceptProposal, 
+    rejectProposal,
+    isCreating,
+    isAccepting,
+    isRejecting 
+  } = useDisputeProposals(disputeId);
 
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
@@ -114,6 +128,29 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
 
   const timeRemaining = getTimeRemaining();
   const isExpired = status === 'escalated';
+  
+  const pendingProposals = proposals.filter(p => p.status === 'pending');
+  const canAcceptProposals = pendingProposals.some(p => p.proposer_id !== user?.id);
+
+  const handleAcceptProposal = async (proposalId: string) => {
+    try {
+      await acceptProposal(proposalId);
+      toast.success('Proposition acceptée ! Le remboursement sera traité automatiquement.');
+    } catch (error) {
+      console.error('Error accepting proposal:', error);
+      toast.error('Erreur lors de l\'acceptation de la proposition');
+    }
+  };
+
+  const handleRejectProposal = async (proposalId: string) => {
+    try {
+      await rejectProposal(proposalId);
+      toast.info('Proposition refusée');
+    } catch (error) {
+      console.error('Error rejecting proposal:', error);
+      toast.error('Erreur lors du refus de la proposition');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -135,6 +172,66 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
             <div className="text-red-700 dark:text-red-300 text-sm font-medium">
               ⚠️ Ce litige a été escaladé au support client pour arbitrage
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Proposals Section */}
+      {pendingProposals.length > 0 && (
+        <div className="flex-shrink-0 border-b bg-amber-50 dark:bg-amber-950/20">
+          <div className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-medium text-sm">
+              <ClockIcon className="h-4 w-4" />
+              {pendingProposals.length === 1 ? 'Proposition en attente' : `${pendingProposals.length} propositions en attente`}
+            </div>
+            {pendingProposals.map((proposal) => {
+              const isOwnProposal = proposal.proposer_id === user?.id;
+              const proposalText = proposal.proposal_type === 'partial_refund'
+                ? `Remboursement de ${proposal.refund_percentage}%`
+                : proposal.proposal_type === 'full_refund'
+                ? 'Remboursement complet (100%)'
+                : 'Pas de remboursement';
+
+              return (
+                <div key={proposal.id} className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{proposalText}</div>
+                      {proposal.message && (
+                        <div className="text-xs text-muted-foreground mt-1">{proposal.message}</div>
+                      )}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {isOwnProposal ? 'Votre proposition' : 'Proposition de l\'autre partie'} • {format(new Date(proposal.created_at), 'dd/MM à HH:mm', { locale: fr })}
+                      </div>
+                    </div>
+                    {!isOwnProposal && (
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleAcceptProposal(proposal.id)}
+                          disabled={isAccepting || isRejecting}
+                          className="h-7 px-2"
+                        >
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Accepter
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRejectProposal(proposal.id)}
+                          disabled={isAccepting || isRejecting}
+                          className="h-7 px-2"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Refuser
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -194,6 +291,19 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {/* Input Area - Fixed at bottom */}
       {!isExpired && (
         <div className="flex-shrink-0 border-t bg-background">
+          {/* Official Proposal Button */}
+          <div className="p-2 border-b bg-primary/5">
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowProposalDialog(true)}
+              disabled={isCreating}
+            >
+              📝 Faire une proposition officielle
+            </Button>
+          </div>
+
           {/* Quick Action Buttons - Collapsible on mobile */}
           {isMobile ? (
             <div className="border-b bg-muted/30">
@@ -308,6 +418,14 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           </p>
         </div>
       )}
+
+      {/* Create Proposal Dialog */}
+      <CreateProposalDialog
+        open={showProposalDialog}
+        onOpenChange={setShowProposalDialog}
+        onCreateProposal={createProposal}
+        isCreating={isCreating}
+      />
     </Card>
   );
 };

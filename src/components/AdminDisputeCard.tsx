@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { DisputeMessaging } from './DisputeMessaging';
+import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -26,6 +27,8 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const [adminNotes, setAdminNotes] = useState(dispute.admin_notes || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const { proposals } = useDisputeProposals(dispute.id);
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -263,6 +266,58 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             Signalé le {format(new Date(dispute.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
           </p>
         </div>
+
+        {/* Proposals History */}
+        {proposals && proposals.length > 0 && (
+          <div>
+            <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+              📝 Historique des propositions formelles
+            </h4>
+            <div className="space-y-2">
+              {proposals.map((proposal) => {
+                const proposalText = proposal.proposal_type === 'partial_refund'
+                  ? `Remboursement de ${proposal.refund_percentage}%`
+                  : proposal.proposal_type === 'full_refund'
+                  ? 'Remboursement complet (100%)'
+                  : 'Pas de remboursement';
+
+                const statusColor = 
+                  proposal.status === 'accepted' 
+                    ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800'
+                    : proposal.status === 'rejected'
+                    ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800'
+                    : proposal.status === 'expired'
+                    ? 'bg-gray-50 dark:bg-gray-950/20 border-gray-200 dark:border-gray-800'
+                    : 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800';
+
+                const statusText =
+                  proposal.status === 'accepted' ? '✅ Acceptée'
+                  : proposal.status === 'rejected' ? '❌ Refusée'
+                  : proposal.status === 'expired' ? '⏰ Expirée'
+                  : '⏳ En attente';
+
+                return (
+                  <div key={proposal.id} className={`border p-3 rounded-lg ${statusColor}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{proposalText}</div>
+                        {proposal.message && (
+                          <div className="text-xs text-muted-foreground mt-1">{proposal.message}</div>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Proposé le {format(new Date(proposal.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {statusText}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Conversation History */}
         <div>

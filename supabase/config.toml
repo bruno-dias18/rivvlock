@@ -142,6 +142,12 @@ verify_jwt = true
 [functions.update-stripe-account-info]
 verify_jwt = true
 
+[functions.create-proposal]
+verify_jwt = true
+
+[functions.accept-proposal]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

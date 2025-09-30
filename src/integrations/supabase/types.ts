@@ -106,6 +106,53 @@ export type Database = {
           },
         ]
       }
+      dispute_proposals: {
+        Row: {
+          created_at: string | null
+          dispute_id: string
+          expires_at: string | null
+          id: string
+          message: string | null
+          proposal_type: string
+          proposer_id: string
+          refund_percentage: number | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dispute_id: string
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          proposal_type: string
+          proposer_id: string
+          refund_percentage?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dispute_id?: string
+          expires_at?: string | null
+          id?: string
+          message?: string | null
+          proposal_type?: string
+          proposer_id?: string
+          refund_percentage?: number | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_proposals_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           admin_notes: string | null
