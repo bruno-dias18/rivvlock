@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp, CheckCircle2, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
   const [showMessaging, setShowMessaging] = useState(false);
   const [isTransactionDetailsOpen, setIsTransactionDetailsOpen] = useState(!isMobile);
   const [isDisputeMessageExpanded, setIsDisputeMessageExpanded] = useState(!isMobile);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -145,6 +146,28 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
       toast.error("Erreur lors de l'envoi de la réponse");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteDispute = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce litige résolu ?")) return;
+
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('disputes')
+        .delete()
+        .eq('id', dispute.id);
+
+      if (error) throw error;
+
+      toast.success("Litige supprimé avec succès");
+      onRefetch?.();
+    } catch (error) {
+      console.error('Error deleting dispute:', error);
+      toast.error("Erreur lors de la suppression du litige");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -287,42 +310,58 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
           </Collapsible>
         )}
 
-        {/* Unified Conversation - Always visible */}
-        <div>
-          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Conversation
-          </h4>
-          
-          <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
-            <DisputeMessaging
-              disputeId={dispute.id}
-              disputeDeadline={dispute.dispute_deadline}
-              status={dispute.status}
-              onProposalSent={() => {
-                onRefetch?.();
-              }}
-            />
+        {/* Unified Conversation - Visible only for non-resolved disputes */}
+        {!dispute.status.startsWith('resolved') && (
+          <div>
+            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Conversation
+            </h4>
+            
+            <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
+              <DisputeMessaging
+                disputeId={dispute.id}
+                disputeDeadline={dispute.dispute_deadline}
+                status={dispute.status}
+                onProposalSent={() => {
+                  onRefetch?.();
+                }}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Résumé condensé - Litige résolu */}
         {dispute.status.startsWith('resolved') && (
-          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <h4 className="font-medium">Litige résolu</h4>
+          <div className="space-y-3">
+            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <h4 className="font-medium">Litige résolu</h4>
+              </div>
+              <div className="space-y-1 text-sm">
+                {dispute.resolution && (
+                  <p className="text-foreground">{dispute.resolution}</p>
+                )}
+                {dispute.resolved_at && (
+                  <p className="text-xs text-muted-foreground">
+                    Résolu le {format(new Date(dispute.resolved_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-1 text-sm">
-              {dispute.resolution && (
-                <p className="text-foreground">{dispute.resolution}</p>
-              )}
-              {dispute.resolved_at && (
-                <p className="text-xs text-muted-foreground">
-                  Résolu le {format(new Date(dispute.resolved_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                </p>
-              )}
-            </div>
+            
+            {/* Delete button for resolved disputes */}
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteDispute}
+              disabled={isDeleting}
+              className="w-full"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {isDeleting ? "Suppression..." : "Supprimer ce litige"}
+            </Button>
           </div>
         )}
 
