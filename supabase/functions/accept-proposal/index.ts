@@ -116,6 +116,7 @@ serve(async (req) => {
 
       const totalAmount = Math.round(transaction.price * 100);
       const refundPercentage = proposal.refund_percentage || 100;
+      const isFullRefund = proposal.proposal_type === 'full_refund' || refundPercentage === 100;
 
       console.log(`Processing ${refundPercentage}% refund for transaction ${transaction.id}`);
 
@@ -127,15 +128,24 @@ serve(async (req) => {
         // PaymentIntent is not captured yet - we need to cancel or capture partially
         console.log(`PaymentIntent not captured - handling authorization`);
 
-        if (proposal.proposal_type === 'full_refund') {
-          // Full refund = cancel the authorization completely
+        if (isFullRefund) {
+          // Full refund = cancel the authorization completely, no Rivvlock fees
           await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
-          console.log(`✅ Authorization cancelled (full refund)`);
+          console.log(`✅ Authorization cancelled (full refund, no Rivvlock fees)`);
         } else {
-          // Partial refund = capture only the remaining amount (100% - refund%)
+          // Partial refund: Rivvlock fees (5%) are shared proportionally
           const capturePercentage = 100 - refundPercentage;
-          const captureAmount = Math.round((totalAmount * capturePercentage) / 100);
           const platformFee = Math.round(totalAmount * 0.05);
+          
+          // Calculate amounts after sharing fees proportionally
+          const sellerShare = capturePercentage / 100;
+          const buyerShare = refundPercentage / 100;
+          
+          // Seller receives their share minus their portion of fees
+          const sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
+          // Buyer refund = total - seller amount - platform fees
+          const captureAmount = sellerAmount + platformFee;
+          
           const currency = String(transaction.currency).toLowerCase();
 
           // Ensure seller has a connected Stripe account before capturing
@@ -149,33 +159,44 @@ serve(async (req) => {
             throw new Error('Seller Stripe account not found');
           }
 
-          console.log(`Capturing ${capturePercentage}% (${captureAmount / 100} ${transaction.currency})`);
+          console.log(`Capturing ${captureAmount / 100} ${currency} (seller: ${sellerAmount / 100}, fees: ${platformFee / 100})`);
 
-          // Capture on platform account (no application_fee_amount for separate charges + transfers)
+          // Capture on platform account
           await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
             amount_to_capture: captureAmount,
           });
 
-          // Transfer net amount to the seller's connected account
-          const transferAmount = captureAmount - platformFee;
-          if (transferAmount > 0) {
+          // Transfer net amount to the seller's connected account (seller share minus their portion of fees)
+          if (sellerAmount > 0) {
             await stripe.transfers.create({
-              amount: transferAmount,
+              amount: sellerAmount,
               currency,
               destination: sellerAccount.stripe_account_id,
               transfer_group: `txn_${transaction.id}`,
             });
-            console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+            console.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (after proportional fees)`);
           }
 
-          console.log(`✅ Partial capture processed: ${capturePercentage}% to seller, ${refundPercentage}% refunded to buyer`);
+          const buyerRefund = totalAmount - captureAmount;
+          console.log(`✅ Partial refund: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
         }
 
       } else if (paymentIntent.status === 'succeeded') {
         // PaymentIntent already captured - create a refund
         console.log(`PaymentIntent already captured - creating refund`);
 
-        const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
+        let refundAmount: number;
+        if (isFullRefund) {
+          // Full refund: return everything to buyer, no Rivvlock fees
+          refundAmount = totalAmount;
+          console.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees)`);
+        } else {
+          // Partial refund: buyer gets their share minus their portion of fees
+          const platformFee = Math.round(totalAmount * 0.05);
+          const buyerShare = refundPercentage / 100;
+          refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
+          console.log(`Partial refund: ${refundAmount / 100} (buyer share after proportional fees)`);
+        }
 
         // Idempotency: avoid double refunds if already refunded previously
         const existingRefunds = await stripe.refunds.list({
