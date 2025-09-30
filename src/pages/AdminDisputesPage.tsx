@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Filter, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { AdminDisputeCard } from '@/components/AdminDisputeCard';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
+import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
 
 export default function AdminDisputesPage() {
   const { t } = useTranslation();
@@ -16,6 +17,16 @@ export default function AdminDisputesPage() {
   
   const { data: disputes, isLoading, refetch } = useAdminDisputes(statusFilter);
   const { data: stats, isLoading: statsLoading } = useAdminDisputeStats();
+  
+  // Hook pour les notifications de litiges escaladés
+  const { markAsSeen } = useAdminDisputeNotifications();
+  
+  // Marquer comme vu quand l'utilisateur visite la page avec le filtre escalated
+  useEffect(() => {
+    if (statusFilter === 'escalated') {
+      markAsSeen();
+    }
+  }, [statusFilter, markAsSeen]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -44,6 +55,39 @@ export default function AdminDisputesPage() {
             Administration et résolution des litiges clients
           </p>
         </div>
+
+        {/* Alerte pour les litiges escaladés */}
+        {!statsLoading && stats && stats.escalated > 0 && (
+          <Card className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <div className="relative">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-100 mb-1">
+                    {stats.escalated} litige{stats.escalated > 1 ? 's escaladés' : ' escaladé'} nécessite{stats.escalated > 1 ? 'nt' : ''} votre attention
+                  </h3>
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    Ces litiges n'ont pas pu être résolus à l'amiable et nécessitent une intervention manuelle pour arbitrage.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="mt-3 border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+                    onClick={() => setStatusFilter('escalated')}
+                  >
+                    Voir les litiges escaladés
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">

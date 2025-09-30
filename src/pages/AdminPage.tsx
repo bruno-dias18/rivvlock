@@ -10,6 +10,7 @@ import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { useAdminTransactions } from '@/hooks/useAdminTransactions';
 import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
 import { useAdminDisputeStats } from '@/hooks/useAdminDisputes';
+import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
@@ -22,6 +23,9 @@ export default function AdminPage() {
   const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
   const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
   const { data: disputeStats, isLoading: disputeStatsLoading } = useAdminDisputeStats();
+  
+  // Hook pour les notifications de litiges escaladés
+  useAdminDisputeNotifications();
 
   const getCurrencySymbol = (currency: string) => {
     const symbols: Record<string, string> = {
@@ -335,7 +339,15 @@ export default function AdminPage() {
         </Card>
 
         {/* Disputes Management */}
-        <Card>
+        <Card className="relative">
+          {/* Badge de notification pour les escalades */}
+          {disputeStats && disputeStats.escalated > 0 && (
+            <div className="absolute -top-2 -right-2 z-10">
+              <Badge className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg animate-pulse">
+                {disputeStats.escalated} escaladé{disputeStats.escalated > 1 ? 's' : ''}
+              </Badge>
+            </div>
+          )}
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <AlertTriangle className="h-4 w-4" />
@@ -359,15 +371,31 @@ export default function AdminPage() {
                     <div className="text-2xl font-bold text-red-600">{disputeStats.open}</div>
                     <div className="text-xs text-muted-foreground">Ouverts</div>
                   </div>
-                  <div>
+                  <div className="relative">
                     <div className="text-2xl font-bold text-purple-600">{disputeStats.escalated}</div>
                     <div className="text-xs text-muted-foreground">Escaladés</div>
+                    {disputeStats.escalated > 0 && (
+                      <div className="absolute -top-1 -right-1">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-2xl font-bold text-green-600">{disputeStats.resolved}</div>
                     <div className="text-xs text-muted-foreground">Résolus</div>
                   </div>
                 </div>
+                {disputeStats.escalated > 0 && (
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      {disputeStats.escalated} litige{disputeStats.escalated > 1 ? 's nécessitent' : ' nécessite'} votre attention
+                    </p>
+                  </div>
+                )}
                 <Link to="/dashboard/admin/disputes">
                   <Button className="w-full">
                     <AlertTriangle className="h-4 w-4 mr-2" />
