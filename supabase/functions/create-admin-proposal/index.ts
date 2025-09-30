@@ -141,7 +141,7 @@ serve(async (req) => {
         sender_id: user.id,
         recipient_id: transaction.user_id,
         message: systemMessage,
-        message_type: 'admin_official',
+        message_type: 'admin_to_seller',
       });
 
     // Message to buyer
@@ -152,7 +152,7 @@ serve(async (req) => {
         sender_id: user.id,
         recipient_id: transaction.buyer_id,
         message: systemMessage,
-        message_type: 'admin_official',
+        message_type: 'admin_to_buyer',
       });
 
     console.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
