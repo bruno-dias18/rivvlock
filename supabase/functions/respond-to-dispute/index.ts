@@ -46,13 +46,10 @@ serve(async (req) => {
 
     logStep("Processing dispute response", { disputeId, responseLength: response.length });
 
-    // Get dispute with transaction details
+    // Get dispute without join (avoid FK relationship error)
     const { data: dispute, error: disputeError } = await supabase
       .from("disputes")
-      .select(`
-        *,
-        transactions (*)
-      `)
+      .select("*")
       .eq("id", disputeId)
       .single();
 
@@ -61,7 +58,17 @@ serve(async (req) => {
       throw new Error("Dispute not found");
     }
 
-    const transaction = dispute.transactions;
+    // Get transaction separately
+    const { data: transaction, error: transactionError } = await supabase
+      .from("transactions")
+      .select("*")
+      .eq("id", dispute.transaction_id)
+      .single();
+
+    if (transactionError || !transaction) {
+      logStep("Transaction not found", transactionError);
+      throw new Error("Transaction not found");
+    }
     
     // Verify user is the seller of the transaction
     if (transaction.user_id !== user.id) {
