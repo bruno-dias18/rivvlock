@@ -128,30 +128,16 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
 
   return (
     <Card className="h-full flex flex-col overflow-hidden">{/* Changed to h-full to adapt to parent container */}
-      {/* Header: Timer/Alerts - Fixed at top */}
-      <div className="flex-shrink-0 border-b">
-        {timeRemaining && !isExpired && (
-          <div className="p-3 bg-orange-50 dark:bg-orange-950/20 border-b border-orange-200 dark:border-orange-800">
-            <div className="flex items-center gap-2 text-orange-700 dark:text-orange-300">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm font-medium">
-                {t('dispute.timeRemaining', { 
-                  hours: timeRemaining.hours, 
-                  minutes: timeRemaining.minutes 
-                })}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {isExpired && (
+      {/* Header: Escalation Alert - Fixed at top */}
+      {isExpired && (
+        <div className="flex-shrink-0 border-b">
           <div className="p-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-800">
             <div className="text-red-700 dark:text-red-300 text-sm font-medium">
               ⚠️ Ce litige a été escaladé au support client pour arbitrage
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Messages - Scrollable center area */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
