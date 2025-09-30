@@ -109,6 +109,42 @@ export function RecentActivityCard() {
     }
   };
 
+  // Map activity types to transaction tabs
+  const getTabForActivity = (activityType: string): string => {
+    switch (activityType) {
+      case 'transaction_created':
+      case 'buyer_joined_transaction':
+        return 'pending';
+      case 'funds_blocked':
+        return 'blocked';
+      case 'dispute_created':
+        return 'disputed';
+      case 'funds_released':
+      case 'transaction_completed':
+      case 'seller_validation':
+      case 'buyer_validation':
+        return 'completed';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Handle click on activity item
+  const handleActivityClick = (activity: any) => {
+    const metadata = activity.metadata as Record<string, any> | null;
+    const transactionId = metadata?.transaction_id;
+
+    // For profile-related activities, go to profile
+    if (activity.activity_type === 'profile_updated') {
+      navigate('/profile');
+      return;
+    }
+
+    // For transaction-related activities, go to transactions with appropriate tab
+    const tab = getTabForActivity(activity.activity_type);
+    navigate(`/transactions?tab=${tab}`);
+  };
+
   // Auto-refresh activity data every 15 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -154,12 +190,16 @@ export function RecentActivityCard() {
             const iconColor = getActivityColor(activity.activity_type);
             
             return (
-              <div key={activity.id} className="flex items-start space-x-3 group">
+              <button 
+                key={activity.id} 
+                onClick={() => handleActivityClick(activity)}
+                className="flex items-start space-x-3 group w-full text-left p-2 -mx-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+              >
                 <div className={`mt-0.5 ${iconColor}`}>
                   <IconComponent className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                     {getActivityTitle(activity)}
                   </p>
                   {getActivityDescription(activity) && (
@@ -174,7 +214,7 @@ export function RecentActivityCard() {
                      })}
                    </p>
                 </div>
-              </div>
+              </button>
             );
           })
         ) : (
