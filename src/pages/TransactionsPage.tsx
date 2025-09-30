@@ -520,9 +520,9 @@ export default function TransactionsPage() {
         <TabsContent value="disputed">
           <Card>
             <CardHeader>
-              <CardTitle>Litiges</CardTitle>
+              <CardTitle>{t('transactions.disputed')}</CardTitle>
               <CardDescription>
-                Transactions avec litiges ouverts
+                {t('transactions.disputedDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -530,7 +530,7 @@ export default function TransactionsPage() {
                 <div className="text-center py-8">
                   <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Aucun litige
+                    {t('transactions.noDisputed')}
                   </p>
                 </div>
               )}
