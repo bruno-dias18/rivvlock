@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle } from 'lucide-react';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
+import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
@@ -27,6 +29,7 @@ export default function DashboardPage() {
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   const { data: disputes } = useDisputes();
+  const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
 
   // Force sync on dashboard load
   useEffect(() => {
@@ -66,28 +69,52 @@ export default function DashboardPage() {
       description: t('dashboard.pendingDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.pending || 0),
       icon: Clock,
-      onClick: () => navigate('/dashboard/transactions?tab=pending'),
+      category: 'pending' as const,
+      badgeColor: 'bg-blue-500 text-white hover:bg-blue-600',
+      onClick: () => {
+        markAsSeen('pending');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=pending');
+      },
     },
     {
       title: t('dashboard.blocked'),
       description: t('dashboard.blockedDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
       icon: Lock,
-      onClick: () => navigate('/dashboard/transactions?tab=blocked'),
+      category: 'blocked' as const,
+      badgeColor: 'bg-orange-500 text-white hover:bg-orange-600',
+      onClick: () => {
+        markAsSeen('blocked');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=blocked');
+      },
     },
     {
       title: t('transactions.disputed'),
       description: t('transactions.disputedDescription'),
       count: String(disputes?.length || 0),
       icon: AlertTriangle,
-      onClick: () => navigate('/dashboard/transactions?tab=disputed'),
+      category: 'disputed' as const,
+      badgeColor: 'bg-red-500 text-white hover:bg-red-600',
+      onClick: () => {
+        markAsSeen('disputed');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=disputed');
+      },
     },
     {
       title: t('dashboard.completed'),
       description: t('dashboard.completedDesc'),
       count: countsLoading ? '...' : countsError ? '!' : String(counts?.validated || 0),
       icon: CheckCircle2,
-      onClick: () => navigate('/dashboard/transactions?tab=completed'),
+      category: 'completed' as const,
+      badgeColor: 'bg-green-500 text-white hover:bg-green-600',
+      onClick: () => {
+        markAsSeen('completed');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=completed');
+      },
     },
   ];
 
@@ -135,8 +162,13 @@ export default function DashboardPage() {
               onClick={status.onClick}
             >
               <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? "pb-1" : "pb-2"}`}>
-                <CardTitle className="text-sm font-medium">
-                  {status.title}
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <span>{status.title}</span>
+                  {newCounts[status.category] > 0 && (
+                    <Badge className={status.badgeColor}>
+                      {newCounts[status.category]}
+                    </Badge>
+                  )}
                 </CardTitle>
                 <status.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
