@@ -100,7 +100,7 @@ serve(async (req) => {
     });
 
     let newTransactionStatus = transaction.status;
-    let disputeStatus = 'resolved_agreement';
+    let disputeStatus: 'resolved' | 'resolved_refund' | 'resolved_release' = 'resolved';
 
     // Process the refund based on proposal type
     if (proposal.proposal_type === 'partial_refund' || proposal.proposal_type === 'full_refund') {
@@ -188,6 +188,7 @@ serve(async (req) => {
       }
 
       // Transaction is now validated with refund processed
+      disputeStatus = 'resolved_refund';
       newTransactionStatus = 'validated';
 
     } else if (proposal.proposal_type === 'no_refund') {
@@ -230,6 +231,7 @@ serve(async (req) => {
         console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
       }
 
+      disputeStatus = 'resolved_release';
       newTransactionStatus = 'validated';
       console.log(`✅ Funds released to seller (no refund)`);
     }
