@@ -321,11 +321,25 @@
     "accountNotFound": "Votre compte Stripe n'existe plus. Veuillez recréer votre compte.",
     "accountRecreated": "Votre compte Stripe a été recréé. Veuillez compléter la configuration.",
     "accountAlreadyActive": "Votre compte Stripe est déjà actif et configuré.",
+    "paymentTimingNote": "Une fois configuré, vous recevrez les paiements sous 2-3 jours ouvrés.",
+    "paymentTimingConfigured": "Les paiements seront disponibles sur votre compte sous 2-3 jours ouvrés après validation.",
     "helpSupport": "Aide & Support",
     "helpDescription": "Accédez aux ressources d'aide",
     "termsOfService": "Conditions générales",
     "contactUs": "Nous contacter",
     "website": "Site web"
+  },
+  "paymentTiming": {
+    "title": "Délai de réception des fonds",
+    "description": "Informations sur les délais de virement après validation d'une transaction",
+    "standardDelay": "Délai standard : 2-3 jours ouvrés",
+    "standardDelayDesc": "Les fonds sont disponibles sur votre compte bancaire sous 2 à 3 jours ouvrés après validation de la transaction par l'acheteur.",
+    "firstPayment": "Premier paiement : jusqu'à 7 jours ouvrés",
+    "firstPaymentDesc": "Votre tout premier paiement peut prendre jusqu'à 7 jours ouvrés pour des raisons de sécurité.",
+    "businessDays": "Jours ouvrés",
+    "businessDaysDesc": "Les jours ouvrés sont du lundi au vendredi, hors jours fériés. Les transactions validées le vendredi seront reçues en début de semaine suivante.",
+    "process": "Le transfert vers votre balance Stripe est effectué immédiatement dès la validation. Le délai de 2-3 jours est imposé par Stripe pour le virement bancaire.",
+    "sellerNote": "💰 Les fonds arriveront sur votre compte bancaire sous 2-3 jours ouvrés"
   },
   "deleteAccount": {
     "dangerZone": "Zone de danger",

@@ -295,7 +295,21 @@
     "commission": "Eine Provision von 5% wird bei jeder Transaktion erhoben, um Plattform- und Zahlungsabwicklungsgebühren zu decken.",
     "stripeOpened": "Stripe-Onboarding-Prozess in neuem Tab geöffnet",
     "stripeError": "Fehler beim Erstellen des Stripe-Kontos",
-    "statusUpdated": "Kontostatus aktualisiert"
+    "statusUpdated": "Kontostatus aktualisiert",
+    "paymentTimingNote": "Nach der Konfiguration erhalten Sie Zahlungen innerhalb von 2-3 Werktagen.",
+    "paymentTimingConfigured": "Zahlungen werden innerhalb von 2-3 Werktagen nach Validierung auf Ihrem Konto verfügbar sein."
+  },
+  "paymentTiming": {
+    "title": "Zahlungsfrist",
+    "description": "Informationen über Überweisungsfristen nach Transaktionsvalidierung",
+    "standardDelay": "Standardfrist: 2-3 Werktage",
+    "standardDelayDesc": "Gelder werden innerhalb von 2 bis 3 Werktagen nach Validierung der Transaktion durch den Käufer auf Ihrem Bankkonto verfügbar sein.",
+    "firstPayment": "Erste Zahlung: bis zu 7 Werktage",
+    "firstPaymentDesc": "Ihre allererste Zahlung kann aus Sicherheitsgründen bis zu 7 Werktage dauern.",
+    "businessDays": "Werktage",
+    "businessDaysDesc": "Werktage sind Montag bis Freitag, ausgenommen Feiertage. Am Freitag validierte Transaktionen werden Anfang der folgenden Woche empfangen.",
+    "process": "Die Überweisung auf Ihr Stripe-Guthaben erfolgt sofort nach der Validierung. Die 2-3-Tage-Frist wird von Stripe für die Banküberweisung vorgegeben.",
+    "sellerNote": "💰 Gelder werden innerhalb von 2-3 Werktagen auf Ihrem Bankkonto eintreffen"
   },
   "changePassword": {
     "title": "Passwort ändern",

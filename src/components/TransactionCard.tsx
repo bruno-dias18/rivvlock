@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -97,6 +98,16 @@ export function TransactionCard({
         </div>
       </CardHeader>
       <CardContent>
+        {/* Payment timing info for seller when transaction is validated */}
+        {userRole === 'seller' && transaction.status === 'validated' && (
+          <Alert className="mb-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+            <Banknote className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <AlertDescription className="text-green-800 dark:text-green-200">
+              {t('paymentTiming.sellerNote')}
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-2 text-sm text-muted-foreground mb-4">
           <div>{userRole === 'seller' ? t('roles.client') : t('roles.seller')}: {displayName}</div>
           <div>{t('transactions.createdOn')}: {new Date(transaction.created_at).toLocaleDateString(locale)}</div>
