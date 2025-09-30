@@ -74,7 +74,7 @@ serve(async (req) => {
       throw new Error("User not authorized to make proposals in this dispute");
     }
 
-    if (dispute.status !== 'open') {
+    if (!['open', 'responded', 'negotiating'].includes(dispute.status)) {
       throw new Error("Cannot make proposals on closed disputes");
     }
 
