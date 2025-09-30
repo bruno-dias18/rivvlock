@@ -40,21 +40,33 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
+
+  const isUserAtBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100; // pixels from bottom
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Auto-focus on textarea when component mounts
+  // Auto-focus on textarea when component mounts (without scrolling)
   useEffect(() => {
-    textareaRef.current?.focus();
+    textareaRef.current?.focus({ preventScroll: true });
   }, []);
 
-  // Auto-scroll when new messages arrive
+  // Smart scroll: only when NEW messages arrive and user is already at bottom
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > previousMessageCountRef.current && isUserAtBottom()) {
+      setTimeout(scrollToBottom, 100);
+    }
+    previousMessageCountRef.current = messages.length;
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -63,7 +75,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     try {
       await sendMessage({ message: newMessage.trim() });
       setNewMessage('');
-      textareaRef.current?.focus();
+      textareaRef.current?.focus({ preventScroll: true });
       onProposalSent?.();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -79,7 +91,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
 
   const handleQuickAction = (text: string) => {
     setNewMessage(text);
-    textareaRef.current?.focus();
+    textareaRef.current?.focus({ preventScroll: true });
   };
 
   const getTimeRemaining = () => {
@@ -139,7 +151,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       </div>
 
       {/* Messages - Scrollable center area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
         {messages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
