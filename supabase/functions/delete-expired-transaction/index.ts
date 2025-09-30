@@ -75,13 +75,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Verify transaction is expired
-    if (transaction.status !== 'expired') {
-      console.error('[DELETE-TRANSACTION] Transaction is not expired:', transaction.status);
+    // Verify transaction is expired OR pending with expired payment deadline
+    const isExpired = transaction.status === 'expired';
+    const isPendingExpired = transaction.status === 'pending' && 
+                             transaction.payment_deadline && 
+                             new Date(transaction.payment_deadline) <= new Date();
+    
+    if (!isExpired && !isPendingExpired) {
+      console.error('[DELETE-TRANSACTION] Transaction is not expired:', {
+        status: transaction.status,
+        payment_deadline: transaction.payment_deadline
+      });
       return new Response(
         JSON.stringify({ error: 'Only expired transactions can be deleted' }),
         { status: 400, headers: corsHeaders }
       );
+    }
+
+    // If transaction is pending but deadline expired, update status first
+    if (isPendingExpired && !isExpired) {
+      console.log('[DELETE-TRANSACTION] Updating pending transaction to expired status before deletion');
+      const { error: updateError } = await supabase
+        .from('transactions')
+        .update({ status: 'expired' })
+        .eq('id', transactionId);
+      
+      if (updateError) {
+        console.error('[DELETE-TRANSACTION] Failed to update status:', updateError);
+        // Continue anyway - deletion is more important
+      }
     }
 
     // Delete the transaction

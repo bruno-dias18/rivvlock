@@ -65,19 +65,25 @@ export default function TransactionsPage() {
     }
   }, [searchParams, refetch, setSearchParams]);
 
-  // Auto-fix reactivated transactions that may still show a past deadline
+  // Sync expired payment deadlines on mount
   useEffect(() => {
     if (!user) return;
     (async () => {
       try {
+        // First, process any expired payment deadlines
+        await supabase.functions.invoke('process-expired-payment-deadlines', { body: {} });
+        
+        // Then, auto-fix reactivated transactions
         const { data, error } = await supabase.functions.invoke('fix-reactivated-transactions', { body: {} });
         if (error) throw error;
         if (data?.fixedCount > 0) {
           toast.info('Transactions mises à jour automatiquement');
-          refetch();
         }
+        
+        // Refresh transactions after all updates
+        refetch();
       } catch (e) {
-        console.warn('Auto-fix skipped:', e);
+        console.warn('Auto-sync skipped:', e);
       }
     })();
   }, [user]);
@@ -190,7 +196,16 @@ export default function TransactionsPage() {
 
       if (error) {
         console.error('Error deleting transaction:', error);
-        toast.error('Erreur lors de la suppression de la transaction');
+        
+        // If deletion fails, try to sync expired statuses and retry
+        if (error.message?.includes('Only expired transactions')) {
+          toast.loading('Synchronisation en cours...');
+          await supabase.functions.invoke('process-expired-payment-deadlines', { body: {} });
+          await refetch();
+          toast.error('Veuillez réessayer la suppression après synchronisation');
+        } else {
+          toast.error('Erreur lors de la suppression de la transaction');
+        }
         return;
       }
 
