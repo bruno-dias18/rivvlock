@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Clock } from 'lucide-react';
+import { Send, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDisputeMessages } from '@/hooks/useDisputeMessages';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 interface DisputeMessagingProps {
   disputeId: string;
@@ -37,7 +38,9 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [newMessage, setNewMessage] = useState('');
+  const [showQuickActions, setShowQuickActions] = useState(!isMobile);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -54,10 +57,12 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     }
   };
 
-  // Auto-focus on textarea when component mounts (without scrolling)
+  // Auto-focus on textarea when component mounts (only on desktop)
   useEffect(() => {
-    textareaRef.current?.focus({ preventScroll: true });
-  }, []);
+    if (!isMobile) {
+      textareaRef.current?.focus({ preventScroll: true });
+    }
+  }, [isMobile]);
 
   // Auto-scroll when new messages arrive (sent or received)
   useEffect(() => {
@@ -203,45 +208,96 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {/* Input Area - Fixed at bottom */}
       {!isExpired && (
         <div className="flex-shrink-0 border-t bg-background">
-          {/* Quick Action Buttons */}
-          <div className="p-2 border-b bg-muted/30">
-            <div className="flex flex-wrap gap-2">
+          {/* Quick Action Buttons - Collapsible on mobile */}
+          {isMobile ? (
+            <div className="border-b bg-muted/30">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="text-xs h-8"
-                onClick={() => handleQuickAction('Je propose un remboursement de 50% pour compenser le problème.')}
+                className="w-full text-xs h-8 justify-between"
+                onClick={() => setShowQuickActions(!showQuickActions)}
               >
-                💰 Remboursement partiel
+                <span>Réponses rapides</span>
+                {showQuickActions ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => handleQuickAction('Je peux renvoyer le produit ou en envoyer un nouveau.')}
-              >
-                📦 Renvoi produit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs h-8"
-                onClick={() => handleQuickAction('Je propose un remboursement complet pour résoudre ce litige.')}
-              >
-                ↩️ Remboursement complet
-              </Button>
+              {showQuickActions && (
+                <div className="p-2 pt-0 flex flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 justify-start"
+                    onClick={() => {
+                      handleQuickAction('Je propose un remboursement de 50% pour compenser le problème.');
+                      setShowQuickActions(false);
+                    }}
+                  >
+                    💰 Remboursement partiel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 justify-start"
+                    onClick={() => {
+                      handleQuickAction('Je peux renvoyer le produit ou en envoyer un nouveau.');
+                      setShowQuickActions(false);
+                    }}
+                  >
+                    📦 Renvoi produit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 justify-start"
+                    onClick={() => {
+                      handleQuickAction('Je propose un remboursement complet pour résoudre ce litige.');
+                      setShowQuickActions(false);
+                    }}
+                  >
+                    ↩️ Remboursement complet
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="p-2 border-b bg-muted/30">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => handleQuickAction('Je propose un remboursement de 50% pour compenser le problème.')}
+                >
+                  💰 Remboursement partiel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => handleQuickAction('Je peux renvoyer le produit ou en envoyer un nouveau.')}
+                >
+                  📦 Renvoi produit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => handleQuickAction('Je propose un remboursement complet pour résoudre ce litige.')}
+                >
+                  ↩️ Remboursement complet
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Message Input */}
-          <div className="p-3 flex gap-2 items-end">
+          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
             <Textarea
               ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
-              className="min-h-[60px] max-h-[120px] resize-none"
+              placeholder={isMobile ? "Votre message..." : "Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"}
+              className={`resize-none ${isMobile ? 'min-h-[50px] max-h-[100px]' : 'min-h-[60px] max-h-[120px]'}`}
               disabled={isSendingMessage}
               aria-label="Message de négociation"
             />
@@ -249,10 +305,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
-              className="h-[60px] w-[60px] flex-shrink-0"
+              className={`flex-shrink-0 ${isMobile ? 'h-[50px] w-[50px]' : 'h-[60px] w-[60px]'}`}
               aria-label="Envoyer le message"
             >
-              <Send className="h-5 w-5" />
+              <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />
             </Button>
           </div>
         </div>

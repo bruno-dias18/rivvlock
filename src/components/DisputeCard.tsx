@@ -288,7 +288,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
               Conversation
             </h4>
             
-            <div className={isMobile ? "h-[250px]" : "h-[400px]"}>
+            <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
               <DisputeMessaging
                 disputeId={dispute.id}
                 disputeDeadline={dispute.dispute_deadline}
@@ -323,7 +323,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
             {/* Show messaging history even when escalated */}
             <div>
               <h5 className="font-medium text-sm mb-2">Historique de la conversation:</h5>
-              <div className={isMobile ? "h-[250px]" : "h-[400px]"}>
+              <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
                 <DisputeMessaging
                   disputeId={dispute.id}
                   disputeDeadline={dispute.dispute_deadline}
