@@ -57,15 +57,7 @@ serve(async (req) => {
     // Get dispute details
     const { data: dispute, error: disputeError } = await supabaseClient
       .from("disputes")
-      .select(`
-        *,
-        transactions (
-          id,
-          user_id,
-          buyer_id,
-          title
-        )
-      `)
+      .select("*")
       .eq("id", disputeId)
       .single();
 
@@ -74,8 +66,15 @@ serve(async (req) => {
       throw new Error("Dispute not found");
     }
 
-    const transaction = dispute.transactions;
-    if (!transaction) {
+    // Get transaction details separately
+    const { data: transaction, error: transactionError } = await supabaseClient
+      .from("transactions")
+      .select("id, user_id, buyer_id, title")
+      .eq("id", dispute.transaction_id)
+      .single();
+
+    if (transactionError || !transaction) {
+      console.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
