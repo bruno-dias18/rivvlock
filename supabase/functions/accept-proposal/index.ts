@@ -129,7 +129,7 @@ serve(async (req) => {
           // Partial refund = capture only the remaining amount (100% - refund%)
           const capturePercentage = 100 - refundPercentage;
           const captureAmount = Math.round((totalAmount * capturePercentage) / 100);
-          const platformFee = Math.round(captureAmount * 0.05);
+          const platformFee = Math.round(totalAmount * 0.05);
 
           console.log(`Capturing ${capturePercentage}% (${captureAmount / 100} ${transaction.currency})`);
 
