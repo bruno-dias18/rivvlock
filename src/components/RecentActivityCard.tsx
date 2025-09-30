@@ -136,13 +136,13 @@ export function RecentActivityCard() {
 
     // For profile-related activities, go to profile
     if (activity.activity_type === 'profile_updated') {
-      navigate('/profile');
+      navigate('/dashboard/profile');
       return;
     }
 
     // For transaction-related activities, go to transactions with appropriate tab
     const tab = getTabForActivity(activity.activity_type);
-    navigate(`/transactions?tab=${tab}`);
+    navigate(`/dashboard/transactions?tab=${tab}`);
   };
 
   // Auto-refresh activity data every 15 seconds
