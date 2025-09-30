@@ -38,14 +38,14 @@ const navigationItems = [
 
 const adminItems = [
   {
-    title: 'navigation.admin',
-    url: '/dashboard/admin',
-    icon: Users,
-  },
-  {
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
+  },
+  {
+    title: 'navigation.admin',
+    url: '/dashboard/admin',
+    icon: Users,
   },
 ];
 
