@@ -61,6 +61,14 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
 
+  // Messages privés envoyés par l'admin à l'utilisateur courant
+  const adminPrivateMessages = messages.filter(
+    (m) => m.message_type === 'admin' && m.recipient_id === user?.id
+  );
+  // Le flux principal exclut ces messages (on les affiche séparément)
+  const displayMessages = messages.filter(
+    (m) => !(m.message_type === 'admin' && m.recipient_id === user?.id)
+  );
   const scrollToBottom = () => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTo({
@@ -233,8 +241,25 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       )}
 
       {/* Messages - Scrollable center area */}
+      {/* Messages privés de l'admin (affichés en haut) */}
+      {adminPrivateMessages.length > 0 && (
+        <div className="flex-shrink-0 border-b bg-purple-50 dark:bg-purple-950/20">
+          <div className="p-3 space-y-2">
+            <div className="text-purple-700 dark:text-purple-300 font-medium text-sm">Messages de l'admin</div>
+            <div className="space-y-2">
+              {adminPrivateMessages.map((m) => (
+                <div key={m.id} className="bg-white dark:bg-gray-900 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs text-muted-foreground mb-1">Reçu le {format(new Date(m.created_at), 'dd/MM à HH:mm', { locale: fr })}</div>
+                  <div className="text-sm whitespace-pre-wrap">{m.message}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
-        {messages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
               <p className="font-medium">Aucun message pour le moment</p>
