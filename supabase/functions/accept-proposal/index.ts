@@ -187,7 +187,8 @@ serve(async (req) => {
         throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
 
-      newTransactionStatus = 'disputed';
+      // Transaction is now validated with refund processed
+      newTransactionStatus = 'validated';
 
     } else if (proposal.proposal_type === 'no_refund') {
       if (!transaction.stripe_payment_intent_id) {
@@ -229,7 +230,7 @@ serve(async (req) => {
         console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
       }
 
-      newTransactionStatus = 'completed';
+      newTransactionStatus = 'validated';
       console.log(`✅ Funds released to seller (no refund)`);
     }
 
