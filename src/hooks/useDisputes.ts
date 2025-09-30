@@ -12,6 +12,7 @@ export const useDisputes = () => {
         throw new Error('User not authenticated');
       }
 
+      // Fetch disputes - RLS policies will handle filtering
       const { data, error } = await supabase
         .from('disputes')
         .select(`
@@ -20,7 +21,6 @@ export const useDisputes = () => {
             *
           )
         `)
-        .or(`reporter_id.eq.${user.id},transactions.user_id.eq.${user.id},transactions.buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) {
