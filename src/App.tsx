@@ -1,6 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { I18nextProvider } from "react-i18next";
 import HomePage from "./pages/HomePage";
@@ -53,6 +53,11 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
+               // Legacy redirects to preserve old links
+               React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
+               React.createElement(Route, { path: "/profile", element: React.createElement(Navigate, { to: "/dashboard/profile", replace: true }) }),
+               React.createElement(Route, { path: "/admin", element: React.createElement(Navigate, { to: "/dashboard/admin", replace: true }) }),
+               React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
               React.createElement(Route, { 
                 path: "/dashboard", 
                 element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
