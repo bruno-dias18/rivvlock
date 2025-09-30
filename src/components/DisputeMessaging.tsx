@@ -39,13 +39,27 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { user } = useAuth();
   const [newMessage, setNewMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   // Auto-focus on textarea when component mounts (without scrolling)
   useEffect(() => {
     textareaRef.current?.focus({ preventScroll: true });
   }, []);
+
+  // Auto-scroll when new messages arrive (sent or received)
+  useEffect(() => {
+    if (messages.length > previousMessageCountRef.current) {
+      setTimeout(scrollToBottom, 100);
+    }
+    previousMessageCountRef.current = messages.length;
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -175,6 +189,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                 </div>
                 );
               })}
+            <div ref={messagesEndRef} />
           </>
         )}
       </div>
