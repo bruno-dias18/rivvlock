@@ -39,22 +39,14 @@ export const AdminDisputeMessaging = ({
 
   const isResolved = status.startsWith('resolved');
 
-  // Conversation Admin ↔ Vendeur UNIQUEMENT
+  // Conversation Admin ↔ Vendeur UNIQUEMENT (privée)
   const sellerMessages = (messages || []).filter(
-    (msg) =>
-      // Messages du vendeur vers l'admin (pas de recipient_id spécifique)
-      (msg.sender_id === sellerId && !msg.recipient_id) ||
-      // Messages de l'admin vers le vendeur spécifiquement
-      (msg.sender_id === user?.id && msg.recipient_id === sellerId)
+    (msg) => msg.message_type === 'admin_to_seller'
   );
 
-  // Conversation Admin ↔ Acheteur UNIQUEMENT
+  // Conversation Admin ↔ Acheteur UNIQUEMENT (privée)
   const buyerMessages = (messages || []).filter(
-    (msg) =>
-      // Messages de l'acheteur vers l'admin (pas de recipient_id spécifique)
-      (msg.sender_id === buyerId && !msg.recipient_id) ||
-      // Messages de l'admin vers l'acheteur spécifiquement
-      (msg.sender_id === user?.id && msg.recipient_id === buyerId)
+    (msg) => msg.message_type === 'admin_to_buyer'
   );
 
   const scrollToBottom = (ref: React.RefObject<HTMLDivElement>) => {
@@ -68,7 +60,12 @@ export const AdminDisputeMessaging = ({
     scrollToBottom(buyerMessagesRef);
   }, [messages]);
 
-  const sendMessage = async (recipientId: string, message: string, setMessage: (val: string) => void) => {
+  const sendMessage = async (
+    recipientId: string,
+    message: string,
+    messageType: 'admin_to_seller' | 'admin_to_buyer',
+    setMessage: (val: string) => void
+  ) => {
     if (!message.trim() || !user || !recipientId) {
       toast.error("Impossible d'envoyer le message - destinataire invalide");
       return;
@@ -82,7 +79,7 @@ export const AdminDisputeMessaging = ({
           sender_id: user.id,
           recipient_id: recipientId,
           message: message.trim(),
-          message_type: 'admin'
+          message_type: messageType
         });
 
       if (error) throw error;
@@ -124,7 +121,7 @@ export const AdminDisputeMessaging = ({
               </p>
             ) : (
               sellerMessages.map((msg) => {
-                const isAdmin = msg.message_type === 'admin';
+                const isAdmin = msg.message_type?.startsWith('admin_to_');
                 const isFromSeller = msg.sender_id === sellerId;
 
                 return (
@@ -166,7 +163,7 @@ export const AdminDisputeMessaging = ({
                 className="min-h-[80px]"
               />
               <Button
-                onClick={() => sendMessage(sellerId, messageToSeller, setMessageToSeller)}
+                onClick={() => sendMessage(sellerId, messageToSeller, 'admin_to_seller', setMessageToSeller)}
                 disabled={!messageToSeller.trim()}
                 className="w-full"
                 size="sm"
@@ -200,7 +197,7 @@ export const AdminDisputeMessaging = ({
               </p>
             ) : (
               buyerMessages.map((msg) => {
-                const isAdmin = msg.message_type === 'admin';
+                const isAdmin = msg.message_type?.startsWith('admin_to_');
                 const isFromBuyer = msg.sender_id === buyerId;
 
                 return (
@@ -242,7 +239,7 @@ export const AdminDisputeMessaging = ({
                 className="min-h-[80px]"
               />
               <Button
-                onClick={() => sendMessage(buyerId, messageToBuyer, setMessageToBuyer)}
+                onClick={() => sendMessage(buyerId, messageToBuyer, 'admin_to_buyer', setMessageToBuyer)}
                 disabled={!messageToBuyer.trim()}
                 className="w-full"
                 size="sm"

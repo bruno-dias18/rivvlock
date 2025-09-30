@@ -109,6 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
           );
         }
 
+        const targetType = recipientId === dispute.transactions?.user_id ? 'admin_to_seller' : 'admin_to_buyer';
+
         const { error: messageError } = await supabase
           .from('dispute_messages')
           .insert({
@@ -116,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
             sender_id: user.id,
             recipient_id: recipientId,
             message: message || '',
-            message_type: 'admin'
+            message_type: targetType
           });
 
         if (messageError) {

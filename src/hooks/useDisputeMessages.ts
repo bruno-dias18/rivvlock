@@ -24,7 +24,7 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
         // 1. I'm the sender (my own messages)
         // 2. I'm the explicit recipient (messages addressed to me)
         // This prevents seeing messages sent by the other party or messages addressed to them
-        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id},recipient_id.is.null`);
+        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id},and(recipient_id.is.null,message_type.not.ilike.admin%)`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: true });
