@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
   };
 
   const timeRemaining = getTimeRemaining();
-  const isExpired = dispute.status === 'escalated' || (timeRemaining === null && dispute.dispute_deadline);
+  const isExpired = dispute.status === 'escalated';
 
   const handleSubmitResponse = async () => {
     if (!responseText.trim()) return;
@@ -297,6 +297,27 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
                   onRefetch?.();
                 }}
               />
+            </div>
+          </div>
+        )}
+
+        {/* Résumé - Litige résolu */}
+        {dispute.status.startsWith('resolved') && (
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <h4 className="font-medium text-sm">Litige résolu</h4>
+            </div>
+            <div className="space-y-2 text-sm">
+              {dispute.resolution && (
+                <p className="text-foreground">{dispute.resolution}</p>
+              )}
+              <p className="text-muted-foreground">
+                Montant final de la transaction: <span className="font-medium">{dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}</span>
+              </p>
+              <p className="text-muted-foreground">
+                La transaction a été déplacée dans l'onglet « complétées ».
+              </p>
             </div>
           </div>
         )}
