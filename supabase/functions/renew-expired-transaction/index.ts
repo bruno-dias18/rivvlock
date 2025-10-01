@@ -60,9 +60,21 @@ serve(async (req) => {
       throw new Error("Only the seller can renew this transaction");
     }
 
-    // Verify transaction is expired
-    if (transaction.status !== "expired") {
-      throw new Error("Only expired transactions can be renewed");
+    // Verify transaction is expired or has an expired payment deadline
+    const now = new Date();
+    const paymentDeadline = transaction.payment_deadline ? new Date(transaction.payment_deadline) : null;
+    const isPaymentExpired = paymentDeadline && paymentDeadline < now;
+    
+    if (transaction.status !== "expired" && !isPaymentExpired) {
+      throw new Error("Only expired transactions or transactions with expired payment deadlines can be renewed");
+    }
+    
+    // If transaction is pending but payment is expired, log it
+    if (transaction.status === "pending" && isPaymentExpired) {
+      logStep("Renewing pending transaction with expired payment deadline", { 
+        status: transaction.status, 
+        paymentDeadline: transaction.payment_deadline 
+      });
     }
 
     // Check renewal limit (max 2 renewals)
