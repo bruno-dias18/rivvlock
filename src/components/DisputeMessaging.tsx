@@ -314,7 +314,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {/* Messages - Scrollable center area */}
       <div 
         ref={messagesContainerRef} 
-        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20"
       >
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -394,6 +394,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
+              onFocus={() => setTimeout(ensureBottom, 100)}
               placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
               className="resize-none h-14"
               rows={2}
@@ -428,6 +429,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
+              onFocus={() => setTimeout(ensureBottom, 100)}
               placeholder="Répondre à l'admin..."
               className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
               rows={2}

@@ -117,7 +117,7 @@ export const TransactionMessaging = ({
   // Use Dialog for both mobile and desktop (stable, predictable)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[85vh] p-0 flex flex-col gap-0">
+      <DialogContent className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 sm:h-[85vh] h-[60vh] top-2 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
@@ -131,7 +131,7 @@ export const TransactionMessaging = ({
 
         <div 
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
         >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -175,6 +175,7 @@ export const TransactionMessaging = ({
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
+              onFocus={() => setTimeout(ensureBottom, 100)}
               placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
               className="flex-1 h-14 resize-none"
               rows={2}
