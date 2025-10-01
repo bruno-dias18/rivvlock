@@ -14,28 +14,39 @@ export function useTransactionNewMessages(transactions: any[], currentUserId: st
 
     const checkNewMessages = async () => {
       const newMap = new Map<string, boolean>();
+      const transactionIds = transactions.map(t => t.id);
 
+      // Optimisation : Une seule requête pour tous les derniers messages
+      const { data: allMessages } = await supabase
+        .from('transaction_messages')
+        .select('*')
+        .in('transaction_id', transactionIds)
+        .order('created_at', { ascending: false });
+
+      if (!allMessages) {
+        setNewMessagesMap(new Map());
+        return;
+      }
+
+      // Grouper les messages par transaction et garder seulement le plus récent
+      const lastMessagesByTransaction = new Map<string, any>();
+      for (const message of allMessages) {
+        if (!lastMessagesByTransaction.has(message.transaction_id)) {
+          lastMessagesByTransaction.set(message.transaction_id, message);
+        }
+      }
+
+      // Vérifier pour chaque transaction s'il y a un nouveau message
       for (const transaction of transactions) {
         const transactionId = transaction.id;
         const storageKey = `${STORAGE_KEY_PREFIX}${transactionId}`;
         const lastSeenStr = localStorage.getItem(storageKey);
         const lastSeenTimestamp = lastSeenStr ? new Date(lastSeenStr).getTime() : 0;
 
-        // Récupérer le dernier message de cette transaction
-        const { data: messages } = await supabase
-          .from('transaction_messages')
-          .select('*')
-          .eq('transaction_id', transactionId)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        const lastMessage = lastMessagesByTransaction.get(transactionId);
 
-        if (messages && messages.length > 0) {
-          const lastMessage = messages[0];
+        if (lastMessage) {
           const lastMessageTimestamp = new Date(lastMessage.created_at).getTime();
-          
-          // Il y a un nouveau message si :
-          // 1. Le dernier message est plus récent que le dernier vu
-          // 2. Le dernier message n'est pas de l'utilisateur actuel
           const hasNewMessage = 
             lastMessageTimestamp > lastSeenTimestamp && 
             lastMessage.sender_id !== currentUserId;
