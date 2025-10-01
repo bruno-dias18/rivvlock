@@ -72,6 +72,13 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
         (payload) => {
           const newMessage = payload.new as TransactionMessage;
           
+          console.log('📨 Message reçu en temps réel:', {
+            messageId: newMessage.id,
+            senderId: newMessage.sender_id,
+            currentUserId: currentUserId,
+            isOwnMessage: newMessage.sender_id === currentUserId
+          });
+          
           // Remplacer le message optimiste par le vrai message
           setMessages((prev) => {
             const tempMessageIndex = prev.findIndex(
@@ -93,11 +100,14 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
           
           // Notification seulement si ce n'est pas mon propre message
           if (newMessage.sender_id !== currentUserId) {
+            console.log('🔔 Affichage notification pour message reçu');
             toast.info('💬 Nouveau message reçu', {
               description: newMessage.message.length > 50 
                 ? newMessage.message.substring(0, 50) + '...' 
                 : newMessage.message
             });
+          } else {
+            console.log('🔕 Pas de notification - c\'est mon propre message');
           }
         }
       )
