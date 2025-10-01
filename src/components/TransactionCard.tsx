@@ -224,30 +224,16 @@ export function TransactionCard({
             )}
 
             {userRole === 'seller' && transaction.status !== 'validated' && (
-              <>
-                <Button
-                  variant="outline"
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => setIsDateChangeDialogOpen(true)}
-                  className={isMobile ? "justify-center" : ""}
-                  disabled={transaction.date_change_count >= 2}
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
-                </Button>
-                
-                {isMessagingAvailable() && (
-                  <Button
-                    variant="outline"
-                    size={isMobile ? "default" : "sm"}
-                    onClick={() => setIsMessagingOpen(true)}
-                    className={isMobile ? "justify-center" : ""}
-                  >
-                    <Mail className="h-4 w-4 mr-2" />
-                    {t('common.contact', 'Contacter')}
-                  </Button>
-                )}
-              </>
+              <Button
+                variant="outline"
+                size={isMobile ? "default" : "sm"}
+                onClick={() => setIsDateChangeDialogOpen(true)}
+                className={isMobile ? "justify-center" : ""}
+                disabled={transaction.date_change_count >= 2}
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
+              </Button>
             )}
             
             {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
@@ -266,6 +252,18 @@ export function TransactionCard({
               <div className="text-sm text-muted-foreground">
                 {validationStatus.displayLabel}
               </div>
+            )}
+
+            {isMessagingAvailable() && (
+              <Button
+                variant="outline"
+                size={isMobile ? "default" : "sm"}
+                onClick={() => setIsMessagingOpen(true)}
+                className={isMobile ? "justify-center" : ""}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {t('common.contact', 'Contacter')}
+              </Button>
             )}
 
             {transaction.status === 'validated' && (
