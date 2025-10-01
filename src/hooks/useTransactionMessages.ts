@@ -57,7 +57,16 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
 
   // Real-time subscription
   useEffect(() => {
-    if (!transactionId) return;
+    if (!transactionId) {
+      console.log('⚠️ Pas de transactionId, subscription non créée');
+      return;
+    }
+
+    console.log('🔌 Création de la subscription temps réel', {
+      transactionId,
+      currentUserId,
+      channel: `transaction_messages:${transactionId}`
+    });
 
     const channel = supabase
       .channel(`transaction_messages:${transactionId}`)
@@ -75,12 +84,23 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
           console.log('📨 Message reçu en temps réel:', {
             messageId: newMessage.id,
             senderId: newMessage.sender_id,
+            recipientId: newMessage.recipient_id,
             currentUserId: currentUserId,
+            message: newMessage.message.substring(0, 30),
             isOwnMessage: newMessage.sender_id === currentUserId
           });
           
           // Remplacer le message optimiste par le vrai message
           setMessages((prev) => {
+            console.log('📋 État actuel des messages:', {
+              count: prev.length,
+              lastMessages: prev.slice(-3).map(m => ({
+                id: m.id,
+                sender: m.sender_id,
+                msg: m.message.substring(0, 20)
+              }))
+            });
+
             const tempMessageIndex = prev.findIndex(
               msg => msg.id.startsWith('temp-') && 
               msg.message === newMessage.message &&
@@ -88,12 +108,12 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
             );
             
             if (tempMessageIndex !== -1) {
-              // Remplacer le message temporaire
+              console.log('🔄 Remplacement du message temporaire à l\'index', tempMessageIndex);
               const updated = [...prev];
               updated[tempMessageIndex] = newMessage;
               return updated;
             } else {
-              // Ajouter le nouveau message (cas normal pour les messages reçus)
+              console.log('➕ Ajout d\'un nouveau message (non optimiste)');
               return [...prev, newMessage];
             }
           });
@@ -111,9 +131,12 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 Statut de la subscription:', status);
+      });
 
     return () => {
+      console.log('🔌 Fermeture de la subscription', transactionId);
       supabase.removeChannel(channel);
     };
   }, [transactionId, currentUserId]);
