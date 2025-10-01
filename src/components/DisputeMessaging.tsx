@@ -405,7 +405,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
               className="resize-none h-14"
               rows={2}
-              disabled={isSendingMessage}
               aria-label="Message de négociation"
               enterKeyHint="send"
             />
@@ -444,7 +443,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               placeholder="Répondre à l'admin..."
               className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
               rows={2}
-              disabled={isSendingMessage}
               aria-label="Message pour l'admin"
               enterKeyHint="send"
             />

@@ -192,7 +192,6 @@ export const TransactionMessaging = ({
               className="flex-1 h-14 resize-none"
               rows={2}
               maxLength={500}
-              disabled={isSendingMessage}
               enterKeyHint="send"
             />
             <Button
