@@ -51,7 +51,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
   
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
@@ -96,16 +96,17 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       return willDisplay;
     }
   );
-  // Robust scroll to bottom with retry mechanism
-  const ensureBottom = (retryCount = 0) => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    container.scrollTop = container.scrollHeight;
-
-    // Retry up to 3 times to ensure DOM is fully rendered
-    if (retryCount < 3) {
-      requestAnimationFrame(() => ensureBottom(retryCount + 1));
+  // Robust scroll to bottom using bottom anchor and retries
+  const ensureBottom = (retryCount = 3) => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ block: 'end' });
+    } else if (messagesContainerRef.current) {
+      // Fallback
+      const c = messagesContainerRef.current;
+      c.scrollTop = c.scrollHeight;
+    }
+    if (retryCount > 0) {
+      requestAnimationFrame(() => ensureBottom(retryCount - 1));
     }
   };
 
@@ -135,6 +136,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       
       // Force scroll after sending
       setTimeout(() => ensureBottom(), 50);
+      setTimeout(() => ensureBottom(), 250);
       
       // Log activity for the other participant
       try {
@@ -320,8 +322,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       {/* Messages - Scrollable center area */}
       <div 
         ref={messagesContainerRef} 
-        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-behavior-x-contain p-4 space-y-4 bg-muted/20"
-        style={{ touchAction: 'pan-y' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20"
+        style={{ touchAction: 'pan-y', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
       >
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -373,6 +375,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               })}
           </>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* Input Area - Fixed at bottom */}
@@ -394,14 +397,15 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           )}
 
           {/* Message Input */}
-          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
+          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`} style={{ paddingBottom: isMobile ? 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' : undefined }}>
             <Textarea
               ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder={isMobile ? "Votre message..." : "Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"}
-              className={`resize-none ${isMobile ? 'min-h-[50px] max-h-[100px]' : 'min-h-[60px] max-h-[120px]'}`}
+              className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
+              rows={2}
               disabled={isSendingMessage}
               aria-label="Message de négociation"
             />
@@ -409,7 +413,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
-              className={`flex-shrink-0 ${isMobile ? 'h-[50px] w-[50px]' : 'h-[60px] w-[60px]'}`}
+              className={`flex-shrink-0 ${isMobile ? 'h-14 w-14' : 'h-[60px] w-[60px]'}`}
               aria-label="Envoyer le message"
             >
               <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />
@@ -427,14 +431,15 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
             </p>
           </div>
           
-          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`}>
+          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`} style={{ paddingBottom: isMobile ? 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' : undefined }}>
             <Textarea
               ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Répondre à l'admin..."
-              className={`resize-none ${isMobile ? 'min-h-[50px] max-h-[100px]' : 'min-h-[60px] max-h-[120px]'}`}
+              className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
+              rows={2}
               disabled={isSendingMessage}
               aria-label="Message pour l'admin"
             />
@@ -442,7 +447,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
-              className={`flex-shrink-0 ${isMobile ? 'h-[50px] w-[50px]' : 'h-[60px] w-[60px]'}`}
+              className={`flex-shrink-0 ${isMobile ? 'h-14 w-14' : 'h-[60px] w-[60px]'}`}
               aria-label="Envoyer le message à l'admin"
             >
               <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />

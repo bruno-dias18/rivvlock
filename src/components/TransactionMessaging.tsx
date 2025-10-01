@@ -146,8 +146,8 @@ export const TransactionMessaging = ({
 
           <div 
             ref={messagesContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-behavior-x-contain p-4 pb-28 bg-muted/20"
-            style={{ touchAction: 'pan-y' }}
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
+            style={{ touchAction: 'pan-y', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
           >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
@@ -181,13 +181,12 @@ export const TransactionMessaging = ({
                 ))}
               </div>
             )}
+            <div ref={bottomRef} />
           </div>
 
           <div
-            className="absolute bottom-0 left-0 right-0 bg-background border-t p-3"
-            style={{
-              bottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px)`
-            }}
+            className="sticky bottom-0 left-0 right-0 bg-background border-t p-3"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
           >
             <div className="flex gap-2 items-end">
               <Textarea
@@ -196,7 +195,7 @@ export const TransactionMessaging = ({
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
-                className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+                className="flex-1 h-14 resize-none"
                 rows={2}
                 maxLength={500}
                 disabled={isSendingMessage}
@@ -205,7 +204,7 @@ export const TransactionMessaging = ({
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim() || isSendingMessage}
                 size="icon"
-                className="h-[60px] w-[60px] shrink-0"
+                className="h-14 w-14 shrink-0"
               >
                 <Send className="h-4 w-4" />
               </Button>
