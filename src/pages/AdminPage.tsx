@@ -167,6 +167,86 @@ export default function AdminPage() {
 
       {/* Management Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Disputes Management - PRIORITAIRE */}
+        <Card className="relative">
+          {/* Badge de notification pour les escalades */}
+          {disputeStats && disputeStats.escalated > 0 && (
+            <div className="absolute -top-2 -right-2 z-10">
+              <Badge className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg animate-pulse">
+                {disputeStats.escalated} escaladé{disputeStats.escalated > 1 ? 's' : ''}
+              </Badge>
+            </div>
+          )}
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Gestion des Litiges</span>
+            </CardTitle>
+            <CardDescription>
+              Suivi et résolution des litiges clients
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {disputeStatsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-8 w-16" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : disputeStats ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-red-600">{disputeStats.open}</div>
+                    <div className="text-xs text-muted-foreground">Ouverts</div>
+                  </div>
+                  <div className="relative">
+                    <div className="text-2xl font-bold text-purple-600">{disputeStats.escalated}</div>
+                    <div className="text-xs text-muted-foreground">Escaladés</div>
+                    {disputeStats.escalated > 0 && (
+                      <div className="absolute -top-1 -right-1">
+                        <span className="relative flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">{disputeStats.resolved}</div>
+                    <div className="text-xs text-muted-foreground">Résolus</div>
+                  </div>
+                </div>
+                {disputeStats.escalated > 0 && (
+                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <p className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      {disputeStats.escalated} litige{disputeStats.escalated > 1 ? 's nécessitent' : ' nécessite'} votre attention
+                    </p>
+                  </div>
+                )}
+                <Link to="/dashboard/admin/disputes">
+                  <Button className="w-full">
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Gérer les Litiges
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Aucune donnée de litige disponible
+                </p>
+                <Link to="/dashboard/admin/disputes">
+                  <Button variant="outline" className="w-full">
+                    Voir les Litiges
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Users Management */}
         <Card>
           <CardHeader>
@@ -334,86 +414,6 @@ export default function AdminPage() {
               <p className="text-sm text-muted-foreground">
                 Aucune activité récente
               </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Disputes Management */}
-        <Card className="relative">
-          {/* Badge de notification pour les escalades */}
-          {disputeStats && disputeStats.escalated > 0 && (
-            <div className="absolute -top-2 -right-2 z-10">
-              <Badge className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg animate-pulse">
-                {disputeStats.escalated} escaladé{disputeStats.escalated > 1 ? 's' : ''}
-              </Badge>
-            </div>
-          )}
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Gestion des Litiges</span>
-            </CardTitle>
-            <CardDescription>
-              Suivi et résolution des litiges clients
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {disputeStatsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-4 w-24" />
-              </div>
-            ) : disputeStats ? (
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-red-600">{disputeStats.open}</div>
-                    <div className="text-xs text-muted-foreground">Ouverts</div>
-                  </div>
-                  <div className="relative">
-                    <div className="text-2xl font-bold text-purple-600">{disputeStats.escalated}</div>
-                    <div className="text-xs text-muted-foreground">Escaladés</div>
-                    {disputeStats.escalated > 0 && (
-                      <div className="absolute -top-1 -right-1">
-                        <span className="relative flex h-3 w-3">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">{disputeStats.resolved}</div>
-                    <div className="text-xs text-muted-foreground">Résolus</div>
-                  </div>
-                </div>
-                {disputeStats.escalated > 0 && (
-                  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                    <p className="text-sm font-medium text-red-600 dark:text-red-400 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {disputeStats.escalated} litige{disputeStats.escalated > 1 ? 's nécessitent' : ' nécessite'} votre attention
-                    </p>
-                  </div>
-                )}
-                <Link to="/dashboard/admin/disputes">
-                  <Button className="w-full">
-                    <AlertTriangle className="h-4 w-4 mr-2" />
-                    Gérer les Litiges
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Aucune donnée de litige disponible
-                </p>
-                <Link to="/dashboard/admin/disputes">
-                  <Button variant="outline" className="w-full">
-                    Voir les Litiges
-                  </Button>
-                </Link>
-              </div>
             )}
           </CardContent>
         </Card>
