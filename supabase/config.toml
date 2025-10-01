@@ -154,6 +154,12 @@ verify_jwt = true
 [functions.validate-admin-proposal]
 verify_jwt = true
 
+[functions.renew-expired-transaction]
+verify_jwt = true
+
+[functions.delete-expired-transaction]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

@@ -6,13 +6,17 @@ import { useTranslation } from 'react-i18next';
 interface ExpiredPaymentNotificationProps {
   userRole: 'seller' | 'buyer';
   onDelete?: () => void;
+  onRenew?: () => void;
   isDeleting?: boolean;
+  isRenewing?: boolean;
 }
 
 export function ExpiredPaymentNotification({ 
   userRole, 
-  onDelete, 
-  isDeleting = false 
+  onDelete,
+  onRenew,
+  isDeleting = false,
+  isRenewing = false
 }: ExpiredPaymentNotificationProps) {
   const { t } = useTranslation();
 
@@ -26,18 +30,31 @@ export function ExpiredPaymentNotification({
             : "Votre délai de paiement a expiré - Transaction annulée"
           }
         </AlertDescription>
-        {onDelete && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            disabled={isDeleting}
-            className="ml-4 text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            {isDeleting ? 'Suppression...' : 'Supprimer'}
-          </Button>
-        )}
+        <div className="flex gap-2 ml-4">
+          {userRole === 'seller' && onRenew && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRenew}
+              disabled={isRenewing}
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              {isRenewing ? 'Relance...' : 'Proposer nouvelle date'}
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              disabled={isDeleting}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          )}
+        </div>
       </div>
     </Alert>
   );

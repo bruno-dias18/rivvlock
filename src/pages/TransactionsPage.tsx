@@ -215,6 +215,48 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleRenewExpiredTransaction = async (transaction: any, newServiceDate?: Date, message?: string) => {
+    try {
+      toast.loading('Relance de la transaction en cours...');
+
+      const { data, error } = await supabase.functions.invoke('renew-expired-transaction', {
+        body: { 
+          transactionId: transaction.id,
+          newServiceDate: newServiceDate?.toISOString(),
+          message
+        }
+      });
+
+      if (error) {
+        console.error('Error renewing transaction:', error);
+        toast.dismiss();
+        
+        // Handle specific error messages
+        if (error.message?.includes('Maximum number of renewals')) {
+          toast.error('Limite de relances atteinte', {
+            description: 'Cette transaction a déjà été relancée le nombre maximum de fois'
+          });
+        } else if (error.message?.includes('Only expired transactions')) {
+          toast.error('Cette transaction ne peut pas être relancée');
+        } else {
+          toast.error('Erreur lors de la relance de la transaction');
+        }
+        return;
+      }
+
+      toast.dismiss();
+      toast.success('Transaction relancée avec succès !', {
+        description: 'Le client dispose maintenant de 48h pour effectuer le paiement'
+      });
+      
+      refetch(); // Refresh the transactions list
+    } catch (error) {
+      console.error('Error renewing transaction:', error);
+      toast.dismiss();
+      toast.error('Erreur lors de la relance de la transaction');
+    }
+  };
+
   const handleDownloadInvoice = async (transaction: any) => {
     try {
       // Récupérer les profils vendeur et acheteur
@@ -449,6 +491,7 @@ export default function TransactionsPage() {
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
                         onDeleteExpired={handleDeleteExpiredTransaction}
+                        onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}
@@ -492,6 +535,7 @@ export default function TransactionsPage() {
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
                         onDeleteExpired={handleDeleteExpiredTransaction}
+                        onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}
@@ -535,6 +579,7 @@ export default function TransactionsPage() {
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
                         onDeleteExpired={handleDeleteExpiredTransaction}
+                        onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
                       />
                     ))}

@@ -12,6 +12,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
 import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
+import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { useTranslation } from 'react-i18next';
 
 interface TransactionCardProps {
@@ -24,6 +25,7 @@ interface TransactionCardProps {
   onOpenDispute: (transaction: any) => void;
   onDownloadInvoice: (transaction: any) => void;
   onDeleteExpired?: (transaction: any) => void;
+  onRenewExpired?: (transaction: any, newServiceDate?: Date, message?: string) => void;
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
@@ -37,11 +39,13 @@ export function TransactionCard({
   onOpenDispute,
   onDownloadInvoice,
   onDeleteExpired,
+  onRenewExpired,
   CompleteButtonComponent
 }: TransactionCardProps) {
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
+  const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const { t, i18n } = useTranslation();
   
   // Map language to appropriate locale
@@ -143,6 +147,7 @@ export function TransactionCard({
               <ExpiredPaymentNotification 
                 userRole={userRole as 'seller' | 'buyer'} 
                 onDelete={onDeleteExpired ? () => onDeleteExpired(transaction) : undefined}
+                onRenew={onRenewExpired && userRole === 'seller' ? () => setIsRenewDialogOpen(true) : undefined}
               />
             </div>
           )}
@@ -265,6 +270,18 @@ export function TransactionCard({
         maxChangesReached={transaction.date_change_count >= 2}
         onSuccess={onRefetch}
       />
+
+      {/* Renew Transaction Dialog */}
+      {onRenewExpired && (
+        <RenewTransactionDialog
+          open={isRenewDialogOpen}
+          onOpenChange={setIsRenewDialogOpen}
+          onConfirm={(newServiceDate, message) => {
+            onRenewExpired(transaction, newServiceDate, message);
+            setIsRenewDialogOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }
