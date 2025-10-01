@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +31,7 @@ interface TransactionCardProps {
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
-export function TransactionCard({
+const TransactionCardComponent = ({
   transaction,
   user,
   showActions = true,
@@ -43,7 +43,7 @@ export function TransactionCard({
   onDeleteExpired,
   onRenewExpired,
   CompleteButtonComponent
-}: TransactionCardProps) {
+}: TransactionCardProps) => {
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
@@ -319,4 +319,6 @@ export function TransactionCard({
       />
     </>
   );
-}
+};
+
+export const TransactionCard = memo(TransactionCardComponent);

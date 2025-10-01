@@ -7,7 +7,9 @@ import { forceCorrectUrl } from "./lib/appUrl";
 forceCorrectUrl();
 
 // Startup diagnostics
-console.log('[BOOT] App starting...');
+if (import.meta.env.MODE === 'development') {
+  console.log('[BOOT] App starting...');
+}
 
 window.addEventListener('error', (e) => {
   console.error('🚨 [Global] window.error:', e.message, e.error);
@@ -23,11 +25,8 @@ if (import.meta.env.PROD) {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered: ', registration);
-        })
         .catch((registrationError) => {
-          console.log('SW registration failed: ', registrationError);
+          console.error('SW registration failed:', registrationError);
         });
     });
   }
@@ -37,7 +36,6 @@ if (import.meta.env.PROD) {
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       registrations.forEach((registration) => {
         registration.unregister();
-        console.log('Unregistered SW:', registration);
       });
     });
   }
@@ -46,7 +44,6 @@ if (import.meta.env.PROD) {
     caches.keys().then((names) => {
       names.forEach((name) => {
         caches.delete(name);
-        console.log('Deleted cache:', name);
       });
     });
   }

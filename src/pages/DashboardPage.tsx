@@ -36,11 +36,8 @@ export default function DashboardPage() {
   // Force sync on dashboard load
   useEffect(() => {
     if (user) {
-      console.log('🏠 Dashboard loaded for user:', user.email);
-      // Trigger sync after a short delay to ensure everything is initialized
       const timer = setTimeout(async () => {
         try {
-          console.log('🔄 Dashboard auto-sync triggered');
           await syncPayments();
           await refetchCounts();
         } catch (error) {

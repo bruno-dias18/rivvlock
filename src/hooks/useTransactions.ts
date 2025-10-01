@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAutoSync } from './useAutoSync';
 import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
-import { useMemo } from 'react';
 
 export const useTransactions = () => {
   const { user } = useAuth();
@@ -71,26 +70,22 @@ export const useTransactionCounts = () => {
         throw error;
       }
       
-      const counts = useMemo(() => {
-        const result = {
-          pending: 0,
-          paid: 0,
-          validated: 0,
-        };
-        
-        data?.forEach((transaction) => {
-          if (transaction.status in result) {
-            result[transaction.status as keyof typeof result]++;
-          }
-        });
-        
-        return result;
-      }, [data]);
+      const result = {
+        pending: 0,
+        paid: 0,
+        validated: 0,
+      };
       
-      logger.log('✅ Transaction counts calculated:', counts);
+      data?.forEach((transaction) => {
+        if (transaction.status in result) {
+          result[transaction.status as keyof typeof result]++;
+        }
+      });
+      
+      logger.log('✅ Transaction counts calculated:', result);
       logger.debug('📊 Raw transaction statuses:', data?.map(t => t.status));
       
-      return counts;
+      return result;
     },
     enabled: !!user?.id,
     staleTime: 10000, // Cache for 10 seconds

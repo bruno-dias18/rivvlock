@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
-import { useMemo } from 'react';
 
 export const useDisputes = () => {
   const { user } = useAuth();
@@ -43,10 +42,7 @@ export const useDisputes = () => {
       }
 
       const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
-      const enriched = useMemo(
-        () => disputes.map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) })),
-        [disputes, txMap]
-      );
+      const enriched = disputes.map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }));
       return enriched;
 
     },

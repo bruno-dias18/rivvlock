@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp, CheckCircle2, Trash2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -22,7 +22,7 @@ interface DisputeCardProps {
   onRefetch?: () => void;
 }
 
-export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) => {
+const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -417,3 +417,5 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
     </Card>
   );
 };
+
+export const DisputeCard = memo(DisputeCardComponent);
