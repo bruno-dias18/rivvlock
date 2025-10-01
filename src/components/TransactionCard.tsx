@@ -15,6 +15,7 @@ import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotificat
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
+import { useUnreadTransactionMessages } from '@/hooks/useUnreadTransactionMessages';
 
 interface TransactionCardProps {
   transaction: any;
@@ -49,6 +50,7 @@ export function TransactionCard({
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const { t, i18n } = useTranslation();
+  const { unreadCount } = useUnreadTransactionMessages(transaction.id);
   
   // Map language to appropriate locale
   const getLocale = () => {
@@ -256,13 +258,18 @@ export function TransactionCard({
 
             {isMessagingAvailable() && (
               <Button
-                variant="outline"
+                variant={unreadCount > 0 ? "default" : "outline"}
                 size={isMobile ? "default" : "sm"}
                 onClick={() => setIsMessagingOpen(true)}
                 className={isMobile ? "justify-center" : ""}
               >
                 <Mail className="h-4 w-4 mr-2" />
                 {t('common.contact', 'Contacter')}
+                {unreadCount > 0 && (
+                  <Badge className="ml-2 bg-primary-foreground text-primary">
+                    {unreadCount}
+                  </Badge>
+                )}
               </Button>
             )}
 

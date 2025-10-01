@@ -24,6 +24,7 @@ import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions'
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
+import { useUnreadTransactionsCount } from '@/hooks/useUnreadTransactionMessages';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
 import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
@@ -103,6 +104,17 @@ export default function TransactionsPage() {
   const blockedTransactions = transactions.filter(t => t.status === 'paid');
   const completedTransactions = transactions.filter(t => t.status === 'validated');
   const disputedTransactions = transactions.filter(t => t.status === 'disputed');
+  
+  // Get unread messages counts
+  const { unreadTransactionIds: unreadPending } = useUnreadTransactionsCount(pendingTransactions);
+  const { unreadTransactionIds: unreadBlocked } = useUnreadTransactionsCount(blockedTransactions);
+  const { unreadTransactionIds: unreadCompleted } = useUnreadTransactionsCount(completedTransactions);
+  const { unreadTransactionIds: unreadDisputed } = useUnreadTransactionsCount(disputedTransactions);
+  
+  const hasUnreadPending = unreadPending.length > 0;
+  const hasUnreadBlocked = unreadBlocked.length > 0;
+  const hasUnreadCompleted = unreadCompleted.length > 0;
+  const hasUnreadDisputed = unreadDisputed.length > 0;
 
   const handleCopyLink = async (text: string) => {
     try {
@@ -374,7 +386,7 @@ export default function TransactionsPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
         <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} ${isMobile ? 'h-auto' : ''}`}>
-          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
+          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''} relative`}>
             <Clock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
@@ -384,8 +396,11 @@ export default function TransactionsPage() {
                 {newCounts.pending}
               </Badge>
             )}
+            {hasUnreadPending && (
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+            )}
           </TabsTrigger>
-          <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
+          <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''} relative`}>
             <Lock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
@@ -395,10 +410,13 @@ export default function TransactionsPage() {
                 {newCounts.blocked}
               </Badge>
             )}
+            {hasUnreadBlocked && (
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+            )}
           </TabsTrigger>
           {!isMobile && (
             <>
-              <TabsTrigger value="completed" className="flex items-center gap-2">
+              <TabsTrigger value="completed" className="flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('transactions.completed')} ({completedTransactions.length})
                 {newCounts.completed > 0 && (
@@ -406,8 +424,11 @@ export default function TransactionsPage() {
                     {newCounts.completed}
                   </Badge>
                 )}
+                {hasUnreadCompleted && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
               </TabsTrigger>
-              <TabsTrigger value="disputed" className="flex items-center gap-2">
+              <TabsTrigger value="disputed" className="flex items-center gap-2 relative">
                 <AlertTriangle className="h-4 w-4" />
                 {t('transactions.disputed')} ({disputedTransactions.length})
                 {newCounts.disputed > 0 && (
@@ -415,12 +436,15 @@ export default function TransactionsPage() {
                     {newCounts.disputed}
                   </Badge>
                 )}
+                {hasUnreadDisputed && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
               </TabsTrigger>
             </>
           )}
           {isMobile && (
             <>
-              <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3">
+              <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
                 {newCounts.completed > 0 && (
@@ -428,14 +452,20 @@ export default function TransactionsPage() {
                     {newCounts.completed}
                   </Badge>
                 )}
+                {hasUnreadCompleted && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
               </TabsTrigger>
-              <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3">
+              <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3 relative">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
                 {newCounts.disputed > 0 && (
                   <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
                     {newCounts.disputed}
                   </Badge>
+                )}
+                {hasUnreadDisputed && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 )}
               </TabsTrigger>
             </>
