@@ -425,7 +425,7 @@ export default function AdminPage() {
         </Card>
 
         {/* Analytics Section - Two columns on desktop */}
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 lg:col-span-3">
+        <div className="grid gap-6 md:grid-cols-2 md:col-span-2 lg:grid-cols-2 lg:col-span-3">
           {/* Analytics KPIs */}
           <Card>
             <CardHeader>
@@ -462,7 +462,7 @@ export default function AdminPage() {
         </div>
 
         {/* Admin Tools Section - Two columns on desktop */}
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 lg:col-span-3">
+        <div className="grid gap-6 md:grid-cols-2 md:col-span-2 lg:grid-cols-2 lg:col-span-3">
           {/* System Settings */}
           <Card>
             <CardHeader>
