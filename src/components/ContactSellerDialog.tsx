@@ -20,10 +20,14 @@ export function ContactSellerDialog({ open, onOpenChange, transaction, currentUs
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const recipientId = userRole === 'seller' ? transaction.buyer_id : transaction.user_id;
-  const recipientName = userRole === 'seller' ? transaction.buyer_display_name : transaction.seller_display_name;
+  // Vérification de sécurité : ne pas accéder aux propriétés si transaction est null
+  const recipientId = transaction ? (userRole === 'seller' ? transaction.buyer_id : transaction.user_id) : '';
+  const recipientName = transaction ? (userRole === 'seller' ? transaction.buyer_display_name : transaction.seller_display_name) : '';
   
-  const { messages, isLoading, isBlocked, sendMessage } = useTransactionMessages(transaction.id, currentUserId);
+  const { messages, isLoading, isBlocked, sendMessage } = useTransactionMessages(
+    transaction?.id || '',
+    currentUserId
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
