@@ -9,6 +9,7 @@ import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransact
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
+import { useUnreadMessagesByStatus } from '@/hooks/useUnreadTransactionMessages';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const { syncPayments } = useSyncStripePayments();
   const { data: disputes } = useDisputes();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
+  const { messageCounts } = useUnreadMessagesByStatus();
 
   // Force sync on dashboard load
   useEffect(() => {
@@ -168,6 +170,12 @@ export default function DashboardPage() {
                     <Badge className={status.badgeColor}>
                       {newCounts[status.category]}
                     </Badge>
+                  )}
+                  {messageCounts[status.category] > 0 && (
+                    <span className="flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
                   )}
                 </CardTitle>
                 <status.icon className="h-4 w-4 text-muted-foreground" />

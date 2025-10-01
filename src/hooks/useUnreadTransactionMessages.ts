@@ -128,3 +128,101 @@ export function useUnreadTransactionsCount(transactions: any[]) {
 
   return { unreadTransactionIds, refetch };
 }
+
+/**
+ * Hook pour compter les messages non lus par catégorie de statut
+ */
+export function useUnreadMessagesByStatus() {
+  const { user } = useAuth();
+
+  const { data: counts, refetch } = useQuery({
+    queryKey: ['unread-messages-by-status', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
+
+      // Récupérer toutes les transactions de l'utilisateur avec leurs messages non lus
+      const { data: transactions, error: txError } = await supabase
+        .from('transactions')
+        .select('id, status')
+        .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
+
+      if (txError || !transactions) {
+        console.error('Error fetching transactions:', txError);
+        return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
+      }
+
+      // Récupérer les messages non lus pour ces transactions
+      const { data: messages, error: msgError } = await supabase
+        .from('transaction_messages')
+        .select('transaction_id')
+        .in('transaction_id', transactions.map(t => t.id))
+        .neq('sender_id', user.id);
+
+      if (msgError) {
+        console.error('Error fetching unread messages:', msgError);
+        return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
+      }
+
+      // Compter par statut
+      const unreadTransactionIds = new Set(messages?.map(m => m.transaction_id) || []);
+      const counts = {
+        pending: 0,
+        blocked: 0,
+        disputed: 0,
+        completed: 0
+      };
+
+      transactions.forEach(tx => {
+        if (unreadTransactionIds.has(tx.id)) {
+          if (tx.status === 'pending') counts.pending++;
+          else if (tx.status === 'paid') counts.blocked++;
+          else if (tx.status === 'validated') counts.completed++;
+        }
+      });
+
+      // Pour les disputed, on compte depuis la table disputes
+      const { data: disputes, error: disputeError } = await supabase
+        .from('disputes')
+        .select('id, transaction_id')
+        .or(`reporter_id.eq.${user.id},transaction_id.in.(${transactions.map(t => t.id).join(',')})`);
+
+      if (!disputeError && disputes) {
+        const disputeTransactionIds = disputes.map(d => d.transaction_id);
+        counts.disputed = disputeTransactionIds.filter(id => unreadTransactionIds.has(id)).length;
+      }
+
+      return counts;
+    },
+    enabled: !!user?.id,
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
+  });
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('dashboard-unread-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'transaction_messages',
+        },
+        (payload) => {
+          if (payload.new && (payload.new as any).sender_id !== user.id) {
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetch]);
+
+  return { messageCounts: counts || { pending: 0, blocked: 0, disputed: 0, completed: 0 }, refetch };
+}
