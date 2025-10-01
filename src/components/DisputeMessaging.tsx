@@ -96,11 +96,12 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       return willDisplay;
     }
   );
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
     if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTo({
-        top: messagesContainerRef.current.scrollHeight,
-        behavior: 'smooth'
+      const container = messagesContainerRef.current;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior
       });
     }
   };
@@ -128,6 +129,9 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       setNewMessage('');
       textareaRef.current?.focus({ preventScroll: true });
       onProposalSent?.();
+      
+      // Force scroll to bottom after sending
+      setTimeout(() => scrollToBottom('auto'), 100);
       
       // Log activity for the other participant
       try {
@@ -311,7 +315,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       )}
 
       {/* Messages - Scrollable center area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20">
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -336,7 +340,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   
-                  <div className={`flex flex-col gap-1 max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex flex-col gap-1 max-w-[65%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     <span className="text-xs text-muted-foreground px-1">
                       {isAdminMessage ? '🛡️ Admin RivvLock' : isOwnMessage ? 'Vous' : 'Autre partie'}
                     </span>
@@ -350,7 +354,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                           : 'bg-card border rounded-bl-sm'
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">{message.message}</p>
+                      <p className="text-sm whitespace-pre-wrap break-all">{message.message}</p>
                     </div>
                     
                     <span className="text-xs text-muted-foreground px-1">

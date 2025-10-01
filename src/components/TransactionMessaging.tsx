@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -38,10 +38,18 @@ export const TransactionMessaging = ({
 
   const { messages, isLoading, sendMessage, isSendingMessage, markAsRead } = useTransactionMessages(transactionId);
 
-  // Auto-scroll to latest message
-  useEffect(() => {
-    if (open && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+  // Robust scroll to bottom function
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
+  };
+
+  // Auto-scroll to latest message (useLayoutEffect for immediate scroll without flicker)
+  useLayoutEffect(() => {
+    if (open && messages.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => scrollToBottom(), 50);
     }
   }, [messages, open]);
 
@@ -74,6 +82,8 @@ export const TransactionMessaging = ({
       setNewMessage('');
       lastMessageTimeRef.current = now;
       toast.success(t('messages.sent', 'Message envoyé'));
+      // Force scroll to bottom after sending
+      setTimeout(() => scrollToBottom('auto'), 100);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));
@@ -125,7 +135,7 @@ export const TransactionMessaging = ({
             </SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-muted/20">
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
@@ -136,14 +146,14 @@ export const TransactionMessaging = ({
                 <p>{t('transaction.messaging.noMessages', 'Aucun message pour le moment')}</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 w-full">
                 {messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                    className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
+                      className={`max-w-[75%] rounded-lg p-3 ${
                         message.sender_id === user?.id
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-background border'
@@ -152,7 +162,7 @@ export const TransactionMessaging = ({
                       <div className="text-xs opacity-70 mb-1">
                         {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
                       </div>
-                      <div className="text-sm whitespace-pre-wrap break-words">{message.message}</div>
+                      <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
                     </div>
                   </div>
                 ))}
@@ -212,7 +222,7 @@ export const TransactionMessaging = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 min-h-[400px] max-h-[500px]">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4 min-h-[400px] max-h-[500px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
@@ -227,10 +237,10 @@ export const TransactionMessaging = ({
               {messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                  className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
+                    className={`max-w-[65%] rounded-lg p-3 ${
                       message.sender_id === user?.id
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
@@ -239,7 +249,7 @@ export const TransactionMessaging = ({
                     <div className="text-xs opacity-70 mb-1">
                       {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">{message.message}</div>
+                    <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
                   </div>
                 </div>
               ))}
