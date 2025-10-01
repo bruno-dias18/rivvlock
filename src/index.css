@@ -112,11 +112,19 @@ All colors MUST be HSL. Color palette: #F7F7F7 (background), #007BFF (primary bl
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground font-inter antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   /* RIVVLOCK Utilities */

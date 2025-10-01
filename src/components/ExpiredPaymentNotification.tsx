@@ -22,22 +22,22 @@ export function ExpiredPaymentNotification({
 
   return (
     <Alert className="border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive">
-      <AlertTriangle className="h-4 w-4" />
-      <div className="flex items-center justify-between w-full">
+      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full min-w-0">
         <AlertDescription className="font-medium">
           {userRole === 'seller' 
             ? "Délai de paiement expiré - Transaction annulée"
             : "Votre délai de paiement a expiré - Transaction annulée"
           }
         </AlertDescription>
-        <div className="flex gap-2 ml-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:flex-shrink-0">
           {userRole === 'seller' && onRenew && (
             <Button
               variant="outline"
               size="sm"
               onClick={onRenew}
               disabled={isRenewing}
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground w-full sm:w-auto whitespace-nowrap"
             >
               {isRenewing ? 'Relance...' : 'Proposer nouvelle date'}
             </Button>
@@ -48,7 +48,7 @@ export function ExpiredPaymentNotification({
               size="sm"
               onClick={onDelete}
               disabled={isDeleting}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 w-full sm:w-auto"
             >
               <Trash2 className="h-4 w-4 mr-1" />
               {isDeleting ? 'Suppression...' : 'Supprimer'}
