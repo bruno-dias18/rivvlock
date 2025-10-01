@@ -3,14 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, X } from 'lucide-react';
+import { Send, X, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTransactionMessages } from '@/hooks/useTransactionMessages';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -28,6 +30,7 @@ export const TransactionMessaging = ({
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const keyboardInset = useKeyboardInsets();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,82 +106,171 @@ export const TransactionMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-2xl max-h-[600px] flex flex-col ${
-        isMobile ? 'top-[5%] translate-y-0' : 'top-[50%] translate-y-[-50%]'
-      }`}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
-          </DialogTitle>
-        </DialogHeader>
+  // Mobile: Use Sheet (bottom drawer) for better keyboard handling
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent 
+          side="bottom" 
+          className="h-[100dvh] max-h-[100dvh] p-0 flex flex-col rounded-t-2xl"
+        >
+          <SheetHeader className="p-4 border-b bg-background shrink-0">
+            <SheetTitle className="flex items-center justify-between">
+              <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
+              {otherParticipantName && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {t('transaction.messaging.with', 'Conversation avec')} {otherParticipantName}
+                </span>
+              )}
+            </SheetTitle>
+          </SheetHeader>
 
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20 rounded-lg">
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 bg-muted/20">
             {isLoading ? (
-              <div className="text-center text-muted-foreground py-8">
-                {t('common.loading', 'Chargement...')}
+              <div className="flex items-center justify-center h-full">
+                <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
               </div>
             ) : messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                {t('transaction.messaging.noMessages', 'Aucun message. Commencez la conversation !')}
+              <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
+                <p>{t('transaction.messaging.noMessages', 'Aucun message pour le moment')}</p>
               </div>
             ) : (
-              messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                >
+              <div className="space-y-4">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
-                      msg.sender_id === user?.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-card border'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-medium">
-                        {getSenderName(msg.sender_id)}
-                      </span>
-                      <span className="text-xs opacity-70">
-                        {formatMessageTime(msg.created_at)}
-                      </span>
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.sender_id === user?.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background border'
+                      }`}
+                    >
+                      <div className="text-xs opacity-70 mb-1">
+                        {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap break-words">{message.message}</div>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
                   </div>
-                </div>
-              ))
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
             )}
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
-          <div className="pt-4 space-y-2">
-            <Textarea
-              ref={textareaRef}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value.substring(0, 1000))}
-              onKeyPress={handleKeyPress}
-              placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
-              className="resize-none"
-              rows={3}
-              disabled={isSendingMessage}
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                {newMessage.length}/1000
-              </span>
+          <div
+            className="sticky bottom-0 bg-background border-t p-3 shrink-0"
+            style={{
+              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px + 12px)`
+            }}
+          >
+            <div className="flex gap-2 items-end">
+              <Textarea
+                ref={textareaRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
+                className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+                rows={2}
+                maxLength={500}
+                disabled={isSendingMessage}
+              />
               <Button
                 onClick={handleSendMessage}
                 disabled={!newMessage.trim() || isSendingMessage}
-                size="sm"
+                size="icon"
+                className="h-[60px] w-[60px] shrink-0"
               >
-                <Send className="h-4 w-4 mr-2" />
-                {t('common.send', 'Envoyer')}
+                <Send className="h-4 w-4" />
               </Button>
             </div>
+            <div className="text-xs text-muted-foreground mt-1 text-right">
+              {newMessage.length}/500
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: Use Dialog (centered modal)
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
+            {otherParticipantName && (
+              <span className="text-sm font-normal text-muted-foreground">
+                {t('transaction.messaging.with', 'Conversation avec')} {otherParticipantName}
+              </span>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 min-h-[400px] max-h-[500px]">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+              <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
+              <p>{t('transaction.messaging.noMessages', 'Aucun message pour le moment')}</p>
+            </div>
+          ) : (
+            <>
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[70%] rounded-lg p-3 ${
+                      message.sender_id === user?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    <div className="text-xs opacity-70 mb-1">
+                      {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap break-words">{message.message}</div>
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+
+        <div className="border-t pt-4 px-4 pb-2">
+          <div className="flex gap-2 items-end">
+            <Textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
+              className="flex-1 min-h-[80px] resize-none"
+              maxLength={500}
+              disabled={isSendingMessage}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || isSendingMessage}
+              size="icon"
+              className="h-10 w-10"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1 text-right">
+            {newMessage.length}/500
           </div>
         </div>
       </DialogContent>
