@@ -62,7 +62,7 @@ export const AdminAnalyticsCharts = ({ analytics, isLoading }: AdminAnalyticsCha
             <CardDescription>Nombre de transactions par jour</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <LineChart data={analytics.timeSeries}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
@@ -97,7 +97,7 @@ export const AdminAnalyticsCharts = ({ analytics, isLoading }: AdminAnalyticsCha
             <CardDescription>Volume total par jour</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={analytics.timeSeries}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
@@ -121,7 +121,7 @@ export const AdminAnalyticsCharts = ({ analytics, isLoading }: AdminAnalyticsCha
             <CardDescription>Distribution des transactions par statut</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={350}>
               <PieChart>
                 <Pie
                   data={analytics.statusDistribution}
@@ -152,7 +152,7 @@ export const AdminAnalyticsCharts = ({ analytics, isLoading }: AdminAnalyticsCha
             <CardDescription>Répartition du volume par devise</CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={400}>
+            <ResponsiveContainer width="100%" height={350}>
               <BarChart data={analytics.currencyVolumes} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" />
