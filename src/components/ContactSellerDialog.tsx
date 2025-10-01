@@ -28,8 +28,9 @@ export function ContactSellerDialog({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Vérification de sécurité : ne pas accéder aux propriétés si transaction est null
-  const recipientId = transaction ? (userRole === 'seller' ? transaction.buyer_id : transaction.user_id) : '';
+  const recipientId = transaction ? (userRole === 'seller' ? transaction.buyer_id : transaction.user_id) : null;
   const recipientName = transaction ? (userRole === 'seller' ? transaction.buyer_display_name : transaction.seller_display_name) : '';
+  const hasValidRecipient = recipientId && recipientId.trim().length > 0;
   
   const { messages, isLoading, isBlocked, sendMessage } = useTransactionMessages(
     transaction?.id || '',
@@ -49,9 +50,9 @@ export function ContactSellerDialog({
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || !hasValidRecipient) return;
 
-    const success = await sendMessage(message, recipientId);
+    const success = await sendMessage(message, recipientId!);
     if (success) {
       setMessage('');
     }
@@ -75,6 +76,15 @@ export function ContactSellerDialog({
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               La messagerie est bloquée car le litige a été escaladé
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {!hasValidRecipient && (
+          <Alert variant="destructive" className="my-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {userRole === 'seller' ? "En attente d'un acheteur pour cette transaction" : "Le vendeur n'est pas disponible"}
             </AlertDescription>
           </Alert>
         )}
@@ -116,7 +126,7 @@ export function ContactSellerDialog({
 
         <div className="flex gap-2 pt-3">
           <Textarea
-            placeholder={isBlocked ? "Messagerie bloquée" : "Écrivez votre message..."}
+            placeholder={isBlocked || !hasValidRecipient ? "Messagerie indisponible" : "Écrivez votre message..."}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
@@ -126,12 +136,12 @@ export function ContactSellerDialog({
               }
             }}
             rows={2}
-            disabled={isBlocked}
+            disabled={isBlocked || !hasValidRecipient}
             className="flex-1"
           />
           <Button
             onClick={handleSendMessage}
-            disabled={isBlocked || !message.trim()}
+            disabled={isBlocked || !hasValidRecipient || !message.trim()}
             size="icon"
             className="self-end"
           >
