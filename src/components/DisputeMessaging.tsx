@@ -388,7 +388,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           )}
 
           {/* Message Input */}
-          <div className="flex gap-2 items-end p-3">
+          <div className="flex gap-2 items-end p-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
             <Textarea
               ref={textareaRef}
               value={newMessage}
@@ -400,9 +400,13 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               rows={2}
               disabled={isSendingMessage}
               aria-label="Message de négociation"
+              enterKeyHint="send"
             />
             <Button
+              type="button"
               onClick={handleSendMessage}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
               className="flex-shrink-0 h-14 w-14"
@@ -423,7 +427,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
             </p>
           </div>
           
-          <div className="flex gap-2 items-end p-3">
+          <div className="flex gap-2 items-end p-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
             <Textarea
               ref={textareaRef}
               value={newMessage}
@@ -435,9 +439,13 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               rows={2}
               disabled={isSendingMessage}
               aria-label="Message pour l'admin"
+              enterKeyHint="send"
             />
             <Button
+              type="button"
               onClick={handleSendMessage}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
               className={`flex-shrink-0 ${isMobile ? 'h-14 w-14' : 'h-[60px] w-[60px]'}`}

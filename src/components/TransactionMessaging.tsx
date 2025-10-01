@@ -80,7 +80,8 @@ export const TransactionMessaging = ({
       setNewMessage('');
       lastMessageTimeRef.current = now;
       toast.success(t('messages.sent', 'Message envoyé'));
-      // Scroll after sending
+      // Keep keyboard open and scroll
+      textareaRef.current?.focus({ preventScroll: true });
       setTimeout(() => ensureBottom(), 100);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -117,7 +118,7 @@ export const TransactionMessaging = ({
   // Use Dialog for both mobile and desktop (stable, predictable)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 sm:h-[85vh] h-[60vh] top-2 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]">
+      <DialogContent className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 sm:h-[85vh] h-[45vh] top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]">
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
@@ -168,7 +169,7 @@ export const TransactionMessaging = ({
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t p-4 shrink-0">
+        <div className="border-t p-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
           <div className="flex gap-2 items-end">
             <Textarea
               ref={textareaRef}
@@ -181,9 +182,13 @@ export const TransactionMessaging = ({
               rows={2}
               maxLength={500}
               disabled={isSendingMessage}
+              enterKeyHint="send"
             />
             <Button
+              type="button"
               onClick={handleSendMessage}
+              onMouseDown={(e) => e.preventDefault()}
+              onTouchStart={(e) => e.preventDefault()}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
               className="h-14 w-14 shrink-0"
