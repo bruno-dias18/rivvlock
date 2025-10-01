@@ -1,16 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY_PREFIX = 'transaction_messages_last_seen_';
 
 export function useTransactionNewMessages(transactions: any[], currentUserId: string) {
   const [newMessagesMap, setNewMessagesMap] = useState<Map<string, boolean>>(new Map());
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (!transactions || transactions.length === 0 || !currentUserId) {
       setNewMessagesMap(new Map());
       return;
     }
+
+    // Debounce pour éviter les appels trop fréquents
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      checkNewMessages();
+    }, 300); // Attendre 300ms avant de vérifier
 
     const checkNewMessages = async () => {
       const newMap = new Map<string, boolean>();
@@ -72,7 +82,11 @@ export function useTransactionNewMessages(transactions: any[], currentUserId: st
       setNewMessagesMap(newMap);
     };
 
-    checkNewMessages();
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
   }, [transactions, currentUserId]);
 
   const markAsRead = (transactionId: string) => {

@@ -102,8 +102,8 @@ export function useTransactionMessages(
             }
           });
 
-          // Refetch après insertion pour assurer la sync
-          await refetch();
+          // Pas besoin de refetch ici, on a déjà le message dans l'état
+          // await refetch(); - SUPPRIMÉ pour améliorer les performances
           
           // Notification seulement si ce n'est pas mon propre message
           if (newMessage.sender_id !== currentUserId) {
@@ -115,25 +115,20 @@ export function useTransactionMessages(
           }
         }
       )
-      .subscribe(async (status) => {
-        // Refetch immédiatement après subscription
-        if (status === 'SUBSCRIBED') {
-          await refetch();
-        }
-      });
+      .subscribe(); // Pas de refetch ici non plus pour améliorer les performances
 
     return () => {
       supabase.removeChannel(channel);
     };
   }, [transactionId, currentUserId, refetch]);
 
-  // Polling fallback when enabled
+  // Polling fallback when enabled (réduit à 15 secondes pour réduire la charge)
   useEffect(() => {
     if (!options?.enabled || !transactionId) return;
 
     pollingIntervalRef.current = setInterval(() => {
       refetch();
-    }, 5000);
+    }, 15000); // Augmenté de 5s à 15s
 
     return () => {
       if (pollingIntervalRef.current) {
