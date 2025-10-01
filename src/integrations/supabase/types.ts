@@ -636,8 +636,45 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_counterparty_profiles: {
+        Row: {
+          company_name: string | null
+          country: Database["public"]["Enums"]["country_code"] | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          user_id: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
+          verified: boolean | null
+        }
+        Insert: {
+          company_name?: string | null
+          country?: Database["public"]["Enums"]["country_code"] | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verified?: boolean | null
+        }
+        Update: {
+          company_name?: string | null
+          country?: Database["public"]["Enums"]["country_code"] | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      are_transaction_counterparties: {
+        Args: { user_a: string; user_b: string }
+        Returns: boolean
+      }
       can_access_full_profile: {
         Args: { profile_user_id: string }
         Returns: boolean
