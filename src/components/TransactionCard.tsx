@@ -231,7 +231,6 @@ export function TransactionCard({
                 size={isMobile ? "default" : "sm"}
                 onClick={() => setIsDateChangeDialogOpen(true)}
                 className={isMobile ? "justify-center" : ""}
-                disabled={transaction.date_change_count >= 2}
               >
                 <Edit3 className="h-4 w-4 mr-2" />
                 {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
@@ -295,7 +294,7 @@ export function TransactionCard({
         onClose={() => setIsDateChangeDialogOpen(false)}
         transactionId={transaction.id}
         currentDate={transaction.service_date}
-        maxChangesReached={transaction.date_change_count >= 2}
+        maxChangesReached={false}
         onSuccess={onRefetch}
       />
 

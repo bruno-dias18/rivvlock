@@ -101,14 +101,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Check if already at max change limit (2)
-    if (transaction.date_change_count >= 2) {
-      return new Response(JSON.stringify({ error: 'Maximum number of date changes (2) reached' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
     // Update transaction with proposed date change
     const { error: updateError } = await supabase
       .from('transactions')
