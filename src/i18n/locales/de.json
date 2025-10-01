@@ -41,7 +41,11 @@
     "firstName": "Vorname",
     "lastName": "Nachname",
     "postalCode": "Postleitzahl",
-    "city": "Stadt"
+    "city": "Stadt",
+    "you": "Sie",
+    "otherParticipant": "Anderer Teilnehmer",
+    "send": "Senden",
+    "contact": "Kontaktieren"
   },
   "countries": {
     "france": "Frankreich",
@@ -602,6 +606,20 @@
     },
     "success": "Ihre Nachricht wurde erfolgreich gesendet! Wir werden so schnell wie möglich antworten.",
     "error": "Fehler beim Senden der Nachricht. Bitte versuchen Sie es erneut."
+  },
+  "transaction": {
+    "messaging": {
+      "title": "Transaktionsnachrichten",
+      "noMessages": "Keine Nachrichten. Beginnen Sie das Gespräch!",
+      "placeholder": "Schreiben Sie Ihre Nachricht..."
+    }
+  },
+  "errors": {
+    "tooFast": "Bitte warten Sie einen Moment, bevor Sie eine weitere Nachricht senden",
+    "sendMessage": "Fehler beim Senden der Nachricht"
+  },
+  "messages": {
+    "sent": "Nachricht gesendet"
   },
   "footer": {
     "terms": "Nutzungsbedingungen",

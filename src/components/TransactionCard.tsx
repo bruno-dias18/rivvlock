@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote } from 'lucide-react';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, Mail } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -13,6 +13,7 @@ import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
 import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
+import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
 
 interface TransactionCardProps {
@@ -46,6 +47,7 @@ export function TransactionCard({
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
+  const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const { t, i18n } = useTranslation();
   
   // Map language to appropriate locale
@@ -72,6 +74,13 @@ export function TransactionCard({
   const displayName = userRole === 'seller' 
     ? transaction.buyer_display_name || t('transactions.anonymousClient')
     : transaction.seller_display_name || t('common.seller');
+
+  // Check if messaging is available
+  const isMessagingAvailable = () => {
+    const validStatuses = ['pending', 'paid'];
+    const hasOtherParticipant = userRole === 'seller' ? !!transaction.buyer_id : !!transaction.user_id;
+    return validStatuses.includes(transaction.status) && hasOtherParticipant;
+  };
 
   return (
     <>
@@ -215,16 +224,30 @@ export function TransactionCard({
             )}
 
             {userRole === 'seller' && transaction.status !== 'validated' && (
-              <Button
-                variant="outline"
-                size={isMobile ? "default" : "sm"}
-                onClick={() => setIsDateChangeDialogOpen(true)}
-                className={isMobile ? "justify-center" : ""}
-                disabled={transaction.date_change_count >= 2}
-              >
-                <Edit3 className="h-4 w-4 mr-2" />
-                {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size={isMobile ? "default" : "sm"}
+                  onClick={() => setIsDateChangeDialogOpen(true)}
+                  className={isMobile ? "justify-center" : ""}
+                  disabled={transaction.date_change_count >= 2}
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
+                </Button>
+                
+                {isMessagingAvailable() && (
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "default" : "sm"}
+                    onClick={() => setIsMessagingOpen(true)}
+                    className={isMobile ? "justify-center" : ""}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {t('common.contact', 'Contacter')}
+                  </Button>
+                )}
+              </>
             )}
             
             {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
@@ -282,6 +305,14 @@ export function TransactionCard({
           }}
         />
       )}
+
+      {/* Transaction Messaging Dialog */}
+      <TransactionMessaging
+        transactionId={transaction.id}
+        open={isMessagingOpen}
+        onOpenChange={setIsMessagingOpen}
+        otherParticipantName={displayName}
+      />
     </>
   );
 }

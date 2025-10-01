@@ -41,7 +41,11 @@
     "firstName": "First Name",
     "lastName": "Last Name",
     "postalCode": "Postal Code",
-    "city": "City"
+    "city": "City",
+    "you": "You",
+    "otherParticipant": "Other participant",
+    "send": "Send",
+    "contact": "Contact"
   },
   "countries": {
     "france": "France",
@@ -595,6 +599,20 @@
     },
     "success": "Your message has been sent successfully! We will respond as soon as possible.",
     "error": "Error sending message. Please try again."
+  },
+  "transaction": {
+    "messaging": {
+      "title": "Transaction messaging",
+      "noMessages": "No messages. Start the conversation!",
+      "placeholder": "Write your message..."
+    }
+  },
+  "errors": {
+    "tooFast": "Please wait a moment before sending another message",
+    "sendMessage": "Error sending message"
+  },
+  "messages": {
+    "sent": "Message sent"
   },
   "footer": {
     "terms": "Terms of Service",
