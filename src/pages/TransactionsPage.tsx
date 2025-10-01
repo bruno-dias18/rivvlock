@@ -428,11 +428,6 @@ export default function TransactionsPage() {
                     {newCounts.completed}
                   </Badge>
                 )}
-                {completedNewMessages > 0 && (
-                  <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-                    💬
-                  </Badge>
-                )}
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3">
                 <AlertTriangle className="h-4 w-4" />

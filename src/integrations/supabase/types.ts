@@ -405,41 +405,6 @@ export type Database = {
         }
         Relationships: []
       }
-      transaction_messages: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          recipient_id: string
-          sender_id: string
-          transaction_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          recipient_id: string
-          sender_id: string
-          transaction_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          recipient_id?: string
-          sender_id?: string
-          transaction_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transaction_messages_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       transactions: {
         Row: {
           buyer_display_name: string | null
