@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAutoSync } from './useAutoSync';
 import { logActivity } from '@/lib/activityLogger';
+import { logger } from '@/lib/logger';
+import { useMemo } from 'react';
 
 export const useTransactions = () => {
   const { user } = useAuth();
@@ -10,13 +12,13 @@ export const useTransactions = () => {
   // Initialize auto-sync functionality
   useAutoSync();
   
-  return useQuery({
+  const queryResult = useQuery({
     queryKey: ['transactions', user?.id],
     queryFn: async () => {
-      console.log('📊 Fetching transactions for user:', user?.email);
+      logger.log('📊 Fetching transactions for user:', user?.email);
       
       if (!user?.id) {
-        console.error('❌ User not authenticated in useTransactions');
+        logger.error('❌ User not authenticated in useTransactions');
         throw new Error('User not authenticated');
       }
       
@@ -27,33 +29,35 @@ export const useTransactions = () => {
         .order('created_at', { ascending: false });
       
       if (error) {
-        console.error('❌ Error fetching transactions:', error);
+        logger.error('❌ Error fetching transactions:', error);
         throw error;
       }
       
-      console.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
-      console.log('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
+      logger.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
+      logger.debug('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
       
       return data || [];
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache data
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  return queryResult;
 };
 
 export const useTransactionCounts = () => {
   const { user } = useAuth();
   
-  return useQuery({
+  const queryResult = useQuery({
     queryKey: ['transaction-counts', user?.id],
     queryFn: async () => {
-      console.log('🔢 Fetching transaction counts for user:', user?.email);
+      logger.log('🔢 Fetching transaction counts for user:', user?.email);
       
       if (!user?.id) {
-        console.error('❌ User not authenticated in useTransactionCounts');
+        logger.error('❌ User not authenticated in useTransactionCounts');
         throw new Error('User not authenticated');
       }
       
@@ -63,33 +67,39 @@ export const useTransactionCounts = () => {
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
       
       if (error) {
-        console.error('❌ Error fetching transaction counts:', error);
+        logger.error('❌ Error fetching transaction counts:', error);
         throw error;
       }
       
-      const counts = {
-        pending: 0,
-        paid: 0,
-        validated: 0,
-      };
+      const counts = useMemo(() => {
+        const result = {
+          pending: 0,
+          paid: 0,
+          validated: 0,
+        };
+        
+        data?.forEach((transaction) => {
+          if (transaction.status in result) {
+            result[transaction.status as keyof typeof result]++;
+          }
+        });
+        
+        return result;
+      }, [data]);
       
-      data?.forEach((transaction) => {
-        if (transaction.status in counts) {
-          counts[transaction.status as keyof typeof counts]++;
-        }
-      });
-      
-      console.log('✅ Transaction counts calculated:', counts);
-      console.log('📊 Raw transaction statuses:', data?.map(t => t.status));
+      logger.log('✅ Transaction counts calculated:', counts);
+      logger.debug('📊 Raw transaction statuses:', data?.map(t => t.status));
       
       return counts;
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fetch fresh data
-    refetchInterval: 15000, // Auto-refresh every 15 seconds (more aggressive)
+    staleTime: 10000, // Cache for 10 seconds
+    refetchInterval: 30000, // Auto-refresh every 30 seconds (less aggressive)
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  return queryResult;
 };
 
 export const useSyncStripePayments = () => {
