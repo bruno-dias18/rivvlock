@@ -14,30 +14,42 @@ export function useTransactionNewMessages(transactions: any[], currentUserId: st
 
     const checkNewMessages = async () => {
       const newMap = new Map<string, boolean>();
-      const transactionIds = transactions.map(t => t.id);
+      
+      // Filtrer les transactions avec des IDs valides
+      const validTransactions = transactions.filter(t => t?.id && typeof t.id === 'string' && t.id.length > 0);
+      
+      if (validTransactions.length === 0) {
+        setNewMessagesMap(new Map());
+        return;
+      }
+      
+      const transactionIds = validTransactions.map(t => t.id);
 
       // Optimisation : Une seule requête pour tous les derniers messages
-      const { data: allMessages } = await supabase
+      const { data: allMessages, error } = await supabase
         .from('transaction_messages')
         .select('*')
         .in('transaction_id', transactionIds)
         .order('created_at', { ascending: false });
-
-      if (!allMessages) {
+      
+      if (error) {
+        console.error('Error fetching transaction messages:', error);
         setNewMessagesMap(new Map());
         return;
       }
 
       // Grouper les messages par transaction et garder seulement le plus récent
       const lastMessagesByTransaction = new Map<string, any>();
-      for (const message of allMessages) {
-        if (!lastMessagesByTransaction.has(message.transaction_id)) {
-          lastMessagesByTransaction.set(message.transaction_id, message);
+      if (allMessages && allMessages.length > 0) {
+        for (const message of allMessages) {
+          if (!lastMessagesByTransaction.has(message.transaction_id)) {
+            lastMessagesByTransaction.set(message.transaction_id, message);
+          }
         }
       }
 
       // Vérifier pour chaque transaction s'il y a un nouveau message
-      for (const transaction of transactions) {
+      for (const transaction of validTransactions) {
         const transactionId = transaction.id;
         const storageKey = `${STORAGE_KEY_PREFIX}${transactionId}`;
         const lastSeenStr = localStorage.getItem(storageKey);
