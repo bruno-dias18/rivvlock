@@ -12,7 +12,7 @@ import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useIsMobile } from '@/lib/mobileUtils';
-import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
+
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -30,24 +30,26 @@ export const TransactionMessaging = ({
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const keyboardInset = useKeyboardInsets();
+  
   const [newMessage, setNewMessage] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
 
   const { messages, isLoading, sendMessage, isSendingMessage, markAsRead } = useTransactionMessages(transactionId);
 
-  // Robust scroll to bottom with retry mechanism
-  const ensureBottom = (retryCount = 0) => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    container.scrollTop = container.scrollHeight;
-
-    // Retry up to 3 times to ensure DOM is fully rendered
-    if (retryCount < 3) {
-      requestAnimationFrame(() => ensureBottom(retryCount + 1));
+  // Robust scroll to bottom using bottom anchor and retries
+  const ensureBottom = (retryCount = 3) => {
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ block: 'end' });
+    } else if (messagesContainerRef.current) {
+      // Fallback
+      const c = messagesContainerRef.current;
+      c.scrollTop = c.scrollHeight;
+    }
+    if (retryCount > 0) {
+      requestAnimationFrame(() => ensureBottom(retryCount - 1));
     }
   };
 
@@ -90,6 +92,7 @@ export const TransactionMessaging = ({
       toast.success(t('messages.sent', 'Message envoyé'));
       // Force scroll after sending
       setTimeout(() => ensureBottom(), 50);
+      setTimeout(() => ensureBottom(), 250);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));
