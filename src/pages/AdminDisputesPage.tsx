@@ -169,14 +169,17 @@ export default function AdminDisputesPage() {
                   <div className="text-2xl font-bold text-green-600">{stats?.resolved || 0}</div>
                 </CardContent>
               </Card>
-              <Card className="cursor-default">
+              <Card 
+                className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'recent' ? 'ring-2 ring-blue-600' : ''}`}
+                onClick={() => setStatusFilter('recent')}
+              >
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     Récents (30j)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats?.recent || 0}</div>
+                  <div className="text-2xl font-bold text-blue-600">{stats?.recent || 0}</div>
                 </CardContent>
               </Card>
             </>
@@ -207,6 +210,7 @@ export default function AdminDisputesPage() {
                     <SelectItem value="escalated">Escaladés</SelectItem>
                     <SelectItem value="resolved_refund">Résolus - Remboursement</SelectItem>
                     <SelectItem value="resolved_release">Résolus - Fonds libérés</SelectItem>
+                    <SelectItem value="recent">Récents (30j)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

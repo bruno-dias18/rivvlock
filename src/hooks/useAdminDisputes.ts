@@ -22,6 +22,11 @@ export const useAdminDisputes = (status?: string) => {
         if (status === 'resolved') {
           // Filter all resolved statuses
           query = query.in('status', ['resolved', 'resolved_refund', 'resolved_release']);
+        } else if (status === 'recent') {
+          // Filter disputes from last 30 days
+          const now = new Date();
+          const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          query = query.gte('created_at', last30Days.toISOString());
         } else {
           query = query.eq('status', status as any);
         }
