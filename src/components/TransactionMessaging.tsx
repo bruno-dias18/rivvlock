@@ -146,13 +146,11 @@ export const TransactionMessaging = ({
         style={{ height: getDialogHeight() }}
       >
         <DialogHeader className="p-4 border-b shrink-0">
-          <DialogTitle className="flex items-center justify-between">
-            <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
-            {otherParticipantName && (
-              <span className="text-sm font-normal text-muted-foreground">
-                {t('transaction.messaging.with', 'Conversation avec')} {otherParticipantName}
-              </span>
-            )}
+          <DialogTitle>
+            {otherParticipantName 
+              ? `${t('transaction.messaging.with', 'Conversation avec')} ${otherParticipantName}`
+              : t('transaction.messaging.title', 'Messagerie transaction')
+            }
           </DialogTitle>
         </DialogHeader>
 
