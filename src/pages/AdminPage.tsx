@@ -374,7 +374,7 @@ export default function AdminPage() {
         </Card>
 
         {/* Activity Logs */}
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Activity className="h-4 w-4" />
@@ -424,14 +424,13 @@ export default function AdminPage() {
           <CardHeader>
             <CardTitle>Paramètres système</CardTitle>
             <CardDescription>
-              Configuration et maintenance du système
+              Configuration et maintenance
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3">
             <div>
-              <h4 className="text-sm font-medium mb-2">Validation des comptes Stripe</h4>
               <p className="text-sm text-muted-foreground mb-3">
-                Vérifier la validité de tous les comptes Stripe Connect et synchroniser leur statut
+                Validation des comptes Stripe Connect
               </p>
               <ValidateStripeAccountsButton />
             </div>
@@ -439,14 +438,14 @@ export default function AdminPage() {
         </Card>
 
         {/* Reports and Analytics */}
-        <Card>
+        <Card className="lg:col-span-3">
           <CardHeader>
             <CardTitle>Rapports et Analytics</CardTitle>
             <CardDescription>
               Visualisez les métriques et tendances de la plateforme
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="max-h-[600px] overflow-y-auto">
             <AdminAnalyticsTab />
           </CardContent>
         </Card>
