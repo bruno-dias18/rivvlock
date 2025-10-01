@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, Mail } from 'lucide-react';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, Mail, MailOpen } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -16,6 +16,7 @@ import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
 import { useUnreadTransactionMessages } from '@/hooks/useUnreadTransactionMessages';
+import { useHasTransactionMessages } from '@/hooks/useHasTransactionMessages';
 
 interface TransactionCardProps {
   transaction: any;
@@ -51,6 +52,7 @@ const TransactionCardComponent = ({
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const { unreadCount } = useUnreadTransactionMessages(transaction.id);
+  const hasMessages = useHasTransactionMessages(transaction.id);
   
   // Map language to appropriate locale
   const getLocale = () => {
@@ -262,7 +264,11 @@ const TransactionCardComponent = ({
                 onClick={() => setIsMessagingOpen(true)}
                 className={isMobile ? "justify-center" : ""}
               >
-                <Mail className="h-4 w-4 mr-2" />
+                {hasMessages ? (
+                  <MailOpen className="h-4 w-4 mr-2" />
+                ) : (
+                  <Mail className="h-4 w-4 mr-2" />
+                )}
                 {t('common.contact', 'Contacter')}
                 {unreadCount > 0 && (
                   <Badge className="ml-2 bg-primary-foreground text-primary">
