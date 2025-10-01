@@ -70,7 +70,17 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
           filter: `transaction_id=eq.${transactionId}`,
         },
         (payload) => {
-          setMessages((prev) => [...prev, payload.new as TransactionMessage]);
+          const newMessage = payload.new as TransactionMessage;
+          setMessages((prev) => [...prev, newMessage]);
+          
+          // Notification seulement si ce n'est pas mon propre message
+          if (newMessage.sender_id !== currentUserId) {
+            toast.info('💬 Nouveau message reçu', {
+              description: newMessage.message.length > 50 
+                ? newMessage.message.substring(0, 50) + '...' 
+                : newMessage.message
+            });
+          }
         }
       )
       .subscribe();
