@@ -71,7 +71,25 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
         },
         (payload) => {
           const newMessage = payload.new as TransactionMessage;
-          setMessages((prev) => [...prev, newMessage]);
+          
+          // Remplacer le message optimiste par le vrai message
+          setMessages((prev) => {
+            const tempMessageIndex = prev.findIndex(
+              msg => msg.id.startsWith('temp-') && 
+              msg.message === newMessage.message &&
+              msg.sender_id === newMessage.sender_id
+            );
+            
+            if (tempMessageIndex !== -1) {
+              // Remplacer le message temporaire
+              const updated = [...prev];
+              updated[tempMessageIndex] = newMessage;
+              return updated;
+            } else {
+              // Ajouter le nouveau message (cas normal pour les messages reçus)
+              return [...prev, newMessage];
+            }
+          });
           
           // Notification seulement si ce n'est pas mon propre message
           if (newMessage.sender_id !== currentUserId) {
@@ -88,7 +106,7 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [transactionId]);
+  }, [transactionId, currentUserId]);
 
   const sendMessage = async (message: string, recipientId: string) => {
     if (isBlocked) {
@@ -100,6 +118,19 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
       toast.error('Message invalide (1-1000 caractères)');
       return false;
     }
+
+    // Créer un message optimiste
+    const tempMessage: TransactionMessage = {
+      id: `temp-${Date.now()}`,
+      transaction_id: transactionId,
+      sender_id: currentUserId,
+      recipient_id: recipientId,
+      message: message.trim(),
+      created_at: new Date().toISOString(),
+    };
+
+    // Ajouter immédiatement le message à l'état
+    setMessages((prev) => [...prev, tempMessage]);
 
     try {
       const { error } = await supabase.functions.invoke('send-transaction-message', {
@@ -115,6 +146,9 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Erreur lors de l\'envoi du message');
+      
+      // Supprimer le message optimiste en cas d'erreur
+      setMessages((prev) => prev.filter(msg => msg.id !== tempMessage.id));
       return false;
     }
   };
