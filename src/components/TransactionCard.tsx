@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, MessageSquare } from 'lucide-react';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -13,9 +13,7 @@ import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
 import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
-import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { useTranslation } from 'react-i18next';
-import { useTransactionNewMessages } from '@/hooks/useTransactionNewMessages';
 
 interface TransactionCardProps {
   transaction: any;
@@ -29,8 +27,6 @@ interface TransactionCardProps {
   onDeleteExpired?: (transaction: any) => void;
   onRenewExpired?: (transaction: any, newServiceDate?: Date, message?: string) => void;
   CompleteButtonComponent: React.ComponentType<any>;
-  hasNewMessage?: boolean;
-  onMarkMessageAsRead?: () => void;
 }
 
 export function TransactionCard({
@@ -44,15 +40,12 @@ export function TransactionCard({
   onDownloadInvoice,
   onDeleteExpired,
   onRenewExpired,
-  CompleteButtonComponent,
-  hasNewMessage = false,
-  onMarkMessageAsRead
+  CompleteButtonComponent
 }: TransactionCardProps) {
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
-  const [isContactDialogOpen, setIsContactDialogOpen] = useState(false);
   const { t, i18n } = useTranslation();
   
   // Map language to appropriate locale
@@ -102,16 +95,9 @@ export function TransactionCard({
             <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
               {transaction.price} {transaction.currency?.toUpperCase()}
             </div>
-            <div className="flex gap-2 items-center mt-1">
-              <Badge variant="outline">
-                {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
-              </Badge>
-              {hasNewMessage && (
-                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 animate-pulse">
-                  💬 Nouveau
-                </Badge>
-              )}
-            </div>
+            <Badge variant="outline" className="mt-1">
+              {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
+            </Badge>
           </div>
         </div>
       </CardHeader>
@@ -229,39 +215,15 @@ export function TransactionCard({
             )}
 
             {userRole === 'seller' && transaction.status !== 'validated' && (
-              <>
-                <Button
-                  variant="outline"
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => setIsDateChangeDialogOpen(true)}
-                  className={isMobile ? "justify-center" : ""}
-                  disabled={transaction.date_change_count >= 2}
-                >
-                  <Edit3 className="h-4 w-4 mr-2" />
-                  {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
-                </Button>
-                
-                <Button
-                  variant={hasNewMessage ? "default" : "outline"}
-                  size={isMobile ? "default" : "sm"}
-                  onClick={() => setIsContactDialogOpen(true)}
-                  className={hasNewMessage ? "bg-blue-600 hover:bg-blue-700" : (isMobile ? "justify-center" : "")}
-                >
-                  <MessageSquare className={`h-4 w-4 mr-2 ${hasNewMessage ? 'animate-bounce' : ''}`} />
-                  {isMobile ? "Contact" : "Contacter"}
-                </Button>
-              </>
-            )}
-
-            {userRole === 'buyer' && transaction.status !== 'validated' && (
               <Button
-                variant={hasNewMessage ? "default" : "outline"}
+                variant="outline"
                 size={isMobile ? "default" : "sm"}
-                onClick={() => setIsContactDialogOpen(true)}
-                className={hasNewMessage ? "bg-blue-600 hover:bg-blue-700" : (isMobile ? "justify-center" : "")}
+                onClick={() => setIsDateChangeDialogOpen(true)}
+                className={isMobile ? "justify-center" : ""}
+                disabled={transaction.date_change_count >= 2}
               >
-                <MessageSquare className={`h-4 w-4 mr-2 ${hasNewMessage ? 'animate-bounce' : ''}`} />
-                {isMobile ? "Contact" : "Contacter"}
+                <Edit3 className="h-4 w-4 mr-2" />
+                {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
               </Button>
             )}
             
@@ -320,16 +282,6 @@ export function TransactionCard({
           }}
         />
       )}
-
-      {/* Contact Dialog */}
-      <ContactSellerDialog
-        open={isContactDialogOpen}
-        onOpenChange={setIsContactDialogOpen}
-        transaction={transaction}
-        currentUserId={user?.id}
-        userRole={userRole as 'seller' | 'buyer'}
-        onMarkAsRead={onMarkMessageAsRead}
-      />
     </>
   );
 }
