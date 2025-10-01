@@ -311,6 +311,33 @@ export type Database = {
           },
         ]
       }
+      profile_access_logs: {
+        Row: {
+          access_type: string
+          accessed_by_user_id: string
+          accessed_fields: string[] | null
+          accessed_profile_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_by_user_id: string
+          accessed_fields?: string[] | null
+          accessed_profile_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          access_type?: string
+          accessed_by_user_id?: string
+          accessed_fields?: string[] | null
+          accessed_profile_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           acceptance_terms: boolean | null
@@ -567,9 +594,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_safe_view: {
+        Row: {
+          company_name: string | null
+          country: Database["public"]["Enums"]["country_code"] | null
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          registration_complete: boolean | null
+          updated_at: string | null
+          user_id: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
+          verified: boolean | null
+        }
+        Insert: {
+          company_name?: string | null
+          country?: Database["public"]["Enums"]["country_code"] | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          registration_complete?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verified?: boolean | null
+        }
+        Update: {
+          company_name?: string | null
+          country?: Database["public"]["Enums"]["country_code"] | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          registration_complete?: boolean | null
+          updated_at?: string | null
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      can_access_full_profile: {
+        Args: { profile_user_id: string }
+        Returns: boolean
+      }
       get_current_user_admin_status: {
         Args: Record<PropertyKey, never>
         Returns: boolean
