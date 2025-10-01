@@ -31,7 +31,7 @@ export const TransactionMessaging = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
 
-  const { messages, isLoading, sendMessage, isSendingMessage } = useTransactionMessages(transactionId);
+  const { messages, isLoading, sendMessage, isSendingMessage, markAsRead } = useTransactionMessages(transactionId);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -40,12 +40,19 @@ export const TransactionMessaging = ({
     }
   }, [messages, open]);
 
-  // Auto-focus textarea when opened
+  // Auto-focus textarea when opened and mark messages as read
   useEffect(() => {
     if (open && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [open]);
+    
+    // Mark all messages as read when dialog opens
+    if (open && messages.length > 0) {
+      markAsRead().catch(err => {
+        console.error('Error marking messages as read:', err);
+      });
+    }
+  }, [open, messages.length, markAsRead]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;

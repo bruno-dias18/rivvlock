@@ -83,10 +83,30 @@ export const useTransactionMessages = (transactionId: string) => {
     };
   }, [transactionId, queryClient]);
 
+  // Mark messages as read
+  const markAsRead = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) throw new Error('User not authenticated');
+
+      const { error } = await supabase.functions.invoke('mark-messages-read', {
+        body: { transactionId },
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['unread-transaction-messages', transactionId] });
+      queryClient.invalidateQueries({ queryKey: ['unread-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-messages-by-status'] });
+    },
+  });
+
   return {
     messages,
     isLoading,
     sendMessage: sendMessage.mutateAsync,
     isSendingMessage: sendMessage.isPending,
+    markAsRead: markAsRead.mutateAsync,
+    isMarkingAsRead: markAsRead.isPending,
   };
 };

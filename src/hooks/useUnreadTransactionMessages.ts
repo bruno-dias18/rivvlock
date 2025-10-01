@@ -15,18 +15,35 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
     queryFn: async (): Promise<number> => {
       if (!transactionId || !user?.id) return 0;
 
-      const { count, error } = await supabase
+      // Get messages not sent by user
+      const { data: messages, error } = await supabase
         .from('transaction_messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('transaction_id', transactionId)
         .neq('sender_id', user.id);
 
       if (error) {
-        console.error('Error fetching unread messages count:', error);
+        console.error('Error fetching messages:', error);
         return 0;
       }
 
-      return count || 0;
+      if (!messages || messages.length === 0) return 0;
+
+      // Get read status for these messages
+      const messageIds = messages.map(m => m.id);
+      const { data: reads, error: readsError } = await supabase
+        .from('message_reads')
+        .select('message_id')
+        .in('message_id', messageIds)
+        .eq('user_id', user.id);
+
+      if (readsError) {
+        console.error('Error fetching read status:', readsError);
+        return messages.length; // Assume all unread on error
+      }
+
+      const readMessageIds = new Set(reads?.map(r => r.message_id) || []);
+      return messages.filter(m => !readMessageIds.has(m.id)).length;
     },
     enabled: !!transactionId && !!user?.id,
     staleTime: 30000, // 30 secondes
@@ -56,6 +73,17 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+        },
+        () => {
+          refetch();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -77,20 +105,38 @@ export function useUnreadTransactionsCount(transactions: any[]) {
     queryFn: async () => {
       if (!user?.id || transactions.length === 0) return [];
 
-      // Récupérer tous les IDs de transactions qui ont des messages non lus
-      const { data, error } = await supabase
+      // Get all messages not sent by user
+      const { data: messages, error } = await supabase
         .from('transaction_messages')
-        .select('transaction_id')
+        .select('id, transaction_id')
         .in('transaction_id', transactions.map(t => t.id))
         .neq('sender_id', user.id);
 
       if (error) {
-        console.error('Error fetching unread transactions:', error);
+        console.error('Error fetching messages:', error);
         return [];
       }
 
-      // Retourner les IDs uniques
-      return [...new Set(data?.map(m => m.transaction_id) || [])];
+      if (!messages || messages.length === 0) return [];
+
+      // Get read status for these messages
+      const messageIds = messages.map(m => m.id);
+      const { data: reads, error: readsError } = await supabase
+        .from('message_reads')
+        .select('message_id')
+        .in('message_id', messageIds)
+        .eq('user_id', user.id);
+
+      if (readsError) {
+        console.error('Error fetching read status:', readsError);
+        return [...new Set(messages.map(m => m.transaction_id))];
+      }
+
+      const readMessageIds = new Set(reads?.map(r => r.message_id) || []);
+      const unreadMessages = messages.filter(m => !readMessageIds.has(m.id));
+      
+      // Return unique transaction IDs with unread messages
+      return [...new Set(unreadMessages.map(m => m.transaction_id))];
     },
     enabled: !!user?.id && transactions.length > 0,
     staleTime: 30000,
@@ -119,6 +165,17 @@ export function useUnreadTransactionsCount(transactions: any[]) {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+        },
+        () => {
+          refetch();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -140,7 +197,7 @@ export function useUnreadMessagesByStatus() {
     queryFn: async () => {
       if (!user?.id) return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
 
-      // Récupérer toutes les transactions de l'utilisateur avec leurs messages non lus
+      // Get all user transactions
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
         .select('id, status')
@@ -151,20 +208,38 @@ export function useUnreadMessagesByStatus() {
         return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
       }
 
-      // Récupérer les messages non lus pour ces transactions
+      // Get messages not sent by user
       const { data: messages, error: msgError } = await supabase
         .from('transaction_messages')
-        .select('transaction_id')
+        .select('id, transaction_id')
         .in('transaction_id', transactions.map(t => t.id))
         .neq('sender_id', user.id);
 
       if (msgError) {
-        console.error('Error fetching unread messages:', msgError);
+        console.error('Error fetching messages:', msgError);
         return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
       }
 
-      // Compter par statut
-      const unreadTransactionIds = new Set(messages?.map(m => m.transaction_id) || []);
+      if (!messages || messages.length === 0) {
+        return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
+      }
+
+      // Get read status for these messages
+      const messageIds = messages.map(m => m.id);
+      const { data: reads, error: readsError } = await supabase
+        .from('message_reads')
+        .select('message_id')
+        .in('message_id', messageIds)
+        .eq('user_id', user.id);
+
+      if (readsError) {
+        console.error('Error fetching read status:', readsError);
+      }
+
+      const readMessageIds = new Set(reads?.map(r => r.message_id) || []);
+      const unreadMessages = messages.filter(m => !readMessageIds.has(m.id));
+      const unreadTransactionIds = new Set(unreadMessages.map(m => m.transaction_id));
+
       const counts = {
         pending: 0,
         blocked: 0,
@@ -180,7 +255,7 @@ export function useUnreadMessagesByStatus() {
         }
       });
 
-      // Pour les disputed, on compte depuis la table disputes
+      // Count disputed transactions
       const { data: disputes, error: disputeError } = await supabase
         .from('disputes')
         .select('id, transaction_id')
@@ -215,6 +290,17 @@ export function useUnreadMessagesByStatus() {
           if (payload.new && (payload.new as any).sender_id !== user.id) {
             refetch();
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_reads',
+        },
+        () => {
+          refetch();
         }
       )
       .subscribe();

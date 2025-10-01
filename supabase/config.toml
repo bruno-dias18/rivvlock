@@ -160,6 +160,9 @@ verify_jwt = true
 [functions.send-transaction-message]
 verify_jwt = true
 
+[functions.mark-messages-read]
+verify_jwt = true
+
 [functions.delete-expired-transaction]
 verify_jwt = true
 
