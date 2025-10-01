@@ -9,6 +9,7 @@ export interface TransactionMessage {
   recipient_id: string;
   message: string;
   created_at: string;
+  pending?: boolean; // Pour indiquer un message en cours d'envoi
 }
 
 interface UseTransactionMessagesOptions {
@@ -68,12 +69,14 @@ export function useTransactionMessages(
     }
   }, [transactionId, refetch]);
 
-  // Real-time subscription with schema-db-changes
+  // Real-time subscription with unique channel per transaction
   useEffect(() => {
     if (!transactionId) return;
 
+    const channelName = `transaction-messages-${transactionId}`;
+    
     const channel = supabase
-      .channel('schema-db-changes')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -101,9 +104,6 @@ export function useTransactionMessages(
               return [...prev, newMessage];
             }
           });
-
-          // Pas besoin de refetch ici, on a déjà le message dans l'état
-          // await refetch(); - SUPPRIMÉ pour améliorer les performances
           
           // Notification seulement si ce n'est pas mon propre message
           if (newMessage.sender_id !== currentUserId) {
@@ -115,7 +115,16 @@ export function useTransactionMessages(
           }
         }
       )
-      .subscribe(); // Pas de refetch ici non plus pour améliorer les performances
+      .subscribe((status) => {
+        // Reconnecter automatiquement en cas d'erreur
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          console.log(`[Realtime] Channel ${channelName} error/closed, reconnecting...`);
+          setTimeout(() => {
+            supabase.removeChannel(channel);
+            // Le useEffect se ré-exécutera et créera un nouveau canal
+          }, 1000);
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -165,7 +174,7 @@ export function useTransactionMessages(
       return false;
     }
 
-    // Créer un message optimiste
+    // Créer un message optimiste avec indicateur pending
     const tempMessage: TransactionMessage = {
       id: `temp-${Date.now()}`,
       transaction_id: transactionId,
@@ -173,13 +182,19 @@ export function useTransactionMessages(
       recipient_id: recipientId,
       message: message.trim(),
       created_at: new Date().toISOString(),
+      pending: true,
     };
 
     // Ajouter immédiatement le message à l'état
     setMessages((prev) => [...prev, tempMessage]);
 
     try {
-      const { error } = await supabase.functions.invoke('send-transaction-message', {
+      // Créer une promesse avec timeout personnalisé de 8 secondes
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('TIMEOUT')), 8000);
+      });
+
+      const invokePromise = supabase.functions.invoke('send-transaction-message', {
         body: {
           transactionId,
           recipientId,
@@ -187,15 +202,42 @@ export function useTransactionMessages(
         },
       });
 
+      const { error } = await Promise.race([invokePromise, timeoutPromise]) as any;
+
       if (error) throw error;
-      return true;
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast.error('Erreur lors de l\'envoi du message');
       
-      // Supprimer le message optimiste en cas d'erreur
-      setMessages((prev) => prev.filter(msg => msg.id !== tempMessage.id));
-      return false;
+      // Retirer le flag pending du message
+      setMessages((prev) => 
+        prev.map(msg => msg.id === tempMessage.id ? { ...msg, pending: false } : msg)
+      );
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error sending message:', error);
+      
+      const errorMessage = error?.message || '';
+      const isTimeoutOrNetworkError = 
+        errorMessage === 'TIMEOUT' || 
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('NetworkError') ||
+        error?.status >= 500;
+
+      if (isTimeoutOrNetworkError) {
+        // Erreur réseau/timeout : garder le message optimiste avec statut "Envoi..."
+        console.log('[SendMessage] Timeout/network error, keeping optimistic message');
+        
+        // Refetch après 2 secondes pour synchroniser
+        setTimeout(() => {
+          refetch();
+        }, 2000);
+        
+        return true; // Ne pas afficher d'erreur à l'utilisateur
+      } else {
+        // Erreur fonctionnelle (4xx) : supprimer le message optimiste et afficher l'erreur
+        toast.error('Erreur lors de l\'envoi du message');
+        setMessages((prev) => prev.filter(msg => msg.id !== tempMessage.id));
+        return false;
+      }
     }
   };
 

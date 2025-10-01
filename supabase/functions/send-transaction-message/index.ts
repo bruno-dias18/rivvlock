@@ -32,8 +32,30 @@ serve(async (req) => {
 
     const { transactionId, recipientId, message } = await req.json();
 
-    if (!transactionId || !recipientId || !message || message.trim().length === 0) {
-      return new Response(JSON.stringify({ error: 'Paramètres manquants' }), {
+    // Validation améliorée avec logging
+    console.log('[SendMessage] Request params:', { 
+      transactionId: transactionId || 'missing',
+      recipientId: recipientId || 'missing',
+      messageLength: message?.trim()?.length || 0,
+      userId: user.id
+    });
+
+    if (!transactionId) {
+      return new Response(JSON.stringify({ error: 'Transaction ID manquant' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!recipientId || typeof recipientId !== 'string' || recipientId.trim().length === 0) {
+      return new Response(JSON.stringify({ error: 'Destinataire invalide ou manquant' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!message || message.trim().length === 0) {
+      return new Response(JSON.stringify({ error: 'Message vide' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -84,6 +106,9 @@ serve(async (req) => {
     }
 
     // Insert message
+    console.log('[SendMessage] Inserting message...');
+    const insertStartTime = Date.now();
+    
     const { error: insertError } = await supabase
       .from('transaction_messages')
       .insert({
@@ -93,13 +118,18 @@ serve(async (req) => {
         message: message.trim(),
       });
 
+    const insertDuration = Date.now() - insertStartTime;
+    console.log(`[SendMessage] Insert completed in ${insertDuration}ms`);
+
     if (insertError) {
-      console.error('Error inserting message:', insertError);
+      console.error('[SendMessage] Error inserting message:', insertError);
       return new Response(JSON.stringify({ error: 'Erreur lors de l\'envoi du message' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('[SendMessage] Message inserted successfully');
 
     // Log activity
     await supabase.from('activity_logs').insert({
