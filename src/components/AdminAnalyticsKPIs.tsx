@@ -12,6 +12,7 @@ interface AdminAnalyticsKPIsProps {
     totalTransactions: number;
     totalVolume: number;
     totalUsers: number;
+    currencyVolumes: Array<{ currency: string; volume: number; count: number }>;
     timeSeries: Array<{ date: string; transactions: number; users: number; volume: number }>;
   } | undefined;
   isLoading: boolean;
@@ -82,12 +83,31 @@ export const AdminAnalyticsKPIs = ({ period, onPeriodChange, analytics, isLoadin
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Volume Total</CardTitle>
+            <CardTitle className="text-sm font-medium">Volume EUR</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(analytics.totalVolume)}</div>
-            <p className="text-xs text-muted-foreground">Toutes devises</p>
+            <div className="text-2xl font-bold">
+              {formatCurrency(analytics.currencyVolumes.find(cv => cv.currency === 'EUR')?.volume || 0)} €
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analytics.currencyVolumes.find(cv => cv.currency === 'EUR')?.count || 0} transactions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Volume CHF</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(analytics.currencyVolumes.find(cv => cv.currency === 'CHF')?.volume || 0)} CHF
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {analytics.currencyVolumes.find(cv => cv.currency === 'CHF')?.count || 0} transactions
+            </p>
           </CardContent>
         </Card>
 

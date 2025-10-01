@@ -438,7 +438,13 @@ export default function AdminPage() {
               <AdminAnalyticsKPIs 
                 period={analyticsPeriod}
                 onPeriodChange={setAnalyticsPeriod}
-                analytics={analytics}
+                analytics={analytics ? {
+                  totalTransactions: analytics.totalTransactions,
+                  totalVolume: analytics.totalVolume,
+                  totalUsers: analytics.totalUsers,
+                  currencyVolumes: analytics.currencyVolumes,
+                  timeSeries: analytics.timeSeries
+                } : undefined}
                 isLoading={analyticsLoading}
               />
             </CardContent>
