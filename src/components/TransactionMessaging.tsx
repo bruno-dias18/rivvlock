@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -26,6 +27,7 @@ export const TransactionMessaging = ({
 }: TransactionMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -103,7 +105,9 @@ export const TransactionMessaging = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[600px] flex flex-col">
+      <DialogContent className={`max-w-2xl max-h-[600px] flex flex-col ${
+        isMobile ? 'top-[5%] translate-y-0' : 'top-[50%] translate-y-[-50%]'
+      }`}>
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
