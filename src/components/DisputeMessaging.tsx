@@ -23,6 +23,7 @@ import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock as ClockIcon } from 'lucide-react';
@@ -47,6 +48,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
+  const keyboardInset = useKeyboardInsets();
   const [newMessage, setNewMessage] = useState('');
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -245,8 +247,13 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     );
   }
 
+  // Adjust card to account for keyboard
+  const cardStyle = isMobile && keyboardInset > 0
+    ? { height: `calc(100% - ${keyboardInset}px)`, maxHeight: `calc(100vh - ${keyboardInset}px)` }
+    : {};
+
   return (
-    <Card className="h-full flex flex-col overflow-hidden">{/* Changed to h-full to adapt to parent container */}
+    <Card className="h-full flex flex-col overflow-hidden" style={cardStyle}>{/* Dynamic height based on keyboard */}
       {/* Header: Escalation Alert - Fixed at top */}
       {isExpired && (
         <div className="flex-shrink-0 border-b">

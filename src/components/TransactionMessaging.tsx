@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
+import { useIsMobile } from '@/lib/mobileUtils';
+import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -27,6 +28,8 @@ export const TransactionMessaging = ({
 }: TransactionMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const keyboardInset = useKeyboardInsets();
   
   const [newMessage, setNewMessage] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -126,10 +129,22 @@ export const TransactionMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
+  // Calculate dynamic height based on keyboard
+  const getDialogHeight = () => {
+    if (!isMobile) return '85vh';
+    if (keyboardInset > 0) {
+      return `calc(100vh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - 8px)`;
+    }
+    return '45vh';
+  };
+
   // Use Dialog for both mobile and desktop (stable, predictable)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 sm:h-[85vh] h-[45vh] top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]">
+      <DialogContent 
+        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
+        style={{ height: getDialogHeight() }}
+      >
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <span>{t('transaction.messaging.title', 'Messagerie transaction')}</span>
