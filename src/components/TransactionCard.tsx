@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, Mail, MailOpen } from 'lucide-react';
+import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, MessageCircle, MessageCircleMore } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -265,9 +265,9 @@ const TransactionCardComponent = ({
                 className={isMobile ? "justify-center" : ""}
               >
                 {hasMessages ? (
-                  <MailOpen className="h-4 w-4 mr-2" />
+                  <MessageCircleMore className="h-4 w-4 mr-2" />
                 ) : (
-                  <Mail className="h-4 w-4 mr-2" />
+                  <MessageCircle className="h-4 w-4 mr-2" />
                 )}
                 {t('common.contact', 'Contacter')}
                 {unreadCount > 0 && (
