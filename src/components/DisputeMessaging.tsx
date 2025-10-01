@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Send, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -96,13 +96,16 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       return willDisplay;
     }
   );
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    if (messagesContainerRef.current) {
-      const container = messagesContainerRef.current;
-      container.scrollTo({
-        top: container.scrollHeight,
-        behavior
-      });
+  // Robust scroll to bottom with retry mechanism
+  const ensureBottom = (retryCount = 0) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.scrollTop = container.scrollHeight;
+
+    // Retry up to 3 times to ensure DOM is fully rendered
+    if (retryCount < 3) {
+      requestAnimationFrame(() => ensureBottom(retryCount + 1));
     }
   };
 
@@ -113,13 +116,13 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     }
   }, [isMobile]);
 
-  // Auto-scroll when new messages arrive (sent or received)
-  useEffect(() => {
-    if (messages.length > previousMessageCountRef.current) {
-      setTimeout(scrollToBottom, 100);
+  // Auto-scroll when new messages arrive or component mounts
+  useLayoutEffect(() => {
+    if (messages.length > previousMessageCountRef.current || messages.length > 0) {
+      setTimeout(() => ensureBottom(), 100);
     }
     previousMessageCountRef.current = messages.length;
-  }, [messages]);
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -130,8 +133,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       textareaRef.current?.focus({ preventScroll: true });
       onProposalSent?.();
       
-      // Force scroll to bottom after sending
-      setTimeout(() => scrollToBottom('auto'), 100);
+      // Force scroll after sending
+      setTimeout(() => ensureBottom(), 50);
       
       // Log activity for the other participant
       try {
@@ -315,7 +318,11 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       )}
 
       {/* Messages - Scrollable center area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20">
+      <div 
+        ref={messagesContainerRef} 
+        className="flex-1 overflow-y-auto overflow-x-hidden overscroll-behavior-x-contain p-4 space-y-4 bg-muted/20"
+        style={{ touchAction: 'pan-y' }}
+      >
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-muted-foreground">
@@ -364,7 +371,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                 </div>
                 );
               })}
-            <div ref={messagesEndRef} />
           </>
         )}
       </div>

@@ -32,26 +32,32 @@ export const TransactionMessaging = ({
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
   const [newMessage, setNewMessage] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
 
   const { messages, isLoading, sendMessage, isSendingMessage, markAsRead } = useTransactionMessages(transactionId);
 
-  // Robust scroll to bottom function
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+  // Robust scroll to bottom with retry mechanism
+  const ensureBottom = (retryCount = 0) => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.scrollTop = container.scrollHeight;
+
+    // Retry up to 3 times to ensure DOM is fully rendered
+    if (retryCount < 3) {
+      requestAnimationFrame(() => ensureBottom(retryCount + 1));
     }
   };
 
-  // Auto-scroll to latest message (useLayoutEffect for immediate scroll without flicker)
+  // Auto-scroll on open and new messages
   useLayoutEffect(() => {
     if (open && messages.length > 0) {
-      // Small delay to ensure DOM is updated
-      setTimeout(() => scrollToBottom(), 50);
+      // Delay to ensure DOM is ready
+      setTimeout(() => ensureBottom(), 300);
     }
-  }, [messages, open]);
+  }, [open, messages.length]);
 
   // Auto-focus textarea when opened and mark messages as read
   useEffect(() => {
@@ -82,8 +88,8 @@ export const TransactionMessaging = ({
       setNewMessage('');
       lastMessageTimeRef.current = now;
       toast.success(t('messages.sent', 'Message envoyé'));
-      // Force scroll to bottom after sending
-      setTimeout(() => scrollToBottom('auto'), 100);
+      // Force scroll after sending
+      setTimeout(() => ensureBottom(), 50);
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));
@@ -122,7 +128,7 @@ export const TransactionMessaging = ({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent 
           side="bottom" 
-          className="h-[100dvh] max-h-[100dvh] p-0 flex flex-col rounded-t-2xl"
+          className="h-[100svh] max-h-[100svh] p-0 flex flex-col rounded-t-2xl"
         >
           <SheetHeader className="p-4 border-b bg-background shrink-0">
             <SheetTitle className="flex items-center justify-between">
@@ -135,7 +141,11 @@ export const TransactionMessaging = ({
             </SheetTitle>
           </SheetHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20">
+          <div 
+            ref={messagesContainerRef}
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-behavior-x-contain p-4 pb-28 bg-muted/20"
+            style={{ touchAction: 'pan-y' }}
+          >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
@@ -166,15 +176,14 @@ export const TransactionMessaging = ({
                     </div>
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
             )}
           </div>
 
           <div
-            className="sticky bottom-0 bg-background border-t p-3 shrink-0"
+            className="absolute bottom-0 left-0 right-0 bg-background border-t p-3"
             style={{
-              paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px + 12px)`
+              bottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px)`
             }}
           >
             <div className="flex gap-2 items-end">
@@ -222,7 +231,10 @@ export const TransactionMessaging = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4 min-h-[400px] max-h-[500px]">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-4 min-h-[400px] max-h-[500px]"
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-muted-foreground">{t('transaction.messaging.loading', 'Chargement...')}</div>
@@ -253,7 +265,6 @@ export const TransactionMessaging = ({
                   </div>
                 </div>
               ))}
-              <div ref={messagesEndRef} />
             </>
           )}
         </div>
