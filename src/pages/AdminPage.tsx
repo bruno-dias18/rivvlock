@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
+import { AdminAnalyticsTab } from '@/components/AdminAnalyticsTab';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -437,18 +438,16 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Reports Placeholder */}
+        {/* Reports and Analytics */}
         <Card>
           <CardHeader>
             <CardTitle>Rapports et Analytics</CardTitle>
             <CardDescription>
-              Générer des rapports détaillés
+              Visualisez les métriques et tendances de la plateforme
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Système de rapports à implémenter
-            </p>
+            <AdminAnalyticsTab />
           </CardContent>
         </Card>
 
