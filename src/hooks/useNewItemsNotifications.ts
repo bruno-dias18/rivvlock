@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -28,13 +28,23 @@ type CategoryKey = keyof typeof ACTIVITY_TYPES_MAP;
 
 export const useNewItemsNotifications = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const getLastSeenTimestamp = (category: CategoryKey): string | null => {
-    return localStorage.getItem(STORAGE_KEYS[category]);
+  const getLastSeenTimestamp = (category: CategoryKey): string => {
+    const stored = localStorage.getItem(STORAGE_KEYS[category]);
+    // Si null (première visite), initialiser avec la date actuelle pour éviter les notifications historiques
+    if (!stored) {
+      const now = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS[category], now);
+      return now;
+    }
+    return stored;
   };
 
   const markAsSeen = (category: CategoryKey) => {
     localStorage.setItem(STORAGE_KEYS[category], new Date().toISOString());
+    // Invalider immédiatement le cache pour faire disparaître les notifications
+    queryClient.invalidateQueries({ queryKey: ['new-items-notifications', user?.id] });
   };
 
   const { data: newCounts, refetch } = useQuery({
@@ -52,16 +62,13 @@ export const useNewItemsNotifications = () => {
       for (const category of Object.keys(ACTIVITY_TYPES_MAP) as CategoryKey[]) {
         const lastSeen = getLastSeenTimestamp(category);
         
-        let query = supabase
+        const { count } = await supabase
           .from('activity_logs')
           .select('id', { count: 'exact', head: true })
-          .in('activity_type', ACTIVITY_TYPES_MAP[category]);
+          .eq('user_id', user.id)
+          .in('activity_type', ACTIVITY_TYPES_MAP[category])
+          .gt('created_at', lastSeen);
 
-        if (lastSeen) {
-          query = query.gt('created_at', lastSeen);
-        }
-
-        const { count } = await query;
         counts[category] = count || 0;
       }
 
