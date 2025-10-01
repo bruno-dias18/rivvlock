@@ -96,17 +96,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       return willDisplay;
     }
   );
-  // Robust scroll to bottom using bottom anchor and retries
-  const ensureBottom = (retryCount = 3) => {
+  // Simple scroll to bottom
+  const ensureBottom = () => {
     if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ block: 'end' });
-    } else if (messagesContainerRef.current) {
-      // Fallback
-      const c = messagesContainerRef.current;
-      c.scrollTop = c.scrollHeight;
-    }
-    if (retryCount > 0) {
-      requestAnimationFrame(() => ensureBottom(retryCount - 1));
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   };
 
@@ -134,9 +127,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       textareaRef.current?.focus({ preventScroll: true });
       onProposalSent?.();
       
-      // Force scroll after sending
-      setTimeout(() => ensureBottom(), 50);
-      setTimeout(() => ensureBottom(), 250);
+      // Scroll after sending
+      setTimeout(() => ensureBottom(), 100);
       
       // Log activity for the other participant
       try {
@@ -323,7 +315,6 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       <div 
         ref={messagesContainerRef} 
         className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 bg-muted/20"
-        style={{ touchAction: 'pan-y', paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}
       >
         {displayMessages.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -397,14 +388,14 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           )}
 
           {/* Message Input */}
-          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`} style={{ paddingBottom: isMobile ? 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' : undefined }}>
+          <div className="flex gap-2 items-end p-3">
             <Textarea
               ref={textareaRef}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
-              placeholder={isMobile ? "Votre message..." : "Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"}
-              className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
+              placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
+              className="resize-none h-14"
               rows={2}
               disabled={isSendingMessage}
               aria-label="Message de négociation"
@@ -413,10 +404,10 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
               onClick={handleSendMessage}
               disabled={!newMessage.trim() || isSendingMessage}
               size="icon"
-              className={`flex-shrink-0 ${isMobile ? 'h-14 w-14' : 'h-[60px] w-[60px]'}`}
+              className="flex-shrink-0 h-14 w-14"
               aria-label="Envoyer le message"
             >
-              <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -431,7 +422,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
             </p>
           </div>
           
-          <div className={`flex gap-2 items-end ${isMobile ? 'p-2' : 'p-3'}`} style={{ paddingBottom: isMobile ? 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' : undefined }}>
+          <div className="flex gap-2 items-end p-3">
             <Textarea
               ref={textareaRef}
               value={newMessage}
