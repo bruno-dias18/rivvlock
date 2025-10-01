@@ -96,7 +96,9 @@ export const useTransactionMessages = (transactionId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['unread-transaction-messages', transactionId] });
-      queryClient.invalidateQueries({ queryKey: ['unread-transactions'] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'unread-transactions-count'
+      });
       queryClient.invalidateQueries({ queryKey: ['unread-messages-by-status'] });
     },
   });
