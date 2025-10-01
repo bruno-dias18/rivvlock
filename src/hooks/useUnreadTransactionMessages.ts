@@ -46,7 +46,8 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
       return messages.filter(m => !readMessageIds.has(m.id)).length;
     },
     enabled: !!transactionId && !!user?.id,
-    staleTime: 30000, // 30 secondes
+    staleTime: 0,
+    gcTime: 30000,
     refetchOnWindowFocus: true,
   });
 
@@ -139,7 +140,8 @@ export function useUnreadTransactionsCount(transactions: any[]) {
       return [...new Set(unreadMessages.map(m => m.transaction_id))];
     },
     enabled: !!user?.id && transactions.length > 0,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 30000,
     refetchOnWindowFocus: true,
   });
 
@@ -269,7 +271,8 @@ export function useUnreadMessagesByStatus() {
       return counts;
     },
     enabled: !!user?.id,
-    staleTime: 30000,
+    staleTime: 0,
+    gcTime: 30000,
     refetchOnWindowFocus: true,
   });
 
