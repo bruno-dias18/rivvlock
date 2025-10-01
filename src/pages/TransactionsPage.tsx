@@ -19,6 +19,7 @@ import { TransactionCard } from '@/components/TransactionCard';
 import { DisputeCard } from '@/components/DisputeCard';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
+import { useTransactionNewMessages } from '@/hooks/useTransactionNewMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
@@ -47,6 +48,7 @@ export default function TransactionsPage() {
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
+  const { newMessagesMap, markAsRead } = useTransactionNewMessages(transactions, user?.id || '');
   
   const activeTab = searchParams.get('tab') || 'pending';
 
@@ -105,6 +107,11 @@ export default function TransactionsPage() {
   const blockedTransactions = transactions.filter(t => t.status === 'paid');
   const completedTransactions = transactions.filter(t => t.status === 'validated');
   const disputedTransactions = transactions.filter(t => t.status === 'disputed');
+
+  // Count new messages by tab
+  const pendingNewMessages = pendingTransactions.filter(t => newMessagesMap.get(t.id)).length;
+  const blockedNewMessages = blockedTransactions.filter(t => newMessagesMap.get(t.id)).length;
+  const completedNewMessages = completedTransactions.filter(t => newMessagesMap.get(t.id)).length;
 
   const handleCopyLink = async (text: string) => {
     try {
@@ -386,6 +393,11 @@ export default function TransactionsPage() {
                 {newCounts.pending}
               </Badge>
             )}
+            {pendingNewMessages > 0 && (
+              <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                💬
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''}`}>
             <Lock className="h-4 w-4" />
@@ -397,6 +409,11 @@ export default function TransactionsPage() {
                 {newCounts.blocked}
               </Badge>
             )}
+            {blockedNewMessages > 0 && (
+              <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                💬
+              </Badge>
+            )}
           </TabsTrigger>
           {!isMobile && (
             <>
@@ -406,6 +423,11 @@ export default function TransactionsPage() {
                 {newCounts.completed > 0 && (
                   <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
                     {newCounts.completed}
+                  </Badge>
+                )}
+                {completedNewMessages > 0 && (
+                  <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    💬
                   </Badge>
                 )}
               </TabsTrigger>
@@ -428,6 +450,11 @@ export default function TransactionsPage() {
                 {newCounts.completed > 0 && (
                   <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
                     {newCounts.completed}
+                  </Badge>
+                )}
+                {completedNewMessages > 0 && (
+                  <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                    💬
                   </Badge>
                 )}
               </TabsTrigger>
@@ -490,6 +517,8 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        hasNewMessage={newMessagesMap.get(transaction.id) || false}
+                        onMarkMessageAsRead={() => markAsRead(transaction.id)}
                         onDeleteExpired={handleDeleteExpiredTransaction}
                         onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
@@ -534,6 +563,8 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        hasNewMessage={newMessagesMap.get(transaction.id) || false}
+                        onMarkMessageAsRead={() => markAsRead(transaction.id)}
                         onDeleteExpired={handleDeleteExpiredTransaction}
                         onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}
@@ -578,6 +609,8 @@ export default function TransactionsPage() {
                         onRefetch={refetch}
                         onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
                         onDownloadInvoice={handleDownloadInvoice}
+                        hasNewMessage={newMessagesMap.get(transaction.id) || false}
+                        onMarkMessageAsRead={() => markAsRead(transaction.id)}
                         onDeleteExpired={handleDeleteExpiredTransaction}
                         onRenewExpired={handleRenewExpiredTransaction}
                         CompleteButtonComponent={CompleteTransactionButtonWithStatus}

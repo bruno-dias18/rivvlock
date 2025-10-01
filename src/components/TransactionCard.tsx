@@ -15,6 +15,7 @@ import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotificat
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { ContactSellerDialog } from '@/components/ContactSellerDialog';
 import { useTranslation } from 'react-i18next';
+import { useTransactionNewMessages } from '@/hooks/useTransactionNewMessages';
 
 interface TransactionCardProps {
   transaction: any;
@@ -28,6 +29,8 @@ interface TransactionCardProps {
   onDeleteExpired?: (transaction: any) => void;
   onRenewExpired?: (transaction: any, newServiceDate?: Date, message?: string) => void;
   CompleteButtonComponent: React.ComponentType<any>;
+  hasNewMessage?: boolean;
+  onMarkMessageAsRead?: () => void;
 }
 
 export function TransactionCard({
@@ -41,7 +44,9 @@ export function TransactionCard({
   onDownloadInvoice,
   onDeleteExpired,
   onRenewExpired,
-  CompleteButtonComponent
+  CompleteButtonComponent,
+  hasNewMessage = false,
+  onMarkMessageAsRead
 }: TransactionCardProps) {
   const isMobile = useIsMobile();
   const validationStatus = useValidationStatus(transaction, user?.id);
@@ -97,9 +102,16 @@ export function TransactionCard({
             <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
               {transaction.price} {transaction.currency?.toUpperCase()}
             </div>
-            <Badge variant="outline" className="mt-1">
-              {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
-            </Badge>
+            <div className="flex gap-2 items-center mt-1">
+              <Badge variant="outline">
+                {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
+              </Badge>
+              {hasNewMessage && (
+                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 animate-pulse">
+                  💬 Nouveau
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -230,12 +242,12 @@ export function TransactionCard({
                 </Button>
                 
                 <Button
-                  variant="outline"
+                  variant={hasNewMessage ? "default" : "outline"}
                   size={isMobile ? "default" : "sm"}
                   onClick={() => setIsContactDialogOpen(true)}
-                  className={isMobile ? "justify-center" : ""}
+                  className={hasNewMessage ? "bg-blue-600 hover:bg-blue-700" : (isMobile ? "justify-center" : "")}
                 >
-                  <MessageSquare className="h-4 w-4 mr-2" />
+                  <MessageSquare className={`h-4 w-4 mr-2 ${hasNewMessage ? 'animate-bounce' : ''}`} />
                   {isMobile ? "Contact" : "Contacter"}
                 </Button>
               </>
@@ -243,12 +255,12 @@ export function TransactionCard({
 
             {userRole === 'buyer' && transaction.status !== 'validated' && (
               <Button
-                variant="outline"
+                variant={hasNewMessage ? "default" : "outline"}
                 size={isMobile ? "default" : "sm"}
                 onClick={() => setIsContactDialogOpen(true)}
-                className={isMobile ? "justify-center" : ""}
+                className={hasNewMessage ? "bg-blue-600 hover:bg-blue-700" : (isMobile ? "justify-center" : "")}
               >
-                <MessageSquare className="h-4 w-4 mr-2" />
+                <MessageSquare className={`h-4 w-4 mr-2 ${hasNewMessage ? 'animate-bounce' : ''}`} />
                 {isMobile ? "Contact" : "Contacter"}
               </Button>
             )}
@@ -316,6 +328,7 @@ export function TransactionCard({
         transaction={transaction}
         currentUserId={user?.id}
         userRole={userRole as 'seller' | 'buyer'}
+        onMarkAsRead={onMarkMessageAsRead}
       />
     </>
   );

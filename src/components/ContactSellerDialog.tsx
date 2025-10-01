@@ -15,7 +15,14 @@ interface ContactSellerDialogProps {
   userRole: 'seller' | 'buyer';
 }
 
-export function ContactSellerDialog({ open, onOpenChange, transaction, currentUserId, userRole }: ContactSellerDialogProps) {
+export function ContactSellerDialog({ 
+  open, 
+  onOpenChange, 
+  transaction, 
+  currentUserId, 
+  userRole,
+  onMarkAsRead 
+}: ContactSellerDialogProps & { onMarkAsRead?: () => void }) {
   const { t } = useTranslation();
   const [message, setMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -29,6 +36,13 @@ export function ContactSellerDialog({ open, onOpenChange, transaction, currentUs
     currentUserId,
     { enabled: open }
   );
+
+  // Marquer comme lu quand le dialog s'ouvre
+  useEffect(() => {
+    if (open && transaction?.id && onMarkAsRead) {
+      onMarkAsRead();
+    }
+  }, [open, transaction?.id, onMarkAsRead]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
