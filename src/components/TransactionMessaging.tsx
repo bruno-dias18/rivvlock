@@ -79,10 +79,21 @@ export const TransactionMessaging = ({
       await sendMessage({ message: newMessage.trim() });
       setNewMessage('');
       lastMessageTimeRef.current = now;
-      toast.success(t('messages.sent', 'Message envoyé'));
-      // Keep keyboard open and scroll
-      textareaRef.current?.focus({ preventScroll: true });
-      setTimeout(() => ensureBottom(), 100);
+      
+      // Keep keyboard open with robust focus strategy
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus({ preventScroll: true });
+        });
+      });
+      
+      // Show toast after focus to avoid interference
+      setTimeout(() => {
+        toast.success(t('messages.sent', 'Message envoyé'));
+      }, 50);
+      
+      // Scroll after everything
+      requestAnimationFrame(() => ensureBottom());
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));

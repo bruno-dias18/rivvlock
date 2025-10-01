@@ -124,11 +124,18 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     try {
       await sendMessage({ message: newMessage.trim() });
       setNewMessage('');
-      textareaRef.current?.focus({ preventScroll: true });
+      
+      // Keep keyboard open with robust focus strategy
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus({ preventScroll: true });
+        });
+      });
+      
       onProposalSent?.();
       
       // Scroll after sending
-      setTimeout(() => ensureBottom(), 100);
+      requestAnimationFrame(() => ensureBottom());
       
       // Log activity for the other participant
       try {
