@@ -32,6 +32,8 @@ interface DisputeMessagingProps {
   disputeDeadline?: string;
   status: string;
   onProposalSent?: () => void;
+  transactionAmount: number;
+  currency: string;
 }
 
 export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
@@ -39,6 +41,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   disputeDeadline,
   status,
   onProposalSent,
+  transactionAmount,
+  currency,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -455,6 +459,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         onOpenChange={setShowProposalDialog}
         onCreateProposal={createProposal}
         isCreating={isCreating}
+        transactionAmount={transactionAmount}
+        currency={currency}
       />
     </Card>
   );

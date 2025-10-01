@@ -10,6 +10,8 @@ interface CreateProposalDialogProps {
   onOpenChange: (open: boolean) => void;
   onCreateProposal: (data: { proposalType: string; refundPercentage?: number; message?: string }) => Promise<void>;
   isCreating: boolean;
+  transactionAmount: number;
+  currency: string;
 }
 
 export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
@@ -17,6 +19,8 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
   onOpenChange,
   onCreateProposal,
   isCreating,
+  transactionAmount,
+  currency,
 }) => {
   const [selectedType, setSelectedType] = useState<string>('partial_refund');
   const [percentage, setPercentage] = useState<number>(50);
@@ -73,7 +77,7 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
             </button>
 
             {selectedType === 'partial_refund' && (
-              <div className="pl-4 space-y-2">
+              <div className="pl-4 space-y-3">
                 <Label htmlFor="percentage">Pourcentage de remboursement</Label>
                 <div className="flex items-center gap-4">
                   <input
@@ -86,7 +90,15 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
                     onChange={(e) => setPercentage(Number(e.target.value))}
                     className="flex-1"
                   />
-                  <span className="font-medium text-lg w-16 text-right">{percentage}%</span>
+                  <span className="font-medium text-lg w-20 text-right">{percentage}%</span>
+                </div>
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                  <div className="text-sm font-medium text-center">
+                    {percentage}% = {((transactionAmount * percentage) / 100).toFixed(2)} {currency.toUpperCase()}
+                  </div>
+                  <div className="text-xs text-muted-foreground text-center mt-1">
+                    Remboursement de {((transactionAmount * percentage) / 100).toFixed(2)} {currency.toUpperCase()} sur {transactionAmount.toFixed(2)} {currency.toUpperCase()}
+                  </div>
                 </div>
               </div>
             )}
@@ -101,7 +113,7 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
             >
               <div className="font-medium">↩️ Remboursement complet</div>
               <div className="text-sm text-muted-foreground mt-1">
-                Rembourser 100% du montant
+                Rembourser 100% du montant ({transactionAmount.toFixed(2)} {currency.toUpperCase()})
               </div>
             </button>
 
@@ -115,7 +127,7 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
             >
               <div className="font-medium">✋ Pas de remboursement</div>
               <div className="text-sm text-muted-foreground mt-1">
-                Demander la libération des fonds sans remboursement
+                Libération complète des fonds ({transactionAmount.toFixed(2)} {currency.toUpperCase()})
               </div>
             </button>
           </div>

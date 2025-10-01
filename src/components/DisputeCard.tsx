@@ -342,6 +342,8 @@ export const DisputeCard: React.FC<DisputeCardProps> = ({ dispute, onRefetch }) 
                 disputeId={dispute.id}
                 disputeDeadline={dispute.dispute_deadline}
                 status={dispute.status}
+                transactionAmount={transaction.price}
+                currency={transaction.currency}
                 onProposalSent={() => {
                   onRefetch?.();
                 }}
