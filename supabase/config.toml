@@ -157,6 +157,9 @@ verify_jwt = true
 [functions.renew-expired-transaction]
 verify_jwt = true
 
+[functions.send-transaction-message]
+verify_jwt = true
+
 [functions.delete-expired-transaction]
 verify_jwt = true
 

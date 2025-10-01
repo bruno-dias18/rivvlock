@@ -1,77 +1,124 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { MessageSquare } from 'lucide-react';
-import { toast } from 'sonner';
+import { MessageSquare, Send, AlertCircle } from 'lucide-react';
+import { useTransactionMessages } from '@/hooks/useTransactionMessages';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ContactSellerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction: any;
+  currentUserId: string;
+  userRole: 'seller' | 'buyer';
 }
 
-export function ContactSellerDialog({ open, onOpenChange, transaction }: ContactSellerDialogProps) {
+export function ContactSellerDialog({ open, onOpenChange, transaction, currentUserId, userRole }: ContactSellerDialogProps) {
   const { t } = useTranslation();
   const [message, setMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const recipientId = userRole === 'seller' ? transaction.buyer_id : transaction.user_id;
+  const recipientName = userRole === 'seller' ? transaction.buyer_display_name : transaction.seller_display_name;
+  
+  const { messages, isLoading, isBlocked, sendMessage } = useTransactionMessages(transaction.id, currentUserId);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!message.trim()) {
-      toast.error('Veuillez saisir un message');
-      return;
-    }
+    if (!message.trim()) return;
 
-    setIsLoading(true);
-    try {
-      // For now, we'll just show a success message
-      // In a real implementation, this would send an email or create a message
-      toast.success('Message envoyé au vendeur avec succès');
+    const success = await sendMessage(message, recipientId);
+    if (success) {
       setMessage('');
-      onOpenChange(false);
-    } catch (error) {
-      toast.error('Erreur lors de l\'envoi du message');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[600px] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            Contacter le vendeur
+            Messagerie - {recipientName || 'Utilisateur'}
           </DialogTitle>
           <DialogDescription>
-            Envoyez un message au vendeur concernant la transaction "{transaction?.title}"
+            Transaction: "{transaction?.title}"
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              placeholder="Décrivez votre demande ou question..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-            />
-          </div>
+        {isBlocked && (
+          <Alert variant="destructive" className="my-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              La messagerie est bloquée car le litige a été escaladé
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex-1 overflow-y-auto border rounded-md p-4 space-y-3 bg-muted/30 min-h-[300px] max-h-[350px]">
+          {isLoading ? (
+            <div className="text-center text-muted-foreground text-sm">Chargement...</div>
+          ) : messages.length === 0 ? (
+            <div className="text-center text-muted-foreground text-sm">Aucun message</div>
+          ) : (
+            messages.map((msg) => {
+              const isCurrentUser = msg.sender_id === currentUserId;
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[75%] rounded-lg px-3 py-2 ${
+                      isCurrentUser
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary text-secondary-foreground'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
+        <div className="flex gap-2 pt-3">
+          <Textarea
+            placeholder={isBlocked ? "Messagerie bloquée" : "Écrivez votre message..."}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            rows={2}
+            disabled={isBlocked}
+            className="flex-1"
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={isBlocked || !message.trim()}
+            size="icon"
+            className="self-end"
+          >
+            <Send className="h-4 w-4" />
           </Button>
-          <Button onClick={handleSendMessage} disabled={isLoading || !message.trim()}>
-            {isLoading ? 'Envoi...' : 'Envoyer le message'}
-          </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

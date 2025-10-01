@@ -644,6 +644,12 @@ export default function TransactionsPage() {
         open={contactDialog.open}
         onOpenChange={(open) => setContactDialog({ open, transaction: contactDialog.transaction })}
         transaction={contactDialog.transaction}
+        currentUserId={user?.id || ''}
+        userRole={
+          contactDialog.transaction?.user_id === user?.id 
+            ? 'seller' 
+            : 'buyer'
+        }
       />
 
       <CreateDisputeDialog
