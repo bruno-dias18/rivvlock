@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle } from 'lucide-react';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -11,18 +12,22 @@ import { useAdminTransactions } from '@/hooks/useAdminTransactions';
 import { useAdminActivityLogs } from '@/hooks/useAdminActivityLogs';
 import { useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
+import { useAdminAnalytics, type AnalyticsPeriod } from '@/hooks/useAdminAnalytics';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
-import { AdminAnalyticsTab } from '@/components/AdminAnalyticsTab';
+import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
+import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
 
 export default function AdminPage() {
   const { t } = useTranslation();
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<AnalyticsPeriod>('30d');
   const { data: stats, isLoading: statsLoading } = useAdminStats();
   const { data: users, isLoading: usersLoading } = useAdminUsers(5);
   const { data: transactions, isLoading: transactionsLoading } = useAdminTransactions(5);
   const { data: activityLogs, isLoading: logsLoading } = useAdminActivityLogs(10);
+  const { data: analytics, isLoading: analyticsLoading } = useAdminAnalytics(analyticsPeriod);
   const { data: disputeStats, isLoading: disputeStatsLoading } = useAdminDisputeStats();
   
   // Hook pour les notifications de litiges escaladés
@@ -419,51 +424,86 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* System Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Paramètres système</CardTitle>
-            <CardDescription>
-              Configuration et maintenance
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground mb-3">
-                Validation des comptes Stripe Connect
-              </p>
-              <ValidateStripeAccountsButton />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Analytics Section - Two columns on desktop */}
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 lg:col-span-3">
+          {/* Analytics KPIs */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Métriques clés</CardTitle>
+              <CardDescription>
+                Indicateurs de performance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AdminAnalyticsKPIs 
+                period={analyticsPeriod}
+                onPeriodChange={setAnalyticsPeriod}
+                analytics={analytics}
+                isLoading={analyticsLoading}
+              />
+            </CardContent>
+          </Card>
 
-        {/* Reports and Analytics */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Rapports et Analytics</CardTitle>
-            <CardDescription>
-              Visualisez les métriques et tendances de la plateforme
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="max-h-[600px] overflow-y-auto">
-            <AdminAnalyticsTab />
-          </CardContent>
-        </Card>
+          {/* Analytics Charts */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Graphiques</CardTitle>
+              <CardDescription>
+                Visualisation des données
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="max-h-[600px] overflow-y-auto">
+              <AdminAnalyticsCharts 
+                analytics={analytics}
+                isLoading={analyticsLoading}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
-        {/* Export Placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('admin.export')}</CardTitle>
-            <CardDescription>
-              Exporter les données
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Fonctionnalité d'export à implémenter
-            </p>
-          </CardContent>
-        </Card>
+        {/* Admin Tools Section - Two columns on desktop */}
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 lg:col-span-3">
+          {/* System Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Paramètres système</CardTitle>
+              <CardDescription>
+                Configuration et maintenance
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Validation des comptes Stripe Connect
+                </p>
+                <ValidateStripeAccountsButton />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Export and Reports */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-4 w-4" />
+                <span>Export et rapports</span>
+              </CardTitle>
+              <CardDescription>
+                Génération de rapports et exports
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Exporter les données analytics au format CSV
+                </p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Utilisez le bouton d'export dans la section "Métriques clés"
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
       </div>
     </DashboardLayout>
