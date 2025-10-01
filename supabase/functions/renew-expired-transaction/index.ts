@@ -96,10 +96,19 @@ serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    // Add new service date if provided
+    // Add new service date if provided - use approval system
     if (newServiceDate) {
-      updateData.service_date = newServiceDate;
-      logStep("New service date included", { serviceDate: newServiceDate });
+      updateData.proposed_service_date = newServiceDate;
+      updateData.date_change_status = 'pending_approval';
+      updateData.date_change_count = (transaction.date_change_count || 0) + 1;
+      updateData.date_change_requested_at = new Date().toISOString();
+      if (message) {
+        updateData.date_change_message = message;
+      }
+      logStep("New service date proposed for approval", { 
+        proposedDate: newServiceDate,
+        changeCount: updateData.date_change_count 
+      });
     }
 
     // Update the transaction
