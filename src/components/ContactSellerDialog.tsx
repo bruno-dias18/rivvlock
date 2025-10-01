@@ -110,12 +110,19 @@ export function ContactSellerDialog({
                     }`}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words">{msg.message}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {new Date(msg.created_at).toLocaleTimeString('fr-FR', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs opacity-70">
+                        {new Date(msg.created_at).toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      {msg.pending && (
+                        <span className="text-xs opacity-70 italic">
+                          Envoi en cours...
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
