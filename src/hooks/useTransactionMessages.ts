@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -11,10 +11,19 @@ export interface TransactionMessage {
   created_at: string;
 }
 
-export function useTransactionMessages(transactionId: string, currentUserId: string) {
+interface UseTransactionMessagesOptions {
+  enabled?: boolean;
+}
+
+export function useTransactionMessages(
+  transactionId: string, 
+  currentUserId: string,
+  options?: UseTransactionMessagesOptions
+) {
   const [messages, setMessages] = useState<TransactionMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBlocked, setIsBlocked] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout>();
 
   // Check if messaging is blocked due to escalated dispute
   useEffect(() => {
@@ -31,45 +40,40 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
     checkDisputeStatus();
   }, [transactionId]);
 
-  // Fetch messages
+  // Refetch function
+  const refetch = useCallback(async () => {
+    if (!transactionId) return;
+    
+    const { data, error } = await supabase
+      .from('transaction_messages')
+      .select('*')
+      .eq('transaction_id', transactionId)
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setMessages(data);
+    }
+  }, [transactionId]);
+
+  // Initial fetch
   useEffect(() => {
     const fetchMessages = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('transaction_messages')
-        .select('*')
-        .eq('transaction_id', transactionId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching messages:', error);
-        toast.error('Erreur lors du chargement des messages');
-      } else {
-        setMessages(data || []);
-      }
+      await refetch();
       setIsLoading(false);
     };
 
     if (transactionId) {
       fetchMessages();
     }
-  }, [transactionId]);
+  }, [transactionId, refetch]);
 
-  // Real-time subscription
+  // Real-time subscription with schema-db-changes
   useEffect(() => {
-    if (!transactionId) {
-      console.log('⚠️ Pas de transactionId, subscription non créée');
-      return;
-    }
-
-    console.log('🔌 Création de la subscription temps réel', {
-      transactionId,
-      currentUserId,
-      channel: `transaction_messages:${transactionId}`
-    });
+    if (!transactionId) return;
 
     const channel = supabase
-      .channel(`transaction_messages:${transactionId}`)
+      .channel('schema-db-changes')
       .on(
         'postgres_changes',
         {
@@ -78,29 +82,11 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
           table: 'transaction_messages',
           filter: `transaction_id=eq.${transactionId}`,
         },
-        (payload) => {
+        async (payload) => {
           const newMessage = payload.new as TransactionMessage;
-          
-          console.log('📨 Message reçu en temps réel:', {
-            messageId: newMessage.id,
-            senderId: newMessage.sender_id,
-            recipientId: newMessage.recipient_id,
-            currentUserId: currentUserId,
-            message: newMessage.message.substring(0, 30),
-            isOwnMessage: newMessage.sender_id === currentUserId
-          });
           
           // Remplacer le message optimiste par le vrai message
           setMessages((prev) => {
-            console.log('📋 État actuel des messages:', {
-              count: prev.length,
-              lastMessages: prev.slice(-3).map(m => ({
-                id: m.id,
-                sender: m.sender_id,
-                msg: m.message.substring(0, 20)
-              }))
-            });
-
             const tempMessageIndex = prev.findIndex(
               msg => msg.id.startsWith('temp-') && 
               msg.message === newMessage.message &&
@@ -108,38 +94,70 @@ export function useTransactionMessages(transactionId: string, currentUserId: str
             );
             
             if (tempMessageIndex !== -1) {
-              console.log('🔄 Remplacement du message temporaire à l\'index', tempMessageIndex);
               const updated = [...prev];
               updated[tempMessageIndex] = newMessage;
               return updated;
             } else {
-              console.log('➕ Ajout d\'un nouveau message (non optimiste)');
               return [...prev, newMessage];
             }
           });
+
+          // Refetch après insertion pour assurer la sync
+          await refetch();
           
           // Notification seulement si ce n'est pas mon propre message
           if (newMessage.sender_id !== currentUserId) {
-            console.log('🔔 Affichage notification pour message reçu');
             toast.info('💬 Nouveau message reçu', {
               description: newMessage.message.length > 50 
                 ? newMessage.message.substring(0, 50) + '...' 
                 : newMessage.message
             });
-          } else {
-            console.log('🔕 Pas de notification - c\'est mon propre message');
           }
         }
       )
-      .subscribe((status) => {
-        console.log('📡 Statut de la subscription:', status);
+      .subscribe(async (status) => {
+        // Refetch immédiatement après subscription
+        if (status === 'SUBSCRIBED') {
+          await refetch();
+        }
       });
 
     return () => {
-      console.log('🔌 Fermeture de la subscription', transactionId);
       supabase.removeChannel(channel);
     };
-  }, [transactionId, currentUserId]);
+  }, [transactionId, currentUserId, refetch]);
+
+  // Polling fallback when enabled
+  useEffect(() => {
+    if (!options?.enabled || !transactionId) return;
+
+    pollingIntervalRef.current = setInterval(() => {
+      refetch();
+    }, 5000);
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [transactionId, options?.enabled, refetch]);
+
+  // Refetch on tab focus when enabled
+  useEffect(() => {
+    if (!options?.enabled) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refetch();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [options?.enabled, refetch]);
 
   const sendMessage = async (message: string, recipientId: string) => {
     if (isBlocked) {

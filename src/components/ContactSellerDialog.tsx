@@ -26,7 +26,8 @@ export function ContactSellerDialog({ open, onOpenChange, transaction, currentUs
   
   const { messages, isLoading, isBlocked, sendMessage } = useTransactionMessages(
     transaction?.id || '',
-    currentUserId
+    currentUserId,
+    { enabled: open }
   );
 
   useEffect(() => {
