@@ -107,6 +107,13 @@ export type Database = {
             referencedRelation: "disputes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dispute_messages_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "user_disputes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dispute_proposals: {
@@ -164,6 +171,13 @@ export type Database = {
             columns: ["dispute_id"]
             isOneToOne: false
             referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_proposals_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "user_disputes"
             referencedColumns: ["id"]
           },
         ]
@@ -673,6 +687,51 @@ export type Database = {
           service_end_date?: string | null
           status?: Database["public"]["Enums"]["transaction_status"] | null
           title?: string | null
+        }
+        Relationships: []
+      }
+      user_disputes: {
+        Row: {
+          created_at: string | null
+          dispute_deadline: string | null
+          dispute_type: string | null
+          escalated_at: string | null
+          id: string | null
+          reason: string | null
+          reporter_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dispute_deadline?: string | null
+          dispute_type?: string | null
+          escalated_at?: string | null
+          id?: string | null
+          reason?: string | null
+          reporter_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dispute_deadline?: string | null
+          dispute_type?: string | null
+          escalated_at?: string | null
+          id?: string | null
+          reason?: string | null
+          reporter_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["dispute_status"] | null
+          transaction_id?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
