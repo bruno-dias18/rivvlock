@@ -12,29 +12,32 @@ Date de validation : 2025-10-01
 - Sécurité renforcée (RLS policies actives)
 - Cron jobs fonctionnels
 
-## Warnings Supabase Acceptés
+## Warnings Supabase (Permanents et Acceptés)
+
+⚠️ **IMPORTANT** : Le scanner Supabase ne peut pas être configuré pour masquer ces warnings. Ils apparaîtront toujours mais sont **sans danger pour la production**.
 
 ### 1. Leaked Password Protection (WARN)
-**Status:** ❌ Non activé  
+**Status:** ❌ Non activé (permanent jusqu'à upgrade)
 **Impact:** Très faible  
-**Raison:** Non disponible en plan gratuit Supabase  
-**Mitigation:**
-- Authentification de base gérée par Supabase Auth
-- Validation email activée
-- RLS policies protègent les données
+**Raison:** Fonctionnalité payante Supabase (plan Pro minimum)
+**Mitigation actuelle:**
+- Authentification Supabase Auth avec validation email
+- RLS policies actives sur toutes les tables sensibles
+- Pas d'exposition publique des données utilisateurs
 
-**Action future:** Activer lors du passage en plan payant (phase de croissance)
+**Action future:** Activer lors du passage en plan Pro (>1000 utilisateurs)
 
 ### 2. pg_net Extension dans Public Schema (WARN)
-**Status:** ⚠️ À résoudre ultérieurement  
-**Impact:** Moyen  
-**Raison:** Extension système dans schéma public  
-**Mitigation:**
-- Cron jobs fonctionnent correctement
-- Aucun impact sur les fonctionnalités
-- Performance non affectée
+**Status:** ⚠️ Non résolvable techniquement
+**Impact:** Aucun (faux positif du scanner)
+**Raison:** Extension système Supabase non-relocatable
+**Explication technique:**
+- `pg_net` est installé par Supabase dans le schéma `public`
+- L'extension n'a pas de support `SET SCHEMA`
+- Nécessaire pour les cron jobs et edge functions
+- Aucun risque de sécurité (gérée par Supabase)
 
-**Action future:** Résoudre lors de la migration vers plan payant
+**Conclusion:** Ce warning est **normal et ignorable** - il apparaîtra toujours dans le scanner
 
 ## Recommandations par Phase
 
