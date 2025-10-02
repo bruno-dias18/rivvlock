@@ -8,7 +8,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <InstallPromptBanner />
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <div>
@@ -48,6 +47,7 @@ export default function HomePage() {
               >
                 Get Started
               </Link>
+              <InstallPromptBanner />
             </div>
           )}
         </div>
