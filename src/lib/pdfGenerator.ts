@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 
-interface InvoiceData {
+export interface InvoiceData {
   transactionId: string;
   title: string;
   description?: string;

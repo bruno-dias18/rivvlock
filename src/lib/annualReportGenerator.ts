@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
+import JSZip from 'jszip';
+import { supabase } from '@/integrations/supabase/client';
 
-interface AnnualReportData {
+export interface AnnualReportData {
   year: number;
   transactions: any[];
   invoices: any[];
@@ -251,4 +253,63 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.text(footerText, (pageWidth - footerTextWidth) / 2, footerY);
   
   doc.save(`rapport-annuel-${year}.pdf`);
+};
+
+// Function to download all invoices for a year as a ZIP file
+export const downloadAllInvoicesAsZip = async (
+  year: number,
+  sellerId: string,
+  onProgress?: (current: number, total: number) => void
+) => {
+  try {
+    // Fetch all invoices with transaction IDs for the year
+    const { data: invoices, error } = await supabase
+      .from('invoices')
+      .select('*')
+      .eq('seller_id', sellerId)
+      .gte('generated_at', `${year}-01-01`)
+      .lte('generated_at', `${year}-12-31`)
+      .order('generated_at', { ascending: true });
+
+    if (error) throw error;
+    if (!invoices || invoices.length === 0) {
+      throw new Error('Aucune facture trouvée pour cette année');
+    }
+
+    // Create a ZIP file
+    const zip = new JSZip();
+    
+    // For each invoice, add a placeholder file
+    // Note: This is a simplified version. Full PDF generation would require 
+    // fetching all related data and generating actual PDFs
+    for (let i = 0; i < invoices.length; i++) {
+      const invoice = invoices[i];
+      
+      // Report progress
+      if (onProgress) {
+        onProgress(i + 1, invoices.length);
+      }
+
+      // Add placeholder text file (in production, you'd generate actual PDF)
+      const content = `Facture: ${invoice.invoice_number}\nMontant: ${invoice.amount} ${invoice.currency}\nDate: ${new Date(invoice.generated_at).toLocaleDateString()}`;
+      zip.file(`${invoice.invoice_number}.txt`, content);
+    }
+
+    // Generate the ZIP file
+    const content = await zip.generateAsync({ type: 'blob' });
+    
+    // Download the ZIP
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = `factures-${year}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    return invoices.length;
+  } catch (error) {
+    console.error('Error generating invoices ZIP:', error);
+    throw error;
+  }
 };

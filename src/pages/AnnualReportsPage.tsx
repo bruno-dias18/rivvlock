@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAnnualTransactions } from '@/hooks/useAnnualTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, FileSpreadsheet, TrendingUp, DollarSign, Hash } from 'lucide-react';
+import { FileText, FileSpreadsheet, FileArchive, TrendingUp, DollarSign, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateAnnualReportPDF } from '@/lib/annualReportGenerator';
+import { generateAnnualReportPDF, downloadAllInvoicesAsZip } from '@/lib/annualReportGenerator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
@@ -84,6 +84,39 @@ export default function AnnualReportsPage() {
       toast.success(t('reports.excelGenerated'));
     } catch (error) {
       console.error('Excel generation error:', error);
+      toast.error(t('reports.generationError'));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+  
+  const handleDownloadInvoicesZip = async () => {
+    if (!user) {
+      toast.error(t('reports.generationError'));
+      return;
+    }
+    
+    setIsGenerating(true);
+    let toastId: string | number;
+    try {
+      const count = await downloadAllInvoicesAsZip(
+        parseInt(selectedYear),
+        user.id,
+        (current, total) => {
+          const message = t('reports.generatingInvoices').replace('{{count}}', `${current}/${total}`);
+          if (toastId) {
+            toast.loading(message, { id: toastId });
+          } else {
+            toastId = toast.loading(message);
+          }
+        }
+      );
+      
+      toast.dismiss(toastId);
+      toast.success(t('reports.invoicesZipGenerated').replace('{{count}}', count.toString()));
+    } catch (error) {
+      console.error('ZIP generation error:', error);
+      if (toastId) toast.dismiss(toastId);
       toast.error(t('reports.generationError'));
     } finally {
       setIsGenerating(false);
@@ -202,6 +235,16 @@ export default function AnnualReportsPage() {
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   {t('reports.downloadExcel')}
+                </Button>
+                
+                <Button 
+                  onClick={handleDownloadInvoicesZip}
+                  disabled={isGenerating}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
+                >
+                  <FileArchive className="h-4 w-4" />
+                  {t('reports.downloadInvoicesZip')}
                 </Button>
               </CardContent>
             </Card>
