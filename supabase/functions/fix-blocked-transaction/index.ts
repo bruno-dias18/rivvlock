@@ -57,7 +57,7 @@ serve(async (req) => {
       .from("transactions")
       .update({ 
         payment_blocked_at: new Date().toISOString(),
-        validation_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        validation_deadline: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(), // 48 hours
         updated_at: new Date().toISOString()
       })
       .eq("id", transactionId);
