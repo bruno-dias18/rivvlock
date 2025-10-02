@@ -81,12 +81,12 @@ serve(async (req) => {
 
     logStep("Creating account update link", { accountId: stripeAccount.stripe_account_id });
 
-    // Create account update link
+    // Create account link (using account_onboarding for Express accounts)
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.stripe_account_id,
       refresh_url: `${req.headers.get('origin')}/profile`,
       return_url: `${req.headers.get('origin')}/profile`,
-      type: 'account_update',
+      type: 'account_onboarding',
     });
 
     logStep("Account update link created successfully", { url: accountLink.url });
