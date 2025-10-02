@@ -44,7 +44,7 @@ export default function AnnualReportsPage() {
         year: parseInt(selectedYear),
         transactions: annualData.transactions,
         invoices: invoices || [],
-        totalRevenue: annualData.totalRevenue,
+        currencyTotals: annualData.currencyTotals,
         currency: annualData.currency,
         sellerProfile: profile,
         sellerEmail: user.email || '',
@@ -162,20 +162,26 @@ export default function AnnualReportsPage() {
               </div>
             </CardContent>
           </Card>
-        ) : annualData && annualData.totalRevenue > 0 ? (
+        ) : annualData && Object.keys(annualData.currencyTotals).length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardContent className="pt-6">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-primary/10 rounded-lg">
                       <DollarSign className="h-6 w-6 text-primary" />
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('reports.totalRevenue')}</p>
-                      <p className="text-2xl font-bold">
-                        {annualData.totalRevenue.toFixed(2)} {annualData.currency}
-                      </p>
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2">{t('reports.totalRevenue')}</p>
+                      <div className="space-y-1">
+                        {Object.entries(annualData.currencyTotals)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([currency, amount]) => (
+                            <p key={currency} className="text-xl font-bold">
+                              {amount.toFixed(2)} {currency}
+                            </p>
+                          ))}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -190,22 +196,6 @@ export default function AnnualReportsPage() {
                     <div>
                       <p className="text-sm text-muted-foreground">{t('reports.transactionCount')}</p>
                       <p className="text-2xl font-bold">{annualData.transactionCount}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                      <TrendingUp className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">{t('reports.averageTransaction')}</p>
-                      <p className="text-2xl font-bold">
-                        {annualData.averageTransaction.toFixed(2)} {annualData.currency}
-                      </p>
                     </div>
                   </div>
                 </CardContent>

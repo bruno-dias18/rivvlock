@@ -31,22 +31,24 @@ export const useAnnualTransactions = (year: number) => {
       if (transactions.length === 0) {
         return {
           transactions: [],
-          totalRevenue: 0,
+          currencyTotals: {},
           transactionCount: 0,
-          averageTransaction: 0,
           currency: 'CHF'
         };
       }
       
-      const totalRevenue = transactions.reduce((sum, t) => sum + Number(t.price), 0);
-      const currency = transactions[0]?.currency || 'CHF';
+      // Grouper par devise
+      const currencyTotals = transactions.reduce((acc, t) => {
+        const curr = t.currency.toUpperCase();
+        acc[curr] = (acc[curr] || 0) + Number(t.price);
+        return acc;
+      }, {} as Record<string, number>);
       
       return {
         transactions,
-        totalRevenue,
+        currencyTotals,
         transactionCount: transactions.length,
-        averageTransaction: totalRevenue / transactions.length,
-        currency: currency.toUpperCase()
+        currency: Object.keys(currencyTotals)[0] || 'CHF' // Première devise pour compatibilité
       };
     },
     enabled: !!user?.id

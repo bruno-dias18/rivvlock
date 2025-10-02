@@ -7,7 +7,7 @@ export interface AnnualReportData {
   year: number;
   transactions: any[];
   invoices: any[];
-  totalRevenue: number;
+  currencyTotals: Record<string, number>;
   currency: string;
   sellerProfile: any;
   sellerEmail: string;
@@ -16,7 +16,7 @@ export interface AnnualReportData {
 }
 
 export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
-  const { year, transactions, invoices, totalRevenue, currency, sellerProfile, sellerEmail, language = 'fr', t } = reportData;
+  const { year, transactions, invoices, currencyTotals, currency, sellerProfile, sellerEmail, language = 'fr', t } = reportData;
   
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
@@ -160,18 +160,22 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.setTextColor(0, 0, 0);
   
   const transactionCount = transactions.length;
-  const averageTransaction = totalRevenue / transactionCount;
-  const totalFees = totalRevenue * 0.05;
-  const netReceived = totalRevenue - totalFees;
   
   const summaryData = [
     [t?.('reports.period') || 'Période', `${year}`],
-    [t?.('reports.transactionCount') || 'Nombre de transactions', transactionCount.toString()],
-    [t?.('reports.totalRevenue') || 'Chiffre d\'affaires total', `${totalRevenue.toFixed(2)} ${currency.toUpperCase()}`],
-    [t?.('reports.averageTransaction') || 'Montant moyen par transaction', `${averageTransaction.toFixed(2)} ${currency.toUpperCase()}`],
-    [t?.('reports.totalFees') || 'Total frais RivvLock (5%)', `${totalFees.toFixed(2)} ${currency.toUpperCase()}`],
-    [t?.('reports.netReceived') || 'Net reçu', `${netReceived.toFixed(2)} ${currency.toUpperCase()}`]
+    [t?.('reports.transactionCount') || 'Nombre de transactions', transactionCount.toString()]
   ];
+  
+  // Ajouter les totaux par devise
+  Object.entries(currencyTotals).sort(([a], [b]) => a.localeCompare(b)).forEach(([curr, amount]) => {
+    const fees = amount * 0.05;
+    const net = amount - fees;
+    summaryData.push(
+      [t?.('reports.totalRevenue') || 'Chiffre d\'affaires total', `${amount.toFixed(2)} ${curr}`],
+      [t?.('reports.totalFees') || 'Total frais RivvLock (5%)', `${fees.toFixed(2)} ${curr}`],
+      [t?.('reports.netReceived') || 'Net reçu', `${net.toFixed(2)} ${curr}`]
+    );
+  });
   
   summaryData.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
