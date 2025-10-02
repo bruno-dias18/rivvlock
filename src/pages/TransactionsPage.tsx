@@ -30,6 +30,7 @@ import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransa
 import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
 import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
+import { SortButtons } from '@/components/SortButtons';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -41,6 +42,22 @@ export default function TransactionsPage() {
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
   const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   
+  // Sort states with localStorage persistence
+  const SORT_STORAGE_KEY = 'rivvlock-transactions-sort';
+  const [sortBy, setSortBy] = useState<'created_at' | 'service_date'>(() => {
+    const saved = localStorage.getItem(SORT_STORAGE_KEY);
+    if (saved) {
+      try {
+        const { sortBy } = JSON.parse(saved);
+        return sortBy || 'created_at';
+      } catch {
+        return 'created_at';
+      }
+    }
+    return 'created_at';
+  });
+  const [sortOrder] = useState<'asc' | 'desc'>('desc');
+  
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
@@ -48,6 +65,33 @@ export default function TransactionsPage() {
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   
   const activeTab = searchParams.get('tab') || 'pending';
+
+  // Update sort and save to localStorage
+  const updateSort = (newSortBy: 'created_at' | 'service_date') => {
+    setSortBy(newSortBy);
+    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({
+      sortBy: newSortBy,
+      sortOrder
+    }));
+  };
+
+  // Sort transactions function
+  const sortTransactions = (transactions: any[]) => {
+    return [...transactions].sort((a, b) => {
+      let valueA = sortBy === 'service_date' ? a.service_date : a.created_at;
+      let valueB = sortBy === 'service_date' ? b.service_date : b.created_at;
+      
+      // Handle null service_date (put them at the end)
+      if (sortBy === 'service_date') {
+        if (!valueA && !valueB) return 0;
+        if (!valueA) return 1;
+        if (!valueB) return -1;
+      }
+      
+      const comparison = new Date(valueA).getTime() - new Date(valueB).getTime();
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+  };
 
   // Check for success message after joining a transaction
   useEffect(() => {
@@ -99,11 +143,11 @@ export default function TransactionsPage() {
     );
   };
 
-  // Filter transactions by status
-  const pendingTransactions = transactions.filter(t => t.status === 'pending');
-  const blockedTransactions = transactions.filter(t => t.status === 'paid');
-  const completedTransactions = transactions.filter(t => t.status === 'validated');
-  const disputedTransactions = transactions.filter(t => t.status === 'disputed');
+  // Filter and sort transactions by status
+  const pendingTransactions = sortTransactions(transactions.filter(t => t.status === 'pending'));
+  const blockedTransactions = sortTransactions(transactions.filter(t => t.status === 'paid'));
+  const completedTransactions = sortTransactions(transactions.filter(t => t.status === 'validated'));
+  const disputedTransactions = sortTransactions(transactions.filter(t => t.status === 'disputed'));
   
   // Get unread messages counts
   const { unreadTransactionIds: unreadPending } = useUnreadTransactionsCount(pendingTransactions);
@@ -474,11 +518,16 @@ export default function TransactionsPage() {
 
         <TabsContent value="pending">
           <Card>
-            <CardHeader>
-              <CardTitle>{t('transactions.pendingTransactions')}</CardTitle>
-              <CardDescription>
-                {t('transactions.pendingDescription')}
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{t('transactions.pendingTransactions')}</CardTitle>
+                  <CardDescription>
+                    {t('transactions.pendingDescription')}
+                  </CardDescription>
+                </div>
+                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading && (
@@ -532,11 +581,16 @@ export default function TransactionsPage() {
 
         <TabsContent value="blocked">
           <Card>
-            <CardHeader>
-              <CardTitle>Fonds bloqués</CardTitle>
-              <CardDescription>
-                Transactions avec paiement effectué, en attente de validation
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Fonds bloqués</CardTitle>
+                  <CardDescription>
+                    Transactions avec paiement effectué, en attente de validation
+                  </CardDescription>
+                </div>
+                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+              </div>
             </CardHeader>
             <CardContent>
               {!isLoading && !queryError && blockedTransactions.length === 0 && (
@@ -576,11 +630,16 @@ export default function TransactionsPage() {
 
         <TabsContent value="completed">
           <Card>
-            <CardHeader>
-              <CardTitle>Transactions complétées</CardTitle>
-              <CardDescription>
-                Transactions validées et terminées
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>Transactions complétées</CardTitle>
+                  <CardDescription>
+                    Transactions validées et terminées
+                  </CardDescription>
+                </div>
+                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+              </div>
             </CardHeader>
             <CardContent>
               {!isLoading && !queryError && completedTransactions.length === 0 && (
@@ -620,11 +679,16 @@ export default function TransactionsPage() {
 
         <TabsContent value="disputed">
           <Card>
-            <CardHeader>
-              <CardTitle>{t('transactions.disputed')}</CardTitle>
-              <CardDescription>
-                {t('transactions.disputedDescription')}
-              </CardDescription>
+            <CardHeader className="pb-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{t('transactions.disputed')}</CardTitle>
+                  <CardDescription>
+                    {t('transactions.disputedDescription')}
+                  </CardDescription>
+                </div>
+                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+              </div>
             </CardHeader>
             <CardContent>
               {!isLoading && !queryError && disputes.length === 0 && (
