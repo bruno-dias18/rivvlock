@@ -208,11 +208,12 @@ export default function AnnualReportsPage() {
                 <CardDescription>{t('reports.exportDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  onClick={handleGeneratePDF}
-                  disabled={isGenerating}
-                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
-                >
+            <Button 
+              onClick={handleGeneratePDF}
+              disabled={isGenerating}
+              variant="outline"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto"
+            >
                   <FileText className="h-4 w-4" />
                   {t('reports.downloadPDF')}
                 </Button>
