@@ -100,6 +100,18 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const platformFee = watchedPrice * 0.05;
   const netAmount = watchedPrice - platformFee;
 
+  // Reverse calculation: to receive exactly watchedPrice, how much to charge?
+  const reversePrice = watchedPrice / 0.95;
+  const reverseFee = reversePrice - watchedPrice;
+
+  const handleApplyReversePrice = () => {
+    const roundedPrice = parseFloat(reversePrice.toFixed(2));
+    form.setValue('price', roundedPrice);
+    toast.success(`Prix mis à jour : ${roundedPrice.toFixed(2)} ${watchedCurrency}`, {
+      description: 'Les frais seront répercutés au client'
+    });
+  };
+
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
@@ -260,6 +272,46 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                   <span>Vous recevrez :</span>
                   <span>{netAmount.toFixed(2)} {watchedCurrency}</span>
                 </div>
+              </div>
+            )}
+
+            {/* Reverse calculation: charge client for fees */}
+            {watchedPrice > 0 && (
+              <div className="rounded-lg bg-blue-50/50 p-4 border border-blue-200">
+                <div className="flex items-start gap-2 mb-3">
+                  <span className="text-lg">💡</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Répercuter les frais au client ?
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Pour toucher exactement <strong>{watchedPrice.toFixed(2)} {watchedCurrency}</strong>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mb-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-blue-700">Facturez :</span>
+                    <span className="font-semibold text-blue-900">
+                      {reversePrice.toFixed(2)} {watchedCurrency}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-blue-600">
+                    <span>dont frais payés par client :</span>
+                    <span>+{reverseFee.toFixed(2)} {watchedCurrency}</span>
+                  </div>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleApplyReversePrice}
+                  className="w-full border-blue-300 hover:bg-blue-100 hover:border-blue-400"
+                >
+                  → Appliquer ce montant
+                </Button>
               </div>
             )}
 
