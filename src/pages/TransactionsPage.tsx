@@ -541,14 +541,16 @@ export default function TransactionsPage() {
         <TabsContent value="pending">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
+              <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
+                <div className="flex-1">
                   <CardTitle>{t('transactions.pendingTransactions')}</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="mt-1.5">
                     {t('transactions.pendingDescription')}
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
+                <div className={isMobile ? 'w-full' : ''}>
+                  <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} isMobile={isMobile} />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -604,14 +606,16 @@ export default function TransactionsPage() {
         <TabsContent value="blocked">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
+              <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
+                <div className="flex-1">
                   <CardTitle>Fonds bloqués</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="mt-1.5">
                     Transactions avec paiement effectué, en attente de validation
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
+                <div className={isMobile ? 'w-full' : ''}>
+                  <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} isMobile={isMobile} />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -653,14 +657,16 @@ export default function TransactionsPage() {
         <TabsContent value="completed">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
+              <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
+                <div className="flex-1">
                   <CardTitle>Transactions complétées</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="mt-1.5">
                     Transactions validées et terminées
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
+                <div className={isMobile ? 'w-full' : ''}>
+                  <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} isMobile={isMobile} />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -702,14 +708,16 @@ export default function TransactionsPage() {
         <TabsContent value="disputed">
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex justify-between items-start">
-                <div>
+              <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
+                <div className="flex-1">
                   <CardTitle>{t('transactions.disputed')}</CardTitle>
-                  <CardDescription>
+                  <CardDescription className="mt-1.5">
                     {t('transactions.disputedDescription')}
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
+                <div className={isMobile ? 'w-full' : ''}>
+                  <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} isMobile={isMobile} />
+                </div>
               </div>
             </CardHeader>
             <CardContent>
