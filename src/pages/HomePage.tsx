@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Footer } from '@/components/Footer';
+import { InstallPromptBanner } from '@/components/InstallPromptBanner';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <InstallPromptBanner />
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         <div className="max-w-md w-full space-y-8 text-center">
           <div>
