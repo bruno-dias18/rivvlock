@@ -80,9 +80,6 @@ export default function BankAccountSetupCard() {
   };
 
   const handleModifyBankDetails = async () => {
-    // Open new tab immediately to avoid popup blockers on mobile
-    const newTab = window.open('', '_blank');
-    
     try {
       setIsProcessing(true);
       console.log('Starting bank details modification...');
@@ -93,11 +90,6 @@ export default function BankAccountSetupCard() {
       
       if (error) {
         console.error('Edge function error:', error);
-        
-        // Close the tab on error
-        if (newTab) {
-          newTab.close();
-        }
         
         // Check if it's an account not found error
         if (error.message?.includes('account not found') || error.message?.includes('No account found')) {
@@ -112,33 +104,15 @@ export default function BankAccountSetupCard() {
       if (data?.success && data?.url) {
         console.log('Opening account modification URL:', data.url);
         
-        // Redirect the opened tab to the modification URL
-        if (newTab) {
-          newTab.location.href = data.url;
-        } else {
-          // Fallback if popup was blocked
-          window.location.href = data.url;
-        }
-        
+        // Open in new tab after we have the URL
+        window.open(data.url, '_blank');
         toast.success(t('bankAccount.modificationOpened'));
       } else {
         console.error('Invalid response data:', data);
-        
-        // Close the tab if no URL returned
-        if (newTab) {
-          newTab.close();
-        }
-        
         throw new Error('No URL returned from edge function');
       }
     } catch (error) {
       console.error('Error opening bank details modification:', error);
-      
-      // Close the tab on error
-      if (newTab) {
-        newTab.close();
-      }
-      
       toast.error(t('bankAccount.modificationError'));
     } finally {
       setIsProcessing(false);
