@@ -464,6 +464,39 @@ export type Database = {
         }
         Relationships: []
       }
+      transaction_access_attempts: {
+        Row: {
+          created_at: string | null
+          error_reason: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          token: string
+          transaction_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success: boolean
+          token: string
+          transaction_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          token?: string
+          transaction_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       transaction_messages: {
         Row: {
           created_at: string
@@ -613,6 +646,14 @@ export type Database = {
       can_access_full_profile: {
         Args: { profile_user_id: string }
         Returns: boolean
+      }
+      check_token_abuse: {
+        Args: { check_ip?: string; check_token: string }
+        Returns: {
+          attempts_last_hour: number
+          is_suspicious: boolean
+          reason: string
+        }[]
       }
       get_counterparty_safe_profile: {
         Args: { profile_user_id: string }

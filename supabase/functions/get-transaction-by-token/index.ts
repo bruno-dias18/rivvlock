@@ -19,12 +19,10 @@ serve(async (req) => {
     // Use anon key for anonymous access via RLS policy
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
-    if (!supabaseUrl || !anonKey) {
-      console.error('❌ [GET-TX-BY-TOKEN] Missing env variables', {
-        hasUrl: !!supabaseUrl,
-        hasAnonKey: !!anonKey
-      });
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+      console.error('❌ [GET-TX-BY-TOKEN] Missing env variables');
       return new Response(
         JSON.stringify({
           success: false,
@@ -35,11 +33,14 @@ serve(async (req) => {
       );
     }
 
-    // Create client without authentication - RLS policy will handle access
+    // Create clients
     const supabaseClient = createClient(supabaseUrl, anonKey);
-    // For profiles and auth data, we still need service role
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    // Extract IP and User-Agent for abuse detection
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                      req.headers.get('x-real-ip') || 'unknown';
+    const userAgent = req.headers.get('user-agent') || 'unknown';
 
     const url = new URL(req.url);
     const token = url.searchParams.get('token');
@@ -54,9 +55,57 @@ serve(async (req) => {
     // Validate token format (basic UUID check)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(token)) {
+      // Log invalid format attempt
+      await adminClient
+        .from('transaction_access_attempts')
+        .insert({
+          token,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          success: false,
+          error_reason: 'invalid_token_format'
+        });
+      
       return new Response(
         JSON.stringify({ success: false, error: 'Format de token invalide', reason: 'invalid_token_format' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
+    }
+
+    // Check for abuse patterns (brute-force detection)
+    const { data: abuseCheck } = await supabaseClient
+      .rpc('check_token_abuse', { 
+        check_token: token, 
+        check_ip: ipAddress 
+      })
+      .single();
+
+    if (abuseCheck?.is_suspicious) {
+      console.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', { 
+        token, 
+        ipAddress, 
+        reason: abuseCheck.reason,
+        attempts: abuseCheck.attempts_last_hour
+      });
+      
+      // Log the blocked attempt
+      await adminClient
+        .from('transaction_access_attempts')
+        .insert({
+          token,
+          ip_address: ipAddress,
+          user_agent: userAgent,
+          success: false,
+          error_reason: 'rate_limit_exceeded'
+        });
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Trop de tentatives. Veuillez réessayer plus tard.', 
+          reason: 'rate_limit_exceeded' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
       );
     }
 
@@ -97,6 +146,18 @@ if (txByToken) {
   console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transaction.id);
 } else {
   console.error('❌ [GET-TX-BY-TOKEN] Transaction not found by token', { errByToken });
+  
+  // Log failed access attempt
+  await adminClient
+    .from('transaction_access_attempts')
+    .insert({
+      token,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      success: false,
+      error_reason: 'transaction_not_found'
+    });
+  
   return new Response(
     JSON.stringify({ 
       success: false, 
@@ -109,6 +170,17 @@ if (txByToken) {
 
 
     console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
+
+    // Log successful access
+    await adminClient
+      .from('transaction_access_attempts')
+      .insert({
+        token,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        success: true,
+        transaction_id: transaction.id
+      });
 
     // Fetch seller profile and email
     let sellerProfile = null;
