@@ -339,22 +339,18 @@ export default function TransactionsPage() {
 
   const handleDownloadInvoice = async (transaction: any) => {
     try {
-      // Récupérer les profils vendeur et acheteur
-      const [sellerProfileResult, buyerProfileResult] = await Promise.all([
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', transaction.user_id)
-          .maybeSingle(),
-        transaction.buyer_id ? supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', transaction.buyer_id)
-          .maybeSingle() : Promise.resolve({ data: null, error: null })
-      ]);
+      // Use secure edge function to get invoice data with proper authorization
+      const { data: invoiceDataResponse, error: invoiceDataError } = await supabase.functions.invoke('get-invoice-data', {
+        body: { transactionId: transaction.id }
+      });
 
-      const sellerProfile = sellerProfileResult.data;
-      const buyerProfile = buyerProfileResult.data;
+      if (invoiceDataError) {
+        console.error('Error fetching invoice data:', invoiceDataError);
+        toast.error(t('transactions.invoiceError'));
+        return;
+      }
+
+      const { sellerProfile, buyerProfile } = invoiceDataResponse;
       
       // Pour maintenant, utiliser l'approche actuelle mais améliorer la logique
       const currentUser = user;

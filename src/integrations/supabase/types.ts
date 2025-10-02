@@ -611,6 +611,18 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
+      get_counterparty_safe_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          company_name: string
+          country: Database["public"]["Enums"]["country_code"]
+          first_name: string
+          last_name: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+          verified: boolean
+        }[]
+      }
       get_current_user_admin_status: {
         Args: Record<PropertyKey, never>
         Returns: boolean
