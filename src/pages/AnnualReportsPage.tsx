@@ -184,11 +184,11 @@ export default function AnnualReportsPage() {
                 <CardTitle>{t('reports.exportTitle')}</CardTitle>
                 <CardDescription>{t('reports.exportDescription')}</CardDescription>
               </CardHeader>
-              <CardContent className="flex gap-4">
+              <CardContent className="flex flex-col sm:flex-row gap-4">
                 <Button 
                   onClick={handleGeneratePDF}
                   disabled={isGenerating}
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   <FileText className="h-4 w-4" />
                   {t('reports.downloadPDF')}
@@ -198,7 +198,7 @@ export default function AnnualReportsPage() {
                   onClick={handleGenerateExcel}
                   disabled={isGenerating}
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-center gap-2 w-full sm:w-auto"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   {t('reports.downloadExcel')}
