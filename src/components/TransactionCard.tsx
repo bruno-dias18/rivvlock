@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, MessageCircle, MessageCircleMore } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -98,6 +99,20 @@ const TransactionCardComponent = ({
     }
   };
 
+  // Détection si la date de service est passée
+  const isServiceDatePassed = () => {
+    if (!transaction.service_date || transaction.status !== 'paid') {
+      return false;
+    }
+    
+    const serviceDate = new Date(transaction.service_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    serviceDate.setHours(0, 0, 0, 0);
+    
+    return serviceDate < today;
+  };
+
   const userRole = getUserRole(transaction);
   const displayName = userRole === 'seller' 
     ? transaction.buyer_display_name || t('transactions.anonymousClient')
@@ -119,7 +134,10 @@ const TransactionCardComponent = ({
         </div>
       )}
 
-      <Card key={transaction.id} className="mb-4">
+      <Card key={transaction.id} className={cn(
+        "mb-4",
+        isServiceDatePassed() && "border-2 border-orange-400"
+      )}>
       <CardHeader className="pb-3">
         <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
           <div className="flex-1">
