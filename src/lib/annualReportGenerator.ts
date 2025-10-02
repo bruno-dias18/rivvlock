@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
+import { generateInvoicePDF, InvoiceData } from './pdfGenerator';
 
 export interface AnnualReportData {
   year: number;
@@ -279,9 +280,7 @@ export const downloadAllInvoicesAsZip = async (
     // Create a ZIP file
     const zip = new JSZip();
     
-    // For each invoice, add a placeholder file
-    // Note: This is a simplified version. Full PDF generation would require 
-    // fetching all related data and generating actual PDFs
+    // For each invoice, generate a real PDF
     for (let i = 0; i < invoices.length; i++) {
       const invoice = invoices[i];
       
@@ -290,9 +289,71 @@ export const downloadAllInvoicesAsZip = async (
         onProgress(i + 1, invoices.length);
       }
 
-      // Add placeholder text file (in production, you'd generate actual PDF)
-      const content = `Facture: ${invoice.invoice_number}\nMontant: ${invoice.amount} ${invoice.currency}\nDate: ${new Date(invoice.generated_at).toLocaleDateString()}`;
-      zip.file(`${invoice.invoice_number}.txt`, content);
+      try {
+        // Fetch transaction with buyer profile
+        const { data: transaction, error: txError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('id', invoice.transaction_id)
+          .single();
+
+        if (txError || !transaction) {
+          console.error(`Error fetching transaction ${invoice.transaction_id}:`, txError);
+          continue;
+        }
+
+        // Fetch seller profile
+        const { data: sellerProfile, error: sellerError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', sellerId)
+          .single();
+
+        if (sellerError || !sellerProfile) {
+          console.error(`Error fetching seller profile:`, sellerError);
+          continue;
+        }
+
+        // Fetch buyer profile if exists
+        let buyerProfile = null;
+        if (transaction.buyer_id) {
+          const { data: buyerData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', transaction.buyer_id)
+            .single();
+          buyerProfile = buyerData;
+        }
+
+        // Prepare invoice data (same structure as individual invoice)
+        const invoiceData: InvoiceData = {
+          transactionId: transaction.id,
+          title: transaction.title,
+          description: transaction.description,
+          amount: transaction.price,
+          currency: transaction.currency,
+          sellerName: transaction.seller_display_name,
+          buyerName: transaction.buyer_display_name,
+          serviceDate: transaction.service_date,
+          validatedDate: transaction.funds_released_at || transaction.updated_at,
+          sellerProfile: sellerProfile,
+          buyerProfile: buyerProfile,
+          sellerEmail: '',
+          buyerEmail: ''
+        };
+
+        // Generate PDF as blob
+        const pdfBlob = await generateInvoicePDF(invoiceData, true);
+
+        if (pdfBlob) {
+          // Add real PDF to ZIP
+          zip.file(`${invoice.invoice_number}.pdf`, pdfBlob);
+        }
+      } catch (error) {
+        console.error(`Error generating PDF for invoice ${invoice.invoice_number}:`, error);
+        // Continue with next invoice even if this one fails
+        continue;
+      }
     }
 
     // Generate the ZIP file

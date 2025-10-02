@@ -22,7 +22,7 @@ export interface InvoiceData {
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
 const RIVVLOCK_LOGO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAMEAQIGBQf/xAA0EAABAwMBBQYGAQQDAAAAAAABAAIDBBEhBRIxQVFhBhMicYGRFDKhscHR4fAjQlJi8f/EABsBAAIDAQEBAAAAAAAAAAAAAAAGAwQFAgEH/8QALBEAAgECBQIEBwAAAAAAAAAAAAECAwQFESFBIFESYcHwMVKBkbHh8UKSocL/2gAMAwEAAhEDEQA/APEREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf/Z';
 
-export const generateInvoicePDF = async (invoiceData: InvoiceData) => {
+export const generateInvoicePDF = async (invoiceData: InvoiceData, returnBlob = false): Promise<Blob | void> => {
   const { language = 'fr', t } = invoiceData;
   
   // Generate unique invoice number
@@ -496,8 +496,12 @@ export const generateInvoicePDF = async (invoiceData: InvoiceData) => {
   const footerTextWidth = doc.getTextWidth(footerText);
   doc.text(footerText, (pageWidth - footerTextWidth) / 2, footerY);
   
-  // Télécharger le PDF avec numéro de facture automatique
-  const invoiceLabel = t?.('common.invoice') || 'Facture';
-  const fileName = `${invoiceLabel}-${invoiceNumber}.pdf`;
-  doc.save(fileName);
+  // Retourner blob ou télécharger selon le paramètre
+  if (returnBlob) {
+    return doc.output('blob');
+  } else {
+    const invoiceLabel = t?.('common.invoice') || 'Facture';
+    const fileName = `${invoiceLabel}-${invoiceNumber}.pdf`;
+    doc.save(fileName);
+  }
 };
