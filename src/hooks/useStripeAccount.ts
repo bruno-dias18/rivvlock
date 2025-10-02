@@ -20,19 +20,36 @@ export const useStripeAccount = () => {
     queryKey: ['stripe-account', user?.id],
     queryFn: async (): Promise<StripeAccountStatus> => {
       if (!user?.id) {
+        console.log('[useStripeAccount] User not authenticated');
         throw new Error('User not authenticated');
       }
       
+      console.log('[useStripeAccount] Fetching Stripe account status...');
       const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
       
       if (error) {
+        console.error('[useStripeAccount] Error fetching Stripe account:', error);
         throw error;
       }
       
+      console.log('[useStripeAccount] Stripe account status:', data);
       return data;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000, // Check every 30 seconds
+    refetchInterval: (query) => {
+      // Don't poll if there's an error
+      if (query.state.error) return false;
+      
+      // Don't poll if account is active
+      const data = query.state.data;
+      if (data?.has_account && data?.account_status === 'active' && !data?.onboarding_required) {
+        return false;
+      }
+      
+      // Poll every 60 seconds for pending accounts
+      return 60000;
+    },
+    staleTime: 30000, // Consider data stale after 30 seconds
   });
 };
 

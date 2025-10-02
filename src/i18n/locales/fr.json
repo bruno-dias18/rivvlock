@@ -333,7 +333,10 @@
     "helpDescription": "Accédez aux ressources d'aide",
     "termsOfService": "Conditions générales",
     "contactUs": "Nous contacter",
-    "website": "Site web"
+    "website": "Site web",
+    "connectionError": "Erreur de connexion Stripe",
+    "unknownError": "Erreur inconnue",
+    "retry": "Réessayer"
   },
   "paymentTiming": {
     "note": "Délai de versement",

@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PaymentTimingInfo } from '@/components/PaymentTimingInfo';
 
 export default function BankAccountSetupCard() {
-  const { data: stripeAccount, isLoading, refetch } = useStripeAccount();
+  const { data: stripeAccount, isLoading, refetch, error, isError } = useStripeAccount();
   const createAccount = useCreateStripeAccount();
   const [isProcessing, setIsProcessing] = useState(false);
   const { t } = useTranslation();
@@ -153,6 +153,23 @@ export default function BankAccountSetupCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {t('bankAccount.connectionError')}: {error?.message || t('bankAccount.unknownError')}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetch()}
+                className="ml-2"
+              >
+                {t('bankAccount.retry')}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {!stripeAccount?.has_account ? (
           // No account exists
           <div className="space-y-4">

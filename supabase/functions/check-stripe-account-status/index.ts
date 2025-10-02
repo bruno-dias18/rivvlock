@@ -26,10 +26,12 @@ serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     
     if (!supabaseUrl || !supabaseKey || !stripeKey) {
+      logStep("ERROR - Missing environment variables");
       throw new Error("Missing required environment variables");
     }
+    logStep("Environment variables verified");
 
-    // Initialize Supabase client
+    // Initialize Supabase client with SERVICE_ROLE_KEY (bypasses RLS)
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseKey,
@@ -38,15 +40,26 @@ serve(async (req) => {
 
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("ERROR - No authorization header");
+      throw new Error("No authorization header provided");
+    }
     
     const token = authHeader.replace("Bearer ", "");
+    logStep("Attempting user authentication");
+    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) {
+      logStep("ERROR - Authentication failed", { error: userError.message });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
     
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id });
+    if (!user?.email) {
+      logStep("ERROR - No user email found");
+      throw new Error("User not authenticated or email not available");
+    }
+    logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get Stripe account from database
     const { data: stripeAccount, error: accountError } = await supabaseClient
