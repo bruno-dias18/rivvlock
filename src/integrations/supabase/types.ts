@@ -524,6 +524,13 @@ export type Database = {
             foreignKeyName: "transaction_messages_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
+            referencedRelation: "shared_transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_messages_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
@@ -636,7 +643,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shared_transactions: {
+        Row: {
+          currency: Database["public"]["Enums"]["currency_code"] | null
+          description: string | null
+          id: string | null
+          price: number | null
+          service_date: string | null
+          service_end_date: string | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          title: string | null
+        }
+        Insert: {
+          currency?: Database["public"]["Enums"]["currency_code"] | null
+          description?: string | null
+          id?: string | null
+          price?: number | null
+          service_date?: string | null
+          service_end_date?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          title?: string | null
+        }
+        Update: {
+          currency?: Database["public"]["Enums"]["currency_code"] | null
+          description?: string | null
+          id?: string | null
+          price?: number | null
+          service_date?: string | null
+          service_end_date?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"] | null
+          title?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       are_transaction_counterparties: {
@@ -687,6 +726,17 @@ export type Database = {
       is_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
+      }
+      log_transaction_access: {
+        Args: {
+          p_error_reason?: string
+          p_ip_address?: string
+          p_success: boolean
+          p_token: string
+          p_transaction_id: string
+          p_user_agent?: string
+        }
+        Returns: string
       }
     }
     Enums: {

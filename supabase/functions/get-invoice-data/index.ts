@@ -73,6 +73,10 @@ serve(async (req) => {
       );
     }
 
+    // Check if user is admin (for logging purposes)
+    const { data: isAdminResult } = await supabaseClient.rpc('get_current_user_admin_status');
+    const isAdmin = isAdminResult === true;
+
     // Fetch seller profile with all necessary fields for invoice
     const { data: sellerProfile, error: sellerError } = await adminClient
       .from('profiles')
@@ -125,13 +129,14 @@ serve(async (req) => {
       buyerProfile = data;
     }
 
-    // Log access for audit trail
+    // Log access for audit trail (with admin flag if applicable)
+    const accessType = isAdmin ? 'admin_invoice_generation' : 'invoice_generation';
     await adminClient
       .from('profile_access_logs')
       .insert({
         accessed_profile_id: user.id === transaction.user_id ? transaction.buyer_id : transaction.user_id,
         accessed_by_user_id: user.id,
-        access_type: 'invoice_generation',
+        access_type: accessType,
         accessed_fields: user.id === transaction.user_id 
           ? ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city']
           : ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city', 'siret_uid', 'vat_rate', 'tva_rate', 'is_subject_to_vat', 'avs_number', 'vat_number']

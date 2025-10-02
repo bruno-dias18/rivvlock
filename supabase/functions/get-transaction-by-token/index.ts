@@ -55,16 +55,19 @@ serve(async (req) => {
     // Validate token format (basic UUID check)
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(token)) {
-      // Log invalid format attempt
-      await adminClient
-        .from('transaction_access_attempts')
-        .insert({
-          token,
-          ip_address: ipAddress,
-          user_agent: userAgent,
-          success: false,
-          error_reason: 'invalid_token_format'
+      // Log invalid format attempt using secure function
+      try {
+        await adminClient.rpc('log_transaction_access', {
+          p_token: token,
+          p_transaction_id: null,
+          p_success: false,
+          p_ip_address: ipAddress,
+          p_user_agent: userAgent,
+          p_error_reason: 'invalid_token_format'
         });
+      } catch (logError) {
+        console.error('Failed to log invalid token attempt:', logError);
+      }
       
       return new Response(
         JSON.stringify({ success: false, error: 'Format de token invalide', reason: 'invalid_token_format' }),
@@ -88,16 +91,19 @@ serve(async (req) => {
         attempts: abuseCheck.attempts_last_hour
       });
       
-      // Log the blocked attempt
-      await adminClient
-        .from('transaction_access_attempts')
-        .insert({
-          token,
-          ip_address: ipAddress,
-          user_agent: userAgent,
-          success: false,
-          error_reason: 'rate_limit_exceeded'
+      // Log the blocked attempt using secure function
+      try {
+        await adminClient.rpc('log_transaction_access', {
+          p_token: token,
+          p_transaction_id: null,
+          p_success: false,
+          p_ip_address: ipAddress,
+          p_user_agent: userAgent,
+          p_error_reason: 'rate_limit_exceeded'
         });
+      } catch (logError) {
+        console.error('Failed to log rate limit attempt:', logError);
+      }
 
       return new Response(
         JSON.stringify({ 
@@ -111,76 +117,95 @@ serve(async (req) => {
 
     console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
 
-// Try by shared_link_token using RLS policy (secure anonymous access)
-let transaction: any = null;
-let lookupMethod: 'shared_link_token' | 'id' | 'none' = 'none';
+    // Try by shared_link_token using the secure view (only exposes non-sensitive data)
+    let transaction: any = null;
+    let transactionId: string | null = null;
 
-const { data: txByToken, error: errByToken } = await supabaseClient
-  .from('transactions')
-  .select(`
-    id,
-    title,
-    description,
-    price,
-    currency,
-    service_date,
-    status,
-    user_id,
-    buyer_id,
-    payment_deadline,
-    created_at,
-    updated_at,
-    payment_method,
-    stripe_payment_intent_id,
-    seller_display_name,
-    buyer_display_name,
-    shared_link_token,
-    shared_link_expires_at
-  `)
-  .eq('shared_link_token', token)
-  .maybeSingle();
+    // First, try to get the transaction ID via the secure view
+    const { data: sharedTx, error: sharedError } = await supabaseClient
+      .from('shared_transactions')
+      .select('id')
+      .eq('id', token)
+      .maybeSingle();
 
-if (txByToken) {
-  transaction = txByToken;
-  lookupMethod = 'shared_link_token';
-  console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transaction.id);
-} else {
-  console.error('❌ [GET-TX-BY-TOKEN] Transaction not found by token', { errByToken });
-  
-  // Log failed access attempt
-  await adminClient
-    .from('transaction_access_attempts')
-    .insert({
-      token,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-      success: false,
-      error_reason: 'transaction_not_found'
-    });
-  
-  return new Response(
-    JSON.stringify({ 
-      success: false, 
-      error: 'Transaction non trouvée, token invalide ou expiré', 
-      reason: 'not_found' 
-    }),
-    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-  );
-}
+    if (sharedTx) {
+      transactionId = sharedTx.id;
+      console.log('✅ [GET-TX-BY-TOKEN] Found by ID via shared view:', transactionId);
+    } else {
+      // If not found by ID, try by shared_link_token using admin client
+      const { data: txByToken, error: tokenError } = await adminClient
+        .from('transactions')
+        .select('id')
+        .eq('shared_link_token', token)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (txByToken) {
+        transactionId = txByToken.id;
+        console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
+      }
+    }
+
+    if (!transactionId) {
+      console.error('❌ [GET-TX-BY-TOKEN] Transaction not found');
+      
+      // Log failed access attempt using secure function
+      try {
+        await adminClient.rpc('log_transaction_access', {
+          p_token: token,
+          p_transaction_id: null,
+          p_success: false,
+          p_ip_address: ipAddress,
+          p_user_agent: userAgent,
+          p_error_reason: 'transaction_not_found'
+        });
+      } catch (logError) {
+        console.error('Failed to log access attempt:', logError);
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Transaction non trouvée, token invalide ou expiré', 
+          reason: 'not_found' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
+
+    // Fetch full transaction data using admin client (with sensitive fields for internal use)
+    const { data: fullTx, error: fullTxError } = await adminClient
+      .from('transactions')
+      .select('*')
+      .eq('id', transactionId)
+      .single();
+
+    if (fullTxError || !fullTx) {
+      console.error('❌ [GET-TX-BY-TOKEN] Failed to fetch full transaction:', fullTxError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Transaction data unavailable', reason: 'fetch_error' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
+    transaction = fullTx;
 
 
     console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
 
-    // Log successful access
-    await adminClient
-      .from('transaction_access_attempts')
-      .insert({
-        token,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-        success: true,
-        transaction_id: transaction.id
+    // Log successful access using secure function
+    try {
+      await adminClient.rpc('log_transaction_access', {
+        p_token: token,
+        p_transaction_id: transaction.id,
+        p_success: true,
+        p_ip_address: ipAddress,
+        p_user_agent: userAgent,
+        p_error_reason: null
       });
+    } catch (logError) {
+      console.error('Failed to log successful access:', logError);
+    }
 
     // Fetch seller profile and email
     let sellerProfile = null;
