@@ -13,6 +13,7 @@ import AdminDisputesPage from "./pages/AdminDisputesPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
 
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
+import AnnualReportsPage from "./pages/AnnualReportsPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import ContactPage from "./pages/ContactPage";
 import NotFound from "./pages/NotFound";
@@ -68,6 +69,10 @@ const App: React.FC = () => {
               React.createElement(Route, { 
                 path: "/dashboard/profile", 
                 element: React.createElement(ProtectedRoute, null, React.createElement(ProfilePage))
+              }),
+              React.createElement(Route, { 
+                path: "/dashboard/reports", 
+                element: React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage))
               }),
               React.createElement(Route, { 
                 path: "/dashboard/admin", 

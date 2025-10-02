@@ -248,6 +248,9 @@
     "vatInfo": "Vos informations de TVA",
     "accountSettings": "Paramètres du compte",
     "accountConfiguration": "Configuration de votre compte",
+    "annualReports": "Rapports annuels",
+    "annualReportsDescription": "Exportez votre chiffre d'affaires annuel",
+    "viewReports": "Voir les rapports",
     "registrationComplete": "Inscription complète",
     "complete": "Complète",
     "incomplete": "Incomplète",
@@ -606,6 +609,23 @@
   },
   "messages": {
     "sent": "Message envoyé"
+  },
+  "reports": {
+    "title": "Rapports annuels",
+    "description": "Consultez et exportez votre chiffre d'affaires annuel",
+    "selectYear": "Sélectionner l'année",
+    "selectYearDescription": "Choisissez l'année fiscale",
+    "totalRevenue": "Chiffre d'affaires total",
+    "transactionCount": "Nombre de transactions",
+    "averageTransaction": "Montant moyen",
+    "exportTitle": "Exporter les données",
+    "exportDescription": "Téléchargez vos rapports au format PDF ou Excel",
+    "downloadPDF": "Télécharger PDF",
+    "downloadExcel": "Télécharger Excel",
+    "noData": "Aucune transaction validée pour cette année",
+    "pdfGenerated": "Rapport PDF généré avec succès",
+    "excelGenerated": "Rapport Excel généré avec succès",
+    "generationError": "Erreur lors de la génération du rapport"
   },
   "footer": {
     "terms": "Conditions Générales",
