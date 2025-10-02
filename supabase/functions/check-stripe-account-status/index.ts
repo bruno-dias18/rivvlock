@@ -22,23 +22,31 @@ serve(async (req) => {
 
     // Verify environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     
-    if (!supabaseUrl || !supabaseKey || !stripeKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !stripeKey) {
       logStep("ERROR - Missing environment variables");
       throw new Error("Missing required environment variables");
     }
     logStep("Environment variables verified");
 
-    // Initialize Supabase client with SERVICE_ROLE_KEY (bypasses RLS)
-    const supabaseClient = createClient(
+    // Client 1: ANON_KEY for user authentication
+    const supabaseAuth = createClient(
       supabaseUrl,
-      supabaseKey,
+      supabaseAnonKey,
       { auth: { persistSession: false } }
     );
 
-    // Authenticate user
+    // Client 2: SERVICE_ROLE_KEY to bypass RLS for reading stripe_accounts
+    const supabaseAdmin = createClient(
+      supabaseUrl,
+      supabaseServiceKey,
+      { auth: { persistSession: false } }
+    );
+
+    // Authenticate user with ANON client
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       logStep("ERROR - No authorization header");
@@ -46,9 +54,9 @@ serve(async (req) => {
     }
     
     const token = authHeader.replace("Bearer ", "");
-    logStep("Attempting user authentication");
+    logStep("Attempting user authentication with ANON_KEY");
     
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
     if (userError) {
       logStep("ERROR - Authentication failed", { error: userError.message });
       throw new Error(`Authentication error: ${userError.message}`);
@@ -59,16 +67,20 @@ serve(async (req) => {
       logStep("ERROR - No user email found");
       throw new Error("User not authenticated or email not available");
     }
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("User authenticated successfully", { userId: user.id, email: user.email });
 
-    // Get Stripe account from database
-    const { data: stripeAccount, error: accountError } = await supabaseClient
+    // Get Stripe account from database using SERVICE_ROLE client (bypasses RLS)
+    logStep("Fetching Stripe account with SERVICE_ROLE_KEY", { userId: user.id });
+    const { data: stripeAccount, error: accountError } = await supabaseAdmin
       .from('stripe_accounts')
       .select('*')
       .eq('user_id', user.id)
       .maybeSingle();
 
-    if (accountError) throw new Error(`Database error: ${accountError.message}`);
+    if (accountError) {
+      logStep("ERROR - Database query failed", { error: accountError.message });
+      throw new Error(`Database error: ${accountError.message}`);
+    }
     
     if (!stripeAccount) {
       logStep("No Stripe account found");
@@ -103,8 +115,8 @@ serve(async (req) => {
         error: stripeError.message 
       });
 
-      // Mark account as inactive in database
-      await supabaseClient
+      // Mark account as inactive in database using SERVICE_ROLE client
+      await supabaseAdmin
         .from('stripe_accounts')
         .update({
           account_status: 'inactive',
@@ -125,8 +137,8 @@ serve(async (req) => {
       });
     }
 
-    // Update database with latest status
-    const { error: updateError } = await supabaseClient
+    // Update database with latest status using SERVICE_ROLE client
+    const { error: updateError } = await supabaseAdmin
       .from('stripe_accounts')
       .update({
         account_status: account.charges_enabled && account.payouts_enabled ? 'active' : 'pending',
@@ -141,7 +153,7 @@ serve(async (req) => {
     if (updateError) {
       logStep("ERROR updating account status", { error: updateError.message });
     } else {
-      logStep("Account status updated in database");
+      logStep("Account status updated in database successfully");
     }
 
     const needsOnboarding = !account.details_submitted || !account.charges_enabled;
