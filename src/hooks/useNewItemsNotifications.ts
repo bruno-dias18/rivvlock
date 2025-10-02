@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ACTIVITY_TYPES_MAP = {
   pending: ['transaction_created', 'buyer_joined_transaction'],
-  blocked: ['funds_blocked'],
+  blocked: ['funds_blocked', 'seller_validation', 'buyer_validation'],
   disputed: [
     'dispute_created',
     'dispute_message_received',
@@ -14,7 +14,7 @@ const ACTIVITY_TYPES_MAP = {
     'dispute_admin_message',
     'dispute_status_changed'
   ],
-  completed: ['funds_released', 'transaction_completed', 'seller_validation', 'buyer_validation']
+  completed: ['funds_released', 'transaction_completed']
 };
 
 const STORAGE_KEYS = {

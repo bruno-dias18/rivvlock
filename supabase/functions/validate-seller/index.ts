@@ -99,7 +99,10 @@ serve(async (req) => {
           user_id: userData.user.id,
           activity_type: 'seller_validation',
           title: 'Validation vendeur',
-          description: `Vous avez validé la transaction "${transaction.title}"`
+          description: `Vous avez validé la transaction "${transaction.title}"`,
+          metadata: {
+            transaction_id: transactionId
+          }
         });
     } catch (logError) {
       console.error('❌ [VALIDATE-SELLER] Error logging activity:', logError);
@@ -114,7 +117,10 @@ serve(async (req) => {
             user_id: transaction.buyer_id,
             activity_type: 'seller_validation',
             title: 'Service terminé',
-            description: `Le vendeur a confirmé la fin du service - Votre validation est maintenant requise pour la transaction "${transaction.title}"`
+            description: `Le vendeur a confirmé la fin du service - Votre validation est maintenant requise pour la transaction "${transaction.title}"`,
+            metadata: {
+              transaction_id: transactionId
+            }
           });
         console.log("✅ [VALIDATE-SELLER] Notification sent to buyer:", transaction.buyer_id);
       } catch (notifError) {
