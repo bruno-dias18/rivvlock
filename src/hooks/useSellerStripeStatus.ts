@@ -9,26 +9,23 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
         return { hasActiveAccount: false };
       }
       
-      // Fetch seller's stripe account from database
+      // Use the secure function that only returns non-sensitive data
       const { data, error } = await supabase
-        .from('stripe_accounts')
-        .select('account_status, charges_enabled, payouts_enabled, onboarding_completed')
-        .eq('user_id', sellerId)
-        .maybeSingle();
+        .rpc('get_counterparty_stripe_status', { stripe_user_id: sellerId });
       
       if (error) {
         console.error('Error fetching seller stripe status:', error);
         return { hasActiveAccount: false };
       }
       
-      if (!data) {
+      if (!data || data.length === 0) {
         return { hasActiveAccount: false };
       }
       
-      // Account is considered active if it can receive payouts
-      const hasActiveAccount = data.payouts_enabled && data.charges_enabled && data.onboarding_completed;
+      // The function returns an array with one element
+      const status = data[0];
       
-      return { hasActiveAccount };
+      return { hasActiveAccount: status.has_active_account };
     },
     enabled: !!sellerId,
   });

@@ -16,14 +16,14 @@ serve(async (req) => {
   try {
     console.log('🔍 [GET-TX-BY-TOKEN] Starting transaction fetch');
 
-    // Use service role key for admin access to read transaction data
+    // Use anon key for anonymous access via RLS policy
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabaseUrl || !anonKey) {
       console.error('❌ [GET-TX-BY-TOKEN] Missing env variables', {
         hasUrl: !!supabaseUrl,
-        hasServiceRole: !!serviceRoleKey
+        hasAnonKey: !!anonKey
       });
       return new Response(
         JSON.stringify({
@@ -35,6 +35,10 @@ serve(async (req) => {
       );
     }
 
+    // Create client without authentication - RLS policy will handle access
+    const supabaseClient = createClient(supabaseUrl, anonKey);
+    // For profiles and auth data, we still need service role
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const url = new URL(req.url);
@@ -58,11 +62,11 @@ serve(async (req) => {
 
     console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
 
-// Try by shared_link_token first, then fallback to id (backward compatibility)
+// Try by shared_link_token using RLS policy (secure anonymous access)
 let transaction: any = null;
 let lookupMethod: 'shared_link_token' | 'id' | 'none' = 'none';
 
-const { data: txByToken, error: errByToken } = await adminClient
+const { data: txByToken, error: errByToken } = await supabaseClient
   .from('transactions')
   .select(`
     id,
@@ -81,7 +85,8 @@ const { data: txByToken, error: errByToken } = await adminClient
     stripe_payment_intent_id,
     seller_display_name,
     buyer_display_name,
-    shared_link_token
+    shared_link_token,
+    shared_link_expires_at
   `)
   .eq('shared_link_token', token)
   .maybeSingle();
@@ -91,41 +96,15 @@ if (txByToken) {
   lookupMethod = 'shared_link_token';
   console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transaction.id);
 } else {
-  console.warn('⚠️ [GET-TX-BY-TOKEN] Not found by shared_link_token, trying by id. Error:', errByToken);
-  const { data: txById, error: errById } = await adminClient
-    .from('transactions')
-    .select(`
-      id,
-      title,
-      description,
-      price,
-      currency,
-      service_date,
-      status,
-      user_id,
-      buyer_id,
-      payment_deadline,
-      created_at,
-      updated_at,
-      payment_method,
-      stripe_payment_intent_id,
-      seller_display_name,
-      buyer_display_name,
-      shared_link_token
-    `)
-    .eq('id', token)
-    .maybeSingle();
-  if (txById) {
-    transaction = txById;
-    lookupMethod = 'id';
-    console.log('✅ [GET-TX-BY-TOKEN] Found by id (backward compat):', transaction.id);
-  } else {
-    console.error('❌ [GET-TX-BY-TOKEN] Transaction not found by token nor id', { errByToken, errById });
-    return new Response(
-      JSON.stringify({ success: false, error: 'Transaction non trouvée ou token invalide', reason: 'not_found' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
-    );
-  }
+  console.error('❌ [GET-TX-BY-TOKEN] Transaction not found by token', { errByToken });
+  return new Response(
+    JSON.stringify({ 
+      success: false, 
+      error: 'Transaction non trouvée, token invalide ou expiré', 
+      reason: 'not_found' 
+    }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+  );
 }
 
 

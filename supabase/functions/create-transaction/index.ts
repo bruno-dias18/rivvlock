@@ -60,9 +60,12 @@ serve(async (req) => {
     // Generate unique token for shared link
     const sharedLinkToken = crypto.randomUUID();
     
-    // Set expiration date (7 days from now)
-    const expirationDate = new Date();
-    expirationDate.setDate(expirationDate.getDate() + 7);
+    // Calculate payment deadline (24h before service date)
+    const serviceDateObj = new Date(serviceDate);
+    const paymentDeadline = new Date(serviceDateObj.getTime() - (24 * 60 * 60 * 1000));
+    
+    // Set shared link expiration to payment deadline
+    const sharedLinkExpiresAt = paymentDeadline;
 
     // Get seller's display name from profiles
     const { data: profileData, error: profileError } = await supabaseAdmin
@@ -93,6 +96,8 @@ serve(async (req) => {
       currency,
       service_date: serviceDate,
       shared_link_token: sharedLinkToken,
+      shared_link_expires_at: sharedLinkExpiresAt.toISOString(),
+      payment_deadline: paymentDeadline.toISOString(),
       seller_display_name: sellerDisplayName,
       status: 'pending'
     };

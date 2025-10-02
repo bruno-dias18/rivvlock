@@ -522,6 +522,7 @@ export type Database = {
           seller_validated: boolean | null
           service_date: string | null
           service_end_date: string | null
+          shared_link_expires_at: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id: string | null
@@ -555,6 +556,7 @@ export type Database = {
           seller_validated?: boolean | null
           service_date?: string | null
           service_end_date?: string | null
+          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
@@ -588,6 +590,7 @@ export type Database = {
           seller_validated?: boolean | null
           service_date?: string | null
           service_end_date?: string | null
+          shared_link_expires_at?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
@@ -621,6 +624,15 @@ export type Database = {
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
           verified: boolean
+        }[]
+      }
+      get_counterparty_stripe_status: {
+        Args: { stripe_user_id: string }
+        Returns: {
+          charges_enabled: boolean
+          has_active_account: boolean
+          onboarding_completed: boolean
+          payouts_enabled: boolean
         }[]
       }
       get_current_user_admin_status: {
