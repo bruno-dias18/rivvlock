@@ -3,10 +3,11 @@ import { Calendar, Clock } from 'lucide-react';
 
 interface SortButtonsProps {
   sortBy: 'created_at' | 'service_date';
+  sortOrder: 'asc' | 'desc';
   onSortChange: (sortBy: 'created_at' | 'service_date') => void;
 }
 
-export function SortButtons({ sortBy, onSortChange }: SortButtonsProps) {
+export function SortButtons({ sortBy, sortOrder, onSortChange }: SortButtonsProps) {
   return (
     <div className="flex gap-1">
       <Button
@@ -17,6 +18,11 @@ export function SortButtons({ sortBy, onSortChange }: SortButtonsProps) {
       >
         <Clock className="h-3 w-3 mr-1" />
         Création
+        {sortBy === 'created_at' && (
+          <span className="ml-1 text-xs">
+            {sortOrder === 'desc' ? '↓' : '↑'}
+          </span>
+        )}
       </Button>
       <Button
         variant={sortBy === 'service_date' ? 'default' : 'outline'}
@@ -26,6 +32,11 @@ export function SortButtons({ sortBy, onSortChange }: SortButtonsProps) {
       >
         <Calendar className="h-3 w-3 mr-1" />
         Service
+        {sortBy === 'service_date' && (
+          <span className="ml-1 text-xs">
+            {sortOrder === 'desc' ? '↓' : '↑'}
+          </span>
+        )}
       </Button>
     </div>
   );

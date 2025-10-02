@@ -56,7 +56,18 @@ export default function TransactionsPage() {
     }
     return 'created_at';
   });
-  const [sortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
+    const saved = localStorage.getItem(SORT_STORAGE_KEY);
+    if (saved) {
+      try {
+        const { sortOrder } = JSON.parse(saved);
+        return sortOrder === 'asc' ? 'asc' : 'desc';
+      } catch {
+        return 'desc';
+      }
+    }
+    return 'desc';
+  });
   
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
@@ -68,10 +79,25 @@ export default function TransactionsPage() {
 
   // Update sort and save to localStorage
   const updateSort = (newSortBy: 'created_at' | 'service_date') => {
+    let newSortOrder: 'asc' | 'desc';
+    
+    if (sortBy === newSortBy) {
+      // Même bouton cliqué → inverser l'ordre
+      newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      // Nouveau bouton → ordre par défaut selon le type
+      if (newSortBy === 'created_at') {
+        newSortOrder = 'desc'; // Création : récentes d'abord
+      } else {
+        newSortOrder = 'asc';  // Service : anciennes d'abord
+      }
+    }
+    
     setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
     localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({
       sortBy: newSortBy,
-      sortOrder
+      sortOrder: newSortOrder
     }));
   };
 
@@ -526,7 +552,7 @@ export default function TransactionsPage() {
                     {t('transactions.pendingDescription')}
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
               </div>
             </CardHeader>
             <CardContent>
@@ -589,7 +615,7 @@ export default function TransactionsPage() {
                     Transactions avec paiement effectué, en attente de validation
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
               </div>
             </CardHeader>
             <CardContent>
@@ -638,7 +664,7 @@ export default function TransactionsPage() {
                     Transactions validées et terminées
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
               </div>
             </CardHeader>
             <CardContent>
@@ -687,7 +713,7 @@ export default function TransactionsPage() {
                     {t('transactions.disputedDescription')}
                   </CardDescription>
                 </div>
-                <SortButtons sortBy={sortBy} onSortChange={updateSort} />
+                <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} />
               </div>
             </CardHeader>
             <CardContent>
