@@ -50,6 +50,7 @@ const TransactionCardComponent = ({
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [isSellerValidating, setIsSellerValidating] = useState(false);
   const { t, i18n } = useTranslation();
   const { unreadCount } = useUnreadTransactionMessages(transaction.id);
   const hasMessages = useHasTransactionMessages(transaction.id);
@@ -72,6 +73,29 @@ const TransactionCardComponent = ({
     if (transaction.user_id === user?.id) return 'seller';
     if (transaction.buyer_id === user?.id) return 'buyer';
     return null;
+  };
+
+  const handleSellerValidation = async () => {
+    setIsSellerValidating(true);
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.functions.invoke('validate-seller', {
+        body: { transactionId: transaction.id }
+      });
+
+      if (error) throw error;
+
+      const { toast } = await import('sonner');
+      toast.success(t('transactions.sellerValidationSuccess', 'Votre validation a été envoyée à l\'acheteur'));
+      
+      onRefetch();
+    } catch (error) {
+      console.error('Error validating seller:', error);
+      const { toast } = await import('sonner');
+      toast.error(t('transactions.sellerValidationError', 'Impossible de valider la transaction'));
+    } finally {
+      setIsSellerValidating(false);
+    }
   };
 
   const userRole = getUserRole(transaction);
@@ -216,14 +240,16 @@ const TransactionCardComponent = ({
               </Button>
             )}
             
-            {transaction.status === 'paid' && userRole === 'seller' && (
+            {transaction.status === 'paid' && userRole === 'seller' && !transaction.seller_validated && (
               <Button 
                 variant="outline" 
                 size={isMobile ? "default" : "sm"}
                 className={isMobile ? "justify-center" : ""}
+                onClick={handleSellerValidation}
+                disabled={isSellerValidating}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                {t('common.validate')}
+                {isSellerValidating ? t('common.loading', 'Chargement...') : t('common.validate')}
               </Button>
             )}
 

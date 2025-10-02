@@ -105,7 +105,24 @@ serve(async (req) => {
       console.error('❌ [VALIDATE-SELLER] Error logging activity:', logError);
     }
 
-    return new Response(JSON.stringify({ 
+    // Send notification to buyer
+    if (transaction.buyer_id) {
+      try {
+        await adminClient
+          .from('activity_logs')
+          .insert({
+            user_id: transaction.buyer_id,
+            activity_type: 'seller_validation',
+            title: 'Service terminé',
+            description: `Le vendeur a confirmé la fin du service - Votre validation est maintenant requise pour la transaction "${transaction.title}"`
+          });
+        console.log("✅ [VALIDATE-SELLER] Notification sent to buyer:", transaction.buyer_id);
+      } catch (notifError) {
+        console.error('❌ [VALIDATE-SELLER] Error sending notification to buyer:', notifError);
+      }
+    }
+
+    return new Response(JSON.stringify({
       success: true,
       message: "Seller validation completed successfully"
     }), {
