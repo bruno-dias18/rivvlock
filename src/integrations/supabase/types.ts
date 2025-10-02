@@ -516,10 +516,12 @@ export type Database = {
           payment_method: string | null
           price: number
           proposed_service_date: string | null
+          proposed_service_end_date: string | null
           renewal_count: number
           seller_display_name: string | null
           seller_validated: boolean | null
           service_date: string | null
+          service_end_date: string | null
           shared_link_token: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id: string | null
@@ -547,10 +549,12 @@ export type Database = {
           payment_method?: string | null
           price: number
           proposed_service_date?: string | null
+          proposed_service_end_date?: string | null
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
+          service_end_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null
@@ -578,10 +582,12 @@ export type Database = {
           payment_method?: string | null
           price?: number
           proposed_service_date?: string | null
+          proposed_service_end_date?: string | null
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
           service_date?: string | null
+          service_end_date?: string | null
           shared_link_token?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           stripe_payment_intent_id?: string | null

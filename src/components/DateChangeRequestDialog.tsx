@@ -29,6 +29,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
   const [proposedDate, setProposedDate] = useState<Date | undefined>(
     currentDate ? new Date(currentDate) : undefined
   );
+  const [proposedEndDate, setProposedEndDate] = useState<Date | undefined>();
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -45,6 +46,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
         body: {
           transactionId,
           proposedDate: proposedDate.toISOString(),
+          proposedEndDate: proposedEndDate?.toISOString(),
           message: message.trim() || undefined
         }
       });
@@ -86,6 +88,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
     onClose();
     setMessage('');
     setProposedDate(currentDate ? new Date(currentDate) : undefined);
+    setProposedEndDate(undefined);
   };
 
   return (
@@ -114,12 +117,24 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
           {!maxChangesReached && (
             <>
               <div className="space-y-2">
-                <Label>Nouvelle date de service</Label>
+                <Label>Nouvelle date de début de service</Label>
                 <DateTimePicker
                   date={proposedDate}
                   onDateChange={setProposedDate}
-                  placeholder="Sélectionner la nouvelle date..."
+                  placeholder="Sélectionner la nouvelle date de début..."
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Nouvelle date de fin de service (optionnel)</Label>
+                <DateTimePicker
+                  date={proposedEndDate}
+                  onDateChange={setProposedEndDate}
+                  placeholder="Sélectionner la nouvelle date de fin..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pour les services de plusieurs jours
+                </p>
               </div>
 
               <div className="space-y-2">

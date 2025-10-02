@@ -49,13 +49,13 @@ serve(async (req) => {
     logStep('User authenticated', { userId: user.id, email: user.email });
 
     // Parse request body
-    const { title, description, price, currency, serviceDate } = await req.json();
+    const { title, description, price, currency, serviceDate, serviceEndDate } = await req.json();
     
     if (!title || !description || !price || !currency || !serviceDate) {
       throw new Error('Missing required fields');
     }
 
-    logStep('Request data received', { title, price, currency });
+    logStep('Request data received', { title, price, currency, serviceEndDate });
 
     // Generate unique token for shared link
     const sharedLinkToken = crypto.randomUUID();
@@ -85,19 +85,26 @@ serve(async (req) => {
     logStep('Seller display name determined', { sellerDisplayName });
 
     // Create transaction
+    const transactionData: any = {
+      user_id: user.id,
+      title,
+      description,
+      price,
+      currency,
+      service_date: serviceDate,
+      shared_link_token: sharedLinkToken,
+      seller_display_name: sellerDisplayName,
+      status: 'pending'
+    };
+
+    // Add service_end_date if provided
+    if (serviceEndDate) {
+      transactionData.service_end_date = serviceEndDate;
+    }
+
     const { data: transaction, error: transactionError } = await supabaseAdmin
       .from('transactions')
-      .insert({
-        user_id: user.id,
-        title,
-        description,
-        price,
-        currency,
-        service_date: serviceDate,
-        shared_link_token: sharedLinkToken,
-        seller_display_name: sellerDisplayName,
-        status: 'pending'
-      })
+      .insert(transactionData)
       .select()
       .single();
 

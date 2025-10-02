@@ -22,6 +22,7 @@ export function RenewTransactionDialog({
 }: RenewTransactionDialogProps) {
   const { t } = useTranslation();
   const [newServiceDate, setNewServiceDate] = useState<Date>();
+  const [newServiceEndDate, setNewServiceEndDate] = useState<Date>();
   const [message, setMessage] = useState('');
 
   const handleConfirm = () => {
@@ -30,6 +31,7 @@ export function RenewTransactionDialog({
 
   const handleCancel = () => {
     setNewServiceDate(undefined);
+    setNewServiceEndDate(undefined);
     setMessage('');
     onOpenChange(false);
   };
@@ -57,13 +59,24 @@ export function RenewTransactionDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="service-date">Nouvelle date de service (optionnel)</Label>
+            <Label htmlFor="service-date">Nouvelle date de début de service (optionnel)</Label>
             <DateTimePicker
               date={newServiceDate}
               onDateChange={setNewServiceDate}
             />
             <p className="text-xs text-muted-foreground">
-              Vous pouvez proposer une nouvelle date si nécessaire
+              Vous pouvez proposer une nouvelle date de début si nécessaire
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service-end-date">Nouvelle date de fin de service (optionnel)</Label>
+            <DateTimePicker
+              date={newServiceEndDate}
+              onDateChange={setNewServiceEndDate}
+            />
+            <p className="text-xs text-muted-foreground">
+              Pour les services de plusieurs jours
             </p>
           </div>
 

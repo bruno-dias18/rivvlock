@@ -36,12 +36,12 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id });
 
-    const { transactionId, newServiceDate, message } = await req.json();
+    const { transactionId, newServiceDate, newServiceEndDate, message } = await req.json();
     
     if (!transactionId) {
       throw new Error("Transaction ID is required");
     }
-    logStep("Request parameters received", { transactionId, newServiceDate, message });
+    logStep("Request parameters received", { transactionId, newServiceDate, newServiceEndDate, message });
 
     // Fetch the transaction
     const { data: transaction, error: fetchError } = await supabaseClient
@@ -102,11 +102,18 @@ serve(async (req) => {
       updateData.date_change_status = 'pending_approval';
       updateData.date_change_count = (transaction.date_change_count || 0) + 1;
       updateData.date_change_requested_at = new Date().toISOString();
+      
+      // Also add proposed_service_end_date if provided
+      if (newServiceEndDate) {
+        updateData.proposed_service_end_date = newServiceEndDate;
+      }
+      
       if (message) {
         updateData.date_change_message = message;
       }
       logStep("New service date proposed for approval", { 
         proposedDate: newServiceDate,
+        proposedEndDate: newServiceEndDate,
         changeCount: updateData.date_change_count 
       });
     }

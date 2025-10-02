@@ -75,6 +75,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (approved) {
       updateData.service_date = transaction.proposed_service_date;
       
+      // Also update service_end_date if proposed
+      if (transaction.proposed_service_end_date) {
+        updateData.service_end_date = transaction.proposed_service_end_date;
+      }
+      
       // If transaction was expired, reactivate it with new payment deadline
       if (transaction.status === 'expired') {
         updateData.status = 'pending';

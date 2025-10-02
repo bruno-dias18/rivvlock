@@ -9,6 +9,7 @@ const corsHeaders = {
 interface DateChangeRequest {
   transactionId: string;
   proposedDate: string;
+  proposedEndDate?: string;
   message?: string;
 }
 
@@ -46,9 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { transactionId, proposedDate, message }: DateChangeRequest = await req.json();
+    const { transactionId, proposedDate, proposedEndDate, message }: DateChangeRequest = await req.json();
 
-    console.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, userId: user.id });
+    console.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, proposedEndDate, userId: user.id });
 
     // First, check if the transaction exists at all
     const { data: transactionExists, error: existsError } = await supabase
@@ -102,15 +103,22 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Update transaction with proposed date change
+    const updateData: any = {
+      proposed_service_date: proposedDate,
+      date_change_status: 'pending_approval',
+      date_change_requested_at: new Date().toISOString(),
+      date_change_message: message || null,
+      date_change_count: transaction.date_change_count + 1
+    };
+
+    // Add proposed_service_end_date if provided
+    if (proposedEndDate) {
+      updateData.proposed_service_end_date = proposedEndDate;
+    }
+
     const { error: updateError } = await supabase
       .from('transactions')
-      .update({
-        proposed_service_date: proposedDate,
-        date_change_status: 'pending_approval',
-        date_change_requested_at: new Date().toISOString(),
-        date_change_message: message || null,
-        date_change_count: transaction.date_change_count + 1
-      })
+      .update(updateData)
       .eq('id', transactionId);
 
     if (updateError) {

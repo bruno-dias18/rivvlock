@@ -24,7 +24,7 @@ serve(async (req) => {
     
     // Find transactions that need validation deadline activation
     // - seller_validated = true
-    // - service_date <= now
+    // - COALESCE(service_end_date, service_date) <= now (use end date if exists, otherwise start date)
     // - validation_deadline IS NULL
     // - buyer_validated = false
     // - funds_released = false
@@ -36,8 +36,7 @@ serve(async (req) => {
       .eq("buyer_validated", false)
       .eq("funds_released", false)
       .eq("status", "paid")
-      .is("validation_deadline", null)
-      .lte("service_date", now.toISOString());
+      .is("validation_deadline", null);
 
     if (fetchError) {
       console.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Error fetching transactions:", fetchError);
@@ -47,7 +46,13 @@ serve(async (req) => {
       });
     }
 
-    if (!transactions || transactions.length === 0) {
+    // Filter transactions where service_end_date (or service_date) has passed
+    const filteredTransactions = transactions?.filter(t => {
+      const referenceDate = new Date(t.service_end_date || t.service_date);
+      return referenceDate <= now;
+    }) || [];
+
+    if (!filteredTransactions || filteredTransactions.length === 0) {
       console.log("ℹ️ [ACTIVATE-VALIDATION-DEADLINES] No transactions found that need deadline activation");
       return new Response(JSON.stringify({ 
         success: true,
@@ -58,12 +63,12 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📋 [ACTIVATE-VALIDATION-DEADLINES] Found ${transactions.length} transactions to activate deadlines`);
+    console.log(`📋 [ACTIVATE-VALIDATION-DEADLINES] Found ${filteredTransactions.length} transactions to activate deadlines`);
 
     let activatedCount = 0;
 
     // Process each transaction
-    for (const transaction of transactions) {
+    for (const transaction of filteredTransactions) {
       try {
         // Set validation deadline to 48 hours from now
         const validationDeadline = new Date(Date.now() + 48 * 60 * 60 * 1000);

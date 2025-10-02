@@ -99,18 +99,19 @@ const TransactionCardComponent = ({
     }
   };
 
-  // Détection si la date de service est passée
+  // Détection si la date de service est passée (ou la date de fin si elle existe)
   const isServiceDatePassed = () => {
     if (!transaction.service_date || transaction.status !== 'paid') {
       return false;
     }
     
-    const serviceDate = new Date(transaction.service_date);
+    // Use service_end_date if it exists, otherwise service_date
+    const referenceDate = new Date(transaction.service_end_date || transaction.service_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    serviceDate.setHours(0, 0, 0, 0);
+    referenceDate.setHours(0, 0, 0, 0);
     
-    return serviceDate < today;
+    return referenceDate < today;
   };
 
   const userRole = getUserRole(transaction);
@@ -173,7 +174,19 @@ const TransactionCardComponent = ({
           {transaction.service_date && (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              <span>{t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString(locale)} {t('transactions.at')} {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
+              <span>
+                {transaction.service_end_date ? (
+                  <>
+                    Du {new Date(transaction.service_date).toLocaleDateString(locale)} {t('transactions.at')} {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                    {' au '}
+                    {new Date(transaction.service_end_date).toLocaleDateString(locale)} {t('transactions.at')} {new Date(transaction.service_end_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                  </>
+                ) : (
+                  <>
+                    {t('transactions.servicePlanned')}: {new Date(transaction.service_date).toLocaleDateString(locale)} {t('transactions.at')} {new Date(transaction.service_date).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
+                  </>
+                )}
+              </span>
               {transaction.date_change_status === 'pending_approval' && userRole === 'seller' && (
                 <Badge variant="outline" className="text-orange-600 border-orange-300">
                   {t('transactions.modificationPending')}

@@ -35,6 +35,16 @@ const transactionSchema = z.object({
   }, {
     message: "Le service doit être prévu au minimum 25 heures à l'avance",
   }),
+  serviceEndDate: z.date().optional(),
+}).refine((data) => {
+  // If serviceEndDate is provided, it must be >= serviceDate
+  if (data.serviceEndDate && data.serviceDate) {
+    return data.serviceEndDate >= data.serviceDate;
+  }
+  return true;
+}, {
+  message: "La date de fin doit être après ou égale à la date de début",
+  path: ["serviceEndDate"],
 });
 
 type TransactionFormData = z.infer<typeof transactionSchema>;
@@ -99,7 +109,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           description: data.description,
           price: data.price,
           currency: data.currency,
-          serviceDate: data.serviceDate.toISOString()
+          serviceDate: data.serviceDate.toISOString(),
+          serviceEndDate: data.serviceEndDate?.toISOString()
         }
       });
 
@@ -257,7 +268,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               name="serviceDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <FormLabel>Date et heure du service *</FormLabel>
+                  <FormLabel>Date de début du service *</FormLabel>
                   <FormControl>
                     <DateTimePicker
                       date={field.value}
@@ -267,6 +278,27 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                   </FormControl>
                   <FormDescription>
                     Le paiement devra être effectué au plus tard 24h avant cette date/heure.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="serviceEndDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Date de fin du service (optionnel)</FormLabel>
+                  <FormControl>
+                    <DateTimePicker
+                      date={field.value}
+                      onDateChange={field.onChange}
+                      placeholder="Sélectionner une date de fin"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Pour les services de plusieurs jours. La validation sera possible 48h après cette date.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
