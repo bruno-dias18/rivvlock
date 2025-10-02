@@ -8,10 +8,15 @@ import { useAnnualTransactions } from '@/hooks/useAnnualTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, FileSpreadsheet, TrendingUp, DollarSign, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { generateAnnualReportPDF } from '@/lib/annualReportGenerator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 
 export default function AnnualReportsPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [isGenerating, setIsGenerating] = useState(false);
@@ -21,24 +26,31 @@ export default function AnnualReportsPage() {
   const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
   
   const handleGeneratePDF = async () => {
+    if (!annualData || !user || !profile) {
+      toast.error(t('reports.generationError'));
+      return;
+    }
+    
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-annual-report', {
-        body: { year: parseInt(selectedYear), format: 'pdf' }
+      // Fetch invoices for the transactions
+      const transactionIds = annualData.transactions.map(t => t.id);
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('invoice_number, transaction_id')
+        .in('transaction_id', transactionIds);
+      
+      await generateAnnualReportPDF({
+        year: parseInt(selectedYear),
+        transactions: annualData.transactions,
+        invoices: invoices || [],
+        totalRevenue: annualData.totalRevenue,
+        currency: annualData.currency,
+        sellerProfile: profile,
+        sellerEmail: user.email || '',
+        language: t('common.language') || 'fr',
+        t
       });
-      
-      if (error) throw error;
-      
-      // Create blob and download
-      const blob = new Blob([data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `rapport-annuel-${selectedYear}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
       
       toast.success(t('reports.pdfGenerated'));
     } catch (error) {

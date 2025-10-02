@@ -625,7 +625,20 @@
     "noData": "Aucune transaction validée pour cette année",
     "pdfGenerated": "Rapport PDF généré avec succès",
     "excelGenerated": "Rapport Excel généré avec succès",
-    "generationError": "Erreur lors de la génération du rapport"
+    "generationError": "Erreur lors de la génération du rapport",
+    "annualReport": "Rapport annuel",
+    "seller": "Vendeur",
+    "summary": "Récapitulatif",
+    "period": "Période",
+    "totalFees": "Total frais RivvLock (5%)",
+    "netReceived": "Net reçu",
+    "detailedTransactions": "Détail des transactions",
+    "date": "Date",
+    "invoice": "Facture",
+    "client": "Client",
+    "amount": "Montant",
+    "fees": "Frais",
+    "net": "Net"
   },
   "footer": {
     "terms": "Conditions Générales",
