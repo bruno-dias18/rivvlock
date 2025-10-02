@@ -313,7 +313,7 @@ const TransactionCardComponent = ({
                 ) : (
                   <MessageCircle className="h-4 w-4 mr-2" />
                 )}
-                {t('common.contact', 'Contacter')}
+                {hasMessages ? t('common.viewConversation', 'Voir la discussion') : t('common.contact', 'Contacter')}
                 {unreadCount > 0 && (
                   <Badge className="ml-2 bg-primary-foreground text-primary">
                     {unreadCount}
