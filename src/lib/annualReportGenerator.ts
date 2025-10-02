@@ -48,23 +48,98 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   
-  if (sellerProfile.user_type === 'company' && sellerProfile.company_name) {
-    doc.text(sellerProfile.company_name, margin, yPosition);
-    yPosition += 5;
-  } else if (sellerProfile.first_name || sellerProfile.last_name) {
-    doc.text(`${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim(), margin, yPosition);
-    yPosition += 5;
-  }
-  
-  if (sellerEmail) {
-    doc.text(sellerEmail, margin, yPosition);
-    yPosition += 5;
-  }
-  
-  if (sellerProfile.siret_uid) {
-    const siretLabel = sellerProfile.country === 'CH' ? 'UID' : 'SIRET';
-    doc.text(`${siretLabel}: ${sellerProfile.siret_uid}`, margin, yPosition);
-    yPosition += 5;
+  // Affichage adapté selon le type d'utilisateur (identique aux factures)
+  if (sellerProfile.user_type === 'company') {
+    // Pour les entreprises
+    if (sellerProfile.company_name) {
+      doc.text(sellerProfile.company_name, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.siret_uid) {
+      const siretLabel = sellerProfile.country === 'CH' ? 'UID' : 'SIRET';
+      doc.text(`${siretLabel}: ${sellerProfile.siret_uid}`, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.vat_number) {
+      doc.text(`${t?.('invoice.vatNumber') || 'N° TVA'}: ${sellerProfile.vat_number}`, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerEmail) {
+      doc.text(sellerEmail, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.phone) {
+      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+      doc.text(`${phoneLabel}: ${sellerProfile.phone}`, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    // Utiliser l'adresse d'entreprise pour les sociétés
+    if (sellerProfile.company_address) {
+      doc.text(sellerProfile.company_address, margin, yPosition);
+      yPosition += 5;
+    } else if (sellerProfile.address) {
+      doc.text(sellerProfile.address, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.postal_code && sellerProfile.city) {
+      doc.text(`${sellerProfile.postal_code} ${sellerProfile.city}`, margin, yPosition);
+      yPosition += 5;
+    }
+  } else {
+    // Pour les particuliers et indépendants
+    if (sellerProfile.first_name || sellerProfile.last_name) {
+      doc.text(`${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim(), margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerEmail) {
+      doc.text(sellerEmail, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.phone) {
+      const phoneLabel = language === 'de' ? 'Tel' : language === 'en' ? 'Tel' : 'Tél';
+      doc.text(`${phoneLabel}: ${sellerProfile.phone}`, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    // Pour les indépendants, ajouter le numéro AVS si disponible
+    if (sellerProfile.user_type === 'independent' && sellerProfile.avs_number) {
+      doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${sellerProfile.avs_number}`, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    // Afficher le statut d'assujettissement TVA pour les indépendants
+    if (sellerProfile.user_type === 'independent' && sellerProfile.is_subject_to_vat) {
+      doc.text(`${t?.('invoice.vatSubject') || 'Assujetti TVA'}`, margin, yPosition);
+      yPosition += 5;
+      
+      if (sellerProfile.tva_rate) {
+        doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${sellerProfile.tva_rate}%`, margin, yPosition);
+        yPosition += 5;
+      }
+    }
+    
+    if (sellerProfile.company_name) {
+      doc.text(sellerProfile.company_name, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.address) {
+      doc.text(sellerProfile.address, margin, yPosition);
+      yPosition += 5;
+    }
+    
+    if (sellerProfile.postal_code && sellerProfile.city) {
+      doc.text(`${sellerProfile.postal_code} ${sellerProfile.city}`, margin, yPosition);
+      yPosition += 5;
+    }
   }
   
   yPosition += 20;
