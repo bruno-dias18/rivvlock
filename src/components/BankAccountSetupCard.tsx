@@ -4,17 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useStripeAccount, useCreateStripeAccount } from '@/hooks/useStripeAccount';
-import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock, Settings } from 'lucide-react';
+import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock, Settings, RefreshCw, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentTimingInfo } from '@/components/PaymentTimingInfo';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch, error, isError } = useStripeAccount();
   const createAccount = useCreateStripeAccount();
   const [isProcessing, setIsProcessing] = useState(false);
   const { t } = useTranslation();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const isSessionExpired = error instanceof Error && error.message === 'SESSION_EXPIRED';
+
+  const getLastCheckText = () => {
+    if (!stripeAccount?.last_check) return null;
+    try {
+      const date = new Date(stripeAccount.last_check);
+      return formatDistanceToNow(date, { addSuffix: true, locale: fr });
+    } catch {
+      return null;
+    }
+  };
+
+  const handleReconnect = async () => {
+    await logout();
+    navigate('/auth');
+    toast.info('Veuillez vous reconnecter');
+  };
 
   const handleCreateAccount = async () => {
     // Open new tab immediately to avoid popup blockers
@@ -69,8 +93,8 @@ export default function BankAccountSetupCard() {
 
   const handleCompleteOnboarding = () => {
     if (stripeAccount?.onboarding_url) {
-      window.open(stripeAccount.onboarding_url, '_blank');
-      toast.info(t('bankAccount.onboardingOpened'));
+      // Open in same tab to avoid popup blockers
+      window.location.href = stripeAccount.onboarding_url;
     }
   };
 
@@ -156,16 +180,34 @@ export default function BankAccountSetupCard() {
         {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {t('bankAccount.connectionError')}: {error?.message || t('bankAccount.unknownError')}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => refetch()}
-                className="ml-2"
-              >
-                {t('bankAccount.retry')}
-              </Button>
+            <AlertDescription className="flex items-center justify-between">
+              <span>
+                {isSessionExpired 
+                  ? 'Votre session a expiré. Veuillez vous reconnecter.' 
+                  : `${t('bankAccount.connectionError')}: ${error?.message || t('bankAccount.unknownError')}`
+                }
+              </span>
+              {isSessionExpired ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleReconnect}
+                  className="ml-2"
+                >
+                  <LogOut className="h-4 w-4 mr-1" />
+                  Se reconnecter
+                </Button>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => refetch()}
+                  className="ml-2"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  {t('bankAccount.retry')}
+                </Button>
+              )}
             </AlertDescription>
           </Alert>
         )}
@@ -203,30 +245,39 @@ export default function BankAccountSetupCard() {
         ) : (
           // Account exists - show status
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <label className="text-sm font-medium">{t('bankAccount.accountStatus')}</label>
-                <div className="mt-1">
-                  {stripeAccount.account_status === 'active' ? (
-                    <Badge variant="default" className="bg-green-500">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      {t('bankAccount.active')}
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary">
-                      <Clock className="h-3 w-3 mr-1" />
-                      {t('bankAccount.pending')}
-                    </Badge>
-                  )}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium">{t('bankAccount.accountStatus')}</label>
+                  <div className="mt-1">
+                    {stripeAccount.account_status === 'active' ? (
+                      <Badge variant="default" className="bg-green-500">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        {t('bankAccount.active')}
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {t('bankAccount.pending')}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshStatus}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {t('bankAccount.refresh')}
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshStatus}
-              >
-                {t('bankAccount.refresh')}
-              </Button>
+              
+              {getLastCheckText() && (
+                <p className="text-xs text-muted-foreground">
+                  Dernière vérification: {getLastCheckText()}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">

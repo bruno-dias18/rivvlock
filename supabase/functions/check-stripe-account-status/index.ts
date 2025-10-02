@@ -59,13 +59,25 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
     if (userError) {
       logStep("ERROR - Authentication failed", { error: userError.message });
-      throw new Error(`Authentication error: ${userError.message}`);
+      return new Response(
+        JSON.stringify({ error: 'Auth session missing!' }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401
+        }
+      );
     }
     
     const user = userData.user;
     if (!user?.email) {
       logStep("ERROR - No user email found");
-      throw new Error("User not authenticated or email not available");
+      return new Response(
+        JSON.stringify({ error: 'User not authenticated or email not available' }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401
+        }
+      );
     }
     logStep("User authenticated successfully", { userId: user.id, email: user.email });
 

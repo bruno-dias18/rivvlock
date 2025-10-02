@@ -11,7 +11,10 @@ export interface StripeAccountStatus {
   payouts_enabled?: boolean;
   onboarding_required?: boolean;
   onboarding_url?: string;
+  last_check?: string;
 }
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const useStripeAccount = () => {
   const { user } = useAuth();
@@ -24,32 +27,72 @@ export const useStripeAccount = () => {
         throw new Error('User not authenticated');
       }
       
-      console.log('[useStripeAccount] Fetching Stripe account status...');
-      const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
+      let lastError: any = null;
       
-      if (error) {
-        console.error('[useStripeAccount] Error fetching Stripe account:', error);
-        throw error;
+      // Retry logic with backoff
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`[useStripeAccount] Fetching Stripe account status (attempt ${attempt}/3)...`);
+          const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
+          
+          if (error) {
+            lastError = error;
+            
+            // Don't retry for authentication errors (401/403)
+            if (error.message?.includes('Auth session missing') || 
+                error.message?.includes('not authenticated') ||
+                error.message?.includes('Session expirée')) {
+              console.error('[useStripeAccount] Authentication error - no retry:', error);
+              throw new Error('SESSION_EXPIRED');
+            }
+            
+            console.error(`[useStripeAccount] Error on attempt ${attempt}:`, error);
+            
+            // Retry for server errors (500) with exponential backoff
+            if (attempt < 3) {
+              const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+              console.log(`[useStripeAccount] Retrying in ${delay}ms...`);
+              await sleep(delay);
+              continue;
+            }
+            
+            throw error;
+          }
+          
+          console.log('[useStripeAccount] Stripe account status:', data);
+          return {
+            ...data,
+            last_check: new Date().toISOString()
+          };
+        } catch (err) {
+          lastError = err;
+          if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+            throw err;
+          }
+          if (attempt === 3) {
+            throw err;
+          }
+        }
       }
       
-      console.log('[useStripeAccount] Stripe account status:', data);
-      return data;
+      throw lastError;
     },
     enabled: !!user?.id,
+    retry: false, // Disable react-query's retry since we handle it ourselves
     refetchInterval: (query) => {
       // Don't poll if there's an error
       if (query.state.error) return false;
       
-      // Don't poll if account is active
+      // Don't poll if account is active and complete
       const data = query.state.data;
       if (data?.has_account && data?.account_status === 'active' && !data?.onboarding_required) {
         return false;
       }
       
-      // Poll every 60 seconds for pending accounts
+      // Poll every 60 seconds for pending accounts only
       return 60000;
     },
-    staleTime: 30000, // Consider data stale after 30 seconds
+    staleTime: 30000,
   });
 };
 
