@@ -125,8 +125,8 @@ export default function AuthPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Redirect if already authenticated
-  if (user) {
+  // Redirect if already authenticated (but not during password reset)
+  if (user && !isResetPassword) {
     const destination = redirectTo || '/dashboard';
     return <Navigate to={destination} replace />;
   }
