@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,7 @@ serve(async (req) => {
 
     const { proposalId, action } = await req.json(); // action: 'accept' or 'reject'
 
-    console.log("[VALIDATE-ADMIN-PROPOSAL] User", user.id, action, "proposal", proposalId);
+    logger.log("[VALIDATE-ADMIN-PROPOSAL] User", user.id, action, "proposal", proposalId);
 
     // Get the proposal
     const { data: proposal, error: proposalError } = await supabaseClient
@@ -48,7 +49,7 @@ serve(async (req) => {
       .single();
 
     if (proposalError || !proposal) {
-      console.error("Error fetching proposal:", proposalError);
+      logger.error("Error fetching proposal:", proposalError);
       throw new Error("Proposal not found");
     }
 
@@ -65,7 +66,7 @@ serve(async (req) => {
       .single();
 
     if (disputeError || !dispute) {
-      console.error("Error fetching dispute:", disputeError);
+      logger.error("Error fetching dispute:", disputeError);
       throw new Error("Dispute not found");
     }
 
@@ -77,7 +78,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("Error fetching transaction:", transactionError);
+      logger.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -123,7 +124,7 @@ serve(async (req) => {
           message_type: 'system',
         });
 
-      console.log("[VALIDATE-ADMIN-PROPOSAL] Proposal rejected by", isSeller ? 'seller' : 'buyer');
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal rejected by", isSeller ? 'seller' : 'buyer');
 
       return new Response(JSON.stringify({ 
         success: true,
@@ -164,7 +165,7 @@ serve(async (req) => {
     const updatedSellerValidated = isSeller ? true : proposal.seller_validated;
 
     if (updatedBuyerValidated && updatedSellerValidated) {
-      console.log("[VALIDATE-ADMIN-PROPOSAL] Both parties validated - processing Stripe transaction");
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Both parties validated - processing Stripe transaction");
 
       // Both parties validated - process on Stripe
       const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -184,14 +185,14 @@ serve(async (req) => {
         const refundPercentage = proposal.refund_percentage || 100;
         const isFullRefund = proposal.proposal_type === 'full_refund' || refundPercentage === 100;
 
-        console.log(`Processing ${refundPercentage}% refund`);
+        logger.log(`Processing ${refundPercentage}% refund`);
 
         const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
 
         if (paymentIntent.status === 'requires_capture') {
           if (isFullRefund) {
             await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
-            console.log("✅ Full refund - authorization cancelled");
+            logger.log("✅ Full refund - authorization cancelled");
           } else {
             // Partial refund logic (same as accept-proposal)
             const capturePercentage = 100 - refundPercentage;
@@ -224,7 +225,7 @@ serve(async (req) => {
               });
             }
 
-            console.log(`✅ Partial refund processed: ${refundPercentage}%`);
+            logger.log(`✅ Partial refund processed: ${refundPercentage}%`);
           }
         } else if (paymentIntent.status === 'succeeded') {
           // Already captured - create refund
@@ -249,7 +250,7 @@ serve(async (req) => {
             }
           });
 
-          console.log(`✅ Refund created: ${refundPercentage}%`);
+          logger.log(`✅ Refund created: ${refundPercentage}%`);
         }
 
         disputeStatus = 'resolved_refund';
@@ -285,7 +286,7 @@ serve(async (req) => {
 
         disputeStatus = 'resolved_release';
         newTransactionStatus = 'validated';
-        console.log("✅ Funds released to seller");
+        logger.log("✅ Funds released to seller");
       }
 
       // Update proposal status
@@ -342,7 +343,7 @@ serve(async (req) => {
           message_type: 'system',
         });
 
-      console.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
 
       return new Response(JSON.stringify({ 
         success: true,
@@ -355,7 +356,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("[VALIDATE-ADMIN-PROPOSAL] Validation recorded, waiting for other party");
+    logger.log("[VALIDATE-ADMIN-PROPOSAL] Validation recorded, waiting for other party");
 
     // Log activity for the other participant (they need to know someone validated)
     const otherParticipantId = user.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;

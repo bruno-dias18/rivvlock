@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
-      console.error('Authentication error:', authError);
+      logger.error('Authentication error:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -42,7 +43,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Marking messages as read for transaction ${transactionId} by user ${user.id}`);
+    logger.log(`Marking messages as read for transaction ${transactionId} by user ${user.id}`);
 
     // Verify user is participant in transaction
     const { data: transaction, error: txError } = await supabase
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (txError || !transaction) {
-      console.error('Transaction not found:', txError);
+      logger.error('Transaction not found:', txError);
       return new Response(
         JSON.stringify({ error: 'Transaction not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     if (transaction.user_id !== user.id && transaction.buyer_id !== user.id) {
-      console.error('User not authorized for this transaction');
+      logger.error('User not authorized for this transaction');
       return new Response(
         JSON.stringify({ error: 'Not authorized' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -75,7 +76,7 @@ Deno.serve(async (req) => {
       .neq('sender_id', user.id);
 
     if (msgError) {
-      console.error('Error fetching messages:', msgError);
+      logger.error('Error fetching messages:', msgError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch messages' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -83,7 +84,7 @@ Deno.serve(async (req) => {
     }
 
     if (!messages || messages.length === 0) {
-      console.log('No messages to mark as read');
+      logger.log('No messages to mark as read');
       return new Response(
         JSON.stringify({ success: true, markedCount: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -101,14 +102,14 @@ Deno.serve(async (req) => {
       .upsert(readRecords, { onConflict: 'message_id,user_id', ignoreDuplicates: true });
 
     if (insertError) {
-      console.error('Error marking messages as read:', insertError);
+      logger.error('Error marking messages as read:', insertError);
       return new Response(
         JSON.stringify({ error: 'Failed to mark messages as read' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Successfully marked ${messages.length} messages as read`);
+    logger.log(`Successfully marked ${messages.length} messages as read`);
 
     return new Response(
       JSON.stringify({ success: true, markedCount: messages.length }),
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

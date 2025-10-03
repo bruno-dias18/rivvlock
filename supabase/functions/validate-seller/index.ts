@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ serve(async (req) => {
   try {
     const { transactionId } = await req.json();
     
-    console.log("🔍 [VALIDATE-SELLER] Validating seller for transaction:", transactionId);
+    logger.log("🔍 [VALIDATE-SELLER] Validating seller for transaction:", transactionId);
 
     // Get user authentication
     const authHeader = req.headers.get("Authorization");
@@ -36,7 +37,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Unauthorized");
 
-    console.log("✅ [VALIDATE-SELLER] User authenticated:", userData.user.id);
+    logger.log("✅ [VALIDATE-SELLER] User authenticated:", userData.user.id);
 
     // Get transaction details (using admin client)
     const { data: transaction, error: transactionError } = await adminClient
@@ -46,7 +47,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("❌ [VALIDATE-SELLER] Transaction not found:", transactionError);
+      logger.error("❌ [VALIDATE-SELLER] Transaction not found:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -60,7 +61,7 @@ serve(async (req) => {
       throw new Error("Transaction must be in paid status to validate");
     }
 
-    console.log("✅ [VALIDATE-SELLER] Seller authorization verified");
+    logger.log("✅ [VALIDATE-SELLER] Seller authorization verified");
 
     // Check if service date has passed to determine if validation deadline should be set immediately
     const serviceDate = new Date(transaction.service_date);
@@ -85,11 +86,11 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error("❌ [VALIDATE-SELLER] Error updating transaction:", updateError);
+      logger.error("❌ [VALIDATE-SELLER] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction validation");
     }
 
-    console.log("✅ [VALIDATE-SELLER] Seller validation completed for transaction:", transactionId);
+    logger.log("✅ [VALIDATE-SELLER] Seller validation completed for transaction:", transactionId);
 
     // Log activity for the seller
     try {
@@ -105,7 +106,7 @@ serve(async (req) => {
           }
         });
     } catch (logError) {
-      console.error('❌ [VALIDATE-SELLER] Error logging activity:', logError);
+      logger.error('❌ [VALIDATE-SELLER] Error logging activity:', logError);
     }
 
     // Send notification to buyer
@@ -122,9 +123,9 @@ serve(async (req) => {
               transaction_id: transactionId
             }
           });
-        console.log("✅ [VALIDATE-SELLER] Notification sent to buyer:", transaction.buyer_id);
+        logger.log("✅ [VALIDATE-SELLER] Notification sent to buyer:", transaction.buyer_id);
       } catch (notifError) {
-        console.error('❌ [VALIDATE-SELLER] Error sending notification to buyer:', notifError);
+        logger.error('❌ [VALIDATE-SELLER] Error sending notification to buyer:', notifError);
       }
     }
 

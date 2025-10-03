@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
 
     if (authError || !user) {
-      console.error('Authentication error:', authError);
+      logger.error('Authentication error:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -49,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { transactionId, proposedDate, proposedEndDate, message }: DateChangeRequest = await req.json();
 
-    console.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, proposedEndDate, userId: user.id });
+    logger.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, proposedEndDate, userId: user.id });
 
     // First, check if the transaction exists at all
     const { data: transactionExists, error: existsError } = await supabase
@@ -59,14 +60,14 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (existsError) {
-      console.error('[REQUEST-DATE-CHANGE] Transaction lookup error:', existsError);
+      logger.error('[REQUEST-DATE-CHANGE] Transaction lookup error:', existsError);
       return new Response(JSON.stringify({ error: 'Transaction not found' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
     }
 
-    console.log('[REQUEST-DATE-CHANGE] Transaction found:', { 
+    logger.log('[REQUEST-DATE-CHANGE] Transaction found:', {
       transactionId: transactionExists.id, 
       sellerId: transactionExists.user_id, 
       buyerId: transactionExists.buyer_id,
@@ -77,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check if the user is the seller of this transaction
     if (transactionExists.user_id !== user.id) {
-      console.error('[REQUEST-DATE-CHANGE] User not authorized - not the seller:', { 
+      logger.error('[REQUEST-DATE-CHANGE] User not authorized - not the seller:', {
         sellerId: transactionExists.user_id, 
         requesterId: user.id 
       });
@@ -95,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error('Transaction not found or user not authorized:', transactionError);
+      logger.error('Transaction not found or user not authorized:', transactionError);
       return new Response(JSON.stringify({ error: 'Transaction not found or unauthorized' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -122,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', transactionId);
 
     if (updateError) {
-      console.error('Error updating transaction:', updateError);
+      logger.error('Error updating transaction:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to update transaction' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -145,10 +146,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (logError) {
-      console.error('Error logging activity:', logError);
+      logger.error('Error logging activity:', logError);
     }
 
-    console.log('[REQUEST-DATE-CHANGE] Date change requested successfully');
+    logger.log('[REQUEST-DATE-CHANGE] Date change requested successfully');
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -156,7 +157,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
   } catch (error: any) {
-    console.error('Error in request-date-change function:', error);
+    logger.error('Error in request-date-change function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

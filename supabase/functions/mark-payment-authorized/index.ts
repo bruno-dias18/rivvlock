@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [MARK-PAYMENT] Starting payment authorization verification');
+    logger.log('🔍 [MARK-PAYMENT] Starting payment authorization verification');
 
     // User client for authentication
     const userClient = createClient(
@@ -40,7 +41,7 @@ serve(async (req) => {
       throw new Error("Invalid authentication token");
     }
 
-    console.log('✅ [MARK-PAYMENT] User authenticated:', userData.user.id);
+    logger.log('✅ [MARK-PAYMENT] User authenticated:', userData.user.id);
 
     const { transactionId, paymentIntentId } = await req.json();
     
@@ -60,7 +61,7 @@ serve(async (req) => {
       throw new Error("Unauthorized access to transaction");
     }
 
-    console.log('✅ [MARK-PAYMENT] Transaction found and user authorized');
+    logger.log('✅ [MARK-PAYMENT] Transaction found and user authorized');
 
     // Initialize Stripe to verify payment
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -74,7 +75,7 @@ serve(async (req) => {
       throw new Error(`Payment not in correct state: ${paymentIntent.status}`);
     }
 
-    console.log('✅ [MARK-PAYMENT] Payment intent verified with Stripe');
+    logger.log('✅ [MARK-PAYMENT] Payment intent verified with Stripe');
 
     // Update transaction status using admin client
     const { error: updateError } = await adminClient
@@ -90,11 +91,11 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error('❌ [MARK-PAYMENT] Error updating transaction:', updateError);
+      logger.error('❌ [MARK-PAYMENT] Error updating transaction:', updateError);
       throw new Error("Failed to update transaction status");
     }
 
-    console.log('✅ [MARK-PAYMENT] Transaction marked as paid successfully');
+    logger.log('✅ [MARK-PAYMENT] Transaction marked as paid successfully');
 
     // Log activity for funds blocked
     try {
@@ -128,12 +129,12 @@ serve(async (req) => {
           }
         });
     } catch (logError) {
-      console.error('❌ [MARK-PAYMENT] Error logging activity:', logError);
+      logger.error('❌ [MARK-PAYMENT] Error logging activity:', logError);
     }
 
     // Mock notifications
-    console.log(`📧 [MARK-PAYMENT] EMAIL: Payment authorized for ${transaction.title}`);
-    console.log(`📱 [MARK-PAYMENT] SMS: ${transaction.price} ${transaction.currency} blocked in escrow`);
+    logger.log(`📧 [MARK-PAYMENT] EMAIL: Payment authorized for ${transaction.title}`);
+    logger.log(`📱 [MARK-PAYMENT] SMS: ${transaction.price} ${transaction.currency} blocked in escrow`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -144,7 +145,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("❌ [MARK-PAYMENT] Error:", error);
+    logger.error("❌ [MARK-PAYMENT] Error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

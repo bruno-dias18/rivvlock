@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[PROCESS-DISPUTE-DEADLINES] Function started');
+    logger.log('[PROCESS-DISPUTE-DEADLINES] Function started');
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -40,11 +41,11 @@ serve(async (req) => {
       .is('escalated_at', null);
 
     if (fetchError) {
-      console.error('[PROCESS-DISPUTE-DEADLINES] Error fetching expired disputes:', fetchError);
+      logger.error('[PROCESS-DISPUTE-DEADLINES] Error fetching expired disputes:', fetchError);
       throw fetchError;
     }
 
-    console.log(`[PROCESS-DISPUTE-DEADLINES] Found ${expiredDisputes?.length || 0} expired disputes`);
+    logger.log(`[PROCESS-DISPUTE-DEADLINES] Found ${expiredDisputes?.length || 0} expired disputes`);
 
     if (!expiredDisputes || expiredDisputes.length === 0) {
       return new Response(
@@ -64,7 +65,7 @@ serve(async (req) => {
     // Process each expired dispute
     for (const dispute of expiredDisputes) {
       try {
-        console.log(`[PROCESS-DISPUTE-DEADLINES] Processing dispute ${dispute.id}`);
+        logger.log(`[PROCESS-DISPUTE-DEADLINES] Processing dispute ${dispute.id}`);
 
         // Update dispute status to escalated
         const { error: updateError } = await supabaseClient
@@ -76,7 +77,7 @@ serve(async (req) => {
           .eq('id', dispute.id);
 
         if (updateError) {
-          console.error(`[PROCESS-DISPUTE-DEADLINES] Error updating dispute ${dispute.id}:`, updateError);
+          logger.error(`[PROCESS-DISPUTE-DEADLINES] Error updating dispute ${dispute.id}:`, updateError);
           results.push({
             disputeId: dispute.id,
             status: 'error',
@@ -101,7 +102,7 @@ serve(async (req) => {
           });
 
         if (logError) {
-          console.error(`[PROCESS-DISPUTE-DEADLINES] Error logging escalation for dispute ${dispute.id}:`, logError);
+          logger.error(`[PROCESS-DISPUTE-DEADLINES] Error logging escalation for dispute ${dispute.id}:`, logError);
         }
 
         // Notify all parties about the escalation
@@ -127,7 +128,7 @@ serve(async (req) => {
         );
 
         if (notificationError) {
-          console.error(`[PROCESS-DISPUTE-DEADLINES] Error sending escalation notification for dispute ${dispute.id}:`, notificationError);
+          logger.error(`[PROCESS-DISPUTE-DEADLINES] Error sending escalation notification for dispute ${dispute.id}:`, notificationError);
         }
 
         results.push({
@@ -137,10 +138,10 @@ serve(async (req) => {
           escalatedAt: new Date().toISOString(),
         });
 
-        console.log(`[PROCESS-DISPUTE-DEADLINES] Successfully escalated dispute ${dispute.id}`);
+        logger.log(`[PROCESS-DISPUTE-DEADLINES] Successfully escalated dispute ${dispute.id}`);
 
       } catch (error) {
-        console.error(`[PROCESS-DISPUTE-DEADLINES] Error processing dispute ${dispute.id}:`, error);
+        logger.error(`[PROCESS-DISPUTE-DEADLINES] Error processing dispute ${dispute.id}:`, error);
           results.push({
             disputeId: dispute.id,
             status: 'error',
@@ -149,7 +150,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[PROCESS-DISPUTE-DEADLINES] Processing completed - ${results.length} disputes processed`);
+    logger.log(`[PROCESS-DISPUTE-DEADLINES] Processing completed - ${results.length} disputes processed`);
 
     return new Response(
       JSON.stringify({
@@ -164,7 +165,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[PROCESS-DISPUTE-DEADLINES] Function error:', error);
+    logger.error('[PROCESS-DISPUTE-DEADLINES] Function error:', error);
     return new Response(
       JSON.stringify({
         error: 'Internal server error',

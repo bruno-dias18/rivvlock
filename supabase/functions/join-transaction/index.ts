@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [JOIN-TRANSACTION] Starting request processing');
+    logger.log('🔍 [JOIN-TRANSACTION] Starting request processing');
 
     // User client for authentication
     const userClient = createClient(
@@ -40,7 +41,7 @@ serve(async (req) => {
       throw new Error('Utilisateur non authentifié');
     }
 
-    console.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
+    logger.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
 
     // Parse request body (support both `token` and `linkToken`)
     const body = await req.json();
@@ -51,7 +52,7 @@ serve(async (req) => {
       throw new Error('ID de transaction ou token manquant');
     }
 
-    console.log('🔍 [JOIN-TRANSACTION] Processing transaction:', transaction_id);
+    logger.log('🔍 [JOIN-TRANSACTION] Processing transaction:', transaction_id);
 
     // Verify transaction exists and token is valid (using admin client)
     const { data: transaction, error: fetchError } = await adminClient
@@ -62,11 +63,11 @@ serve(async (req) => {
       .single();
 
     if (fetchError || !transaction) {
-      console.error('❌ [JOIN-TRANSACTION] Transaction fetch error:', fetchError);
+      logger.error('❌ [JOIN-TRANSACTION] Transaction fetch error:', fetchError);
       throw new Error('Transaction non trouvée ou token invalide');
     }
 
-    console.log('✅ [JOIN-TRANSACTION] Transaction found:', transaction.id);
+    logger.log('✅ [JOIN-TRANSACTION] Transaction found:', transaction.id);
 
     // Check if link is expired
     const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
@@ -86,7 +87,7 @@ serve(async (req) => {
 
     // If user is already the buyer, return success
     if (transaction.buyer_id === userData.user.id) {
-      console.log('✅ [JOIN-TRANSACTION] User already assigned as buyer');
+      logger.log('✅ [JOIN-TRANSACTION] User already assigned as buyer');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -114,7 +115,7 @@ serve(async (req) => {
     const serviceDate = new Date(transaction.service_date);
     const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
     
-    console.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
+    logger.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
       serviceDate: serviceDate.toISOString(),
       paymentDeadline: paymentDeadline.toISOString(),
       timeDiff: (serviceDate.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60)
@@ -143,11 +144,11 @@ serve(async (req) => {
       .eq('id', transaction_id);
 
     if (updateError) {
-      console.error('❌ [JOIN-TRANSACTION] Update error:', updateError);
+      logger.error('❌ [JOIN-TRANSACTION] Update error:', updateError);
       throw new Error('Erreur lors de l\'assignation à la transaction');
     }
 
-    console.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
+    logger.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
 
     // Log activity for both buyer and seller
     try {
@@ -176,7 +177,7 @@ serve(async (req) => {
           }
         });
     } catch (logError) {
-      console.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);
+      logger.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);
     }
 
     return new Response(
@@ -193,7 +194,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Join Transaction Function Error:', error);
+    logger.error('Join Transaction Function Error:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
     

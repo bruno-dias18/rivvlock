@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('Authentication error:', authError);
+      logger.error('Authentication error:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -48,7 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { transactionId, approved }: DateChangeResponse = await req.json();
 
-    console.log('[RESPOND-DATE-CHANGE] Response received:', { transactionId, approved, userId: user.id });
+    logger.log('[RESPOND-DATE-CHANGE] Response received:', { transactionId, approved, userId: user.id });
 
     // Verify the user is the buyer of this transaction and has a pending date change
     const { data: transaction, error: transactionError } = await supabase
@@ -60,7 +61,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error('Transaction not found, user not authorized, or no pending change:', transactionError);
+      logger.error('Transaction not found, user not authorized, or no pending change:', transactionError);
       return new Response(JSON.stringify({ error: 'Transaction not found, unauthorized, or no pending date change' }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -98,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', transactionId);
 
     if (updateError) {
-      console.error('Error updating transaction:', updateError);
+      logger.error('Error updating transaction:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to update transaction' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -124,10 +125,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (logError) {
-      console.error('Error logging activity:', logError);
+      logger.error('Error logging activity:', logError);
     }
 
-    console.log(`[RESPOND-DATE-CHANGE] Date change ${approved ? 'approved' : 'rejected'} successfully`);
+    logger.log(`[RESPOND-DATE-CHANGE] Date change ${approved ? 'approved' : 'rejected'} successfully`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
@@ -135,7 +136,7 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
   } catch (error: any) {
-    console.error('Error in respond-to-date-change function:', error);
+    logger.error('Error in respond-to-date-change function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

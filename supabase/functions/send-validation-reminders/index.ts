@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ serve(async (req) => {
   );
 
   try {
-    console.log("📬 [SEND-VALIDATION-REMINDERS] Starting reminder processing");
+    logger.log("📬 [SEND-VALIDATION-REMINDERS] Starting reminder processing");
 
     const now = new Date();
     
@@ -43,7 +44,7 @@ serve(async (req) => {
       const windowEnd = new Date(reminderTime);
       windowEnd.setMinutes(windowEnd.getMinutes() + 30);
 
-      console.log(`🔍 [SEND-VALIDATION-REMINDERS] Checking ${reminder.type} reminders for window: ${windowStart.toISOString()} to ${windowEnd.toISOString()}`);
+      logger.log(`🔍 [SEND-VALIDATION-REMINDERS] Checking ${reminder.type} reminders for window: ${windowStart.toISOString()} to ${windowEnd.toISOString()}`);
 
       // Find transactions that need this reminder
       // Only process transactions that have an active validation deadline
@@ -59,16 +60,16 @@ serve(async (req) => {
         .lte("validation_deadline", windowEnd.toISOString());
 
       if (fetchError) {
-        console.error(`❌ [SEND-VALIDATION-REMINDERS] Error fetching transactions for ${reminder.type}:`, fetchError);
+        logger.error(`❌ [SEND-VALIDATION-REMINDERS] Error fetching transactions for ${reminder.type}:`, fetchError);
         continue;
       }
 
       if (!transactions || transactions.length === 0) {
-        console.log(`ℹ️ [SEND-VALIDATION-REMINDERS] No transactions found for ${reminder.type} reminder`);
+        logger.log(`ℹ️ [SEND-VALIDATION-REMINDERS] No transactions found for ${reminder.type} reminder`);
         continue;
       }
 
-      console.log(`📋 [SEND-VALIDATION-REMINDERS] Found ${transactions.length} transactions for ${reminder.type} reminder`);
+      logger.log(`📋 [SEND-VALIDATION-REMINDERS] Found ${transactions.length} transactions for ${reminder.type} reminder`);
 
       // Process each transaction
       for (const transaction of transactions) {
@@ -82,12 +83,12 @@ serve(async (req) => {
             .maybeSingle();
 
           if (checkError) {
-            console.error(`❌ [SEND-VALIDATION-REMINDERS] Error checking existing reminder:`, checkError);
+            logger.error(`❌ [SEND-VALIDATION-REMINDERS] Error checking existing reminder:`, checkError);
             continue;
           }
 
           if (existingReminder) {
-            console.log(`⏭️ [SEND-VALIDATION-REMINDERS] Reminder ${reminder.type} already sent for transaction ${transaction.id}`);
+            logger.log(`⏭️ [SEND-VALIDATION-REMINDERS] Reminder ${reminder.type} already sent for transaction ${transaction.id}`);
             continue;
           }
 
@@ -127,20 +128,20 @@ serve(async (req) => {
             });
 
           if (insertError) {
-            console.error(`❌ [SEND-VALIDATION-REMINDERS] Error recording reminder:`, insertError);
+            logger.error(`❌ [SEND-VALIDATION-REMINDERS] Error recording reminder:`, insertError);
             continue;
           }
 
-          console.log(`✅ [SEND-VALIDATION-REMINDERS] Sent ${reminder.type} reminder for transaction ${transaction.id}`);
+          logger.log(`✅ [SEND-VALIDATION-REMINDERS] Sent ${reminder.type} reminder for transaction ${transaction.id}`);
           totalSent++;
 
         } catch (error) {
-          console.error(`❌ [SEND-VALIDATION-REMINDERS] Error processing transaction ${transaction.id}:`, error);
+          logger.error(`❌ [SEND-VALIDATION-REMINDERS] Error processing transaction ${transaction.id}:`, error);
         }
       }
     }
 
-    console.log(`🏁 [SEND-VALIDATION-REMINDERS] Processing complete. Total reminders sent: ${totalSent}`);
+    logger.log(`🏁 [SEND-VALIDATION-REMINDERS] Processing complete. Total reminders sent: ${totalSent}`);
 
     return new Response(JSON.stringify({ 
       success: true,

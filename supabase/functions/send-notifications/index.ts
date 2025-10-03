@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,7 @@ serve(async (req) => {
   try {
     const { type, transactionId, message, recipients } = await req.json();
     
-    console.log("Sending notification:", type, "for transaction:", transactionId);
+    logger.log("Sending notification:", type, "for transaction:", transactionId);
 
     // Get transaction details for context
     if (transactionId) {
@@ -30,46 +31,46 @@ serve(async (req) => {
         .single();
 
       if (!error && transaction) {
-        console.log(`📧 EMAIL NOTIFICATION [${type}]:`, message);
-        console.log(`   Transaction: ${transaction.title}`);
-        console.log(`   Amount: ${transaction.price} ${transaction.currency}`);
-        console.log(`   Recipients:`, recipients);
+        logger.log(`📧 EMAIL NOTIFICATION [${type}]:`, message);
+        logger.log(`   Transaction: ${transaction.title}`);
+        logger.log(`   Amount: ${transaction.price} ${transaction.currency}`);
+        logger.log(`   Recipients:`, recipients);
         
-        console.log(`📱 SMS NOTIFICATION [${type}]:`, message);
-        console.log(`   Service: ${transaction.title}`);
+        logger.log(`📱 SMS NOTIFICATION [${type}]:`, message);
+        logger.log(`   Service: ${transaction.title}`);
         
         // Mock different notification types
         switch (type) {
           case 'payment_reminder_7d':
-            console.log(`⏰ REMINDER: Payment due in 7 days for ${transaction.title}`);
+            logger.log(`⏰ REMINDER: Payment due in 7 days for ${transaction.title}`);
             break;
           case 'payment_reminder_24h':
-            console.log(`🚨 URGENT: Payment due in 24 hours for ${transaction.title}`);
+            logger.log(`🚨 URGENT: Payment due in 24 hours for ${transaction.title}`);
             break;
           case 'validation_reminder_7d':
-            console.log(`✅ REMINDER: Validation period ends in 7 days for ${transaction.title}`);
+            logger.log(`✅ REMINDER: Validation period ends in 7 days for ${transaction.title}`);
             break;
           case 'validation_reminder_24h':
-            console.log(`⚠️ URGENT: Validation period ends in 24 hours for ${transaction.title}`);
+            logger.log(`⚠️ URGENT: Validation period ends in 24 hours for ${transaction.title}`);
             break;
           case 'dispute_created':
-            console.log(`🚩 ADMIN ALERT: New dispute created for ${transaction.title}`);
+            logger.log(`🚩 ADMIN ALERT: New dispute created for ${transaction.title}`);
             break;
           case 'funds_released':
-            console.log(`💰 SUCCESS: Funds released for ${transaction.title}`);
+            logger.log(`💰 SUCCESS: Funds released for ${transaction.title}`);
             break;
           default:
-            console.log(`📬 NOTIFICATION: ${message}`);
+            logger.log(`📬 NOTIFICATION: ${message}`);
         }
       }
     } else {
       // Generic notification without transaction
-      console.log(`📧 EMAIL NOTIFICATION [${type}]:`, message);
-      console.log(`📱 SMS NOTIFICATION [${type}]:`, message);
+      logger.log(`📧 EMAIL NOTIFICATION [${type}]:`, message);
+      logger.log(`📱 SMS NOTIFICATION [${type}]:`, message);
     }
 
     // Log to help track notification history
-    console.log(`NOTIFICATION SENT: ${new Date().toISOString()} - Type: ${type}`);
+    logger.log(`NOTIFICATION SENT: ${new Date().toISOString()} - Type: ${type}`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -81,7 +82,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error sending notification:", error);
+    logger.error("Error sending notification:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

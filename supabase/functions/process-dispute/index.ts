@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,7 +21,7 @@ serve(async (req) => {
   try {
     const { disputeId, action, adminNotes } = await req.json(); // action: 'refund' or 'release'
     
-    console.log("Processing dispute:", disputeId, "Action:", action);
+    logger.log("Processing dispute:", disputeId, "Action:", action);
 
     // Get dispute and related transaction
     const { data: dispute, error: disputeError } = await supabaseClient
@@ -68,9 +69,9 @@ serve(async (req) => {
       newTransactionStatus = 'disputed';
       disputeStatus = 'resolved_refund';
 
-      console.log(`💰 FULL REFUND: ${(refundAmount / 100).toFixed(2)} ${transaction.currency} refunded to buyer (100%)`);
-      console.log(`💸 PLATFORM LOSS: ${(platformFee / 100).toFixed(2)} ${transaction.currency} RivvLock fee absorbed (dispute cost)`);
-      console.log(`💳 STRIPE FEES: Non-refundable processing fees remain with Stripe`);
+      logger.log(`💰 FULL REFUND: ${(refundAmount / 100).toFixed(2)} ${transaction.currency} refunded to buyer (100%)`);
+      logger.log(`💸 PLATFORM LOSS: ${(platformFee / 100).toFixed(2)} ${transaction.currency} RivvLock fee absorbed (dispute cost)`);
+      logger.log(`💳 STRIPE FEES: Non-refundable processing fees remain with Stripe`);
 
     } else if (action === 'release') {
       // Release funds to seller minus platform fee
@@ -87,7 +88,7 @@ serve(async (req) => {
       newTransactionStatus = 'completed';
       disputeStatus = 'resolved_release';
 
-      console.log(`💰 RELEASE: ${((totalAmount - platformFee) / 100).toFixed(2)} ${transaction.currency} released to seller`);
+      logger.log(`💰 RELEASE: ${((totalAmount - platformFee) / 100).toFixed(2)} ${transaction.currency} released to seller`);
     } else {
       throw new Error("Invalid action. Must be 'refund' or 'release'");
     }
@@ -103,7 +104,7 @@ serve(async (req) => {
       .eq("id", disputeId);
 
     if (disputeUpdateError) {
-      console.error("Error updating dispute:", disputeUpdateError);
+      logger.error("Error updating dispute:", disputeUpdateError);
     }
 
     // Update transaction status
@@ -117,13 +118,13 @@ serve(async (req) => {
       .eq("id", transaction.id);
 
     if (transactionUpdateError) {
-      console.error("Error updating transaction:", transactionUpdateError);
+      logger.error("Error updating transaction:", transactionUpdateError);
     }
 
     // Mock admin notifications
-    console.log(`📧 ADMIN EMAIL: Dispute ${disputeId} resolved with action: ${action}`);
-    console.log(`📧 EMAIL: Dispute resolution completed for transaction ${transaction.title}`);
-    console.log(`📱 SMS: Your dispute has been resolved. Action taken: ${action}`);
+    logger.log(`📧 ADMIN EMAIL: Dispute ${disputeId} resolved with action: ${action}`);
+    logger.log(`📧 EMAIL: Dispute resolution completed for transaction ${transaction.title}`);
+    logger.log(`📱 SMS: Your dispute has been resolved. Action taken: ${action}`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -136,7 +137,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error processing dispute:", error);
+    logger.error("Error processing dispute:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
