@@ -257,7 +257,9 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   const footerTextWidth = doc.getTextWidth(footerText);
   doc.text(footerText, (pageWidth - footerTextWidth) / 2, footerY);
   
-  doc.save(`rapport-annuel-${year}.pdf`);
+  const reportLabel = t?.('reports.annualReport') || 'Rapport annuel';
+  const fileName = `${reportLabel}-${year}.pdf`.replace(/\s+/g, '-').toLowerCase();
+  doc.save(fileName);
 };
 
 // Function to download all invoices for a year as a ZIP file
@@ -417,7 +419,8 @@ export const downloadAllInvoicesAsZip = async (
     // Download the ZIP
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
-    link.download = `factures-${year}.zip`;
+    const invoicesLabel = t?.('common.invoices') || 'factures';
+    link.download = `${invoicesLabel}-${year}.zip`.replace(/\s+/g, '-').toLowerCase();
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

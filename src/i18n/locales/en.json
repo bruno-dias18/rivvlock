@@ -26,6 +26,7 @@
     "validate": "Validate",
     "modifyDate": "Modify date",
     "invoice": "Invoice",
+    "invoices": "Invoices",
     "client": "Client",
     "seller": "Seller",
     "buyer": "Buyer",
