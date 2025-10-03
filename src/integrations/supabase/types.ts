@@ -47,6 +47,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_role_audit_log: {
+        Row: {
+          changed_by_user_id: string
+          created_at: string
+          id: string
+          new_role: string | null
+          old_role: string | null
+          operation: string
+          target_user_id: string
+        }
+        Insert: {
+          changed_by_user_id: string
+          created_at?: string
+          id?: string
+          new_role?: string | null
+          old_role?: string | null
+          operation: string
+          target_user_id: string
+        }
+        Update: {
+          changed_by_user_id?: string
+          created_at?: string
+          id?: string
+          new_role?: string | null
+          old_role?: string | null
+          operation?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       admin_roles: {
         Row: {
           created_at: string
@@ -684,7 +714,24 @@ export type Database = {
         Args: { p_seller_id: string; p_year: number }
         Returns: number
       }
+      get_safe_profile: {
+        Args: { profile_user_id: string }
+        Returns: {
+          company_name: string
+          country: Database["public"]["Enums"]["country_code"]
+          first_name: string
+          last_name: string
+          registration_complete: boolean
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+          verified: boolean
+        }[]
+      }
       is_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      is_super_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
       }
@@ -699,8 +746,13 @@ export type Database = {
         }
         Returns: string
       }
+      validate_shared_link_token: {
+        Args: { p_token: string; p_transaction_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user" | "super_admin"
       country_code: "FR" | "CH"
       currency_code: "EUR" | "CHF"
       dispute_status:
@@ -845,6 +897,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user", "super_admin"],
       country_code: ["FR", "CH"],
       currency_code: ["EUR", "CHF"],
       dispute_status: [
