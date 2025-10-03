@@ -44,6 +44,8 @@ export default function TransactionsPage() {
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
   const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
   
+  const scrollToTransactionId = searchParams.get('scrollTo');
+  
   // Sort states with localStorage persistence
   const SORT_STORAGE_KEY = 'rivvlock-transactions-sort';
   const [sortBy, setSortBy] = useState<'created_at' | 'service_date' | 'funds_released_at'>(() => {
@@ -171,6 +173,27 @@ export default function TransactionsPage() {
       refetchNotifications();
     }
   }, [activeTab, markAsSeen, refetchNotifications]);
+
+  // Scroll to transaction when scrollTo parameter is present
+  useEffect(() => {
+    if (scrollToTransactionId) {
+      setTimeout(() => {
+        const element = document.getElementById(`transaction-${scrollToTransactionId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Highlight effect
+          element.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+          setTimeout(() => {
+            element.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+          }, 2000);
+        }
+        // Clean up URL
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('scrollTo');
+        setSearchParams(newParams, { replace: true });
+      }, 300);
+    }
+  }, [scrollToTransactionId, activeTab, searchParams, setSearchParams]);
 
   const handleSyncPayments = async () => {
     toast.promise(
@@ -634,21 +657,22 @@ export default function TransactionsPage() {
                 <LocalErrorBoundary onRetry={refetch}>
                   <div className="space-y-4">
                     {pendingTransactions.map(transaction => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        user={user}
-                        showActions={true}
-                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                        onCopyLink={handleCopyLink}
-                        onPayment={handlePayment}
-                        onRefetch={refetch}
-                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                        onDownloadInvoice={handleDownloadInvoice}
-                        onDeleteExpired={handleDeleteExpiredTransaction}
-                        onRenewExpired={handleRenewExpiredTransaction}
-                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                      />
+                      <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
+                        <TransactionCard
+                          transaction={transaction}
+                          user={user}
+                          showActions={true}
+                          hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
+                          onCopyLink={handleCopyLink}
+                          onPayment={handlePayment}
+                          onRefetch={refetch}
+                          onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                          onDownloadInvoice={handleDownloadInvoice}
+                          onDeleteExpired={handleDeleteExpiredTransaction}
+                          onRenewExpired={handleRenewExpiredTransaction}
+                          CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                        />
+                      </div>
                     ))}
                   </div>
                 </LocalErrorBoundary>
@@ -686,21 +710,22 @@ export default function TransactionsPage() {
                 <LocalErrorBoundary onRetry={refetch}>
                   <div className="space-y-4">
                     {blockedTransactions.map(transaction => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        user={user}
-                        showActions={true}
-                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                        onCopyLink={handleCopyLink}
-                        onPayment={handlePayment}
-                        onRefetch={refetch}
-                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                        onDownloadInvoice={handleDownloadInvoice}
-                        onDeleteExpired={handleDeleteExpiredTransaction}
-                        onRenewExpired={handleRenewExpiredTransaction}
-                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                      />
+                      <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
+                        <TransactionCard
+                          transaction={transaction}
+                          user={user}
+                          showActions={true}
+                          hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
+                          onCopyLink={handleCopyLink}
+                          onPayment={handlePayment}
+                          onRefetch={refetch}
+                          onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                          onDownloadInvoice={handleDownloadInvoice}
+                          onDeleteExpired={handleDeleteExpiredTransaction}
+                          onRenewExpired={handleRenewExpiredTransaction}
+                          CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                        />
+                      </div>
                     ))}
                   </div>
                 </LocalErrorBoundary>
@@ -747,21 +772,22 @@ export default function TransactionsPage() {
                 <LocalErrorBoundary onRetry={refetch}>
                   <div className="space-y-4">
                     {completedTransactions.map(transaction => (
-                      <TransactionCard
-                        key={transaction.id}
-                        transaction={transaction}
-                        user={user}
-                        showActions={true}
-                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                        onCopyLink={handleCopyLink}
-                        onPayment={handlePayment}
-                        onRefetch={refetch}
-                        onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                        onDownloadInvoice={handleDownloadInvoice}
-                        onDeleteExpired={handleDeleteExpiredTransaction}
-                        onRenewExpired={handleRenewExpiredTransaction}
-                        CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                      />
+                      <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
+                        <TransactionCard
+                          transaction={transaction}
+                          user={user}
+                          showActions={true}
+                          hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
+                          onCopyLink={handleCopyLink}
+                          onPayment={handlePayment}
+                          onRefetch={refetch}
+                          onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                          onDownloadInvoice={handleDownloadInvoice}
+                          onDeleteExpired={handleDeleteExpiredTransaction}
+                          onRenewExpired={handleRenewExpiredTransaction}
+                          CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                        />
+                      </div>
                     ))}
                   </div>
                 </LocalErrorBoundary>
@@ -799,14 +825,15 @@ export default function TransactionsPage() {
                 <LocalErrorBoundary onRetry={() => { refetch(); refetchDisputes(); }}>
                   <div className="space-y-4">
                     {disputes.map(dispute => (
-                      <DisputeCard
-                        key={dispute.id}
-                        dispute={dispute}
-                        onRefetch={() => {
-                          refetch();
-                          refetchDisputes();
-                        }}
-                      />
+                      <div key={dispute.id} id={`transaction-${dispute.transaction_id}`} className="transition-all duration-300">
+                        <DisputeCard
+                          dispute={dispute}
+                          onRefetch={() => {
+                            refetch();
+                            refetchDisputes();
+                          }}
+                        />
+                      </div>
                     ))}
                   </div>
                 </LocalErrorBoundary>

@@ -120,7 +120,13 @@ export default function ActivityHistoryPage() {
       navigate('/dashboard/profile');
     } else {
       const tab = getTabForActivity(activity.activity_type);
-      navigate(`/dashboard/transactions?tab=${tab}`);
+      const transactionId = activity.metadata?.transaction_id;
+      
+      if (transactionId) {
+        navigate(`/dashboard/transactions?tab=${tab}&scrollTo=${transactionId}`);
+      } else {
+        navigate(`/dashboard/transactions?tab=${tab}`);
+      }
     }
   };
 
