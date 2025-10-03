@@ -3,6 +3,7 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { getPublicBaseUrl } from '@/lib/appUrl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createRegistrationSchema, loginSchema, changePasswordSchema, passwordResetSchema } from '@/lib/validations';
@@ -20,12 +21,11 @@ type Country = 'FR' | 'CH';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
-  const resetMode = searchParams.get('mode') === 'reset';
   const redirectTo = searchParams.get('redirect');
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isResetPassword, setIsResetPassword] = useState(resetMode);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -136,7 +136,7 @@ export default function AuthPage() {
     setError('');
 
     try {
-      const redirectUrl = `${window.location.origin}/auth?mode=reset`;
+      const redirectUrl = `${getPublicBaseUrl()}/auth`;
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl
       });
@@ -169,12 +169,13 @@ export default function AuthPage() {
         });
 
         if (updateError) {
-          setError('Erreur lors de la mise à jour du mot de passe');
           console.error('Password update error:', updateError);
+          setError(t('auth.passwordUpdateError') || updateError.message || 'Erreur lors de la mise à jour du mot de passe');
           return;
         }
 
-        // Redirect to dashboard after successful password reset
+        // Success - redirect to dashboard
+        window.location.href = '/dashboard';
         return;
       } else if (isSignUp) {
         // Prepare registration metadata
