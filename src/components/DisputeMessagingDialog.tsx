@@ -107,12 +107,15 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
   }, [open, messages.length]);
 
-  // Auto-focus textarea when opened
+  // Auto-focus textarea when opened (including mobile)
   useEffect(() => {
-    if (open && textareaRef.current && !isMobile) {
-      textareaRef.current.focus();
+    if (open && textareaRef.current) {
+      // Delay to ensure dialog is fully rendered, especially on mobile
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 300);
     }
-  }, [open, isMobile]);
+  }, [open]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
