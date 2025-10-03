@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,7 +8,7 @@ const corsHeaders = {
 };
 
 function logStep(step: string, data?: any) {
-  console.log(`[ADMIN-DISPUTE-ACTIONS] ${step}`, data ? JSON.stringify(data) : '');
+  logger.log(`[ADMIN-DISPUTE-ACTIONS] ${step}`, data ? JSON.stringify(data) : '');
 }
 
 const handler = async (req: Request): Promise<Response> => {

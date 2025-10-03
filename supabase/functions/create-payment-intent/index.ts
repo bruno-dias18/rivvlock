@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,12 +36,12 @@ serve(async (req) => {
   try {
     const { transactionId, paymentMethod } = await req.json();
     
-    console.log("🔍 [CREATE-PAYMENT-INTENT] Creating payment intent for transaction:", transactionId);
+    logger.log("🔍 [CREATE-PAYMENT-INTENT] Creating payment intent for transaction:", transactionId);
     
     // Get user from auth header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("❌ [CREATE-PAYMENT-INTENT] No authorization header provided");
+      logger.error("❌ [CREATE-PAYMENT-INTENT] No authorization header provided");
       throw new Error("Authentication required");
     }
     
@@ -48,11 +49,11 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser(token);
     
     if (userError || !userData.user) {
-      console.error("❌ [CREATE-PAYMENT-INTENT]", sanitizeAuthError(userError));
+      logger.error("❌ [CREATE-PAYMENT-INTENT]", sanitizeAuthError(userError));
       throw new Error("Invalid authentication token");
     }
     
-    console.log("✅ [CREATE-PAYMENT-INTENT] User authenticated:", userData.user.id);
+    logger.log("✅ [CREATE-PAYMENT-INTENT] User authenticated:", userData.user.id);
 
     // Get transaction details (using admin client)
     const { data: transaction, error: transactionError } = await adminClient
@@ -62,17 +63,17 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("❌ [CREATE-PAYMENT-INTENT] Transaction not found:", transactionError);
+      logger.error("❌ [CREATE-PAYMENT-INTENT] Transaction not found:", transactionError);
       throw new Error("Transaction not found");
     }
 
     // Verify user is the buyer
     if (transaction.buyer_id !== userData.user.id) {
-      console.error("❌ [CREATE-PAYMENT-INTENT] User is not the buyer");
+      logger.error("❌ [CREATE-PAYMENT-INTENT] User is not the buyer");
       throw new Error("Only the buyer can create payment intent");
     }
 
-    console.log("✅ [CREATE-PAYMENT-INTENT] Transaction found, buyer verified");
+    logger.log("✅ [CREATE-PAYMENT-INTENT] Transaction found, buyer verified");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2024-06-20",
@@ -85,7 +86,7 @@ serve(async (req) => {
       .eq("user_id", userData.user.id)
       .single();
 
-    console.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
+    logger.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
 
     // Prepare payment intent data
     const paymentIntentData: any = {
@@ -108,13 +109,13 @@ serve(async (req) => {
     // Use existing Stripe customer if available (buyer's customer)
     if (buyerProfile?.stripe_customer_id) {
       paymentIntentData.customer = buyerProfile.stripe_customer_id;
-      console.log("✅ [CREATE-PAYMENT-INTENT] Using existing Stripe customer:", buyerProfile.stripe_customer_id);
+      logger.log("✅ [CREATE-PAYMENT-INTENT] Using existing Stripe customer:", buyerProfile.stripe_customer_id);
     }
 
     // Create payment intent with manual capture (escrow)
     const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
-    console.log("✅ [CREATE-PAYMENT-INTENT] Payment intent created:", paymentIntent.id);
+    logger.log("✅ [CREATE-PAYMENT-INTENT] Payment intent created:", paymentIntent.id);
 
     // Update transaction with payment intent ID (using admin client)
     const { error: updateError } = await adminClient
@@ -126,13 +127,13 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error("❌ [CREATE-PAYMENT-INTENT] Error updating transaction:", updateError);
+      logger.error("❌ [CREATE-PAYMENT-INTENT] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction");
     }
 
     // Mock notification
-    console.log(`📧 EMAIL: Payment intent created for transaction ${transaction.title}`);
-    console.log(`📱 SMS: Payment authorization requested for ${transaction.price} ${transaction.currency}`);
+    logger.log(`📧 EMAIL: Payment intent created for transaction ${transaction.title}`);
+    logger.log(`📱 SMS: Payment authorization requested for ${transaction.price} ${transaction.currency}`);
 
     return new Response(JSON.stringify({ 
       clientSecret: paymentIntent.client_secret,
@@ -143,7 +144,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error creating payment intent:", error);
+    logger.error("Error creating payment intent:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

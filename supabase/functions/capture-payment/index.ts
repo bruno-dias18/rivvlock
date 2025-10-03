@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +28,7 @@ serve(async (req) => {
   try {
     const { transactionId } = await req.json();
     
-    console.log("🔍 [CAPTURE-PAYMENT] Capturing payment for transaction:", transactionId);
+    logger.log("🔍 [CAPTURE-PAYMENT] Capturing payment for transaction:", transactionId);
 
     // Get user authentication
     const authHeader = req.headers.get("Authorization");
@@ -37,7 +38,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser(token);
     if (userError || !userData.user) throw new Error("Unauthorized");
 
-    console.log("✅ [CAPTURE-PAYMENT] User authenticated:", userData.user.id);
+    logger.log("✅ [CAPTURE-PAYMENT] User authenticated:", userData.user.id);
 
     // Get transaction details (using admin client)
     const { data: transaction, error: transactionError } = await adminClient
@@ -47,7 +48,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("❌ [CAPTURE-PAYMENT] Transaction not found:", transactionError);
+      logger.error("❌ [CAPTURE-PAYMENT] Transaction not found:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -75,13 +76,13 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (validationError) {
-      console.error("❌ [CAPTURE-PAYMENT] Error updating buyer validation:", validationError);
+      logger.error("❌ [CAPTURE-PAYMENT] Error updating buyer validation:", validationError);
       throw new Error("Failed to update buyer validation");
     }
 
     // Only capture funds if seller has also validated
     if (!transaction.seller_validated) {
-      console.log("✅ [CAPTURE-PAYMENT] Buyer validated, waiting for seller validation");
+      logger.log("✅ [CAPTURE-PAYMENT] Buyer validated, waiting for seller validation");
       return new Response(JSON.stringify({ 
         success: true,
         message: "Buyer validation completed. Waiting for seller validation before fund release.",
@@ -92,7 +93,7 @@ serve(async (req) => {
       });
     }
 
-    console.log("✅ [CAPTURE-PAYMENT] Transaction validation verified");
+    logger.log("✅ [CAPTURE-PAYMENT] Transaction validation verified");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2024-06-20",
@@ -103,7 +104,7 @@ serve(async (req) => {
       transaction.stripe_payment_intent_id
     );
 
-    console.log("✅ [CAPTURE-PAYMENT] Payment captured:", capturedIntent.id, "Amount:", capturedIntent.amount / 100, transaction.currency);
+    logger.log("✅ [CAPTURE-PAYMENT] Payment captured:", capturedIntent.id, "Amount:", capturedIntent.amount / 100, transaction.currency);
 
     // Update transaction status to validated (using admin client)
     const { error: updateError } = await adminClient
@@ -117,7 +118,7 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (updateError) {
-      console.error("❌ [CAPTURE-PAYMENT] Error updating transaction:", updateError);
+      logger.error("❌ [CAPTURE-PAYMENT] Error updating transaction:", updateError);
       throw new Error("Failed to update transaction status");
     }
 
@@ -153,13 +154,13 @@ serve(async (req) => {
           }
         });
     } catch (logError) {
-      console.error('❌ [CAPTURE-PAYMENT] Error logging activity:', logError);
+      logger.error('❌ [CAPTURE-PAYMENT] Error logging activity:', logError);
     }
 
     // Mock notifications
-    console.log(`📧 [CAPTURE-PAYMENT] EMAIL: Funds released to seller - Amount: ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency}`);
-    console.log(`📧 [CAPTURE-PAYMENT] EMAIL: Transaction completed successfully for ${transaction.title}`);
-    console.log(`📱 [CAPTURE-PAYMENT] SMS: Payment of ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency} released to your account`);
+    logger.log(`📧 [CAPTURE-PAYMENT] EMAIL: Funds released to seller - Amount: ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency}`);
+    logger.log(`📧 [CAPTURE-PAYMENT] EMAIL: Transaction completed successfully for ${transaction.title}`);
+    logger.log(`📱 [CAPTURE-PAYMENT] SMS: Payment of ${(capturedIntent.amount / 100).toFixed(2)} ${transaction.currency} released to your account`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -172,7 +173,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("Error capturing payment:", error);
+    logger.error("Error capturing payment:", error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

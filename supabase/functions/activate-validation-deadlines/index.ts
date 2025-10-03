@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ serve(async (req) => {
   );
 
   try {
-    console.log("⏰ [ACTIVATE-VALIDATION-DEADLINES] Starting deadline activation process");
+    logger.log("⏰ [ACTIVATE-VALIDATION-DEADLINES] Starting deadline activation process");
 
     const now = new Date();
     
@@ -39,7 +40,7 @@ serve(async (req) => {
       .is("validation_deadline", null);
 
     if (fetchError) {
-      console.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Error fetching transactions:", fetchError);
+      logger.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Error fetching transactions:", fetchError);
       return new Response(JSON.stringify({ error: fetchError.message }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
@@ -53,7 +54,7 @@ serve(async (req) => {
     }) || [];
 
     if (!filteredTransactions || filteredTransactions.length === 0) {
-      console.log("ℹ️ [ACTIVATE-VALIDATION-DEADLINES] No transactions found that need deadline activation");
+      logger.log("ℹ️ [ACTIVATE-VALIDATION-DEADLINES] No transactions found that need deadline activation");
       return new Response(JSON.stringify({ 
         success: true,
         deadlinesActivated: 0
@@ -63,7 +64,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📋 [ACTIVATE-VALIDATION-DEADLINES] Found ${filteredTransactions.length} transactions to activate deadlines`);
+    logger.log(`📋 [ACTIVATE-VALIDATION-DEADLINES] Found ${filteredTransactions.length} transactions to activate deadlines`);
 
     let activatedCount = 0;
 
@@ -81,7 +82,7 @@ serve(async (req) => {
           .eq("id", transaction.id);
 
         if (updateError) {
-          console.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error updating transaction ${transaction.id}:`, updateError);
+          logger.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error updating transaction ${transaction.id}:`, updateError);
           continue;
         }
 
@@ -95,15 +96,15 @@ serve(async (req) => {
           }
         });
 
-        console.log(`✅ [ACTIVATE-VALIDATION-DEADLINES] Activated deadline for transaction ${transaction.id}`);
+        logger.log(`✅ [ACTIVATE-VALIDATION-DEADLINES] Activated deadline for transaction ${transaction.id}`);
         activatedCount++;
 
       } catch (error) {
-        console.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error processing transaction ${transaction.id}:`, error);
+        logger.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error processing transaction ${transaction.id}:`, error);
       }
     }
 
-    console.log(`🏁 [ACTIVATE-VALIDATION-DEADLINES] Processing complete. Total deadlines activated: ${activatedCount}`);
+    logger.log(`🏁 [ACTIVATE-VALIDATION-DEADLINES] Processing complete. Total deadlines activated: ${activatedCount}`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -115,7 +116,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Function error:", errorMessage);
+    logger.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Function error:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
