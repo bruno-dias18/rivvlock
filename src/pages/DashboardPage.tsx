@@ -164,11 +164,6 @@ export default function DashboardPage() {
               <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? "pb-1" : "pb-2"}`}>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <span>{status.title}</span>
-                  {newCounts[status.category] > 0 && (
-                    <Badge className={status.badgeColor}>
-                      {newCounts[status.category]}
-                    </Badge>
-                  )}
                   {messageCounts[status.category] > 0 && (
                     <span className="flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>

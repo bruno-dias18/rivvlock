@@ -481,11 +481,6 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
-            {newCounts.pending > 0 && (
-              <Badge className="bg-blue-500 text-white hover:bg-blue-600 ml-1">
-                {newCounts.pending}
-              </Badge>
-            )}
             {hasUnreadPending && (
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
             )}
@@ -495,11 +490,6 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
-            {newCounts.blocked > 0 && (
-              <Badge className="bg-orange-500 text-white hover:bg-orange-600 ml-1">
-                {newCounts.blocked}
-              </Badge>
-            )}
             {hasUnreadBlocked && (
               <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
             )}
@@ -509,11 +499,6 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('transactions.completed')} ({completedTransactions.length})
-                {newCounts.completed > 0 && (
-                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {newCounts.completed}
-                  </Badge>
-                )}
                 {hasUnreadCompleted && (
                   <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 )}
@@ -521,11 +506,6 @@ export default function TransactionsPage() {
               <TabsTrigger value="disputed" className="flex items-center gap-2 relative">
                 <AlertTriangle className="h-4 w-4" />
                 {t('transactions.disputed')} ({disputedTransactions.length})
-                {newCounts.disputed > 0 && (
-                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {newCounts.disputed}
-                  </Badge>
-                )}
                 {hasUnreadDisputed && (
                   <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 )}
@@ -537,11 +517,6 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
-                {newCounts.completed > 0 && (
-                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {newCounts.completed}
-                  </Badge>
-                )}
                 {hasUnreadCompleted && (
                   <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 )}
@@ -549,11 +524,6 @@ export default function TransactionsPage() {
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3 relative">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
-                {newCounts.disputed > 0 && (
-                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {newCounts.disputed}
-                  </Badge>
-                )}
                 {hasUnreadDisputed && (
                   <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
                 )}
