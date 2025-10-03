@@ -142,7 +142,12 @@ export function RecentActivityCard() {
 
     // For transaction-related activities, go to transactions with appropriate tab
     const tab = getTabForActivity(activity.activity_type);
-    navigate(`/dashboard/transactions?tab=${tab}`);
+    
+    if (transactionId) {
+      navigate(`/dashboard/transactions?tab=${tab}&scrollTo=${transactionId}`);
+    } else {
+      navigate(`/dashboard/transactions?tab=${tab}`);
+    }
   };
 
   // Auto-refresh activity data every 15 seconds
