@@ -103,6 +103,7 @@ export default function AnnualReportsPage() {
         parseInt(selectedYear),
         user.id,
         i18n.language,
+        t,
         (current, total) => {
           const message = t('reports.generatingInvoices').replace('{{count}}', `${current}/${total}`);
           if (toastId) {

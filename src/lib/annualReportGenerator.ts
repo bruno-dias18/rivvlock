@@ -265,6 +265,7 @@ export const downloadAllInvoicesAsZip = async (
   year: number,
   sellerId: string,
   language: string,
+  t: any,
   onProgress?: (current: number, total: number) => void
 ) => {
   try {
@@ -345,11 +346,12 @@ export const downloadAllInvoicesAsZip = async (
           buyerProfile: buyerProfile,
           sellerEmail: '',
           buyerEmail: '',
-          language: language
+          language: language,
+          t: t
         };
 
-        // Generate PDF as blob
-        const pdfBlob = await generateInvoicePDF(invoiceData, true);
+        // Generate PDF as blob using EXISTING invoice number
+        const pdfBlob = await generateInvoicePDF(invoiceData, true, invoice.invoice_number);
 
         if (pdfBlob) {
           // Add real PDF to ZIP

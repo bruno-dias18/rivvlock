@@ -22,34 +22,45 @@ export interface InvoiceData {
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
 const RIVVLOCK_LOGO_BASE64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAoACgDASIAAhEBAxEB/8QAGwABAAIDAQEAAAAAAAAAAAAAAAMEAQIGBQf/xAA0EAABAwMBBQYGAQQDAAAAAAABAAIDBBEhBRIxQVFhBhMicYGRFDKhscHR4fAjQlJi8f/EABsBAAIDAQEBAAAAAAAAAAAAAAAGAwQFAgEH/8QALBEAAgECBQIEBwAAAAAAAAAAAAECAwQFESFBIFESYcHwMVKBkbHh8UKSocL/2gAMAwEAAhEDEQA/APEREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAf/Z';
 
-export const generateInvoicePDF = async (invoiceData: InvoiceData, returnBlob = false): Promise<Blob | void> => {
+export const generateInvoicePDF = async (
+  invoiceData: InvoiceData, 
+  returnBlob = false,
+  existingInvoiceNumber?: string
+): Promise<Blob | void> => {
   const { language = 'fr', t } = invoiceData;
   
   // Generate unique invoice number
   let invoiceNumber: string;
   
-  try {
-    const { data: response, error } = await supabase.functions.invoke('generate-invoice-number', {
-      body: {
-        transactionId: invoiceData.transactionId,
-        sellerId: invoiceData.sellerProfile?.user_id,
-        buyerId: invoiceData.buyerProfile?.user_id,
-        amount: invoiceData.amount,
-        currency: invoiceData.currency
-      }
-    });
+  // Si un numéro de facture existant est fourni, l'utiliser directement
+  if (existingInvoiceNumber) {
+    invoiceNumber = existingInvoiceNumber;
+    console.log('Using existing invoice number:', invoiceNumber);
+  } else {
+    // Sinon, générer un nouveau numéro via l'edge function
+    try {
+      const { data: response, error } = await supabase.functions.invoke('generate-invoice-number', {
+        body: {
+          transactionId: invoiceData.transactionId,
+          sellerId: invoiceData.sellerProfile?.user_id,
+          buyerId: invoiceData.buyerProfile?.user_id,
+          amount: invoiceData.amount,
+          currency: invoiceData.currency
+        }
+      });
 
-    if (error) {
-      console.error('Error generating invoice number:', error);
-      // Fallback to timestamp-based number if service fails
+      if (error) {
+        console.error('Error generating invoice number:', error);
+        // Fallback to timestamp-based number if service fails
+        invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
+      } else {
+        invoiceNumber = response.invoiceNumber;
+      }
+    } catch (error) {
+      console.error('Failed to call invoice number service:', error);
+      // Fallback to timestamp-based number
       invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
-    } else {
-      invoiceNumber = response.invoiceNumber;
     }
-  } catch (error) {
-    console.error('Failed to call invoice number service:', error);
-    // Fallback to timestamp-based number
-    invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
   }
 
   const doc = new jsPDF();
