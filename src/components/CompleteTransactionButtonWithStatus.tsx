@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
 import CompleteTransactionButton from '@/components/CompleteTransactionButton';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
+import { queryClient } from '@/lib/queryClient';
+import { toast } from 'sonner';
 
 interface CompleteTransactionButtonWithStatusProps {
   transaction: any;
@@ -14,14 +16,17 @@ export function CompleteTransactionButtonWithStatus({
 }: CompleteTransactionButtonWithStatusProps) {
   const { data: sellerStatus, isLoading, refetch } = useSellerStripeStatus(transaction.user_id);
   
+  const handleRefresh = async () => {
+    console.log('[CompleteTransactionButtonWithStatus] Manual refresh triggered');
+    // Invalider le cache et refetch
+    await queryClient.invalidateQueries({ queryKey: ['seller-stripe-status', transaction.user_id] });
+    const result = await refetch();
+    console.log('[CompleteTransactionButtonWithStatus] Refresh result:', result);
+    toast.success('Statut du vendeur actualisé');
+  };
+  
   return (
     <div className="space-y-2">
-      {isLoading && (
-        <div className="text-sm text-muted-foreground">
-          Vérification du compte bancaire du vendeur...
-        </div>
-      )}
-      
       <CompleteTransactionButton
         transactionId={transaction.id}
         transactionStatus={transaction.status}
@@ -32,11 +37,12 @@ export function CompleteTransactionButtonWithStatus({
         transactionAmount={transaction.amount}
       />
       
-      {!sellerStatus?.hasActiveAccount && !isLoading && (
+      {!sellerStatus?.hasActiveAccount && (
         <Button
           variant="outline"
           size="sm"
-          onClick={() => refetch()}
+          onClick={handleRefresh}
+          disabled={isLoading}
           className="w-full"
         >
           <RefreshCw className="h-4 w-4 mr-2" />

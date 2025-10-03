@@ -30,13 +30,12 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
       
       // The function returns an array with one element
       const status = data[0];
-      console.log('[useSellerStripeStatus] Seller stripe status:', status);
+      console.log('[useSellerStripeStatus] Parsed status:', status);
       
       return { hasActiveAccount: status.has_active_account };
     },
     enabled: !!sellerId,
-    staleTime: 10000, // 10 seconds - refresh more often
-    gcTime: 30000, // 30 seconds cache
+    staleTime: 10000, // 10 secondes au lieu de 30
     retry: 2,
     retryDelay: 1000,
   });
