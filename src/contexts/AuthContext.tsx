@@ -2,7 +2,6 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
-import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +22,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = React.useState<User | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const navigate = useNavigate();
 
   React.useEffect(() => {
     let mounted = true;
@@ -52,14 +50,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-          
-          // Auto-redirect to auth page when session is null (logout detected)
-          if (!session && event === 'SIGNED_OUT') {
-            logger.info('User signed out, redirecting to /auth');
-            setTimeout(() => {
-              navigate('/auth');
-            }, 0);
-          }
         }
       }
     );
