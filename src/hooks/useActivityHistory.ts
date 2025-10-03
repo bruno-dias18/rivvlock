@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ActivityLog } from './useRecentActivity';
+import { logger } from '@/lib/logger';
 
 export const useActivityHistory = (limit = 50, offset = 0) => {
   return useQuery({
