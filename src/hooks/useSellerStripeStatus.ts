@@ -7,36 +7,46 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
     queryKey: ['seller-stripe-status', sellerId],
     queryFn: async (): Promise<{ hasActiveAccount: boolean }> => {
       logger.debug('[useSellerStripeStatus] Fetching status for seller:', sellerId);
-      
+
       if (!sellerId) {
         logger.debug('[useSellerStripeStatus] No sellerId provided');
         return { hasActiveAccount: false };
       }
-      
-      // Use the secure function that only returns non-sensitive data
-      const { data, error } = await supabase
-        .rpc('get_counterparty_stripe_status', { stripe_user_id: sellerId });
-      
+
+      // 1) Fast path: secure RPC limited to counterparties
+      const { data, error } = await supabase.rpc('get_counterparty_stripe_status', {
+        stripe_user_id: sellerId,
+      });
       logger.debug('[useSellerStripeStatus] RPC response:', { data, error });
-      
-      if (error) {
-        logger.error('[useSellerStripeStatus] Error fetching seller stripe status:', error);
-        return { hasActiveAccount: false };
+
+      let hasActive = false;
+      if (!error && Array.isArray(data) && data.length > 0) {
+        const status = data[0];
+        hasActive = !!status?.has_active_account;
+        logger.debug('[useSellerStripeStatus] Parsed status from RPC:', status);
       }
-      
-      if (!data || data.length === 0) {
-        logger.debug('[useSellerStripeStatus] No data returned or empty array');
-        return { hasActiveAccount: false };
+
+      // 2) If inactive/unknown, trigger a secure server refresh to avoid stale DB state
+      if (!hasActive) {
+        logger.debug('[useSellerStripeStatus] Triggering server refresh for seller:', sellerId);
+        const { data: refreshed, error: refreshError } = await supabase.functions.invoke(
+          'refresh-counterparty-stripe-status',
+          { body: { seller_id: sellerId } }
+        );
+        logger.debug('[useSellerStripeStatus] Refresh function response:', {
+          refreshed,
+          refreshError,
+        });
+
+        if (!refreshError && refreshed) {
+          hasActive = !!refreshed.hasActiveAccount;
+        }
       }
-      
-      // The function returns an array with one element
-      const status = data[0];
-      logger.debug('[useSellerStripeStatus] Parsed status:', status);
-      
-      return { hasActiveAccount: status.has_active_account };
+
+      return { hasActiveAccount: hasActive };
     },
     enabled: !!sellerId,
-    staleTime: 10000, // 10 secondes au lieu de 30
+    staleTime: 30000, // back to 30s
     retry: 2,
     retryDelay: 1000,
   });
