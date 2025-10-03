@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, Check, AlertTriangle, Download, Calendar } from 'lucide-react';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, Check, AlertTriangle, Download, Calendar, Bell, MessageSquare } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -474,42 +474,78 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
-            {(unreadPending.length > 0 || newCounts.pending > 0) && (
-              <Badge className="bg-blue-500 text-white hover:bg-blue-600 ml-1">
-                {unreadPending.length + newCounts.pending}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1">
+              {newCounts.pending > 0 && (
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-300 hover:bg-blue-500/20">
+                  <Bell className="h-3 w-3 mr-1" />
+                  {newCounts.pending}
+                </Badge>
+              )}
+              {unreadPending.length > 0 && (
+                <Badge className="bg-blue-600 text-white hover:bg-blue-700">
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {unreadPending.length}
+                </Badge>
+              )}
+            </div>
           </TabsTrigger>
           <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''} relative`}>
             <Lock className="h-4 w-4" />
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
-            {(unreadBlocked.length > 0 || newCounts.blocked > 0) && (
-              <Badge className="bg-orange-500 text-white hover:bg-orange-600 ml-1">
-                {unreadBlocked.length + newCounts.blocked}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1">
+              {newCounts.blocked > 0 && (
+                <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-300 hover:bg-orange-500/20">
+                  <Bell className="h-3 w-3 mr-1" />
+                  {newCounts.blocked}
+                </Badge>
+              )}
+              {unreadBlocked.length > 0 && (
+                <Badge className="bg-orange-600 text-white hover:bg-orange-700">
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {unreadBlocked.length}
+                </Badge>
+              )}
+            </div>
           </TabsTrigger>
           {!isMobile && (
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('transactions.completed')} ({completedTransactions.length})
-                {(unreadCompleted.length > 0 || newCounts.completed > 0) && (
-                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {unreadCompleted.length + newCounts.completed}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {newCounts.completed > 0 && (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 hover:bg-green-500/20">
+                      <Bell className="h-3 w-3 mr-1" />
+                      {newCounts.completed}
+                    </Badge>
+                  )}
+                  {unreadCompleted.length > 0 && (
+                    <Badge className="bg-green-600 text-white hover:bg-green-700">
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      {unreadCompleted.length}
+                    </Badge>
+                  )}
+                </div>
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 relative">
                 <AlertTriangle className="h-4 w-4" />
                 {t('transactions.disputed')} ({disputedTransactions.length})
-                {(unreadDisputed.length > 0 || newCounts.disputed > 0) && (
-                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {unreadDisputed.length + newCounts.disputed}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {newCounts.disputed > 0 && (
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-300 hover:bg-red-500/20">
+                      <Bell className="h-3 w-3 mr-1" />
+                      {newCounts.disputed}
+                    </Badge>
+                  )}
+                  {unreadDisputed.length > 0 && (
+                    <Badge className="bg-red-600 text-white hover:bg-red-700">
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      {unreadDisputed.length}
+                    </Badge>
+                  )}
+                </div>
               </TabsTrigger>
             </>
           )}
@@ -518,20 +554,38 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
-                {(unreadCompleted.length > 0 || newCounts.completed > 0) && (
-                  <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {unreadCompleted.length + newCounts.completed}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {newCounts.completed > 0 && (
+                    <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 hover:bg-green-500/20 text-[10px] h-5 px-1.5">
+                      <Bell className="h-2.5 w-2.5 mr-0.5" />
+                      {newCounts.completed}
+                    </Badge>
+                  )}
+                  {unreadCompleted.length > 0 && (
+                    <Badge className="bg-green-600 text-white hover:bg-green-700 text-[10px] h-5 px-1.5">
+                      <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
+                      {unreadCompleted.length}
+                    </Badge>
+                  )}
+                </div>
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3 relative">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
-                {(unreadDisputed.length > 0 || newCounts.disputed > 0) && (
-                  <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {unreadDisputed.length + newCounts.disputed}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-1">
+                  {newCounts.disputed > 0 && (
+                    <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-300 hover:bg-red-500/20 text-[10px] h-5 px-1.5">
+                      <Bell className="h-2.5 w-2.5 mr-0.5" />
+                      {newCounts.disputed}
+                    </Badge>
+                  )}
+                  {unreadDisputed.length > 0 && (
+                    <Badge className="bg-red-600 text-white hover:bg-red-700 text-[10px] h-5 px-1.5">
+                      <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
+                      {unreadDisputed.length}
+                    </Badge>
+                  )}
+                </div>
               </TabsTrigger>
             </>
           )}

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle } from 'lucide-react';
+import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, MessageSquare } from 'lucide-react';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
@@ -164,11 +164,20 @@ export default function DashboardPage() {
               <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? "pb-1" : "pb-2"}`}>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <span>{status.title}</span>
-                  {(messageCounts[status.category] > 0 || newCounts[status.category] > 0) && (
-                    <Badge className={status.badgeColor}>
-                      {messageCounts[status.category] + newCounts[status.category]}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {newCounts[status.category] > 0 && (
+                      <Badge variant="outline" className={`${status.badgeColor.replace('bg-', 'bg-').replace('-500', '-500/10').replace('text-white', `text-${status.badgeColor.split('-')[1]}-600`)} border-${status.badgeColor.split('-')[1]}-300`}>
+                        <Bell className="h-3 w-3 mr-1" />
+                        {newCounts[status.category]}
+                      </Badge>
+                    )}
+                    {messageCounts[status.category] > 0 && (
+                      <Badge className={status.badgeColor}>
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {messageCounts[status.category]}
+                      </Badge>
+                    )}
+                  </div>
                 </CardTitle>
                 <status.icon className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
