@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createRegistrationSchema, loginSchema, changePasswordSchema } from '@/lib/validations';
+import { createRegistrationSchema, loginSchema, changePasswordSchema, passwordResetSchema } from '@/lib/validations';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedVatInput } from '@/components/ui/masked-vat-input';
@@ -24,9 +24,11 @@ export default function AuthPage() {
   const redirectTo = searchParams.get('redirect');
   
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(resetMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   
   // Watch form values for dynamic validation
   const [country, setCountry] = useState<'FR' | 'CH'>('FR');
@@ -39,6 +41,8 @@ export default function AuthPage() {
   const getFormSchema = () => {
     if (isResetPassword) {
       return changePasswordSchema;
+    } else if (isForgotPassword) {
+      return passwordResetSchema;
     } else if (isSignUp) {
       return createRegistrationSchema(country, userType);
     } else {
@@ -127,12 +131,39 @@ export default function AuthPage() {
     return <Navigate to={destination} replace />;
   }
 
+  const handlePasswordReset = async (email: string) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const redirectUrl = `${window.location.origin}/auth?mode=reset`;
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl
+      });
+
+      if (resetError) {
+        setError(t('auth.resetEmailError'));
+        console.error('Password reset error:', resetError);
+        return;
+      }
+
+      setResetEmailSent(true);
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const onSubmit = async (data: any) => {
     setLoading(true);
     setError('');
 
     try {
-      if (isResetPassword) {
+      if (isForgotPassword) {
+        await handlePasswordReset(data.email);
+        return;
+      } else if (isResetPassword) {
         const { error: updateError } = await supabase.auth.updateUser({
           password: data.password
         });
@@ -217,10 +248,16 @@ export default function AuthPage() {
             />
           </div>
           <h2 className="text-3xl font-bold text-foreground">
-            {isResetPassword ? t('auth.resetPassword') : (isSignUp ? t('auth.createAccount') : t('auth.welcome'))}
+            {isResetPassword ? t('auth.resetPassword') : 
+             isForgotPassword ? t('auth.forgotPassword') :
+             isSignUp ? t('auth.createAccount') : 
+             t('auth.welcome')}
           </h2>
           <p className="mt-2 text-muted-foreground">
-            {isResetPassword ? t('auth.resetPasswordInfo') : (isSignUp ? t('auth.subtitle') : t('auth.subtitle'))}
+            {isResetPassword ? t('auth.resetPasswordInfo') : 
+             isForgotPassword ? t('auth.forgotPasswordInfo') :
+             isSignUp ? t('auth.subtitle') : 
+             t('auth.subtitle')}
           </p>
         </div>
 
@@ -229,6 +266,12 @@ export default function AuthPage() {
             {error && (
               <div className="rounded-md bg-destructive/15 border border-destructive/20 p-4">
                 <div className="text-destructive text-sm">{error}</div>
+              </div>
+            )}
+
+            {resetEmailSent && (
+              <div className="rounded-md bg-primary/15 border border-primary/20 p-4">
+                <div className="text-primary text-sm">{t('auth.resetEmailSent')}</div>
               </div>
             )}
 
@@ -547,36 +590,41 @@ export default function AuthPage() {
               </>
             )}
 
-            {/* Email and Password Fields */}
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('common.email')} *</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="email" placeholder={t('auth.emailPlaceholder')} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Email Field - shown for all modes except password reset */}
+            {!isResetPassword && (
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('common.email')} *</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder={t('auth.emailPlaceholder')} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    {isResetPassword ? t('auth.newPassword') + ' *' : t('common.password') + ' *'}
-                  </FormLabel>
-                  <FormControl>
-                    <Input {...field} type="password" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Password Field - shown for login, signup, and password reset */}
+            {!isForgotPassword && (
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {isResetPassword ? t('auth.newPassword') + ' *' : t('common.password') + ' *'}
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} type="password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {(isSignUp || isResetPassword) && (
               <FormField
@@ -598,10 +646,11 @@ export default function AuthPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading}
+                disabled={loading || resetEmailSent}
               >
                 {loading ? t('common.loading') : (
                   isResetPassword ? t('auth.changePassword') :
+                  isForgotPassword ? t('auth.sendResetEmail') :
                   isSignUp ? t('auth.createMyAccount') :
                   t('common.login')
                 )}
@@ -610,24 +659,50 @@ export default function AuthPage() {
 
             {!isResetPassword && (
               <>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="text-primary hover:underline text-sm"
-                  >
-                    {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.noAccount')}
-                  </button>
-                </div>
-
-                {!isSignUp && (
+                {!isForgotPassword && (
                   <div className="text-center">
-                    <a
-                      href="/auth?mode=reset"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsSignUp(!isSignUp);
+                        setResetEmailSent(false);
+                      }}
+                      className="text-primary hover:underline text-sm"
+                    >
+                      {isSignUp ? t('auth.alreadyHaveAccount') : t('auth.noAccount')}
+                    </button>
+                  </div>
+                )}
+
+                {!isSignUp && !isForgotPassword && (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(true);
+                        setError('');
+                        setResetEmailSent(false);
+                      }}
                       className="text-muted-foreground hover:text-primary text-sm"
                     >
                       {t('auth.forgotPassword')}
-                    </a>
+                    </button>
+                  </div>
+                )}
+
+                {isForgotPassword && (
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsForgotPassword(false);
+                        setError('');
+                        setResetEmailSent(false);
+                      }}
+                      className="text-muted-foreground hover:text-primary text-sm"
+                    >
+                      {t('auth.backToLogin')}
+                    </button>
                   </div>
                 )}
               </>
