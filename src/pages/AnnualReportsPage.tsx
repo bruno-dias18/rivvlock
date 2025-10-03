@@ -14,7 +14,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 
 export default function AnnualReportsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const currentYear = new Date().getFullYear();
@@ -102,6 +102,7 @@ export default function AnnualReportsPage() {
       const count = await downloadAllInvoicesAsZip(
         parseInt(selectedYear),
         user.id,
+        i18n.language,
         (current, total) => {
           const message = t('reports.generatingInvoices').replace('{{count}}', `${current}/${total}`);
           if (toastId) {

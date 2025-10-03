@@ -264,6 +264,7 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
 export const downloadAllInvoicesAsZip = async (
   year: number,
   sellerId: string,
+  language: string,
   onProgress?: (current: number, total: number) => void
 ) => {
   try {
@@ -343,7 +344,8 @@ export const downloadAllInvoicesAsZip = async (
           sellerProfile: sellerProfile,
           buyerProfile: buyerProfile,
           sellerEmail: '',
-          buyerEmail: ''
+          buyerEmail: '',
+          language: language
         };
 
         // Generate PDF as blob
