@@ -270,7 +270,7 @@ export const downloadAllInvoicesAsZip = async (
 ) => {
   try {
     // Fetch all invoices with transaction IDs for the year
-    const { data: invoices, error } = await supabase
+    const { data: allInvoices, error } = await supabase
       .from('invoices')
       .select('*')
       .eq('seller_id', sellerId)
@@ -279,9 +279,19 @@ export const downloadAllInvoicesAsZip = async (
       .order('generated_at', { ascending: true });
 
     if (error) throw error;
-    if (!invoices || invoices.length === 0) {
+    if (!allInvoices || allInvoices.length === 0) {
       throw new Error('Aucune facture trouvée pour cette année');
     }
+
+    // Keep only the most recent invoice per transaction (to avoid duplicates)
+    const invoiceMap = new Map();
+    allInvoices.forEach(invoice => {
+      const existing = invoiceMap.get(invoice.transaction_id);
+      if (!existing || new Date(invoice.generated_at) > new Date(existing.generated_at)) {
+        invoiceMap.set(invoice.transaction_id, invoice);
+      }
+    });
+    const invoices = Array.from(invoiceMap.values());
 
     // Create a ZIP file
     const zip = new JSZip();
