@@ -298,23 +298,6 @@ export default function ProfilePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('profile.annualReports')}</CardTitle>
-            <CardDescription>
-              {t('profile.annualReportsDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link to="/dashboard/reports">
-              <Button variant="outline" className="w-full justify-start h-auto p-3">
-                <FileText className="h-4 w-4 mr-3" />
-                <span>{t('profile.viewReports')}</span>
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
             <CardTitle>{t('profile.helpSupport')}</CardTitle>
             <CardDescription>
               {t('profile.helpDescription')}

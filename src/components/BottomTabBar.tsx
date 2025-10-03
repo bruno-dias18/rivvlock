@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Users } from 'lucide-react';
+import { Home, CreditCard, User, Users, FileText } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 
@@ -14,6 +14,11 @@ const navigationItems = [
     title: 'navigation.transactions', 
     url: '/dashboard/transactions',
     icon: CreditCard,
+  },
+  {
+    title: 'navigation.reports',
+    url: '/dashboard/reports',
+    icon: FileText,
   },
   {
     title: 'navigation.profile',

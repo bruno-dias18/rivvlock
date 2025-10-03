@@ -211,6 +211,7 @@
   "navigation": {
     "home": "Accueil",
     "transactions": "Transactions",
+    "reports": "Rapports",
     "profile": "Profil",
     "admin": "Admin"
   },
