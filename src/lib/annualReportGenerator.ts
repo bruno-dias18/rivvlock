@@ -269,14 +269,15 @@ export const downloadAllInvoicesAsZip = async (
   onProgress?: (current: number, total: number) => void
 ) => {
   try {
-    // First, fetch all completed transactions for the year
+    // Fetch all validated transactions for the year with all necessary fields
     const { data: transactions, error: txError } = await supabase
       .from('transactions')
-      .select('id')
+      .select('*')
       .eq('user_id', sellerId)
       .eq('status', 'validated')
       .gte('updated_at', `${year}-01-01`)
-      .lte('updated_at', `${year}-12-31`);
+      .lte('updated_at', `${year}-12-31`)
+      .order('updated_at', { ascending: true });
 
     if (txError) throw txError;
     if (!transactions || transactions.length === 0) {
@@ -286,78 +287,100 @@ export const downloadAllInvoicesAsZip = async (
     const transactionIds = transactions.map(t => t.id);
 
     // Fetch all invoices for these transactions
-    const { data: allInvoices, error } = await supabase
+    const { data: allInvoices, error: invError } = await supabase
       .from('invoices')
       .select('*')
       .eq('seller_id', sellerId)
       .in('transaction_id', transactionIds)
-      .order('generated_at', { ascending: true });
+      .order('generated_at', { ascending: false });
 
-    if (error) throw error;
-    if (!allInvoices || allInvoices.length === 0) {
-      throw new Error('Aucune facture trouvée pour ces transactions');
+    if (invError) {
+      console.error('Error fetching invoices:', invError);
     }
 
-    // Keep only the most recent invoice per transaction (to avoid duplicates)
-    const invoiceMap = new Map();
-    allInvoices.forEach(invoice => {
-      const existing = invoiceMap.get(invoice.transaction_id);
-      if (!existing || new Date(invoice.generated_at) > new Date(existing.generated_at)) {
-        invoiceMap.set(invoice.transaction_id, invoice);
+    // Create a map of existing invoices (keeping only the most recent per transaction)
+    const invoiceMap = new Map<string, string>();
+    if (allInvoices && allInvoices.length > 0) {
+      allInvoices.forEach(invoice => {
+        if (!invoiceMap.has(invoice.transaction_id)) {
+          invoiceMap.set(invoice.transaction_id, invoice.invoice_number);
+        }
+      });
+    }
+
+    // Fetch seller profile once
+    const { data: sellerProfile, error: sellerError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', sellerId)
+      .single();
+
+    if (sellerError || !sellerProfile) {
+      throw new Error('Impossible de récupérer le profil vendeur');
+    }
+
+    // Fetch all buyer profiles at once
+    const buyerIds = [...new Set(transactions.map(t => t.buyer_id).filter(Boolean))];
+    let buyerProfilesMap = new Map();
+    if (buyerIds.length > 0) {
+      const { data: buyerProfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('user_id', buyerIds);
+      
+      if (buyerProfiles) {
+        buyerProfiles.forEach(profile => {
+          buyerProfilesMap.set(profile.user_id, profile);
+        });
       }
-    });
-    const invoices = Array.from(invoiceMap.values());
+    }
 
     // Create a ZIP file
     const zip = new JSZip();
     
-    // For each invoice, generate a real PDF
-    for (let i = 0; i < invoices.length; i++) {
-      const invoice = invoices[i];
+    // Loop through transactions (not invoices)
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
       
       // Report progress
       if (onProgress) {
-        onProgress(i + 1, invoices.length);
+        onProgress(i + 1, transactions.length);
       }
 
       try {
-        // Fetch transaction with buyer profile
-        const { data: transaction, error: txError } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('id', invoice.transaction_id)
-          .single();
+        let invoiceNumber: string;
+        
+        // Determine invoice number
+        if (invoiceMap.has(transaction.id)) {
+          // Use existing invoice number
+          invoiceNumber = invoiceMap.get(transaction.id)!;
+        } else {
+          // Generate new invoice via edge function
+          const { data: invoiceData, error: invoiceError } = await supabase.functions.invoke(
+            'generate-invoice-number',
+            {
+              body: {
+                transactionId: transaction.id,
+                sellerId: sellerId,
+                buyerId: transaction.buyer_id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            }
+          );
 
-        if (txError || !transaction) {
-          console.error(`Error fetching transaction ${invoice.transaction_id}:`, txError);
-          continue;
+          if (invoiceError || !invoiceData?.invoiceNumber) {
+            console.error(`Error generating invoice for transaction ${transaction.id}:`, invoiceError);
+            continue;
+          }
+
+          invoiceNumber = invoiceData.invoiceNumber;
         }
 
-        // Fetch seller profile
-        const { data: sellerProfile, error: sellerError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', sellerId)
-          .single();
+        const buyerProfile = transaction.buyer_id ? buyerProfilesMap.get(transaction.buyer_id) : null;
 
-        if (sellerError || !sellerProfile) {
-          console.error(`Error fetching seller profile:`, sellerError);
-          continue;
-        }
-
-        // Fetch buyer profile if exists
-        let buyerProfile = null;
-        if (transaction.buyer_id) {
-          const { data: buyerData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', transaction.buyer_id)
-            .single();
-          buyerProfile = buyerData;
-        }
-
-        // Prepare invoice data (same structure as individual invoice)
-        const invoiceData: InvoiceData = {
+        // Prepare invoice data
+        const invoiceDataForPDF: InvoiceData = {
           transactionId: transaction.id,
           title: transaction.title,
           description: transaction.description,
@@ -375,16 +398,15 @@ export const downloadAllInvoicesAsZip = async (
           t: t
         };
 
-        // Generate PDF as blob using EXISTING invoice number
-        const pdfBlob = await generateInvoicePDF(invoiceData, true, invoice.invoice_number);
+        // Generate PDF as blob with the determined invoice number
+        const pdfBlob = await generateInvoicePDF(invoiceDataForPDF, true, invoiceNumber);
 
         if (pdfBlob) {
-          // Add real PDF to ZIP
-          zip.file(`${invoice.invoice_number}.pdf`, pdfBlob);
+          // Add PDF to ZIP
+          zip.file(`${invoiceNumber}.pdf`, pdfBlob);
         }
       } catch (error) {
-        console.error(`Error generating PDF for invoice ${invoice.invoice_number}:`, error);
-        // Continue with next invoice even if this one fails
+        console.error(`Error generating PDF for transaction ${transaction.id}:`, error);
         continue;
       }
     }
@@ -401,7 +423,7 @@ export const downloadAllInvoicesAsZip = async (
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
 
-    return invoices.length;
+    return transactions.length;
   } catch (error) {
     console.error('Error generating invoices ZIP:', error);
     throw error;
