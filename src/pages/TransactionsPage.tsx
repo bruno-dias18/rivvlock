@@ -23,6 +23,7 @@ import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
+import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useUnreadTransactionsCount } from '@/hooks/useUnreadTransactionMessages';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -76,6 +77,17 @@ export default function TransactionsPage() {
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   
   const activeTab = searchParams.get('tab') || 'pending';
+  
+  // Map active tab to category for new activity notifications
+  const tabToCategoryMap: Record<string, 'pending' | 'blocked' | 'disputed' | 'completed'> = {
+    pending: 'pending',
+    blocked: 'blocked',
+    disputed: 'disputed',
+    completed: 'completed',
+  };
+  
+  const currentCategory = tabToCategoryMap[activeTab] || 'pending';
+  const { data: transactionsWithNewActivity } = useTransactionsWithNewActivity(currentCategory);
 
   // Update sort and save to localStorage
   const updateSort = (newSortBy: 'created_at' | 'service_date' | 'funds_released_at') => {
@@ -597,6 +609,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}
@@ -648,6 +661,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}
@@ -708,6 +722,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}

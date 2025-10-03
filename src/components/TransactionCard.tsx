@@ -23,6 +23,7 @@ interface TransactionCardProps {
   transaction: any;
   user: any;
   showActions?: boolean;
+  hasNewActivity?: boolean;
   onCopyLink: (text: string) => void;
   onPayment: (transaction: any) => void;
   onRefetch: () => void;
@@ -37,6 +38,7 @@ const TransactionCardComponent = ({
   transaction,
   user,
   showActions = true,
+  hasNewActivity = false,
   onCopyLink,
   onPayment,
   onRefetch,
@@ -136,9 +138,15 @@ const TransactionCardComponent = ({
       )}
 
       <Card key={transaction.id} className={cn(
-        "mb-4",
-        isServiceDatePassed() && "border-2 border-orange-400"
+        "mb-4 relative",
+        isServiceDatePassed() && "border-2 border-orange-400",
+        hasNewActivity && "border-2 border-blue-500 dark:border-blue-400"
       )}>
+        {hasNewActivity && (
+          <Badge className="absolute -top-2 -right-2 bg-blue-500 hover:bg-blue-500 text-white shadow-lg z-10">
+            {t('transactions.newActivity')}
+          </Badge>
+        )}
       <CardHeader className="pb-3">
         <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
           <div className="flex-1">

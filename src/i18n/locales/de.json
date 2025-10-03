@@ -144,6 +144,7 @@
     "syncError": "Synchronisierungsfehler"
   },
   "transactions": {
+    "newActivity": "Neu",
     "sort": {
       "creation": "Erstellung",
       "service": "Service",

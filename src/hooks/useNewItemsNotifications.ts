@@ -78,9 +78,32 @@ export const useNewItemsNotifications = () => {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
+  const getTransactionsWithNewActivity = async (category: CategoryKey): Promise<Set<string>> => {
+    if (!user?.id) return new Set();
+    
+    const lastSeen = getLastSeenTimestamp(category);
+    
+    const { data } = await supabase
+      .from('activity_logs')
+      .select('metadata')
+      .eq('user_id', user.id)
+      .in('activity_type', ACTIVITY_TYPES_MAP[category])
+      .gt('created_at', lastSeen);
+    
+    const transactionIds = data
+      ?.map(log => {
+        const metadata = log.metadata as any;
+        return metadata?.transaction_id;
+      })
+      .filter(Boolean) || [];
+    
+    return new Set(transactionIds);
+  };
+
   return {
     newCounts: newCounts || { pending: 0, blocked: 0, disputed: 0, completed: 0 },
     markAsSeen,
-    refetch
+    refetch,
+    getTransactionsWithNewActivity
   };
 };
