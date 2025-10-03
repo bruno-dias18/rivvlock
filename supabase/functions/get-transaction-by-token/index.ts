@@ -82,19 +82,21 @@ serve(async (req) => {
     }
 
     // Check for abuse patterns (brute-force detection)
-    const { data: abuseCheck } = await supabaseClient
-      .rpc('check_token_abuse', { 
+    // Now returns only a boolean, no sensitive data exposed
+    const { data: isBlocked, error: abuseError } = await supabaseClient
+      .rpc('check_token_abuse_secure', { 
         check_token: token, 
         check_ip: ipAddress 
-      })
-      .single();
+      });
 
-    if (abuseCheck?.is_suspicious) {
+    if (abuseError) {
+      console.error('❌ [GET-TX-BY-TOKEN] Error checking abuse:', abuseError);
+    }
+
+    if (isBlocked) {
       console.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', { 
         token: maskToken(token), 
-        ipAddress: maskToken(ipAddress), 
-        reason: abuseCheck.reason,
-        attempts: abuseCheck.attempts_last_hour
+        ipAddress: maskToken(ipAddress)
       });
       
       // Log the blocked attempt using secure function

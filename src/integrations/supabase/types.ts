@@ -647,13 +647,9 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
-      check_token_abuse: {
+      check_token_abuse_secure: {
         Args: { check_ip?: string; check_token: string }
-        Returns: {
-          attempts_last_hour: number
-          is_suspicious: boolean
-          reason: string
-        }[]
+        Returns: boolean
       }
       get_counterparty_safe_profile: {
         Args: { profile_user_id: string }
