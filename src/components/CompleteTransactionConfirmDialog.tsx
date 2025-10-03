@@ -16,6 +16,7 @@ interface CompleteTransactionConfirmDialogProps {
   onConfirm: () => void;
   transactionTitle: string;
   transactionAmount: number;
+  transactionCurrency: string;
   isProcessing: boolean;
 }
 
@@ -25,8 +26,10 @@ export function CompleteTransactionConfirmDialog({
   onConfirm,
   transactionTitle,
   transactionAmount,
+  transactionCurrency,
   isProcessing
 }: CompleteTransactionConfirmDialogProps) {
+  const currencySymbol = transactionCurrency === 'CHF' ? 'CHF' : '€';
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -56,7 +59,7 @@ export function CompleteTransactionConfirmDialog({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Montant :</span>
-              <span className="font-semibold text-lg">{transactionAmount.toFixed(2)} €</span>
+              <span className="font-semibold text-lg">{transactionAmount.toFixed(2)} {currencySymbol}</span>
             </div>
           </div>
 

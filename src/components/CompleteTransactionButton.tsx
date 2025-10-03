@@ -14,6 +14,7 @@ interface CompleteTransactionButtonProps {
   onTransferComplete?: () => void;
   transactionTitle?: string;
   transactionAmount?: number;
+  transactionCurrency?: string;
 }
 
 export default function CompleteTransactionButton({
@@ -23,7 +24,8 @@ export default function CompleteTransactionButton({
   sellerHasStripeAccount = false,
   onTransferComplete,
   transactionTitle = 'Transaction',
-  transactionAmount = 0
+  transactionAmount = 0,
+  transactionCurrency = 'EUR'
 }: CompleteTransactionButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -92,6 +94,7 @@ export default function CompleteTransactionButton({
         onConfirm={handleCompleteTransaction}
         transactionTitle={transactionTitle}
         transactionAmount={transactionAmount}
+        transactionCurrency={transactionCurrency}
         isProcessing={isProcessing}
       />
     </div>

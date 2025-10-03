@@ -21,7 +21,8 @@ export function CompleteTransactionButtonWithStatus({
         sellerHasStripeAccount={sellerStatus?.hasActiveAccount || false}
         onTransferComplete={onTransferComplete}
         transactionTitle={transaction.title}
-        transactionAmount={transaction.amount}
+        transactionAmount={transaction.price}
+        transactionCurrency={transaction.currency}
       />
     </div>
   );
