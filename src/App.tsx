@@ -22,6 +22,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { queryClient } from "./lib/queryClient";
 import i18n from "./i18n/config";
 import "./index.css";
@@ -43,6 +44,7 @@ const App: React.FC = () => {
           React.createElement(
             BrowserRouter,
             null,
+            React.createElement(ScrollToTop),
             React.createElement(
               Routes,
               null,
