@@ -82,13 +82,14 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       const isAdminMessage = m.message_type?.startsWith('admin');
       const isPublicMessage = !m.recipient_id && !isAdminMessage;
       const isSystemMessage = m.message_type === 'system' && !m.recipient_id;
+      const isInitialMessage = m.message_type === 'initial' && !m.recipient_id;
       
       // Strict rule: hide all admin messages not explicitly addressed to current user
       if (isAdminMessage && m.recipient_id !== user?.id) {
         return false;
       }
       
-      return isMyMessage || isToMe || isPublicMessage || isSystemMessage;
+      return isMyMessage || isToMe || isPublicMessage || isSystemMessage || isInitialMessage;
     }
   );
 
@@ -361,6 +362,29 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                 {displayMessages.map((message) => {
                   const isOwnMessage = message.sender_id === user?.id;
                   const isAdminMessage = message.message_type?.startsWith('admin');
+                  const isInitialMessage = message.message_type === 'initial';
+                  
+                  // Initial message has special styling
+                  if (isInitialMessage) {
+                    return (
+                      <div key={message.id} className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                        <div className="flex items-start gap-2 mb-2">
+                          <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                          <div className="flex-1">
+                            <div className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">
+                              Raison du litige
+                            </div>
+                            <p className="text-sm text-amber-900 dark:text-amber-100 whitespace-pre-wrap break-words">
+                              {message.message}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-amber-600/70 dark:text-amber-400/70">
+                          {format(new Date(message.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                        </div>
+                      </div>
+                    );
+                  }
                   
                   return (
                     <div
