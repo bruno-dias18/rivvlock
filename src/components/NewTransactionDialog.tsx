@@ -21,6 +21,8 @@ import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
+import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -62,6 +64,17 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [transactionTitle, setTransactionTitle] = useState('');
   
   const { data: profile } = useProfile();
+  const keyboardInset = useKeyboardInsets();
+  const isMobile = useIsMobile();
+  
+  // Dynamic dialog height calculation for mobile keyboard handling
+  const getDialogHeight = () => {
+    if (!isMobile) return 'max-h-[85vh]';
+    if (keyboardInset > 0) {
+      return `calc(100vh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - 8px)`;
+    }
+    return 'max-h-[75vh]';
+  };
   
   // Determine default currency based on seller's country
   const getDefaultCurrency = () => {
@@ -168,13 +181,20 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
+        <DialogContent 
+          className={cn(
+            "sm:max-w-[600px] flex flex-col",
+            isMobile && "top-2 translate-y-0"
+          )}
+          style={isMobile ? { maxHeight: getDialogHeight() } : undefined}
+        >
+          <DialogHeader className="shrink-0">
             <DialogTitle>Nouvelle transaction</DialogTitle>
           </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
+            <div className="overflow-y-auto flex-1 space-y-6 px-1 pb-2">
             <FormField
               control={form.control}
               name="title"
@@ -182,7 +202,11 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                 <FormItem>
                   <FormLabel>Titre du service</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Cours de guitare" {...field} />
+                    <Input 
+                      placeholder="Ex: Cours de guitare" 
+                      enterKeyHint="next"
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,6 +223,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                     <Textarea 
                       placeholder="Décrivez votre service en détail..."
                       className="min-h-[100px]"
+                      enterKeyHint="next"
                       {...field} 
                     />
                   </FormControl>
@@ -220,6 +245,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                         step="0.01"
                         min="0"
                         placeholder="0.00"
+                        inputMode="decimal"
+                        enterKeyHint="next"
                         {...field}
                         onFocus={(e) => {
                           if (e.target.value === '0') {
@@ -357,8 +384,9 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                 </FormItem>
               )}
             />
+            </div>
 
-            <DialogFooter>
+            <DialogFooter className="shrink-0 mt-4 pt-4 border-t" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
               <Button
                 type="button"
                 variant="outline"
