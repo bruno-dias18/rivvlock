@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = React.useState<User | null>(null);
   const [session, setSession] = React.useState<Session | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     let mounted = true;
@@ -50,6 +52,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+          
+          // Auto-redirect to auth page when session is null (logout detected)
+          if (!session && event === 'SIGNED_OUT') {
+            logger.info('User signed out, redirecting to /auth');
+            setTimeout(() => {
+              navigate('/auth');
+            }, 0);
+          }
         }
       }
     );
@@ -90,9 +100,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      throw error;
+    try {
+      logger.info('Attempting logout...');
+      
+      // Try to sign out via Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        logger.error('Supabase logout error:', error);
+        // Don't throw - continue with local cleanup
+      }
+    } catch (error) {
+      logger.error('Logout exception:', error);
+      // Don't throw - continue with local cleanup
+    } finally {
+      // ALWAYS clear local state and storage, even if API fails
+      logger.info('Clearing local session and storage');
+      
+      // Clear Supabase storage keys
+      localStorage.removeItem('supabase.auth.token');
+      localStorage.removeItem('sb-slthyxqruhfuyfmextwr-auth-token');
+      
+      // Reset local state
+      setSession(null);
+      setUser(null);
+      
+      // Force redirect to auth page
+      logger.info('Forcing redirect to /auth');
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 0);
     }
   };
 

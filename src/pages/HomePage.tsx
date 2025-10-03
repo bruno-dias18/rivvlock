@@ -1,10 +1,15 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Footer } from '@/components/Footer';
 import { InstallPromptBanner } from '@/components/InstallPromptBanner';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -32,9 +37,22 @@ export default function HomePage() {
                   Go to Dashboard
                 </Link>
                 <button
-                  onClick={logout}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-background hover:bg-muted transition-colors"
+                  onClick={async () => {
+                    setIsLoggingOut(true);
+                    
+                    try {
+                      await logout();
+                      toast.success('Déconnexion réussie');
+                    } catch (error) {
+                      toast.error('Erreur lors de la déconnexion');
+                    } finally {
+                      setIsLoggingOut(false);
+                    }
+                  }}
+                  disabled={isLoggingOut}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
+                  {isLoggingOut && <Loader2 className="h-4 w-4 animate-spin" />}
                   Logout
                 </button>
               </div>

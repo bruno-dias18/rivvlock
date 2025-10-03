@@ -1,16 +1,20 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { LogOut, User, ChevronDown } from 'lucide-react';
+import { LogOut, User, ChevronDown, Loader2 } from 'lucide-react';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { toast } from 'sonner';
 
 export function UserMenu() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Get user initials from email
   const getInitials = (email: string) => {
@@ -64,12 +68,26 @@ export function UserMenu() {
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-sm h-9 px-3 hover:bg-destructive hover:text-destructive-foreground"
-            onClick={() => {
+            disabled={isLoggingOut}
+            onClick={async () => {
+              setIsLoggingOut(true);
               setIsOpen(false);
-              logout();
+              
+              try {
+                await logout();
+                toast.success(t('common.logoutSuccess') || 'Déconnexion réussie');
+              } catch (error) {
+                toast.error(t('common.logoutError') || 'Erreur lors de la déconnexion');
+              } finally {
+                setIsLoggingOut(false);
+              }
             }}
           >
-            <LogOut className="h-4 w-4" />
+            {isLoggingOut ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <LogOut className="h-4 w-4" />
+            )}
             {t('common.logout')}
           </Button>
         </div>
