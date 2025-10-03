@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 [GET-TX-BY-TOKEN] Starting transaction fetch');
+    logger.log('🔍 [GET-TX-BY-TOKEN] Starting transaction fetch');
 
     // Use anon key for anonymous access via RLS policy
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -28,7 +29,7 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      console.error('❌ [GET-TX-BY-TOKEN] Missing env variables');
+      logger.error('❌ [GET-TX-BY-TOKEN] Missing env variables');
       return new Response(
         JSON.stringify({
           success: false,
@@ -72,7 +73,7 @@ serve(async (req) => {
           p_error_reason: 'invalid_token_format'
         });
       } catch (logError) {
-        console.error('Failed to log invalid token attempt:', logError);
+        logger.error('Failed to log invalid token attempt:', logError);
       }
       
       return new Response(
@@ -90,11 +91,11 @@ serve(async (req) => {
       });
 
     if (abuseError) {
-      console.error('❌ [GET-TX-BY-TOKEN] Error checking abuse:', abuseError);
+      logger.error('❌ [GET-TX-BY-TOKEN] Error checking abuse:', abuseError);
     }
 
     if (isBlocked) {
-      console.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', { 
+      logger.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', {
         token: maskToken(token), 
         ipAddress: maskToken(ipAddress)
       });
@@ -110,7 +111,7 @@ serve(async (req) => {
           p_error_reason: 'rate_limit_exceeded'
         });
       } catch (logError) {
-        console.error('Failed to log rate limit attempt:', logError);
+        logger.error('Failed to log rate limit attempt:', logError);
       }
 
       return new Response(
@@ -123,7 +124,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
+    logger.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
     // Try by shared_link_token using the secure view (only exposes non-sensitive data)
     let transaction: any = null;
@@ -139,7 +140,7 @@ serve(async (req) => {
 
     if (txByToken) {
       transactionId = txByToken.id;
-      console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
+      logger.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
     } else {
       // Fallback: try direct ID lookup
       const { data: txById, error: idError } = await adminClient
@@ -150,12 +151,12 @@ serve(async (req) => {
 
       if (txById) {
         transactionId = txById.id;
-        console.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
+        logger.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
       }
     }
 
     if (!transactionId) {
-      console.error('❌ [GET-TX-BY-TOKEN] Transaction not found');
+      logger.error('❌ [GET-TX-BY-TOKEN] Transaction not found');
       
       // Log failed access attempt using secure function
       try {
@@ -168,7 +169,7 @@ serve(async (req) => {
           p_error_reason: 'transaction_not_found'
         });
       } catch (logError) {
-        console.error('Failed to log access attempt:', logError);
+        logger.error('Failed to log access attempt:', logError);
       }
       
       return new Response(
@@ -189,7 +190,7 @@ serve(async (req) => {
       .single();
 
     if (fullTxError || !fullTx) {
-      console.error('❌ [GET-TX-BY-TOKEN] Failed to fetch full transaction:', fullTxError);
+      logger.error('❌ [GET-TX-BY-TOKEN] Failed to fetch full transaction:', fullTxError);
       return new Response(
         JSON.stringify({ success: false, error: 'Transaction data unavailable', reason: 'fetch_error' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
@@ -199,7 +200,7 @@ serve(async (req) => {
     transaction = fullTx;
 
 
-    console.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
+    logger.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
 
     // Log successful access using secure function
     try {
@@ -212,7 +213,7 @@ serve(async (req) => {
         p_error_reason: null
       });
     } catch (logError) {
-      console.error('Failed to log successful access:', logError);
+      logger.error('Failed to log successful access:', logError);
     }
 
     // Fetch seller profile and email
@@ -269,7 +270,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ [GET-TX-BY-TOKEN] Error:', error);
+    logger.error('❌ [GET-TX-BY-TOKEN] Error:', error);
     
     const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
     

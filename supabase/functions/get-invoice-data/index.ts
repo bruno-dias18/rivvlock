@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -60,7 +61,7 @@ serve(async (req) => {
 
     // Check authorization: user must be seller or buyer
     if (user.id !== transaction.user_id && user.id !== transaction.buyer_id) {
-      console.error('Unauthorized invoice data access attempt:', {
+      logger.error('Unauthorized invoice data access attempt:', {
         userId: user.id,
         transactionId,
         sellerId: transaction.user_id,
@@ -101,7 +102,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (sellerError) {
-      console.error('Error fetching seller profile:', sellerError);
+      logger.error('Error fetching seller profile:', sellerError);
     }
 
     // Fetch buyer profile with necessary fields
@@ -124,7 +125,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (buyerError) {
-        console.error('Error fetching buyer profile:', buyerError);
+        logger.error('Error fetching buyer profile:', buyerError);
       }
       buyerProfile = data;
     }
@@ -152,7 +153,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in get-invoice-data:', error);
+    logger.error('Error in get-invoice-data:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }

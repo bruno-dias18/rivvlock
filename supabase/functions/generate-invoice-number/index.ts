@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,7 +52,7 @@ Deno.serve(async (req) => {
     });
 
     if (sequenceError) {
-      console.error('Error getting sequence:', sequenceError);
+      logger.error('Error getting sequence:', sequenceError);
       
       // Try to create new sequence if doesn't exist
       const { data: insertData, error: insertError } = await supabaseClient
@@ -67,7 +68,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError) {
-        console.error('Error creating sequence:', insertError);
+        logger.error('Error creating sequence:', insertError);
         return new Response(
           JSON.stringify({ error: 'Failed to generate invoice number' }),
           { 
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
         .single();
 
       if (updateError) {
-        console.error('Error updating sequence:', updateError);
+        logger.error('Error updating sequence:', updateError);
         return new Response(
           JSON.stringify({ error: 'Failed to update sequence' }),
           { 
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
       });
 
     if (invoiceError) {
-      console.error('Error storing invoice:', invoiceError);
+      logger.error('Error storing invoice:', invoiceError);
       return new Response(
         JSON.stringify({ error: 'Failed to store invoice record' }),
         { 
@@ -133,7 +134,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`Generated invoice number: ${invoiceNumber} for seller: ${sellerId}`);
+    logger.log(`Generated invoice number: ${invoiceNumber} for seller: ${sellerId}`);
 
     return new Response(
       JSON.stringify({ 
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in generate-invoice-number function:', error);
+    logger.error('Error in generate-invoice-number function:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { 
