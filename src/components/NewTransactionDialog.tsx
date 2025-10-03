@@ -174,8 +174,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="overflow-y-auto space-y-6 px-1 pb-[40vh]">
-            <div className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
+            <div className="overflow-y-auto space-y-6 px-1 pb-[40vh]">
             <FormField
               control={form.control}
               name="title"
@@ -367,7 +367,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
             />
             </div>
 
-            <div className="mt-6 pt-4 border-t flex gap-2 justify-end">
+            <DialogFooter className="shrink-0 mt-4 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
@@ -379,7 +379,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Création...' : 'Créer la transaction'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
