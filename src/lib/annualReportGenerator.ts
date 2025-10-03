@@ -269,18 +269,33 @@ export const downloadAllInvoicesAsZip = async (
   onProgress?: (current: number, total: number) => void
 ) => {
   try {
-    // Fetch all invoices with transaction IDs for the year
+    // First, fetch all completed transactions for the year
+    const { data: transactions, error: txError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('user_id', sellerId)
+      .eq('status', 'validated')
+      .gte('updated_at', `${year}-01-01`)
+      .lte('updated_at', `${year}-12-31`);
+
+    if (txError) throw txError;
+    if (!transactions || transactions.length === 0) {
+      throw new Error('Aucune transaction trouvée pour cette année');
+    }
+
+    const transactionIds = transactions.map(t => t.id);
+
+    // Fetch all invoices for these transactions
     const { data: allInvoices, error } = await supabase
       .from('invoices')
       .select('*')
       .eq('seller_id', sellerId)
-      .gte('generated_at', `${year}-01-01`)
-      .lte('generated_at', `${year}-12-31`)
+      .in('transaction_id', transactionIds)
       .order('generated_at', { ascending: true });
 
     if (error) throw error;
     if (!allInvoices || allInvoices.length === 0) {
-      throw new Error('Aucune facture trouvée pour cette année');
+      throw new Error('Aucune facture trouvée pour ces transactions');
     }
 
     // Keep only the most recent invoice per transaction (to avoid duplicates)
