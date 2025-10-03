@@ -340,25 +340,21 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
                     </AvatarFallback>
                   </Avatar>
                   
-                  <div className={`flex flex-col gap-1 max-w-[65%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                    <span className="text-xs text-muted-foreground px-1">
-                      {isAdminMessage ? '🛡️ Admin RivvLock' : isOwnMessage ? 'Vous' : 'Autre partie'}
-                    </span>
-                    
+                  <div className={`flex flex-col gap-1 max-w-[75%] ${isOwnMessage ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                      className={`rounded-lg px-4 py-2.5 shadow-sm ${
                         isAdminMessage
                           ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 border border-purple-300 dark:border-purple-700'
                           : isOwnMessage
-                          ? 'bg-primary text-primary-foreground rounded-br-sm'
-                          : 'bg-card border rounded-bl-sm'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-card border'
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap break-all">{message.message}</p>
                     </div>
                     
                     <span className="text-xs text-muted-foreground px-1">
-                      {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
+                      {isAdminMessage ? '🛡️ Admin RivvLock' : isOwnMessage ? 'Vous' : 'Autre partie'} • {format(new Date(message.created_at), 'HH:mm', { locale: fr })}
                     </span>
                   </div>
                 </div>
@@ -388,31 +384,37 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           )}
 
           {/* Message Input */}
-          <div className="flex gap-2 items-end p-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
-            <Textarea
-              ref={textareaRef}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              onFocus={() => setTimeout(ensureBottom, 100)}
-              placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
-              className="resize-none h-14"
-              rows={2}
-              aria-label="Message de négociation"
-              enterKeyHint="send"
-            />
-            <Button
-              type="button"
-              onClick={handleSendMessage}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              disabled={!newMessage.trim() || isSendingMessage}
-              size="icon"
-              className="flex-shrink-0 h-14 w-14"
-              aria-label="Envoyer le message"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+          <div className="p-3 space-y-2" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+            <div className="flex gap-2 items-end">
+              <Textarea
+                ref={textareaRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onFocus={() => setTimeout(ensureBottom, 100)}
+                placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
+                className="resize-none h-14"
+                rows={2}
+                aria-label="Message de négociation"
+                enterKeyHint="send"
+                maxLength={300}
+              />
+              <Button
+                type="button"
+                onClick={handleSendMessage}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                disabled={!newMessage.trim() || isSendingMessage}
+                size="icon"
+                className="flex-shrink-0 h-14 w-14"
+                aria-label="Envoyer le message"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground text-right px-1">
+              {newMessage.length}/300
+            </div>
           </div>
         </div>
       )}
@@ -426,31 +428,37 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
             </p>
           </div>
           
-          <div className="flex gap-2 items-end p-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
-            <Textarea
-              ref={textareaRef}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              onFocus={() => setTimeout(ensureBottom, 100)}
-              placeholder="Répondre à l'admin..."
-              className={`resize-none ${isMobile ? 'h-14' : 'min-h-[60px] max-h-[120px]'}`}
-              rows={2}
-              aria-label="Message pour l'admin"
-              enterKeyHint="send"
-            />
-            <Button
-              type="button"
-              onClick={handleSendMessage}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              disabled={!newMessage.trim() || isSendingMessage}
-              size="icon"
-              className={`flex-shrink-0 ${isMobile ? 'h-14 w-14' : 'h-[60px] w-[60px]'}`}
-              aria-label="Envoyer le message à l'admin"
-            >
-              <Send className={isMobile ? 'h-4 w-4' : 'h-5 w-5'} />
-            </Button>
+          <div className="p-3 space-y-2" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+            <div className="flex gap-2 items-end">
+              <Textarea
+                ref={textareaRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onFocus={() => setTimeout(ensureBottom, 100)}
+                placeholder="Répondre à l'admin..."
+                className="resize-none h-14"
+                rows={2}
+                aria-label="Message pour l'admin"
+                enterKeyHint="send"
+                maxLength={300}
+              />
+              <Button
+                type="button"
+                onClick={handleSendMessage}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
+                disabled={!newMessage.trim() || isSendingMessage}
+                size="icon"
+                className="flex-shrink-0 h-14 w-14"
+                aria-label="Envoyer le message à l'admin"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground text-right px-1">
+              {newMessage.length}/300
+            </div>
           </div>
         </div>
       )}
