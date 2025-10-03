@@ -48,7 +48,9 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
     }
 
     const now = new Date();
-    const serviceDate = transaction.service_date ? new Date(transaction.service_date) : null;
+    const serviceDate = transaction.service_end_date 
+      ? new Date(transaction.service_end_date) 
+      : (transaction.service_date ? new Date(transaction.service_date) : null);
     const validationDeadline = transaction.validation_deadline ? new Date(transaction.validation_deadline) : null;
     const isUserBuyer = transaction.buyer_id === userId;
     const isUserSeller = transaction.user_id === userId;
