@@ -144,6 +144,11 @@
     "syncError": "Synchronisierungsfehler"
   },
   "transactions": {
+    "sort": {
+      "creation": "Erstellung",
+      "service": "Service",
+      "completed": "Abgeschlossen"
+    },
     "title": "Titel",
     "description": "Beschreibung",
     "amount": "Betrag",

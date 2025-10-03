@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, Check, AlertTriangle, Download } from 'lucide-react';
+import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCircle2, Check, AlertTriangle, Download, Calendar } from 'lucide-react';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
@@ -44,7 +44,7 @@ export default function TransactionsPage() {
   
   // Sort states with localStorage persistence
   const SORT_STORAGE_KEY = 'rivvlock-transactions-sort';
-  const [sortBy, setSortBy] = useState<'created_at' | 'service_date'>(() => {
+  const [sortBy, setSortBy] = useState<'created_at' | 'service_date' | 'funds_released_at'>(() => {
     const saved = localStorage.getItem(SORT_STORAGE_KEY);
     if (saved) {
       try {
@@ -78,7 +78,7 @@ export default function TransactionsPage() {
   const activeTab = searchParams.get('tab') || 'pending';
 
   // Update sort and save to localStorage
-  const updateSort = (newSortBy: 'created_at' | 'service_date') => {
+  const updateSort = (newSortBy: 'created_at' | 'service_date' | 'funds_released_at') => {
     let newSortOrder: 'asc' | 'desc';
     
     if (sortBy === newSortBy) {
@@ -86,8 +86,8 @@ export default function TransactionsPage() {
       newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     } else {
       // Nouveau bouton → ordre par défaut selon le type
-      if (newSortBy === 'created_at') {
-        newSortOrder = 'desc'; // Création : récentes d'abord
+      if (newSortBy === 'created_at' || newSortBy === 'funds_released_at') {
+        newSortOrder = 'desc'; // Création / Complétée : récentes d'abord
       } else {
         newSortOrder = 'asc';  // Service : anciennes d'abord
       }
@@ -104,11 +104,22 @@ export default function TransactionsPage() {
   // Sort transactions function
   const sortTransactions = (transactions: any[]) => {
     return [...transactions].sort((a, b) => {
-      let valueA = sortBy === 'service_date' ? a.service_date : a.created_at;
-      let valueB = sortBy === 'service_date' ? b.service_date : b.created_at;
+      let valueA: string;
+      let valueB: string;
       
-      // Handle null service_date (put them at the end)
       if (sortBy === 'service_date') {
+        valueA = a.service_date;
+        valueB = b.service_date;
+      } else if (sortBy === 'funds_released_at') {
+        valueA = a.funds_released_at;
+        valueB = b.funds_released_at;
+      } else {
+        valueA = a.created_at;
+        valueB = b.created_at;
+      }
+      
+      // Handle null values (put them at the end)
+      if (sortBy === 'service_date' || sortBy === 'funds_released_at') {
         if (!valueA && !valueB) return 0;
         if (!valueA) return 1;
         if (!valueB) return -1;
@@ -665,7 +676,16 @@ export default function TransactionsPage() {
                   </CardDescription>
                 </div>
                 <div className={isMobile ? 'w-full' : ''}>
-                  <SortButtons sortBy={sortBy} sortOrder={sortOrder} onSortChange={updateSort} isMobile={isMobile} />
+                  <SortButtons 
+                    sortBy={sortBy} 
+                    sortOrder={sortOrder} 
+                    onSortChange={updateSort} 
+                    isMobile={isMobile}
+                    options={[
+                      { value: 'created_at', label: t('transactions.sort.creation'), icon: Clock },
+                      { value: 'funds_released_at', label: t('transactions.sort.completed'), icon: CheckCircle2 },
+                    ]}
+                  />
                 </div>
               </div>
             </CardHeader>
