@@ -210,7 +210,7 @@ serve(async (req) => {
                   .from('activity_logs')
                   .select('id, user_id')
                   .eq('activity_type', 'funds_blocked')
-                  .contains('metadata', { transaction_id: matchingTransaction.id });
+                  .filter('metadata->>transaction_id', 'eq', matchingTransaction.id);
 
                 const existingUserIds = existingLogs?.map(log => log.user_id) || [];
 
@@ -273,7 +273,7 @@ serve(async (req) => {
                   .from('activity_logs')
                   .select('id, user_id')
                   .eq('activity_type', 'funds_blocked')
-                  .contains('metadata', { transaction_id: matchingTransaction.id });
+                  .filter('metadata->>transaction_id', 'eq', matchingTransaction.id);
 
                 const existingUserIds = existingLogs?.map(log => log.user_id) || [];
                 const logsToCreate = [];
@@ -368,7 +368,7 @@ serve(async (req) => {
             .from('activity_logs')
             .select('id, user_id')
             .eq('activity_type', 'funds_blocked')
-            .contains('metadata', { transaction_id: transaction.id });
+            .filter('metadata->>transaction_id', 'eq', transaction.id);
 
           const existingUserIds = existingLogs?.map(log => log.user_id) || [];
 
@@ -422,7 +422,7 @@ serve(async (req) => {
             .from('activity_logs')
             .select('id, user_id')
             .eq('activity_type', 'transaction_completed')
-            .contains('metadata', { transaction_id: transaction.id });
+            .filter('metadata->>transaction_id', 'eq', transaction.id);
 
           const existingUserIds = existingLogs?.map(log => log.user_id) || [];
 
