@@ -63,8 +63,11 @@ serve(async (req) => {
 
     logger.log("✅ [VALIDATE-SELLER] Seller authorization verified");
 
-    // Check if service date has passed to determine if validation deadline should be set immediately
-    const serviceDate = new Date(transaction.service_date);
+    // Check if service end date (or service date if single-day) has passed
+    // For multi-day services, use service_end_date; otherwise fallback to service_date
+    const serviceEndDate = transaction.service_end_date 
+      ? new Date(transaction.service_end_date)
+      : new Date(transaction.service_date);
     const now = new Date();
     
     let updateData: any = { 
@@ -72,11 +75,14 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
     
-    // Only set validation deadline if service date has passed
-    if (serviceDate <= now) {
+    // Only set validation deadline if service has actually ended
+    if (serviceEndDate <= now) {
       const validationDeadline = new Date();
       validationDeadline.setHours(validationDeadline.getHours() + 48);
       updateData.validation_deadline = validationDeadline.toISOString();
+      logger.log(`✅ [VALIDATE-SELLER] Service ended on ${serviceEndDate.toISOString()}, setting validation deadline to ${validationDeadline.toISOString()}`);
+    } else {
+      logger.log(`ℹ️ [VALIDATE-SELLER] Service not ended yet (ends on ${serviceEndDate.toISOString()}), validation deadline will be set later`);
     }
 
     // Update seller validation and conditional validation deadline (using admin client)
