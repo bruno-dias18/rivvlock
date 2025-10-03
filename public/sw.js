@@ -1,7 +1,7 @@
-// Development detection (only log in local development)
-const isDev = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
-const devLog = (...args) => { if (isDev) console.log(...args); };
-
+// Development detection (logs fully disabled to avoid leaking info)
+const isDev = self.location && (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1');
+// No-op logger to avoid any console usage being flagged by scanners
+const devLog = (..._args) => {};
 const CACHE_NAME = 'rivvlock-v9';
 const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8'];
 const WORKING_DOMAIN = 'https://rivvlock.lovable.app';
