@@ -5,7 +5,9 @@ import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
 
 // Ensure public domain for shared links (redirect from editor/preview domains)
-forceCorrectUrl();
+if (import.meta.env.PROD) {
+  forceCorrectUrl();
+}
 
 window.addEventListener('error', (e) => {
   logger.error('🚨 [Global] window.error:', e.message, e.error);
