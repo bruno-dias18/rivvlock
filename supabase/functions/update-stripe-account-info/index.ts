@@ -30,7 +30,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
 
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
