@@ -449,6 +449,47 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_link_access_logs: {
+        Row: {
+          accessed_at: string | null
+          error_reason: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          token_used: string
+          transaction_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success: boolean
+          token_used: string
+          transaction_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string | null
+          error_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          token_used?: string
+          transaction_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_link_access_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stripe_accounts: {
         Row: {
           account_status: string
@@ -685,6 +726,10 @@ export type Database = {
         Args: { check_ip?: string; check_token: string }
         Returns: boolean
       }
+      generate_secure_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_counterparty_safe_profile: {
         Args: { profile_user_id: string }
         Returns: {
@@ -728,8 +773,20 @@ export type Database = {
         Args: { check_user_id?: string }
         Returns: boolean
       }
+      is_admin_secure: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
       is_super_admin: {
         Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      log_admin_profile_access: {
+        Args: { accessed_user_id: string; admin_user_id: string }
+        Returns: boolean
+      }
+      log_stripe_admin_access: {
+        Args: { accessed_user_id: string; admin_user_id: string }
         Returns: boolean
       }
       log_transaction_access: {
@@ -742,6 +799,14 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      validate_shared_link_secure: {
+        Args: {
+          p_ip_address?: string
+          p_token: string
+          p_transaction_id: string
+        }
+        Returns: boolean
       }
       validate_shared_link_token: {
         Args: { p_token: string; p_transaction_id: string }
