@@ -21,8 +21,6 @@ import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
-import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
-import { useIsMobile } from '@/lib/mobileUtils';
 
 const transactionSchema = z.object({
   title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -64,17 +62,6 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [transactionTitle, setTransactionTitle] = useState('');
   
   const { data: profile } = useProfile();
-  const keyboardInset = useKeyboardInsets();
-  const isMobile = useIsMobile();
-  
-  // Dynamic dialog height calculation for mobile keyboard handling
-  const getDialogHeight = () => {
-    if (!isMobile) return 'max-h-[85vh]';
-    if (keyboardInset > 0) {
-      return `calc(100vh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - 8px)`;
-    }
-    return 'max-h-[75vh]';
-  };
   
   // Determine default currency based on seller's country
   const getDefaultCurrency = () => {
@@ -181,20 +168,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent 
-          className={cn(
-            "sm:max-w-[600px] flex flex-col",
-            isMobile && "top-2 translate-y-0"
-          )}
-          style={isMobile ? { maxHeight: getDialogHeight() } : undefined}
-        >
-          <DialogHeader className="shrink-0">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
             <DialogTitle>Nouvelle transaction</DialogTitle>
           </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 overflow-hidden">
-            <div className="overflow-y-auto flex-1 space-y-6 px-1 pb-2">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="overflow-y-auto space-y-6 px-1 pb-[40vh]">
+            <div className="space-y-6">
             <FormField
               control={form.control}
               name="title"
@@ -386,7 +367,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
             />
             </div>
 
-            <DialogFooter className="shrink-0 mt-4 pt-4 border-t" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+            <div className="mt-6 pt-4 border-t flex gap-2 justify-end">
               <Button
                 type="button"
                 variant="outline"
@@ -398,7 +379,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Création...' : 'Créer la transaction'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </Form>
       </DialogContent>
