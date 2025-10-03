@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Le mot de passe actuel est requis'),
@@ -68,7 +69,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
 
       if (updateError) {
         toast.error('Erreur lors de la mise à jour du mot de passe');
-        console.error('Password update error:', updateError);
+        logger.error('Password update error:', updateError);
         return;
       }
 
@@ -76,7 +77,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error changing password:', error);
+      logger.error('Error changing password:', error);
       toast.error('Une erreur est survenue');
     } finally {
       setIsLoading(false);
@@ -103,14 +104,14 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
 
       if (error) {
         toast.error('Erreur lors de l\'envoi de l\'email');
-        console.error('Password reset error:', error);
+        logger.error('Password reset error:', error);
         return;
       }
 
       toast.success('Email de réinitialisation envoyé ! Vérifiez votre boîte de réception.');
       onOpenChange(false);
     } catch (error) {
-      console.error('Error sending reset email:', error);
+      logger.error('Error sending reset email:', error);
       toast.error('Une erreur est survenue');
     } finally {
       setIsLoading(false);

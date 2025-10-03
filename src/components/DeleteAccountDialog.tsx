@@ -16,6 +16,7 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface DeleteAccountDialogProps {
   open: boolean;
@@ -56,7 +57,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
         return;
       }
     } catch (error) {
-      console.error('Password validation error:', error);
+      logger.error('Password validation error:', error);
       toast.error(t('deleteAccount.incorrectPassword'));
       setIsValidating(false);
       return;
@@ -70,7 +71,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
       const { error } = await supabase.functions.invoke('delete-user-account');
 
       if (error) {
-        console.error('Error deleting account:', error);
+        logger.error('Error deleting account:', error);
         toast.error(error.message || t('deleteAccount.errorMessage'));
         return;
       }
@@ -85,7 +86,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
       window.location.href = '/';
 
     } catch (error) {
-      console.error('Unexpected error:', error);
+      logger.error('Unexpected error:', error);
       toast.error(t('deleteAccount.errorMessage'));
     } finally {
       setIsDeleting(false);

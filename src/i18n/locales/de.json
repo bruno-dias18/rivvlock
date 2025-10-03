@@ -113,7 +113,12 @@
     "termsOfUse": "Nutzungsbedingungen",
     "newPassword": "Neues Passwort",
     "changePassword": "Passwort ändern",
-    "createMyAccount": "Mein Konto erstellen"
+    "createMyAccount": "Mein Konto erstellen",
+    "loginError": "Anmeldefehler. Bitte überprüfen Sie Ihre Anmeldedaten.",
+    "registrationError": "Registrierungsfehler. Bitte versuchen Sie es erneut.",
+    "resetEmailError": "Fehler beim Senden der Reset-E-Mail.",
+    "passwordUpdateError": "Fehler beim Aktualisieren des Passworts.",
+    "resetEmailSent": "Reset-E-Mail erfolgreich gesendet"
   },
   "dashboard": {
     "title": "Dashboard",

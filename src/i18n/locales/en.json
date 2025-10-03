@@ -113,7 +113,12 @@
     "termsOfUse": "terms of use",
     "newPassword": "New password",
     "changePassword": "Change password",
-    "createMyAccount": "Create my account"
+    "createMyAccount": "Create my account",
+    "loginError": "Login error. Please check your credentials.",
+    "registrationError": "Registration error. Please try again.",
+    "resetEmailError": "Error sending reset email.",
+    "passwordUpdateError": "Error updating password.",
+    "resetEmailSent": "Reset email sent successfully"
   },
   "dashboard": {
     "title": "Dashboard",

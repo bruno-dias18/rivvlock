@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicBaseUrl } from '@/lib/appUrl';
+import { logger } from '@/lib/logger';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createRegistrationSchema, loginSchema, changePasswordSchema, passwordResetSchema } from '@/lib/validations';
@@ -143,13 +144,14 @@ export default function AuthPage() {
 
       if (resetError) {
         setError(t('auth.resetEmailError'));
-        console.error('Password reset error:', resetError);
+        logger.error('Password reset error:', resetError);
         return;
       }
 
       setResetEmailSent(true);
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      logger.error('Password reset error:', err);
+      setError(t('auth.resetEmailError'));
     } finally {
       setLoading(false);
     }
@@ -169,8 +171,8 @@ export default function AuthPage() {
         });
 
         if (updateError) {
-          console.error('Password update error:', updateError);
-          setError(t('auth.passwordUpdateError') || updateError.message || 'Erreur lors de la mise à jour du mot de passe');
+          logger.error('Password update error:', updateError);
+          setError(t('auth.passwordUpdateError'));
           return;
         }
 
@@ -205,7 +207,13 @@ export default function AuthPage() {
         await login(data.email, data.password);
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred');
+      logger.error('Auth error:', err);
+      // SECURITY: Generic error messages to prevent information disclosure
+      if (isSignUp) {
+        setError(t('auth.registrationError'));
+      } else {
+        setError(t('auth.loginError'));
+      }
     } finally {
       setLoading(false);
     }

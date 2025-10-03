@@ -1,4 +1,5 @@
-// Conditional logging system for production optimization
+// Production-hardened logging system
+// SECURITY: No console output in production to prevent information leakage
 const isDevelopment = import.meta.env.MODE === 'development';
 
 export const logger = {
@@ -13,8 +14,10 @@ export const logger = {
     }
   },
   error: (...args: any[]) => {
-    // Always log errors, even in production
-    console.error(...args);
+    // SECURITY: Only log errors in development to prevent exposing sensitive info
+    if (isDevelopment) {
+      console.error(...args);
+    }
   },
   info: (...args: any[]) => {
     if (isDevelopment) {

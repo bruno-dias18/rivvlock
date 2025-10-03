@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export const useSellerStripeStatus = (sellerId: string | null) => {
   return useQuery({
     queryKey: ['seller-stripe-status', sellerId],
     queryFn: async (): Promise<{ hasActiveAccount: boolean }> => {
-      console.log('[useSellerStripeStatus] Fetching status for seller:', sellerId);
+      logger.debug('[useSellerStripeStatus] Fetching status for seller:', sellerId);
       
       if (!sellerId) {
-        console.log('[useSellerStripeStatus] No sellerId provided');
+        logger.debug('[useSellerStripeStatus] No sellerId provided');
         return { hasActiveAccount: false };
       }
       
@@ -16,21 +17,21 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
       const { data, error } = await supabase
         .rpc('get_counterparty_stripe_status', { stripe_user_id: sellerId });
       
-      console.log('[useSellerStripeStatus] RPC response:', { data, error });
+      logger.debug('[useSellerStripeStatus] RPC response:', { data, error });
       
       if (error) {
-        console.error('[useSellerStripeStatus] Error fetching seller stripe status:', error);
+        logger.error('[useSellerStripeStatus] Error fetching seller stripe status:', error);
         return { hasActiveAccount: false };
       }
       
       if (!data || data.length === 0) {
-        console.log('[useSellerStripeStatus] No data returned or empty array');
+        logger.debug('[useSellerStripeStatus] No data returned or empty array');
         return { hasActiveAccount: false };
       }
       
       // The function returns an array with one element
       const status = data[0];
-      console.log('[useSellerStripeStatus] Parsed status:', status);
+      logger.debug('[useSellerStripeStatus] Parsed status:', status);
       
       return { hasActiveAccount: status.has_active_account };
     },

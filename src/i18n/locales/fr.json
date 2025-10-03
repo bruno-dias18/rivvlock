@@ -113,7 +113,12 @@
     "termsOfUse": "conditions générales d'utilisation",
     "newPassword": "Nouveau mot de passe",
     "changePassword": "Changer le mot de passe",
-    "createMyAccount": "Créer mon compte"
+    "createMyAccount": "Créer mon compte",
+    "loginError": "Erreur de connexion. Vérifiez vos identifiants.",
+    "registrationError": "Erreur lors de l'inscription. Veuillez réessayer.",
+    "resetEmailError": "Erreur lors de l'envoi de l'email de réinitialisation.",
+    "passwordUpdateError": "Erreur lors de la mise à jour du mot de passe.",
+    "resetEmailSent": "Email de réinitialisation envoyé avec succès"
   },
   "dashboard": {
     "title": "Tableau de bord",

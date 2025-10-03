@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 interface LocalErrorBoundaryState {
   hasError: boolean;
@@ -24,7 +25,7 @@ export class LocalErrorBoundary extends React.Component<LocalErrorBoundaryProps,
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("🚨 [LocalErrorBoundary] Component error:", error, errorInfo);
+    logger.error("🚨 [LocalErrorBoundary] Component error:", error, errorInfo);
   }
 
   handleRetry = () => {

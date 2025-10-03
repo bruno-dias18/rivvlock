@@ -1,6 +1,6 @@
 # Warnings de Production - Acceptés
 
-Date de validation : 2025-10-01
+Date de validation : 2025-10-03
 
 ## État de l'Application
 
@@ -9,7 +9,7 @@ Date de validation : 2025-10-01
 - 18 transactions actives
 - 0 erreur critique
 - Performance optimisée (React Query, memoization)
-- Sécurité renforcée (RLS policies actives)
+- Sécurité renforcée (RLS policies actives, logs client sécurisés)
 - Cron jobs fonctionnels
 
 ## Warnings Supabase (Permanents et Acceptés)
@@ -39,6 +39,36 @@ Date de validation : 2025-10-01
 
 **Conclusion:** Ce warning est **normal et ignorable** - il apparaîtra toujours dans le scanner
 
+## ✅ Corrections Sécurité Appliquées (2025-10-03)
+
+### "Hackers Can See Failed Login Attempts and Security Patterns" - RÉSOLU
+
+**Problème identifié:**
+- Logs client (`console.error`, `console.log`) exposaient des informations d'authentification en production
+- Messages d'erreur trop détaillés révélaient la logique d'auth aux utilisateurs
+
+**Solutions implémentées:**
+1. **Logger durci (`src/lib/logger.ts`)**: Aucune sortie console en production, y compris les erreurs
+2. **Remplacement systématique**: Tous les `console.*` dans les composants d'auth/sécurité remplacés par `logger.*`
+3. **Messages d'erreur génériques**: Interface utilisateur affiche des messages non-techniques (i18n)
+4. **Détails techniques en dev uniquement**: `logger.debug` accessible seulement en développement
+
+**Fichiers modifiés:**
+- `src/lib/logger.ts`: Production hardening
+- `src/contexts/AuthContext.tsx`: Logger intégré
+- `src/pages/AuthPage.tsx`: Messages génériques + logger
+- `src/components/ChangePasswordDialog.tsx`: Logger + erreurs génériques
+- `src/components/DeleteAccountDialog.tsx`: Logger intégré
+- `src/components/CompleteTransactionButtonWithStatus.tsx`: `console.log` → `logger.debug`
+- `src/components/LocalErrorBoundary.tsx`: Logger intégré
+- `src/hooks/useSellerStripeStatus.ts`: Logger intégré
+
+**Résultat:**
+- ✅ Aucun log sensible en production
+- ✅ Messages d'erreur génériques pour les utilisateurs
+- ✅ Détails techniques disponibles uniquement en développement
+- ✅ Conformité aux bonnes pratiques de sécurité client-side
+
 ## Recommandations par Phase
 
 ### Phase 1 : Lancement (0-1000 utilisateurs)
@@ -49,7 +79,6 @@ Date de validation : 2025-10-01
 ### Phase 2 : Croissance (1000-10000 utilisateurs)
 - 🔄 Migrer vers plan Supabase payant (25$/mois)
 - 🔄 Activer Leaked Password Protection
-- 🔄 Résoudre warning pg_net
 - 🔄 Monitoring avancé (Sentry, LogRocket)
 
 ### Phase 3 : Scale (10000+ utilisateurs)
@@ -73,4 +102,4 @@ Date de validation : 2025-10-01
 
 ✅ **L'application est prête pour le lancement public**
 
-Les warnings actuels sont acceptables et n'empêchent pas un lancement en production. La sécurité est assurée par les RLS policies, et les performances sont optimisées.
+Les warnings actuels sont acceptables et n'empêchent pas un lancement en production. La sécurité est assurée par les RLS policies, les logs client sont sécurisés, et les performances sont optimisées.

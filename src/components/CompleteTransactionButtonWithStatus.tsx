@@ -4,6 +4,7 @@ import CompleteTransactionButton from '@/components/CompleteTransactionButton';
 import { useSellerStripeStatus } from '@/hooks/useSellerStripeStatus';
 import { queryClient } from '@/lib/queryClient';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CompleteTransactionButtonWithStatusProps {
   transaction: any;
@@ -17,11 +18,11 @@ export function CompleteTransactionButtonWithStatus({
   const { data: sellerStatus, isLoading, refetch } = useSellerStripeStatus(transaction.user_id);
   
   const handleRefresh = async () => {
-    console.log('[CompleteTransactionButtonWithStatus] Manual refresh triggered');
+    logger.debug('[CompleteTransactionButtonWithStatus] Manual refresh triggered');
     // Invalider le cache et refetch
     await queryClient.invalidateQueries({ queryKey: ['seller-stripe-status', transaction.user_id] });
     const result = await refetch();
-    console.log('[CompleteTransactionButtonWithStatus] Refresh result:', result);
+    logger.debug('[CompleteTransactionButtonWithStatus] Refresh result:', result);
     toast.success('Statut du vendeur actualisé');
   };
   
