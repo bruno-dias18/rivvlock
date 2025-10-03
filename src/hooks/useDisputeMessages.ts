@@ -31,21 +31,6 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
 
       if (error) throw error;
       
-      // Debug logging
-      console.log('[useDisputeMessages] Fetched messages:', {
-        disputeId,
-        userId: user.id,
-        scope,
-        messageCount: data?.length || 0,
-        messages: data?.map(m => ({
-          id: m.id,
-          sender_id: m.sender_id,
-          recipient_id: m.recipient_id,
-          message_type: m.message_type,
-          preview: m.message.substring(0, 30)
-        }))
-      });
-      
       return data || [];
     },
     enabled: !!user?.id && !!disputeId,

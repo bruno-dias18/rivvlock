@@ -26,11 +26,6 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
 
       if (error) throw error;
 
-      console.log('[useAdminDisputeMessaging] fetched', {
-        disputeId,
-        count: data?.length || 0,
-      });
-
       return data || [];
     },
     enabled: !!user?.id && !!disputeId,
@@ -101,7 +96,6 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'dispute_messages', filter: `dispute_id=eq.${disputeId}` },
         (payload) => {
-          console.log('[useAdminDisputeMessaging] realtime insert', payload.new);
           queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', disputeId] });
         }
       )

@@ -23,7 +23,6 @@ export const useStripeAccount = () => {
     queryKey: ['stripe-account', user?.id],
     queryFn: async (): Promise<StripeAccountStatus> => {
       if (!user?.id) {
-        console.log('[useStripeAccount] User not authenticated');
         throw new Error('User not authenticated');
       }
       
@@ -32,7 +31,6 @@ export const useStripeAccount = () => {
       // Retry logic with backoff
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          console.log(`[useStripeAccount] Fetching Stripe account status (attempt ${attempt}/3)...`);
           const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
           
           if (error) {
@@ -42,24 +40,18 @@ export const useStripeAccount = () => {
             if (error.message?.includes('Auth session missing') || 
                 error.message?.includes('not authenticated') ||
                 error.message?.includes('Session expirée')) {
-              console.error('[useStripeAccount] Authentication error - no retry:', error);
               throw new Error('SESSION_EXPIRED');
             }
-            
-            console.error(`[useStripeAccount] Error on attempt ${attempt}:`, error);
             
             // Retry for server errors (500) with exponential backoff
             if (attempt < 3) {
               const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-              console.log(`[useStripeAccount] Retrying in ${delay}ms...`);
               await sleep(delay);
               continue;
             }
             
             throw error;
           }
-          
-          console.log('[useStripeAccount] Stripe account status:', data);
           return {
             ...data,
             last_check: new Date().toISOString()

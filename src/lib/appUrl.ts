@@ -45,10 +45,8 @@ export const forceCorrectUrl = (): void => {
         // Use replace to avoid polluting history
         window.location.replace(targetUrl);
       }
-    } else {
-      console.log('URL correction not needed');
     }
   } catch (e) {
-    console.log('URL correction skipped', e);
+    // URL correction skipped
   }
 };

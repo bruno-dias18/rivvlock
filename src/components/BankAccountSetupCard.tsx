@@ -46,10 +46,8 @@ export default function BankAccountSetupCard() {
     
     try {
       setIsProcessing(true);
-      console.log('Creating/accessing Stripe account...');
       
       const result = await createAccount.mutateAsync();
-      console.log('Create account result:', result);
       
       if (result.onboarding_url) {
         // Redirect the opened tab to the onboarding URL
@@ -106,11 +104,8 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
-      console.log('Starting bank details modification...');
       
       const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
-      
-      console.log('Bank details modification response:', { data, error });
       
       if (error) {
         console.error('Edge function error:', error);
@@ -126,7 +121,6 @@ export default function BankAccountSetupCard() {
       }
       
       if (data?.success && data?.url) {
-        console.log('Opening account modification URL:', data.url);
         
         // Open in new tab after we have the URL
         window.open(data.url, '_blank');

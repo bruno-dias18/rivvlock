@@ -80,22 +80,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         return false;
       }
       
-      const willDisplay = isMyMessage || isToMe || isPublicMessage || isSystemMessage;
-      
-      console.log('[DisputeMessaging] Message filter:', {
-        messageId: m.id,
-        senderId: m.sender_id,
-        recipientId: m.recipient_id,
-        messageType: m.message_type,
-        userId: user?.id,
-        isMyMessage,
-        isToMe,
-        isPublicMessage,
-        isSystemMessage,
-        willDisplay
-      });
-      
-      return willDisplay;
+      return isMyMessage || isToMe || isPublicMessage || isSystemMessage;
     }
   );
   // Simple scroll to bottom

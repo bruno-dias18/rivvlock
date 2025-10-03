@@ -6,11 +6,6 @@ import { forceCorrectUrl } from "./lib/appUrl";
 // Ensure public domain for shared links (redirect from editor/preview domains)
 forceCorrectUrl();
 
-// Startup diagnostics
-if (import.meta.env.MODE === 'development') {
-  console.log('[BOOT] App starting...');
-}
-
 window.addEventListener('error', (e) => {
   console.error('🚨 [Global] window.error:', e.message, e.error);
 });

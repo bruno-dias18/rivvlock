@@ -647,6 +647,10 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
+      check_admin_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       check_token_abuse_secure: {
         Args: { check_ip?: string; check_token: string }
         Returns: boolean

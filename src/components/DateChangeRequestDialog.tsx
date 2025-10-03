@@ -64,7 +64,6 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
       setProposedDate(currentDate ? new Date(currentDate) : undefined);
     } catch (error: any) {
       console.error('Error requesting date change:', error);
-      console.log('Full error details:', error);
       
       let errorMessage = 'Erreur lors de la demande de modification';
       

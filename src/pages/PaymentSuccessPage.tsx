@@ -24,7 +24,6 @@ export default function PaymentSuccessPage() {
             throw error;
           }
           
-          console.log('Payment synced:', data);
           setSyncing(false);
           
           if (data?.transactions_updated > 0) {

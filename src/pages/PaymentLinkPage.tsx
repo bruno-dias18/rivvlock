@@ -39,8 +39,6 @@ export default function PaymentLinkPage() {
 
   const fetchTransaction = async () => {
     try {
-      console.log('🔍 [PaymentLink] Fetching transaction with token:', token);
-      
       // Support both URL token and query param txId for existing links
       const searchParams = new URLSearchParams(window.location.search);
       const txId = searchParams.get('txId');
@@ -49,8 +47,6 @@ export default function PaymentLinkPage() {
       if (!finalToken) {
         throw new Error('No transaction token found in URL or query params');
       }
-      
-      console.log('🔍 [PaymentLink] Using token:', finalToken, '(source:', token ? 'URL' : 'txId query param', ')');
       
       const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
       
@@ -71,25 +67,19 @@ export default function PaymentLinkPage() {
       });
       
       if (!response.ok) {
-        console.error('🚨 [PaymentLink] HTTP error:', response.status, response.statusText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('📦 [PaymentLink] Edge function response:', data);
       
       if (!data || !data.success) {
-        console.error('🚨 [PaymentLink] Transaction fetch failed:', data?.error || 'No data received');
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       } else if (data.transaction) {
-        console.log('✅ [PaymentLink] Transaction found:', data.transaction);
         setTransaction(data.transaction);
       } else {
-        console.error('🚨 [PaymentLink] Transaction data missing from response');
         setError('Données de transaction manquantes');
       }
     } catch (err: any) {
-      console.error('🚨 [PaymentLink] Error fetching transaction:', err);
       setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
     } finally {
       setLoading(false);
