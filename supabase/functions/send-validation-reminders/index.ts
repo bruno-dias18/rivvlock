@@ -152,7 +152,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("❌ [SEND-VALIDATION-REMINDERS] Function error:", error);
+    logger.error("❌ [SEND-VALIDATION-REMINDERS] Function error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

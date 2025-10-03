@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +31,7 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
-      console.error('❌ Authentication failed:', authError);
+      logger.error('❌ Authentication failed:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }), 
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -46,14 +47,14 @@ serve(async (req) => {
       .single();
 
     if (!adminCheck) {
-      console.error('❌ User is not admin:', user.email);
+      logger.error('❌ User is not admin:', user.email);
       return new Response(
         JSON.stringify({ error: 'Admin access required' }), 
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ Admin user authenticated:', user.email);
+    logger.log('✅ Admin user authenticated:', user.email);
 
     // Admin user to keep (bruno-dias@outlook.com)
     const adminUserId = '0a3bc1b2-0d00-412e-a6da-5554abc42aaf';
@@ -63,33 +64,33 @@ serve(async (req) => {
     const { data: allUsers, error: usersError } = await supabaseAdmin.auth.admin.listUsers();
     
     if (usersError) {
-      console.error('❌ Error fetching users:', usersError);
+      logger.error('❌ Error fetching users:', usersError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch users' }), 
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`📊 Found ${allUsers.users.length} users total`);
+    logger.log(`📊 Found ${allUsers.users.length} users total`);
 
     // Filter users to delete (all except admin)
     const usersToDelete = allUsers.users.filter(u => 
       u.id !== adminUserId && u.email !== adminEmail
     );
 
-    console.log(`🗑️ Users to delete: ${usersToDelete.length}`);
+    logger.log(`🗑️ Users to delete: ${usersToDelete.length}`);
     
     const deletionResults = [];
     
     // Delete each user
     for (const userToDelete of usersToDelete) {
       try {
-        console.log(`🗑️ Deleting user: ${userToDelete.email} (${userToDelete.id})`);
+        logger.log(`🗑️ Deleting user: ${userToDelete.email} (${userToDelete.id})`);
         
         const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userToDelete.id);
         
         if (deleteError) {
-          console.error(`❌ Failed to delete user ${userToDelete.email}:`, deleteError);
+          logger.error(`❌ Failed to delete user ${userToDelete.email}:`, deleteError);
           deletionResults.push({
             email: userToDelete.email,
             id: userToDelete.id,
@@ -97,7 +98,7 @@ serve(async (req) => {
             error: deleteError.message
           });
         } else {
-          console.log(`✅ Successfully deleted user: ${userToDelete.email}`);
+          logger.log(`✅ Successfully deleted user: ${userToDelete.email}`);
           deletionResults.push({
             email: userToDelete.email,
             id: userToDelete.id,
@@ -105,7 +106,7 @@ serve(async (req) => {
           });
         }
         } catch (error) {
-          console.error(`❌ Exception deleting user ${userToDelete.email}:`, error);
+          logger.error(`❌ Exception deleting user ${userToDelete.email}:`, error);
           const errorMessage = error instanceof Error ? error.message : String(error);
           deletionResults.push({
             email: userToDelete.email,
@@ -120,7 +121,7 @@ serve(async (req) => {
     const successCount = deletionResults.filter(r => r.success).length;
     const failCount = deletionResults.filter(r => !r.success).length;
 
-    console.log(`✅ Cleanup completed: ${successCount} deleted, ${failCount} failed`);
+    logger.log(`✅ Cleanup completed: ${successCount} deleted, ${failCount} failed`);
 
     return new Response(
       JSON.stringify({
@@ -141,7 +142,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('❌ Function error:', error);
+    logger.error('❌ Function error:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({ error: errorMessage }),

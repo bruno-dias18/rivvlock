@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,7 @@ serve(async (req) => {
   );
 
   try {
-    console.log("Starting Stripe customer sync for existing profiles...");
+    logger.log("Starting Stripe customer sync for existing profiles...");
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -45,7 +46,7 @@ serve(async (req) => {
       throw new Error(`Failed to fetch profiles: ${profilesError.message}`);
     }
 
-    console.log(`Found ${profiles?.length || 0} profiles without Stripe customers`);
+    logger.log(`Found ${profiles?.length || 0} profiles without Stripe customers`);
 
     let created = 0;
     let errors = 0;
@@ -58,7 +59,7 @@ serve(async (req) => {
           const { data: userData, error: userError } = await supabaseClient.auth.admin.getUserById(profile.user_id);
           
           if (userError || !userData.user?.email) {
-            console.error(`No email found for user ${profile.user_id}:`, userError);
+            logger.error(`No email found for user ${profile.user_id}:`, userError);
             errors++;
             continue;
           }
@@ -76,7 +77,7 @@ serve(async (req) => {
           if (existingCustomers.data.length > 0) {
             // Use existing customer
             customerId = existingCustomers.data[0].id;
-            console.log(`Using existing Stripe customer ${customerId} for ${email}`);
+            logger.log(`Using existing Stripe customer ${customerId} for ${email}`);
           } else {
             // Create new customer
             const customerData: any = {
@@ -113,7 +114,7 @@ serve(async (req) => {
 
             const customer = await stripe.customers.create(customerData);
             customerId = customer.id;
-            console.log(`Created new Stripe customer ${customerId} for ${email}`);
+            logger.log(`Created new Stripe customer ${customerId} for ${email}`);
           }
 
           // Update profile with stripe_customer_id
@@ -123,21 +124,21 @@ serve(async (req) => {
             .eq("user_id", profile.user_id);
 
           if (updateError) {
-            console.error(`Failed to update profile ${profile.user_id}:`, updateError);
+            logger.error(`Failed to update profile ${profile.user_id}:`, updateError);
             errors++;
           } else {
             created++;
-            console.log(`Updated profile ${profile.user_id} with customer ${customerId}`);
+            logger.log(`Updated profile ${profile.user_id} with customer ${customerId}`);
           }
 
         } catch (error) {
-          console.error(`Error processing profile ${profile.user_id}:`, error);
+          logger.error(`Error processing profile ${profile.user_id}:`, error);
           errors++;
         }
       }
     }
 
-    console.log(`Sync completed: ${created} customers synced, ${errors} errors`);
+    logger.log(`Sync completed: ${created} customers synced, ${errors} errors`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -150,7 +151,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error syncing Stripe customers:", error);
+    logger.error("Error syncing Stripe customers:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({
       error: errorMessage,

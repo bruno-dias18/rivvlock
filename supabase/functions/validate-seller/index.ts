@@ -138,7 +138,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error validating seller:", error);
+    logger.error("Error validating seller:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
