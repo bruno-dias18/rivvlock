@@ -227,6 +227,21 @@
     "client": "Client",
     "buyer": "Acheteur"
   },
+  "disputes": {
+    "title": "Litiges",
+    "createDispute": "Créer un litige",
+    "resolutionTypes": {
+      "partial_refund": "Remboursement partiel",
+      "full_refund": "Remboursement intégral",
+      "no_refund": "Fonds libérés au vendeur"
+    },
+    "resolutionDetails": {
+      "agreementReached": "Accord trouvé",
+      "refundedToBuyer": "Remboursé à l'acheteur",
+      "receivedBySeller": "Reçu par le vendeur",
+      "adminAgreement": "Accord administratif accepté"
+    }
+  },
   "profile": {
     "editProfile": "Modifier le profil",
     "personalInfo": "Informations personnelles",

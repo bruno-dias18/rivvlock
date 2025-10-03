@@ -222,6 +222,21 @@
     "profile": "Profile",
     "admin": "Admin"
   },
+  "disputes": {
+    "title": "Disputes",
+    "createDispute": "Create dispute",
+    "resolutionTypes": {
+      "partial_refund": "Partial refund",
+      "full_refund": "Full refund",
+      "no_refund": "Funds released to seller"
+    },
+    "resolutionDetails": {
+      "agreementReached": "Agreement reached",
+      "refundedToBuyer": "Refunded to buyer",
+      "receivedBySeller": "Received by seller",
+      "adminAgreement": "Administrative agreement accepted"
+    }
+  },
   "profile": {
     "editProfile": "Edit profile",
     "personalInfo": "Personal information",

@@ -48,6 +48,58 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   const userRole = getUserRole();
+
+  // Parse resolution to extract details and calculate amounts
+  const parseResolution = () => {
+    if (!dispute.resolution) return null;
+    
+    // Extract refund percentage from resolution string
+    const percentMatch = dispute.resolution.match(/(\d+)%/);
+    const refundPercentage = percentMatch ? parseInt(percentMatch[1]) : 0;
+    
+    // Determine proposal type
+    let proposalType = 'no_refund';
+    if (dispute.resolution.includes('full_refund') || refundPercentage === 100) {
+      proposalType = 'full_refund';
+    } else if (dispute.resolution.includes('partial_refund') && refundPercentage > 0) {
+      proposalType = 'partial_refund';
+    }
+    
+    // Calculate amounts
+    const totalAmount = transaction.price;
+    const currency = transaction.currency.toUpperCase();
+    
+    let buyerRefund = 0;
+    let sellerReceived = 0;
+    
+    if (proposalType === 'full_refund') {
+      buyerRefund = totalAmount;
+      sellerReceived = 0;
+    } else if (proposalType === 'partial_refund') {
+      // Rivvlock fees (5%) are shared proportionally
+      const platformFee = totalAmount * 0.05;
+      const buyerShare = refundPercentage / 100;
+      const sellerShare = (100 - refundPercentage) / 100;
+      
+      buyerRefund = (totalAmount * buyerShare) - (platformFee * buyerShare);
+      sellerReceived = (totalAmount * sellerShare) - (platformFee * sellerShare);
+    } else {
+      // no_refund
+      const platformFee = totalAmount * 0.05;
+      buyerRefund = 0;
+      sellerReceived = totalAmount - platformFee;
+    }
+    
+    return {
+      proposalType,
+      refundPercentage,
+      buyerRefund: buyerRefund.toFixed(2),
+      sellerReceived: sellerReceived.toFixed(2),
+      currency
+    };
+  };
+
+  const resolutionDetails = parseResolution();
   const isReporter = dispute.reporter_id === user?.id;
   const canRespond = userRole === 'seller' && !isReporter && dispute.status === 'open';
 
@@ -354,19 +406,52 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         )}
 
         {/* Résumé condensé - Litige résolu */}
-        {dispute.status.startsWith('resolved') && (
+        {dispute.status.startsWith('resolved') && resolutionDetails && (
           <div className="space-y-3">
             <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
                 <h4 className="font-medium">Litige résolu</h4>
               </div>
-              <div className="space-y-1 text-sm">
-                {dispute.resolution && (
-                  <p className="text-foreground">{dispute.resolution}</p>
+              
+              <div className="space-y-2 text-sm">
+                <div>
+                  <p className="font-medium text-foreground mb-1">
+                    {dispute.resolution?.includes('administratif') 
+                      ? t('disputes.resolutionDetails.adminAgreement')
+                      : t('disputes.resolutionDetails.agreementReached')
+                    }
+                  </p>
+                  <p className="text-muted-foreground">
+                    {t(`disputes.resolutionTypes.${resolutionDetails.proposalType}`)}
+                    {resolutionDetails.refundPercentage > 0 && ` - ${resolutionDetails.refundPercentage}%`}
+                  </p>
+                </div>
+                
+                <Separator />
+                
+                {/* Show buyer refund if user is buyer */}
+                {userRole === 'buyer' && parseFloat(resolutionDetails.buyerRefund) > 0 && (
+                  <div className="bg-background/50 p-2 rounded">
+                    <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.refundedToBuyer')}</p>
+                    <p className="font-semibold text-green-600">
+                      {resolutionDetails.buyerRefund} {resolutionDetails.currency}
+                    </p>
+                  </div>
                 )}
+                
+                {/* Show seller received if user is seller */}
+                {userRole === 'seller' && parseFloat(resolutionDetails.sellerReceived) > 0 && (
+                  <div className="bg-background/50 p-2 rounded">
+                    <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.receivedBySeller')}</p>
+                    <p className="font-semibold text-green-600">
+                      {resolutionDetails.sellerReceived} {resolutionDetails.currency}
+                    </p>
+                  </div>
+                )}
+                
                 {dispute.resolved_at && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground pt-1">
                     Résolu le {format(new Date(dispute.resolved_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
                   </p>
                 )}

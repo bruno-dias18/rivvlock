@@ -221,6 +221,21 @@
     "profile": "Profil",
     "admin": "Admin"
   },
+  "disputes": {
+    "title": "Streitigkeiten",
+    "createDispute": "Streitigkeit erstellen",
+    "resolutionTypes": {
+      "partial_refund": "Teilrückerstattung",
+      "full_refund": "Vollständige Rückerstattung",
+      "no_refund": "Geld an Verkäufer freigegeben"
+    },
+    "resolutionDetails": {
+      "agreementReached": "Einigung erzielt",
+      "refundedToBuyer": "An Käufer erstattet",
+      "receivedBySeller": "Vom Verkäufer erhalten",
+      "adminAgreement": "Verwaltungsvereinbarung akzeptiert"
+    }
+  },
   "profile": {
     "managePersonalInfo": "Verwalten Sie Ihre persönlichen Informationen",
     "editProfile": "Profil bearbeiten",
