@@ -32,6 +32,7 @@ import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
 import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { SortButtons } from '@/components/SortButtons';
+import { logger } from '@/lib/logger';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -225,7 +226,7 @@ export default function TransactionsPage() {
         toast.error(t('transactions.copyError'));
       }
     } catch (error) {
-      console.error('Failed to copy/share link:', error);
+      logger.error('Failed to copy/share link:', error);
       toast.error(t('transactions.copyError'));
     }
   };
@@ -254,7 +255,7 @@ export default function TransactionsPage() {
         }
       }
     } catch (error) {
-      console.error('Payment error:', error);
+      logger.error('Payment error:', error);
       toast.error(t('transactions.paymentError'), {
         description: t('transactions.paymentErrorDescription'),
       });
@@ -274,7 +275,7 @@ export default function TransactionsPage() {
       toast.success(t('transactions.fundsReleased'));
       refetch();
     } catch (error) {
-      console.error('Error releasing funds:', error);
+      logger.error('Error releasing funds:', error);
       toast.error(t('transactions.releaseError'));
     }
   };
@@ -296,7 +297,7 @@ export default function TransactionsPage() {
       });
 
       if (error) {
-        console.error('Error deleting transaction:', error);
+        logger.error('Error deleting transaction:', error);
         
         // If deletion fails, try to sync expired statuses and retry
         if (error.message?.includes('Only expired transactions')) {
@@ -313,7 +314,7 @@ export default function TransactionsPage() {
       toast.success('Transaction supprimée avec succès');
       refetch(); // Refresh the transactions list
     } catch (error) {
-      console.error('Error deleting transaction:', error);
+      logger.error('Error deleting transaction:', error);
       toast.error('Erreur lors de la suppression de la transaction');
     }
   };
@@ -331,7 +332,7 @@ export default function TransactionsPage() {
       });
 
       if (error) {
-        console.error('Error renewing transaction:', error);
+         logger.error('Error renewing transaction:', error);
         toast.dismiss();
         
         // Handle specific error messages
@@ -354,7 +355,7 @@ export default function TransactionsPage() {
       
       refetch(); // Refresh the transactions list
     } catch (error) {
-      console.error('Error renewing transaction:', error);
+      logger.error('Error renewing transaction:', error);
       toast.dismiss();
       toast.error('Erreur lors de la relance de la transaction');
     }
@@ -368,7 +369,7 @@ export default function TransactionsPage() {
       });
 
       if (invoiceDataError) {
-        console.error('Error fetching invoice data:', invoiceDataError);
+        logger.error('Error fetching invoice data:', invoiceDataError);
         toast.error(t('transactions.invoiceError'));
         return;
       }
@@ -403,7 +404,7 @@ export default function TransactionsPage() {
           buyerEmail = buyerEmail || emailData.buyerEmail;
         }
       } catch (error) {
-        console.warn('Impossible de récupérer les emails via edge function:', error);
+        logger.warn('Impossible de récupérer les emails via edge function:', error);
       }
 
       const userRole = getUserRole(transaction);
@@ -437,7 +438,7 @@ export default function TransactionsPage() {
         t
       });
     } catch (error) {
-      console.error('Erreur lors de la génération de la facture:', error);
+      logger.error('Erreur lors de la génération de la facture:', error);
       toast.error(t('transactions.invoiceError'));
     }
   };

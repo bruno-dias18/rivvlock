@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertCircle, CreditCard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/logger';
 
 interface TransactionData {
   id: string;
@@ -108,7 +109,7 @@ export default function PaymentLinkPage() {
       // Redirect to transactions page with success indication
       window.location.href = '/dashboard/transactions?joined=success';
     } catch (err: any) {
-      console.error('Error joining transaction:', err);
+      logger.error('Error joining transaction:', err);
       setError(err.message || 'Erreur lors de l\'ajout de la transaction');
     } finally {
       setProcessingPayment(false);

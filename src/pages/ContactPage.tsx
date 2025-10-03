@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 const contactSchema = z.object({
   name: z.string().min(1, 'nameRequired').max(100),
@@ -50,7 +51,7 @@ export default function ContactPage() {
       toast.success(t('contact.success'));
       form.reset();
     } catch (error) {
-      console.error('Error sending contact message:', error);
+      logger.error('Error sending contact message:', error);
       toast.error(t('contact.error'));
     } finally {
       setIsSubmitting(false);

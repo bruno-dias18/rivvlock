@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export default function PaymentSuccessPage() {
             toast.success(`${data.transactions_updated} transaction(s) synchronisée(s)`);
           }
         } catch (error) {
-          console.error(`Sync attempt ${attempts} failed:`, error);
+          logger.error(`Sync attempt ${attempts} failed:`, error);
           
           if (attempts < maxAttempts) {
             // Retry after delay

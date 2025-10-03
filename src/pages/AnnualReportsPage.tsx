@@ -12,6 +12,7 @@ import { generateAnnualReportPDF, downloadAllInvoicesAsZip } from '@/lib/annualR
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export default function AnnualReportsPage() {
   const { t, i18n } = useTranslation();
@@ -54,7 +55,7 @@ export default function AnnualReportsPage() {
       
       toast.success(t('reports.pdfGenerated'));
     } catch (error) {
-      console.error('PDF generation error:', error);
+      logger.error('PDF generation error:', error);
       toast.error(t('reports.generationError'));
     } finally {
       setIsGenerating(false);
@@ -83,7 +84,7 @@ export default function AnnualReportsPage() {
       
       toast.success(t('reports.excelGenerated'));
     } catch (error) {
-      console.error('Excel generation error:', error);
+      logger.error('Excel generation error:', error);
       toast.error(t('reports.generationError'));
     } finally {
       setIsGenerating(false);
@@ -117,7 +118,7 @@ export default function AnnualReportsPage() {
       toast.dismiss(toastId);
       toast.success(t('reports.invoicesZipGenerated').replace('{{count}}', count.toString()));
     } catch (error) {
-      console.error('ZIP generation error:', error);
+      logger.error('ZIP generation error:', error);
       if (toastId) toast.dismiss(toastId);
       toast.error(t('reports.generationError'));
     } finally {

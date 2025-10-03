@@ -17,6 +17,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useTranslation } from 'react-i18next';
+import { logger } from '@/lib/logger';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -41,7 +42,7 @@ export default function DashboardPage() {
           await syncPayments();
           await refetchCounts();
         } catch (error) {
-          console.error('Dashboard auto-sync failed:', error);
+          logger.error('Dashboard auto-sync failed:', error);
         }
       }, 1500);
       return () => clearTimeout(timer);
