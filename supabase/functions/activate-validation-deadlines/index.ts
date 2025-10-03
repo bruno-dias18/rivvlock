@@ -47,10 +47,11 @@ serve(async (req) => {
       });
     }
 
-    // Filter transactions where service_end_date (or service_date) has passed
+    // Filter transactions where service_end_date (or service_date) + 2h grace period has passed
     const filteredTransactions = transactions?.filter(t => {
       const referenceDate = new Date(t.service_end_date || t.service_date);
-      return referenceDate <= now;
+      const gracePeriodEnd = new Date(referenceDate.getTime() + 2 * 60 * 60 * 1000); // +2h grace period
+      return gracePeriodEnd <= now;
     }) || [];
 
     if (!filteredTransactions || filteredTransactions.length === 0) {

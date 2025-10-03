@@ -88,6 +88,9 @@ verify_jwt = true
 [functions.process-validation-deadline]
 verify_jwt = false
 
+[functions.process-validation-deadline.cron]
+schedule = "*/10 * * * *"
+
 [functions.send-validation-reminders]
 verify_jwt = false
 
@@ -96,6 +99,9 @@ verify_jwt = true
 
 [functions.activate-validation-deadlines]
 verify_jwt = false
+
+[functions.activate-validation-deadlines.cron]
+schedule = "*/10 * * * *"
 
 [functions.release-funds]
 verify_jwt = true
