@@ -7,6 +7,7 @@ import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Bankn
 import { cn } from '@/lib/utils';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
+import { SellerValidationCountdown } from '@/components/SellerValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -215,6 +216,13 @@ const TransactionCardComponent = ({
           {userRole === 'buyer' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
             <div className="mt-3">
               <ValidationCountdown validationDeadline={transaction.validation_deadline} />
+            </div>
+          )}
+          
+          {/* Validation countdown for sellers during validation phase */}
+          {userRole === 'seller' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
+            <div className="mt-3">
+              <SellerValidationCountdown validationDeadline={transaction.validation_deadline} />
             </div>
           )}
           
