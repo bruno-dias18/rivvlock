@@ -2,16 +2,17 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
+import { logger } from "./lib/logger";
 
 // Ensure public domain for shared links (redirect from editor/preview domains)
 forceCorrectUrl();
 
 window.addEventListener('error', (e) => {
-  console.error('🚨 [Global] window.error:', e.message, e.error);
+  logger.error('🚨 [Global] window.error:', e.message, e.error);
 });
 
 window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
-  console.error('🚨 [Global] unhandledrejection:', e.reason);
+  logger.error('🚨 [Global] unhandledrejection:', e.reason);
 });
 
 // Service Worker management
@@ -21,7 +22,7 @@ if (import.meta.env.PROD) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js')
         .catch((registrationError) => {
-          console.error('SW registration failed:', registrationError);
+          logger.error('SW registration failed:', registrationError);
         });
     });
   }

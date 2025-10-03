@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 export function useIsAdmin() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -20,13 +21,13 @@ export function useIsAdmin() {
           .rpc('get_current_user_admin_status');
 
         if (error) {
-          console.error('Error checking admin status:', error);
+          logger.error('Error checking admin status:', error);
           setIsAdmin(false);
         } else {
           setIsAdmin(data || false);
         }
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        logger.error('Error checking admin status:', error);
         setIsAdmin(false);
       } finally {
         setLoading(false);

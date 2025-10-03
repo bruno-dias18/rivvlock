@@ -1,4 +1,5 @@
 import React from "react";
+import { logger } from "@/lib/logger";
 
 interface GlobalErrorBoundaryState {
   hasError: boolean;
@@ -16,7 +17,7 @@ export class GlobalErrorBoundary extends React.Component<React.PropsWithChildren
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error("🚨 [ErrorBoundary] Uncaught error:", error, errorInfo);
+    logger.error("🚨 [ErrorBoundary] Uncaught error:", error, errorInfo);
   }
 
   handleReload = () => {
