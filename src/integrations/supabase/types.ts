@@ -700,10 +700,7 @@ export type Database = {
       get_counterparty_stripe_status: {
         Args: { stripe_user_id: string }
         Returns: {
-          charges_enabled: boolean
           has_active_account: boolean
-          onboarding_completed: boolean
-          payouts_enabled: boolean
         }[]
       }
       get_current_user_admin_status: {
