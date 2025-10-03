@@ -23,10 +23,11 @@ type Country = 'FR' | 'CH';
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
+  const resetMode = searchParams.get('mode') === 'reset';
   
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isResetPassword, setIsResetPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(resetMode);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -127,7 +128,7 @@ export default function AuthPage() {
   }, []);
 
   // Redirect if already authenticated (but not during password reset)
-  if (user && !isResetPassword) {
+  if (user && !isResetPassword && !resetMode) {
     const destination = redirectTo || '/dashboard';
     return <Navigate to={destination} replace />;
   }
