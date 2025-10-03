@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { shareOrCopy } from '@/lib/copyUtils';
+import { logger } from '@/lib/logger';
 
 interface ShareLinkDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
         });
       }
     } catch (error) {
-      console.error('Error copying/sharing link:', error);
+      logger.error('Error copying/sharing link:', error);
       toast.error("Erreur lors de l'opération");
     }
   };

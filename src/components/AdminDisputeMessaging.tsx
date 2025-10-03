@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 interface AdminDisputeMessagingProps {
   disputeId: string;
@@ -84,7 +85,7 @@ export const AdminDisputeMessaging = ({
         }
       });
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       toast.error("Impossible d'envoyer le message");
     }
   };

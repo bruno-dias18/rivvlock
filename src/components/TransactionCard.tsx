@@ -18,6 +18,7 @@ import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
 import { useUnreadTransactionMessages } from '@/hooks/useUnreadTransactionMessages';
 import { useHasTransactionMessages } from '@/hooks/useHasTransactionMessages';
+import { logger } from '@/lib/logger';
 
 interface TransactionCardProps {
   transaction: any;
@@ -93,7 +94,7 @@ const TransactionCardComponent = ({
       
       onRefetch();
     } catch (error) {
-      console.error('Error validating seller:', error);
+      logger.error('Error validating seller:', error);
       const { toast } = await import('sonner');
       toast.error(t('transactions.sellerValidationError', 'Impossible de valider la transaction'));
     } finally {

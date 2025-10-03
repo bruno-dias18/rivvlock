@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export const useAutoSync = () => {
   const { user } = useAuth();
@@ -28,7 +29,7 @@ export const useAutoSync = () => {
       const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
       
       if (error) {
-        console.error('Auto-sync error:', error);
+        logger.error('Auto-sync error:', error);
         return;
       }
 
@@ -40,7 +41,7 @@ export const useAutoSync = () => {
 
       return data;
     } catch (error) {
-      console.error('❌ Auto-sync failed:', error);
+      logger.error('❌ Auto-sync failed:', error);
       throw error;
     } finally {
       syncInProgressRef.current = false;

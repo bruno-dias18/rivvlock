@@ -14,6 +14,7 @@ import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AdminOfficialProposalDialog } from './AdminOfficialProposalDialog';
+import { logger } from '@/lib/logger';
 
 interface AdminDisputeCardProps {
   dispute: any;
@@ -142,7 +143,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
       setIsAddingNotes(false);
       onRefetch?.();
     } catch (error) {
-      console.error('Error saving admin notes:', error);
+      logger.error('Error saving admin notes:', error);
       toast.error("Erreur lors de la sauvegarde des notes");
     } finally {
       setIsSubmitting(false);
@@ -168,7 +169,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
       toast.success(`Litige traité avec succès (${actionText})`);
       onRefetch?.();
     } catch (error) {
-      console.error('Error processing dispute:', error);
+      logger.error('Error processing dispute:', error);
       toast.error(`Erreur lors du traitement du litige`);
     } finally {
       setIsProcessing(false);

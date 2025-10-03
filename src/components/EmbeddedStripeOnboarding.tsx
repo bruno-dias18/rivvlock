@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 const stripePromise = loadStripe('pk_test_51S8e6YHnSTKmmIwR2aSbtHog8WNMpe69KLlF4LsNFuWsjazTKV4XCyTCDMR5BeTC6njQ7Xqe8tgniTv3mW0NRIvS00iuXka3W8');
 
@@ -76,7 +77,7 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
                 onSuccess();
               }
             } catch (error) {
-              console.error('Error polling account status:', error);
+              logger.error('Error polling account status:', error);
             }
           }, 3000); // Poll every 3 seconds
 
@@ -89,7 +90,7 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
         }
 
       } catch (err: any) {
-        console.error('Error initializing Stripe onboarding:', err);
+        logger.error('Error initializing Stripe onboarding:', err);
         setError(err.message || 'Erreur lors de l\'initialisation');
         setIsLoading(false);
       }

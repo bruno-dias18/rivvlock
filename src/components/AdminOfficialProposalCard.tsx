@@ -7,6 +7,7 @@ import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 interface AdminOfficialProposalCardProps {
   proposal: any;
@@ -53,7 +54,7 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
       
       onRefetch?.();
     } catch (error) {
-      console.error('Error validating proposal:', error);
+      logger.error('Error validating proposal:', error);
       toast.error("Erreur lors de la validation");
     } finally {
       setIsValidating(false);

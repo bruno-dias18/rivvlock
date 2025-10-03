@@ -18,6 +18,7 @@ import { DateTimePicker } from '@/components/DateTimePicker';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activityLogger';
+import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -152,7 +153,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       
       toast.success('Transaction créée avec succès !');
     } catch (error: any) {
-      console.error('Error creating transaction:', error);
+      logger.error('Error creating transaction:', error);
       toast.error(error.message || 'Erreur lors de la création de la transaction');
     } finally {
       setIsLoading(false);

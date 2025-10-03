@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { generateInvoicePDF, InvoiceData } from './pdfGenerator';
+import { logger } from '@/lib/logger';
 
 export interface AnnualReportData {
   year: number;
@@ -297,7 +298,7 @@ export const downloadAllInvoicesAsZip = async (
       .order('generated_at', { ascending: false });
 
     if (invError) {
-      console.error('Error fetching invoices:', invError);
+      logger.error('Error fetching invoices:', invError);
     }
 
     // Create a map of existing invoices (keeping only the most recent per transaction)
@@ -372,7 +373,7 @@ export const downloadAllInvoicesAsZip = async (
           );
 
           if (invoiceError || !invoiceData?.invoiceNumber) {
-            console.error(`Error generating invoice for transaction ${transaction.id}:`, invoiceError);
+            logger.error(`Error generating invoice for transaction ${transaction.id}:`, invoiceError);
             continue;
           }
 
@@ -408,7 +409,7 @@ export const downloadAllInvoicesAsZip = async (
           zip.file(`${invoiceNumber}.pdf`, pdfBlob);
         }
       } catch (error) {
-        console.error(`Error generating PDF for transaction ${transaction.id}:`, error);
+        logger.error(`Error generating PDF for transaction ${transaction.id}:`, error);
         continue;
       }
     }
@@ -428,7 +429,7 @@ export const downloadAllInvoicesAsZip = async (
 
     return transactions.length;
   } catch (error) {
-    console.error('Error generating invoices ZIP:', error);
+    logger.error('Error generating invoices ZIP:', error);
     throw error;
   }
 };

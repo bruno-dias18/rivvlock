@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface InvoiceData {
   transactionId: string;
@@ -35,7 +36,7 @@ export const generateInvoicePDF = async (
   // Si un numéro de facture existant est fourni, l'utiliser directement
   if (existingInvoiceNumber) {
     invoiceNumber = existingInvoiceNumber;
-    console.log('Using existing invoice number:', invoiceNumber);
+    logger.log('Using existing invoice number:', invoiceNumber);
   } else {
     // Sinon, générer un nouveau numéro via l'edge function
     try {
@@ -50,14 +51,14 @@ export const generateInvoicePDF = async (
       });
 
       if (error) {
-        console.error('Error generating invoice number:', error);
+        logger.error('Error generating invoice number:', error);
         // Fallback to timestamp-based number if service fails
         invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
       } else {
         invoiceNumber = response.invoiceNumber;
       }
     } catch (error) {
-      console.error('Failed to call invoice number service:', error);
+      logger.error('Failed to call invoice number service:', error);
       // Fallback to timestamp-based number
       invoiceNumber = `FAC-${new Date().getFullYear()}-${Date.now()}`;
     }

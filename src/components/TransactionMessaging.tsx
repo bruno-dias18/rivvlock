@@ -12,6 +12,7 @@ import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
+import { logger } from '@/lib/logger';
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -63,7 +64,7 @@ export const TransactionMessaging = ({
     // Mark all messages as read when dialog opens
     if (open && messages.length > 0) {
       markAsRead().catch(err => {
-        console.error('Error marking messages as read:', err);
+        logger.error('Error marking messages as read:', err);
       });
     }
   }, [open, messages.length, markAsRead]);
@@ -98,7 +99,7 @@ export const TransactionMessaging = ({
       // Scroll after everything
       requestAnimationFrame(() => ensureBottom());
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));
     }
   };

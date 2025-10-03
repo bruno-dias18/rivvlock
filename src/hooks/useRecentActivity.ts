@@ -39,7 +39,7 @@ export const useRecentActivity = () => {
         .limit(4);
 
       if (error) {
-        console.error('Error fetching recent activity:', error);
+        logger.error('Error fetching recent activity:', error);
         throw error;
       }
 

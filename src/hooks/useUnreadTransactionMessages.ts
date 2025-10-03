@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { useEffect } from 'react';
 
 /**
@@ -23,14 +24,14 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
         .neq('sender_id', user.id);
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        logger.error('Error fetching messages:', error);
         return 0;
       }
 
       if (!messages || messages.length === 0) return 0;
 
-      // Get read status for these messages
       const messageIds = messages.map(m => m.id);
+      
       const { data: reads, error: readsError } = await supabase
         .from('message_reads')
         .select('message_id')
@@ -38,7 +39,7 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
         .eq('user_id', user.id);
 
       if (readsError) {
-        console.error('Error fetching read status:', readsError);
+        logger.error('Error fetching read status:', readsError);
         return messages.length; // Assume all unread on error
       }
 
@@ -114,14 +115,14 @@ export function useUnreadTransactionsCount(transactions: any[]) {
         .neq('sender_id', user.id);
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        logger.error('Error fetching messages:', error);
         return [];
       }
 
       if (!messages || messages.length === 0) return [];
 
-      // Get read status for these messages
       const messageIds = messages.map(m => m.id);
+      
       const { data: reads, error: readsError } = await supabase
         .from('message_reads')
         .select('message_id')
@@ -129,7 +130,7 @@ export function useUnreadTransactionsCount(transactions: any[]) {
         .eq('user_id', user.id);
 
       if (readsError) {
-        console.error('Error fetching read status:', readsError);
+        logger.error('Error fetching read status:', readsError);
         return [...new Set(messages.map(m => m.transaction_id))];
       }
 
@@ -206,7 +207,7 @@ export function useUnreadMessagesByStatus() {
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
 
       if (txError || !transactions) {
-        console.error('Error fetching transactions:', txError);
+        logger.error('Error fetching transactions:', txError);
         return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
       }
 
@@ -218,7 +219,7 @@ export function useUnreadMessagesByStatus() {
         .neq('sender_id', user.id);
 
       if (msgError) {
-        console.error('Error fetching messages:', msgError);
+        logger.error('Error fetching messages:', msgError);
         return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
       }
 
@@ -226,8 +227,8 @@ export function useUnreadMessagesByStatus() {
         return { pending: 0, blocked: 0, disputed: 0, completed: 0 };
       }
 
-      // Get read status for these messages
       const messageIds = messages.map(m => m.id);
+      
       const { data: reads, error: readsError } = await supabase
         .from('message_reads')
         .select('message_id')
@@ -235,7 +236,7 @@ export function useUnreadMessagesByStatus() {
         .eq('user_id', user.id);
 
       if (readsError) {
-        console.error('Error fetching read status:', readsError);
+        logger.error('Error fetching read status:', readsError);
       }
 
       const readMessageIds = new Set(reads?.map(r => r.message_id) || []);

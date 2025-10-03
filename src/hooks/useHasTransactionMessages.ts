@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 export const useHasTransactionMessages = (transactionId: string | undefined) => {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export const useHasTransactionMessages = (transactionId: string | undefined) => 
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 is "no rows returned" which means no messages exist
-        console.error('Error checking transaction messages:', error);
+        logger.error('Error checking transaction messages:', error);
         return false;
       }
 

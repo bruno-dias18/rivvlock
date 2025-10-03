@@ -16,6 +16,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
+import { logger } from '@/lib/logger';
 
 interface DisputeCardProps {
   dispute: any;
@@ -147,7 +148,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       setResponseText('');
       onRefetch?.();
     } catch (error) {
-      console.error('Error responding to dispute:', error);
+      logger.error('Error responding to dispute:', error);
       toast.error("Erreur lors de l'envoi de la réponse");
     } finally {
       setIsSubmitting(false);
@@ -169,7 +170,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       toast.success("Litige supprimé avec succès");
       onRefetch?.();
     } catch (error) {
-      console.error('Error deleting dispute:', error);
+      logger.error('Error deleting dispute:', error);
       toast.error("Erreur lors de la suppression du litige");
     } finally {
       setIsDeleting(false);

@@ -5,6 +5,7 @@ import { CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteTransactionConfirmDialog } from '@/components/CompleteTransactionConfirmDialog';
+import { logger } from '@/lib/logger';
 
 interface CompleteTransactionButtonProps {
   transactionId: string;
@@ -51,7 +52,7 @@ export default function CompleteTransactionButton({
         onTransferComplete();
       }
     } catch (error: any) {
-      console.error('Error processing transfer:', error);
+      logger.error('Error processing transfer:', error);
       
       let errorMessage = 'Erreur lors du transfert des fonds';
       if (error.message) {

@@ -14,7 +14,7 @@ export const useActivityHistory = (limit = 50, offset = 0) => {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('Error fetching activity history:', error);
+        logger.error('Error fetching activity history:', error);
         throw error;
       }
 

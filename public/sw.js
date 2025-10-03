@@ -1,3 +1,7 @@
+// Development detection (only log in local development)
+const isDev = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const devLog = (...args) => { if (isDev) console.log(...args); };
+
 const CACHE_NAME = 'rivvlock-v9';
 const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8'];
 const WORKING_DOMAIN = 'https://rivvlock.lovable.app';
@@ -17,15 +21,15 @@ const urlsToCache = [
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
-  console.log('🔧 [SW] Installing service worker v9...');
+  devLog('🔧 [SW] Installing service worker v9...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('🔧 [SW] Caching core assets...');
+        devLog('🔧 [SW] Caching core assets...');
         return cache.addAll(urlsToCache);
       })
       .then(() => {
-        console.log('🔧 [SW] Installation complete, taking control...');
+        devLog('🔧 [SW] Installation complete, taking control...');
         return self.skipWaiting();
       })
   );
@@ -33,14 +37,14 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  console.log('🔧 [SW] Activating service worker v9...');
+  devLog('🔧 [SW] Activating service worker v9...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
             if (cacheName !== CACHE_NAME || OLD_CACHE_NAMES.includes(cacheName)) {
-              console.log(`🧹 [SW] Deleting old cache: ${cacheName}`);
+              devLog(`🧹 [SW] Deleting old cache: ${cacheName}`);
               return caches.delete(cacheName);
             }
           })
@@ -48,7 +52,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      console.log('🔧 [SW] Service worker v9 activated and controlling all clients');
+      devLog('🔧 [SW] Service worker v9 activated and controlling all clients');
     })
   );
 });
@@ -62,7 +66,7 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     if (OLD_DOMAINS.includes(url.origin)) {
       const targetUrl = WORKING_DOMAIN + url.pathname + url.search + url.hash;
-      console.log('🔄 [SW] Redirecting navigation from obsolete domain to:', targetUrl);
+      devLog('🔄 [SW] Redirecting navigation from obsolete domain to:', targetUrl);
       event.respondWith(Response.redirect(targetUrl, 302));
       return;
     }
@@ -72,13 +76,13 @@ self.addEventListener('fetch', (event) => {
       fetch(req)
         .then((networkRes) => {
           if (networkRes.status === 404) {
-            console.log('🔄 [SW] 404 for navigation, serving index.html for SPA routing:', req.url);
+            devLog('🔄 [SW] 404 for navigation, serving index.html for SPA routing:', req.url);
             return caches.match('/index.html') || fetch('/index.html');
           }
           return networkRes;
         })
         .catch(() => {
-          console.log('🔄 [SW] Network failed, trying cache fallback for navigation:', req.url);
+          devLog('🔄 [SW] Network failed, trying cache fallback for navigation:', req.url);
           return caches.match('/index.html').then((cached) => cached || fetch('/index.html'));
         })
     );

@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { vatNumberSchema, siretSchema, swissUidSchema } from '@/lib/validations';
 import { useTranslation } from 'react-i18next';
 import { UserX } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 const createProfileSchema = (country: 'FR' | 'CH', isSubjectToVat: boolean, userType?: string) => {
   const baseSchema = z.object({
@@ -213,7 +214,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
 
       if (error) {
         toast.error(t('profile.profileUpdateError'));
-        console.error('Profile update error:', error);
+        logger.error('Profile update error:', error);
         return;
       }
 
@@ -221,7 +222,7 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
       onProfileUpdated();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating profile:', error);
+      logger.error('Error updating profile:', error);
       toast.error(t('profile.unexpectedError'));
     } finally {
       setIsLoading(false);

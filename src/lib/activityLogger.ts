@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export type ActivityType = 
   | 'transaction_created'
@@ -32,7 +33,7 @@ export const logActivity = async ({ type, title, description, metadata }: LogAct
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      console.warn('Cannot log activity: user not authenticated');
+      logger.warn('Cannot log activity: user not authenticated');
       return;
     }
 
@@ -47,9 +48,9 @@ export const logActivity = async ({ type, title, description, metadata }: LogAct
       });
 
     if (error) {
-      console.error('Error logging activity:', error);
+      logger.error('Error logging activity:', error);
     }
   } catch (error) {
-    console.error('Error in logActivity:', error);
+    logger.error('Error in logActivity:', error);
   }
 };

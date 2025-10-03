@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 import { ActivityLog } from './useRecentActivity';
 
 export const useAdminActivityLogs = (limit = 20) => {
@@ -14,7 +15,7 @@ export const useAdminActivityLogs = (limit = 20) => {
         .limit(limit);
 
       if (error) {
-        console.error('Error fetching admin activity logs:', error);
+        logger.error('Error fetching admin activity logs:', error);
         throw error;
       }
 

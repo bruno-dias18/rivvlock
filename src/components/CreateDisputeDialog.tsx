@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 interface CreateDisputeDialogProps {
   open: boolean;
@@ -58,7 +59,7 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
       onOpenChange(false);
       onDisputeCreated?.();
     } catch (error) {
-      console.error('Error creating dispute:', error);
+      logger.error('Error creating dispute:', error);
       toast.error('Erreur lors de la création du litige');
     } finally {
       setIsLoading(false);

@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 interface DateChangeApprovalCardProps {
   transaction: any;
@@ -45,7 +46,7 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
         onResponse?.();
       }, 500);
     } catch (error: any) {
-      console.error('Error responding to date change:', error);
+      logger.error('Error responding to date change:', error);
       toast.error(error.message || 'Erreur lors de la réponse');
     } finally {
       setIsLoading(false);

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DateTimePicker } from '@/components/DateTimePicker';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface DateChangeRequestDialogProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
       setMessage('');
       setProposedDate(currentDate ? new Date(currentDate) : undefined);
     } catch (error: any) {
-      console.error('Error requesting date change:', error);
+      logger.error('Error requesting date change:', error);
       
       let errorMessage = 'Erreur lors de la demande de modification';
       

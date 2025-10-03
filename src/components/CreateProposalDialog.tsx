@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface CreateProposalDialogProps {
   open: boolean;
@@ -43,7 +44,7 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
       setPercentage(50);
       setMessage('');
     } catch (error) {
-      console.error('Error creating proposal:', error);
+      logger.error('Error creating proposal:', error);
       toast.error('Erreur lors de l\'envoi de la proposition');
     }
   };

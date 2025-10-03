@@ -18,6 +18,7 @@ const AvatarFallback = ({ children, className = '' }: { children: React.ReactNod
 );
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { useDisputeMessages } from '@/hooks/useDisputeMessages';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { format } from 'date-fns';
@@ -160,11 +161,11 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
           }
         }
       } catch (logError) {
-        console.error('Error logging activity:', logError);
+        logger.error('Error logging activity:', logError);
         // Don't fail the message send if logging fails
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
     }
   };
 
@@ -206,7 +207,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       // Demander un rafraîchissement (transactions + litiges) pour fermer la messagerie et mettre à jour les montants
       onProposalSent?.();
     } catch (error) {
-      console.error('Error accepting proposal:', error);
+      logger.error('Error accepting proposal:', error);
       toast.error('Erreur lors de l\'acceptation de la proposition');
     }
   };
@@ -216,7 +217,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       await rejectProposal(proposalId);
       toast.info('Proposition refusée');
     } catch (error) {
-      console.error('Error rejecting proposal:', error);
+      logger.error('Error rejecting proposal:', error);
       toast.error('Erreur lors du refus de la proposition');
     }
   };

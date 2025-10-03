@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 interface CopyOptions {
   inputRef?: React.RefObject<HTMLInputElement>;
   fallbackToPrompt?: boolean;
@@ -16,16 +18,16 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
   const isInIframe = window.top !== window;
   const isSecureContext = window.isSecureContext;
   
-  console.debug('[COPY] Environment:', { isInIframe, isSecureContext, hasClipboard: !!navigator.clipboard });
+  logger.debug('[COPY] Environment:', { isInIframe, isSecureContext, hasClipboard: !!navigator.clipboard });
 
   // Method 1: Modern Clipboard API (most reliable when available)
   if (navigator.clipboard && navigator.clipboard.writeText && isSecureContext) {
     try {
       await navigator.clipboard.writeText(text);
-      console.debug('[COPY] Success with Clipboard API');
+      logger.debug('[COPY] Success with Clipboard API');
       return { success: true, method: 'clipboard' };
     } catch (error) {
-      console.debug('[COPY] Clipboard API failed:', error);
+      logger.debug('[COPY] Clipboard API failed:', error);
     }
   }
 
@@ -36,11 +38,11 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
       inputRef.current.setSelectionRange(0, text.length);
       const successful = document.execCommand('copy');
       if (successful) {
-        console.debug('[COPY] Success with execCommand on existing input');
+        logger.debug('[COPY] Success with execCommand on existing input');
         return { success: true, method: 'execCommand' };
       }
     } catch (error) {
-      console.debug('[COPY] execCommand on input failed:', error);
+      logger.debug('[COPY] execCommand on input failed:', error);
     }
   }
 
@@ -62,11 +64,11 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
       document.body.removeChild(textarea);
       
       if (successful) {
-        console.debug('[COPY] Success with temporary textarea');
+        logger.debug('[COPY] Success with temporary textarea');
         return { success: true, method: 'textarea' };
       }
     } catch (error) {
-      console.debug('[COPY] Temporary textarea failed:', error);
+      logger.debug('[COPY] Temporary textarea failed:', error);
     }
   }
 
@@ -75,15 +77,15 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
     try {
       const userChoice = window.prompt('Copiez ce lien manuellement (Ctrl+C ou Cmd+C):', text);
       if (userChoice !== null) {
-        console.debug('[COPY] User used manual prompt');
+        logger.debug('[COPY] User used manual prompt');
         return { success: true, method: 'prompt' };
       }
     } catch (error) {
-      console.debug('[COPY] Prompt fallback failed:', error);
+      logger.debug('[COPY] Prompt fallback failed:', error);
     }
   }
 
-  console.debug('[COPY] All methods failed');
+  logger.debug('[COPY] All methods failed');
   return { 
     success: false, 
     method: 'failed', 
@@ -98,7 +100,7 @@ export const shareOrCopy = async (text: string, title: string = '', options: Cop
   const isMobile = /Mobi|Android/i.test(navigator.userAgent);
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   
-  console.debug('[SHARE] Environment:', { isMobile, isIOS, isInIframe, hasShare: !!navigator.share });
+  logger.debug('[SHARE] Environment:', { isMobile, isIOS, isInIframe, hasShare: !!navigator.share });
 
   // Try native sharing first on mobile (prioritize on iOS and when not in iframe)
   if (navigator.share && isMobile && !isInIframe) {
@@ -108,10 +110,10 @@ export const shareOrCopy = async (text: string, title: string = '', options: Cop
         text: title,
         url: text
       });
-      console.debug('[SHARE] Success with native share');
+      logger.debug('[SHARE] Success with native share');
       return { success: true, method: 'share' }; // Return 'share' to differentiate from clipboard
     } catch (error) {
-      console.debug('[SHARE] Native share failed, falling back to copy:', error);
+      logger.debug('[SHARE] Native share failed, falling back to copy:', error);
     }
   }
 

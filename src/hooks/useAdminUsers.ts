@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface AdminUser {
   id: string;
@@ -22,7 +23,7 @@ export const useAdminUsers = (limit = 10) => {
         .limit(limit);
 
       if (error) {
-        console.error('Error fetching admin users:', error);
+        logger.error('Error fetching admin users:', error);
         throw error;
       }
 

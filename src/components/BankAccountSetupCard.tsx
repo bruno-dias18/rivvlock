@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch, error, isError } = useStripeAccount();
@@ -76,7 +77,7 @@ export default function BankAccountSetupCard() {
         }
       }
     } catch (error) {
-      console.error('Error creating Stripe account:', error);
+      logger.error('Error creating Stripe account:', error);
       
       // Close the tab on error
       if (newTab) {
@@ -108,7 +109,7 @@ export default function BankAccountSetupCard() {
       const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
       
       if (error) {
-        console.error('Edge function error:', error);
+        logger.error('Edge function error:', error);
         
         // Check if it's an account not found error
         if (error.message?.includes('account not found') || error.message?.includes('No account found')) {
@@ -126,11 +127,11 @@ export default function BankAccountSetupCard() {
         window.open(data.url, '_blank');
         toast.success(t('bankAccount.modificationOpened'));
       } else {
-        console.error('Invalid response data:', data);
+        logger.error('Invalid response data:', data);
         throw new Error('No URL returned from edge function');
       }
     } catch (error) {
-      console.error('Error opening bank details modification:', error);
+      logger.error('Error opening bank details modification:', error);
       toast.error(t('bankAccount.modificationError'));
     } finally {
       setIsProcessing(false);

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface ValidationResult {
   success: boolean;
@@ -28,7 +29,7 @@ export function ValidateStripeAccountsButton() {
       const { data, error } = await supabase.functions.invoke<ValidationResult>('validate-stripe-accounts');
       
       if (error) {
-        console.error('Validation error:', error);
+        logger.error('Validation error:', error);
         toast.error(`Erreur lors de la validation : ${error.message}`);
         return;
       }
@@ -63,7 +64,7 @@ export function ValidateStripeAccountsButton() {
       }
       
     } catch (error) {
-      console.error('Unexpected error:', error);
+      logger.error('Unexpected error:', error);
       toast.error("Erreur inattendue lors de la validation");
     } finally {
       setIsValidating(false);

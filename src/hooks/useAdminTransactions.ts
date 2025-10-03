@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 export interface AdminTransaction {
   id: string;
@@ -23,7 +24,7 @@ export const useAdminTransactions = (limit = 10) => {
         .limit(limit);
 
       if (error) {
-        console.error('Error fetching admin transactions:', error);
+        logger.error('Error fetching admin transactions:', error);
         throw error;
       }
 
