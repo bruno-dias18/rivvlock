@@ -121,28 +121,28 @@ serve(async (req) => {
     let transaction: any = null;
     let transactionId: string | null = null;
 
-    // First, try to get the transaction ID via the secure view
-    const { data: sharedTx, error: sharedError } = await supabaseClient
-      .from('shared_transactions')
+    // Try to find transaction by shared_link_token first
+    const { data: txByToken, error: tokenError } = await adminClient
+      .from('transactions')
       .select('id')
-      .eq('id', token)
+      .eq('shared_link_token', token)
+      .eq('status', 'pending')
       .maybeSingle();
 
-    if (sharedTx) {
-      transactionId = sharedTx.id;
-      console.log('✅ [GET-TX-BY-TOKEN] Found by ID via shared view:', transactionId);
+    if (txByToken) {
+      transactionId = txByToken.id;
+      console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
     } else {
-      // If not found by ID, try by shared_link_token using admin client
-      const { data: txByToken, error: tokenError } = await adminClient
+      // Fallback: try direct ID lookup
+      const { data: txById, error: idError } = await adminClient
         .from('transactions')
         .select('id')
-        .eq('shared_link_token', token)
-        .eq('status', 'pending')
+        .eq('id', token)
         .maybeSingle();
 
-      if (txByToken) {
-        transactionId = txByToken.id;
-        console.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
+      if (txById) {
+        transactionId = txById.id;
+        console.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
       }
     }
 

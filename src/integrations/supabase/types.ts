@@ -538,13 +538,6 @@ export type Database = {
             foreignKeyName: "transaction_messages_transaction_id_fkey"
             columns: ["transaction_id"]
             isOneToOne: false
-            referencedRelation: "shared_transactions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transaction_messages_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
             referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
@@ -657,39 +650,6 @@ export type Database = {
       }
     }
     Views: {
-      shared_transactions: {
-        Row: {
-          currency: Database["public"]["Enums"]["currency_code"] | null
-          description: string | null
-          id: string | null
-          price: number | null
-          service_date: string | null
-          service_end_date: string | null
-          status: Database["public"]["Enums"]["transaction_status"] | null
-          title: string | null
-        }
-        Insert: {
-          currency?: Database["public"]["Enums"]["currency_code"] | null
-          description?: string | null
-          id?: string | null
-          price?: number | null
-          service_date?: string | null
-          service_end_date?: string | null
-          status?: Database["public"]["Enums"]["transaction_status"] | null
-          title?: string | null
-        }
-        Update: {
-          currency?: Database["public"]["Enums"]["currency_code"] | null
-          description?: string | null
-          id?: string | null
-          price?: number | null
-          service_date?: string | null
-          service_end_date?: string | null
-          status?: Database["public"]["Enums"]["transaction_status"] | null
-          title?: string | null
-        }
-        Relationships: []
-      }
       user_disputes: {
         Row: {
           created_at: string | null
