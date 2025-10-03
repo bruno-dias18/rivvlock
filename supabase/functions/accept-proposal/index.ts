@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,7 +40,7 @@ serve(async (req) => {
 
     const { proposalId } = await req.json();
 
-    console.log("Accepting proposal:", proposalId, "by user:", user.id);
+    logger.log("Accepting proposal:", proposalId, "by user:", user.id);
 
     // Get the proposal
     const { data: proposal, error: proposalError } = await supabaseClient
@@ -49,7 +50,7 @@ serve(async (req) => {
       .single();
 
     if (proposalError || !proposal) {
-      console.error("Error fetching proposal:", proposalError);
+      logger.error("Error fetching proposal:", proposalError);
       throw new Error("Proposal not found");
     }
 
@@ -66,7 +67,7 @@ serve(async (req) => {
       .single();
 
     if (disputeError || !dispute) {
-      console.error("Error fetching dispute:", disputeError);
+      logger.error("Error fetching dispute:", disputeError);
       throw new Error("Dispute not found");
     }
 
@@ -78,7 +79,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("Error fetching transaction:", transactionError);
+      logger.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -118,20 +119,20 @@ serve(async (req) => {
       const refundPercentage = proposal.refund_percentage || 100;
       const isFullRefund = proposal.proposal_type === 'full_refund' || refundPercentage === 100;
 
-      console.log(`Processing ${refundPercentage}% refund for transaction ${transaction.id}`);
+      logger.log(`Processing ${refundPercentage}% refund for transaction ${transaction.id}`);
 
       // First, retrieve the PaymentIntent to check its status
       const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
-      console.log(`PaymentIntent status: ${paymentIntent.status}`);
+      logger.log(`PaymentIntent status: ${paymentIntent.status}`);
 
       if (paymentIntent.status === 'requires_capture') {
         // PaymentIntent is not captured yet - we need to cancel or capture partially
-        console.log(`PaymentIntent not captured - handling authorization`);
+        logger.log(`PaymentIntent not captured - handling authorization`);
 
         if (isFullRefund) {
           // Full refund = cancel the authorization completely, no Rivvlock fees
           await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
-          console.log(`✅ Authorization cancelled (full refund, no Rivvlock fees)`);
+          logger.log(`✅ Authorization cancelled (full refund, no Rivvlock fees)`);
         } else {
           // Partial refund: Rivvlock fees (5%) are shared proportionally
           const capturePercentage = 100 - refundPercentage;
@@ -159,7 +160,7 @@ serve(async (req) => {
             throw new Error('Seller Stripe account not found');
           }
 
-          console.log(`Capturing ${captureAmount / 100} ${currency} (seller: ${sellerAmount / 100}, fees: ${platformFee / 100})`);
+          logger.log(`Capturing ${captureAmount / 100} ${currency} (seller: ${sellerAmount / 100}, fees: ${platformFee / 100})`);
 
           // Capture on platform account
           await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
@@ -174,28 +175,28 @@ serve(async (req) => {
               destination: sellerAccount.stripe_account_id,
               transfer_group: `txn_${transaction.id}`,
             });
-            console.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (after proportional fees)`);
+            logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (after proportional fees)`);
           }
 
           const buyerRefund = totalAmount - captureAmount;
-          console.log(`✅ Partial refund: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
+          logger.log(`✅ Partial refund: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
         }
 
       } else if (paymentIntent.status === 'succeeded') {
         // PaymentIntent already captured - create a refund
-        console.log(`PaymentIntent already captured - creating refund`);
+        logger.log(`PaymentIntent already captured - creating refund`);
 
         let refundAmount: number;
         if (isFullRefund) {
           // Full refund: return everything to buyer, no Rivvlock fees
           refundAmount = totalAmount;
-          console.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees)`);
+          logger.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees)`);
         } else {
           // Partial refund: buyer gets their share minus their portion of fees
           const platformFee = Math.round(totalAmount * 0.05);
           const buyerShare = refundPercentage / 100;
           refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
-          console.log(`Partial refund: ${refundAmount / 100} (buyer share after proportional fees)`);
+          logger.log(`Partial refund: ${refundAmount / 100} (buyer share after proportional fees)`);
         }
 
         // Idempotency: avoid double refunds if already refunded previously
@@ -208,7 +209,7 @@ serve(async (req) => {
           .reduce((sum, r) => sum + (r.amount || 0), 0);
 
         if (alreadyRefunded >= refundAmount) {
-          console.log(`⏭️ Refund already processed (amount_refunded=${alreadyRefunded}). Skipping.`);
+          logger.log(`⏭️ Refund already processed (amount_refunded=${alreadyRefunded}). Skipping.`);
         } else {
           const amountToRefund = refundAmount - alreadyRefunded;
           await stripe.refunds.create({
@@ -223,7 +224,7 @@ serve(async (req) => {
           });
         }
 
-        console.log(`✅ Refund processed/check completed: ${refundPercentage}%`);
+        logger.log(`✅ Refund processed/check completed: ${refundPercentage}%`);
       } else {
         throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
@@ -253,7 +254,7 @@ serve(async (req) => {
         throw new Error('Seller Stripe account not found');
       }
 
-      console.log(`Capturing full amount for seller (no refund)`);
+      logger.log(`Capturing full amount for seller (no refund)`);
 
       // Capture without application_fee_amount (separate charges + transfers)
       await stripe.paymentIntents.capture(
@@ -269,12 +270,12 @@ serve(async (req) => {
           destination: sellerAccount.stripe_account_id,
           transfer_group: `txn_${transaction.id}`,
         });
-        console.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+        logger.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
       }
 
       disputeStatus = 'resolved_release';
       newTransactionStatus = 'validated';
-      console.log(`✅ Funds released to seller (no refund)`);
+      logger.log(`✅ Funds released to seller (no refund)`);
     }
 
     // Update proposal status
@@ -286,7 +287,7 @@ serve(async (req) => {
       })
       .eq("id", proposalId);
     if (proposalUpdateError) {
-      console.error("Error updating proposal status:", proposalUpdateError);
+      logger.error("Error updating proposal status:", proposalUpdateError);
     }
 
     // Update dispute status
@@ -300,7 +301,7 @@ serve(async (req) => {
       })
       .eq("id", dispute.id);
     if (disputeUpdateError) {
-      console.error("Error updating dispute:", disputeUpdateError);
+      logger.error("Error updating dispute:", disputeUpdateError);
     }
 
     // Calculate updated price for partial refund
@@ -322,7 +323,7 @@ serve(async (req) => {
       })
       .eq("id", transaction.id);
     if (txUpdateError) {
-      console.error("Error updating transaction:", txUpdateError);
+      logger.error("Error updating transaction:", txUpdateError);
     }
 
     // Create confirmation message
@@ -341,10 +342,10 @@ serve(async (req) => {
         message_type: 'system',
       });
     if (messageInsertError) {
-      console.error("Error inserting system message:", messageInsertError);
+      logger.error("Error inserting system message:", messageInsertError);
     }
 
-    console.log("✅ Proposal accepted and processed successfully");
+    logger.log("✅ Proposal accepted and processed successfully");
 
     // Log activity for all other participants
     const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
@@ -374,7 +375,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error in accept-proposal:", error);
+    logger.error("Error in accept-proposal:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
