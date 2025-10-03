@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,7 @@ serve(async (req) => {
 
     const { disputeId, proposalType, refundPercentage, message } = await req.json();
 
-    console.log("[ADMIN-PROPOSAL] Creating official admin proposal:", {
+    logger.log("[ADMIN-PROPOSAL] Creating official admin proposal:", {
       disputeId,
       proposalType,
       refundPercentage,
@@ -62,7 +63,7 @@ serve(async (req) => {
       .single();
 
     if (disputeError || !dispute) {
-      console.error("Error fetching dispute:", disputeError);
+      logger.error("Error fetching dispute:", disputeError);
       throw new Error("Dispute not found");
     }
 
@@ -74,7 +75,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("Error fetching transaction:", transactionError);
+      logger.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -108,11 +109,11 @@ serve(async (req) => {
       .single();
 
     if (proposalInsertError || !proposal) {
-      console.error("Error creating proposal:", proposalInsertError);
+      logger.error("Error creating proposal:", proposalInsertError);
       throw new Error("Failed to create proposal");
     }
 
-    console.log("[ADMIN-PROPOSAL] Proposal created:", proposal.id);
+    logger.log("[ADMIN-PROPOSAL] Proposal created:", proposal.id);
 
     // Update dispute status to negotiating
     await adminClient
@@ -154,7 +155,7 @@ serve(async (req) => {
         message_type: 'admin_to_buyer',
       });
 
-    console.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
+    logger.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
 
     // Log activity for both seller and buyer
     const participants = [transaction.user_id, transaction.buyer_id].filter(id => id);
@@ -184,7 +185,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[ADMIN-PROPOSAL] Error:", error);
+    logger.error("[ADMIN-PROPOSAL] Error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

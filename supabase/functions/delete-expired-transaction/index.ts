@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
     // Verify user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      console.error('[DELETE-TRANSACTION] Auth error:', authError);
+      logger.error('[DELETE-TRANSACTION] Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: corsHeaders }
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[DELETE-TRANSACTION] User ${user.email} requesting to delete transaction ${transactionId}`);
+    logger.log(`[DELETE-TRANSACTION] User ${user.email} requesting to delete transaction ${transactionId}`);
 
     // First, verify the transaction exists and user has permission
     const { data: transaction, error: fetchError } = await supabase
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (fetchError || !transaction) {
-      console.error('[DELETE-TRANSACTION] Transaction not found:', fetchError);
+      logger.error('[DELETE-TRANSACTION] Transaction not found:', fetchError);
       return new Response(
         JSON.stringify({ error: 'Transaction not found' }),
         { status: 404, headers: corsHeaders }
@@ -64,7 +65,7 @@ Deno.serve(async (req) => {
 
     // Verify user is participant (seller or buyer)
     if (transaction.user_id !== user.id && transaction.buyer_id !== user.id) {
-      console.error('[DELETE-TRANSACTION] User not authorized for transaction:', {
+      logger.error('[DELETE-TRANSACTION] User not authorized for transaction:', {
         userId: user.id,
         sellerId: transaction.user_id,
         buyerId: transaction.buyer_id
@@ -82,7 +83,7 @@ Deno.serve(async (req) => {
                              new Date(transaction.payment_deadline) <= new Date();
     
     if (!isExpired && !isPendingExpired) {
-      console.error('[DELETE-TRANSACTION] Transaction is not expired:', {
+      logger.error('[DELETE-TRANSACTION] Transaction is not expired:', {
         status: transaction.status,
         payment_deadline: transaction.payment_deadline
       });
@@ -94,14 +95,14 @@ Deno.serve(async (req) => {
 
     // If transaction is pending but deadline expired, update status first
     if (isPendingExpired && !isExpired) {
-      console.log('[DELETE-TRANSACTION] Updating pending transaction to expired status before deletion');
+      logger.log('[DELETE-TRANSACTION] Updating pending transaction to expired status before deletion');
       const { error: updateError } = await supabase
         .from('transactions')
         .update({ status: 'expired' })
         .eq('id', transactionId);
       
       if (updateError) {
-        console.error('[DELETE-TRANSACTION] Failed to update status:', updateError);
+        logger.error('[DELETE-TRANSACTION] Failed to update status:', updateError);
         // Continue anyway - deletion is more important
       }
     }
@@ -113,7 +114,7 @@ Deno.serve(async (req) => {
       .eq('id', transactionId);
 
     if (deleteError) {
-      console.error('[DELETE-TRANSACTION] Delete error:', deleteError);
+      logger.error('[DELETE-TRANSACTION] Delete error:', deleteError);
       return new Response(
         JSON.stringify({ error: 'Failed to delete transaction' }),
         { status: 500, headers: corsHeaders }
@@ -136,7 +137,7 @@ Deno.serve(async (req) => {
         }
       });
 
-    console.log(`[DELETE-TRANSACTION] Successfully deleted transaction ${transactionId} by user ${user.email}`);
+    logger.log(`[DELETE-TRANSACTION] Successfully deleted transaction ${transactionId} by user ${user.email}`);
 
     return new Response(
       JSON.stringify({ 
@@ -147,7 +148,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[DELETE-TRANSACTION] Unexpected error:', error);
+    logger.error('[DELETE-TRANSACTION] Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: corsHeaders }

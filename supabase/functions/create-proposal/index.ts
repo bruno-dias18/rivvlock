@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,7 +33,7 @@ serve(async (req) => {
 
     const { disputeId, proposalType, refundPercentage, message } = await req.json();
 
-    console.log("Creating proposal:", { disputeId, proposalType, refundPercentage, userId: user.id });
+    logger.log("Creating proposal:", { disputeId, proposalType, refundPercentage, userId: user.id });
 
     // Simple validation for partial refunds
     if (proposalType === 'partial_refund') {
@@ -49,7 +50,7 @@ serve(async (req) => {
       .single();
 
     if (disputeError || !dispute) {
-      console.error("Error fetching dispute:", disputeError);
+      logger.error("Error fetching dispute:", disputeError);
       throw new Error("Dispute not found");
     }
 
@@ -61,7 +62,7 @@ serve(async (req) => {
       .single();
 
     if (transactionError || !transaction) {
-      console.error("Error fetching transaction:", transactionError);
+      logger.error("Error fetching transaction:", transactionError);
       throw new Error("Transaction not found");
     }
 
@@ -92,11 +93,11 @@ serve(async (req) => {
       .single();
 
     if (proposalError) {
-      console.error("Error creating proposal:", proposalError);
+      logger.error("Error creating proposal:", proposalError);
       throw proposalError;
     }
 
-    console.log("✅ Proposal created successfully:", proposal.id);
+    logger.log("✅ Proposal created successfully:", proposal.id);
 
     // Create a message in the dispute to notify the other party
     const proposalText = proposalType === 'partial_refund' 
@@ -141,7 +142,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error in create-proposal:", error);
+    logger.error("Error in create-proposal:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +22,7 @@ serve(async (req) => {
   try {
     const { user_id, email, profile_data } = await req.json();
     
-    console.log("Creating Stripe customer for user:", user_id, email);
+    logger.log("Creating Stripe customer for user:", user_id, email);
 
     // Check if profile already has a Stripe customer ID to avoid duplicates
     const { data: existingProfile, error: profileError } = await supabaseClient
@@ -31,9 +32,9 @@ serve(async (req) => {
       .single();
 
     if (profileError) {
-      console.error('Error checking existing profile:', profileError);
+      logger.error('Error checking existing profile:', profileError);
     } else if (existingProfile?.stripe_customer_id) {
-      console.log(`User ${user_id} already has Stripe customer ID:`, existingProfile.stripe_customer_id);
+      logger.log(`User ${user_id} already has Stripe customer ID:`, existingProfile.stripe_customer_id);
       return new Response(JSON.stringify({ 
         success: true,
         stripe_customer_id: existingProfile.stripe_customer_id,
@@ -59,7 +60,7 @@ serve(async (req) => {
     
     if (existingCustomers.data.length > 0) {
       stripeCustomerId = existingCustomers.data[0].id;
-      console.log(`Found existing Stripe customer: ${stripeCustomerId}`);
+      logger.log(`Found existing Stripe customer: ${stripeCustomerId}`);
     } else {
       // Prepare customer data
       const customerData: any = {
@@ -99,7 +100,7 @@ serve(async (req) => {
       // Create Stripe customer
       const customer = await stripe.customers.create(customerData);
       stripeCustomerId = customer.id;
-      console.log("Stripe customer created:", stripeCustomerId);
+      logger.log("Stripe customer created:", stripeCustomerId);
     }
 
     // Update profile with stripe_customer_id
@@ -109,11 +110,11 @@ serve(async (req) => {
       .eq("user_id", user_id);
 
     if (updateError) {
-      console.error("Error updating profile with Stripe customer ID:", updateError);
+      logger.error("Error updating profile with Stripe customer ID:", updateError);
       throw new Error("Failed to update profile");
     }
 
-    console.log("Profile updated with Stripe customer ID:", stripeCustomerId);
+    logger.log("Profile updated with Stripe customer ID:", stripeCustomerId);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -124,7 +125,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("Error creating Stripe customer:", error);
+    logger.error("Error creating Stripe customer:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({
       error: errorMessage,

@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4'
 import Stripe from 'https://esm.sh/stripe@17.1.0'
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      console.error('Authentication failed:', userError);
+      logger.error('Authentication failed:', userError);
       return new Response(
         JSON.stringify({ error: 'User not authenticated' }), 
         { 
@@ -55,7 +56,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Deleting account for user:', user.id);
+    logger.log('Deleting account for user:', user.id);
 
     // Check for active transactions
     const { data: activeTransactions, error: transactionsError } = await supabase
@@ -65,7 +66,7 @@ Deno.serve(async (req) => {
       .in('status', ['pending', 'paid']);
 
     if (transactionsError) {
-      console.error('Error checking transactions:', transactionsError);
+      logger.error('Error checking transactions:', transactionsError);
       return new Response(
         JSON.stringify({ error: 'Error checking transactions' }), 
         { 
@@ -86,7 +87,7 @@ Deno.serve(async (req) => {
     }
 
     // Start deletion process
-    console.log('Starting account deletion process...');
+    logger.log('Starting account deletion process...');
 
     // 1. Delete Stripe accounts
     const { data: stripeAccounts } = await supabase
@@ -98,9 +99,9 @@ Deno.serve(async (req) => {
       for (const account of stripeAccounts) {
         try {
           await stripe.accounts.del(account.stripe_account_id);
-          console.log('Deleted Stripe account:', account.stripe_account_id);
+          logger.log('Deleted Stripe account:', account.stripe_account_id);
         } catch (error) {
-          console.warn('Failed to delete Stripe account:', error);
+          logger.warn('Failed to delete Stripe account:', error);
         }
       }
     }
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
       .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
 
     if (anonymizeError) {
-      console.warn('Error anonymizing transactions:', anonymizeError);
+      logger.warn('Error anonymizing transactions:', anonymizeError);
     }
 
     // 3. Delete related data
@@ -133,9 +134,9 @@ Deno.serve(async (req) => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.warn(`Error deleting from ${table}:`, error);
+        logger.warn(`Error deleting from ${table}:`, error);
       } else {
-        console.log(`Cleaned ${table} for user ${user.id}`);
+        logger.log(`Cleaned ${table} for user ${user.id}`);
       }
     }
 
@@ -143,7 +144,7 @@ Deno.serve(async (req) => {
     const { error: deleteUserError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
 
     if (deleteUserError) {
-      console.error('Error deleting user:', deleteUserError);
+      logger.error('Error deleting user:', deleteUserError);
       return new Response(
         JSON.stringify({ error: 'Error deleting user account' }), 
         { 
@@ -153,7 +154,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('User account deleted successfully:', user.id);
+    logger.log('User account deleted successfully:', user.id);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Account deleted successfully' }), 
@@ -164,7 +165,7 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    logger.error('Unexpected error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error' }), 
       { 

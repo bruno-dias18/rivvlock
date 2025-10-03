@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,7 +19,7 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    console.log("🔍 Starting migration to fix resolved disputes...");
+    logger.log("🔍 Starting migration to fix resolved disputes...");
 
     // Find all disputes with accepted proposals but wrong status
     const { data: disputes, error: disputesError } = await supabaseAdmin
@@ -37,11 +38,11 @@ serve(async (req) => {
       .in("status", ["responded", "open", "negotiating"]);
 
     if (disputesError) {
-      console.error("❌ Error fetching disputes:", disputesError);
+      logger.error("❌ Error fetching disputes:", disputesError);
       throw disputesError;
     }
 
-    console.log(`📊 Found ${disputes?.length || 0} disputes to check`);
+    logger.log(`📊 Found ${disputes?.length || 0} disputes to check`);
 
     let fixedCount = 0;
 
@@ -52,11 +53,11 @@ serve(async (req) => {
       );
 
       if (!acceptedProposal) {
-        console.log(`⏭️  Dispute ${dispute.id} has no accepted proposal, skipping`);
+        logger.log(`⏭️  Dispute ${dispute.id} has no accepted proposal, skipping`);
         continue;
       }
 
-      console.log(`🔧 Fixing dispute ${dispute.id} with accepted ${acceptedProposal.proposal_type} proposal`);
+      logger.log(`🔧 Fixing dispute ${dispute.id} with accepted ${acceptedProposal.proposal_type} proposal`);
 
       // Determine the correct dispute status based on proposal type
       let newDisputeStatus: string;
@@ -65,7 +66,7 @@ serve(async (req) => {
       } else if (acceptedProposal.proposal_type === "no_refund") {
         newDisputeStatus = "resolved_release";
       } else {
-        console.log(`⚠️  Unknown proposal type: ${acceptedProposal.proposal_type}, skipping`);
+        logger.log(`⚠️  Unknown proposal type: ${acceptedProposal.proposal_type}, skipping`);
         continue;
       }
 
@@ -81,7 +82,7 @@ serve(async (req) => {
         .eq("id", dispute.id);
 
       if (updateDisputeError) {
-        console.error(`❌ Error updating dispute ${dispute.id}:`, updateDisputeError);
+        logger.error(`❌ Error updating dispute ${dispute.id}:`, updateDisputeError);
         continue;
       }
 
@@ -93,7 +94,7 @@ serve(async (req) => {
         .single();
 
       if (txError || !transaction) {
-        console.error(`❌ Error fetching transaction ${dispute.transaction_id}:`, txError);
+        logger.error(`❌ Error fetching transaction ${dispute.transaction_id}:`, txError);
         continue;
       }
 
@@ -102,7 +103,7 @@ serve(async (req) => {
       if (acceptedProposal.proposal_type === "partial_refund" && acceptedProposal.refund_percentage) {
         const refundPercentage = Number(acceptedProposal.refund_percentage);
         adjustedPrice = transaction.price * (1 - refundPercentage / 100);
-        console.log(`💰 Adjusting price from ${transaction.price} to ${adjustedPrice} (${refundPercentage}% refund)`);
+        logger.log(`💰 Adjusting price from ${transaction.price} to ${adjustedPrice} (${refundPercentage}% refund)`);
       }
 
       // Update transaction to validated with adjusted price
@@ -116,15 +117,15 @@ serve(async (req) => {
         .eq("id", dispute.transaction_id);
 
       if (updateTxError) {
-        console.error(`❌ Error updating transaction ${dispute.transaction_id}:`, updateTxError);
+        logger.error(`❌ Error updating transaction ${dispute.transaction_id}:`, updateTxError);
         continue;
       }
 
-      console.log(`✅ Fixed dispute ${dispute.id} -> ${newDisputeStatus}, transaction ${dispute.transaction_id} -> validated`);
+      logger.log(`✅ Fixed dispute ${dispute.id} -> ${newDisputeStatus}, transaction ${dispute.transaction_id} -> validated`);
       fixedCount++;
     }
 
-    console.log(`🎉 Migration complete! Fixed ${fixedCount} disputes`);
+    logger.log(`🎉 Migration complete! Fixed ${fixedCount} disputes`);
 
     return new Response(
       JSON.stringify({
@@ -138,7 +139,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error("❌ Migration error:", error);
+    logger.error("❌ Migration error:", error);
     return new Response(
       JSON.stringify({
         success: false,

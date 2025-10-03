@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,7 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('[FIX-REACTIVATED] Authentication error:', authError);
+      logger.error('[FIX-REACTIVATED] Authentication error:', authError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -65,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: affected, error: fetchError } = await query;
 
     if (fetchError) {
-      console.error('[FIX-REACTIVATED] Fetch error:', fetchError);
+      logger.error('[FIX-REACTIVATED] Fetch error:', fetchError);
       return new Response(JSON.stringify({ error: 'Failed to fetch transactions' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -73,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!affected || affected.length === 0) {
-      console.log('[FIX-REACTIVATED] No transactions to fix');
+      logger.log('[FIX-REACTIVATED] No transactions to fix');
       return new Response(JSON.stringify({ fixedCount: 0, updatedIds: [] }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -94,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       .in('id', ids);
 
     if (updateError) {
-      console.error('[FIX-REACTIVATED] Update error:', updateError);
+      logger.error('[FIX-REACTIVATED] Update error:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to update transactions' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -119,17 +120,17 @@ const handler = async (req: Request): Promise<Response> => {
       .insert(logs);
 
     if (logError) {
-      console.warn('[FIX-REACTIVATED] Activity log insert warning:', logError);
+      logger.warn('[FIX-REACTIVATED] Activity log insert warning:', logError);
     }
 
-    console.log(`[FIX-REACTIVATED] Fixed ${ids.length} transaction(s)`);
+    logger.log(`[FIX-REACTIVATED] Fixed ${ids.length} transaction(s)`);
 
     return new Response(JSON.stringify({ fixedCount: ids.length, updatedIds: ids }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   } catch (error: any) {
-    console.error('[FIX-REACTIVATED] Unexpected error:', error);
+    logger.error('[FIX-REACTIVATED] Unexpected error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },

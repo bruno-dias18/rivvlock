@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { logger } from "../_shared/logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,7 +25,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    console.log(`[FIX-TRANSACTION] Starting fix for transaction: ${transactionId}`);
+    logger.log(`[FIX-TRANSACTION] Starting fix for transaction: ${transactionId}`);
 
     // Update status first
     const { error: statusError } = await adminClient
@@ -48,7 +49,7 @@ serve(async (req) => {
         .eq("id", transactionId);
 
       if (paymentError) {
-        console.log(`[FIX-TRANSACTION] Warning: Could not update payment intent ID: ${paymentError.message}`);
+        logger.log(`[FIX-TRANSACTION] Warning: Could not update payment intent ID: ${paymentError.message}`);
       }
     }
 
@@ -63,10 +64,10 @@ serve(async (req) => {
       .eq("id", transactionId);
 
     if (timestampError) {
-      console.log(`[FIX-TRANSACTION] Warning: Could not update timestamps: ${timestampError.message}`);
+      logger.log(`[FIX-TRANSACTION] Warning: Could not update timestamps: ${timestampError.message}`);
     }
 
-    console.log(`[FIX-TRANSACTION] Successfully fixed transaction: ${transactionId}`);
+    logger.log(`[FIX-TRANSACTION] Successfully fixed transaction: ${transactionId}`);
 
     return new Response(JSON.stringify({ 
       success: true,
@@ -79,7 +80,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`[FIX-TRANSACTION] Error:`, errorMessage);
+    logger.error(`[FIX-TRANSACTION] Error:`, errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
