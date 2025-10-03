@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { DisputeMessaging } from './DisputeMessaging';
+import { DisputeMessagingDialog } from './DisputeMessagingDialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -382,26 +382,17 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
 
-        {/* Unified Conversation - Visible only for non-resolved disputes */}
+        {/* Discussion Button - Visible only for non-resolved disputes */}
         {!dispute.status.startsWith('resolved') && (
           <div>
-            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Conversation
-            </h4>
-            
-            <div className={isMobile ? "h-[350px]" : "h-[400px]"}>
-              <DisputeMessaging
-                disputeId={dispute.id}
-                disputeDeadline={dispute.dispute_deadline}
-                status={dispute.status}
-                transactionAmount={transaction.price}
-                currency={transaction.currency}
-                onProposalSent={() => {
-                  onRefetch?.();
-                }}
-              />
-            </div>
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={() => setShowMessaging(true)}
+            >
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Voir la discussion
+            </Button>
           </div>
         )}
 
@@ -500,6 +491,20 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
       </CardContent>
+
+      {/* Dispute Messaging Dialog */}
+      <DisputeMessagingDialog
+        disputeId={dispute.id}
+        disputeDeadline={dispute.dispute_deadline}
+        status={dispute.status}
+        transactionAmount={transaction.price}
+        currency={transaction.currency}
+        open={showMessaging}
+        onOpenChange={setShowMessaging}
+        onProposalSent={() => {
+          onRefetch?.();
+        }}
+      />
     </Card>
   );
 };
