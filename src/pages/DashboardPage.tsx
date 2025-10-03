@@ -8,6 +8,7 @@ import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle } from 
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
+import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadMessagesByStatus } from '@/hooks/useUnreadTransactionMessages';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   const { data: disputes } = useDisputes();
+  const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { messageCounts } = useUnreadMessagesByStatus();
 
   // Force sync on dashboard load
@@ -69,7 +71,11 @@ export default function DashboardPage() {
       icon: Clock,
       category: 'pending' as const,
       badgeColor: 'bg-blue-500 text-white hover:bg-blue-600',
-      onClick: () => navigate('/dashboard/transactions?tab=pending'),
+      onClick: () => {
+        markAsSeen('pending');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=pending');
+      },
     },
     {
       title: t('dashboard.blocked'),
@@ -78,7 +84,11 @@ export default function DashboardPage() {
       icon: Lock,
       category: 'blocked' as const,
       badgeColor: 'bg-orange-500 text-white hover:bg-orange-600',
-      onClick: () => navigate('/dashboard/transactions?tab=blocked'),
+      onClick: () => {
+        markAsSeen('blocked');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=blocked');
+      },
     },
     {
       title: t('transactions.disputed'),
@@ -87,7 +97,11 @@ export default function DashboardPage() {
       icon: AlertTriangle,
       category: 'disputed' as const,
       badgeColor: 'bg-red-500 text-white hover:bg-red-600',
-      onClick: () => navigate('/dashboard/transactions?tab=disputed'),
+      onClick: () => {
+        markAsSeen('disputed');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=disputed');
+      },
     },
     {
       title: t('dashboard.completed'),
@@ -96,7 +110,11 @@ export default function DashboardPage() {
       icon: CheckCircle2,
       category: 'completed' as const,
       badgeColor: 'bg-green-500 text-white hover:bg-green-600',
-      onClick: () => navigate('/dashboard/transactions?tab=completed'),
+      onClick: () => {
+        markAsSeen('completed');
+        refetchNotifications();
+        navigate('/dashboard/transactions?tab=completed');
+      },
     },
   ];
 
@@ -146,9 +164,9 @@ export default function DashboardPage() {
               <CardHeader className={`flex flex-row items-center justify-between space-y-0 ${isMobile ? "pb-1" : "pb-2"}`}>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                   <span>{status.title}</span>
-                  {messageCounts[status.category] > 0 && (
+                  {(messageCounts[status.category] > 0 || newCounts[status.category] > 0) && (
                     <Badge className={status.badgeColor}>
-                      {messageCounts[status.category]}
+                      {messageCounts[status.category] + newCounts[status.category]}
                     </Badge>
                   )}
                 </CardTitle>

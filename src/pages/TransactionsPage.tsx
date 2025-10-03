@@ -17,11 +17,13 @@ import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
 import { DisputeCard } from '@/components/DisputeCard';
 import { useDisputes } from '@/hooks/useDisputes';
+import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
+import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useUnreadTransactionsCount } from '@/hooks/useUnreadTransactionMessages';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -73,8 +75,20 @@ export default function TransactionsPage() {
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
+  const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   
   const activeTab = searchParams.get('tab') || 'pending';
+  
+  // Map active tab to category for new activity notifications
+  const tabToCategoryMap: Record<string, 'pending' | 'blocked' | 'disputed' | 'completed'> = {
+    pending: 'pending',
+    blocked: 'blocked',
+    disputed: 'disputed',
+    completed: 'completed',
+  };
+  
+  const currentCategory = tabToCategoryMap[activeTab] || 'pending';
+  const { data: transactionsWithNewActivity } = useTransactionsWithNewActivity(currentCategory);
 
   // Update sort and save to localStorage
   const updateSort = (newSortBy: 'created_at' | 'service_date' | 'funds_released_at') => {
@@ -148,6 +162,15 @@ export default function TransactionsPage() {
 
   // Auto-sync disabled - transactions stay pending until user explicitly pays
   // Manual sync is still available via the sync button in DashboardLayout
+
+  // Mark as seen when tab changes
+  useEffect(() => {
+    const category = tabToCategoryMap[activeTab];
+    if (category) {
+      markAsSeen(category);
+      refetchNotifications();
+    }
+  }, [activeTab, markAsSeen, refetchNotifications]);
 
   const handleSyncPayments = async () => {
     toast.promise(
@@ -451,9 +474,9 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
-            {unreadPending.length > 0 && (
+            {(unreadPending.length > 0 || newCounts.pending > 0) && (
               <Badge className="bg-blue-500 text-white hover:bg-blue-600 ml-1">
-                {unreadPending.length}
+                {unreadPending.length + newCounts.pending}
               </Badge>
             )}
           </TabsTrigger>
@@ -462,9 +485,9 @@ export default function TransactionsPage() {
             <span className={isMobile ? 'text-xs' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
-            {unreadBlocked.length > 0 && (
+            {(unreadBlocked.length > 0 || newCounts.blocked > 0) && (
               <Badge className="bg-orange-500 text-white hover:bg-orange-600 ml-1">
-                {unreadBlocked.length}
+                {unreadBlocked.length + newCounts.blocked}
               </Badge>
             )}
           </TabsTrigger>
@@ -473,18 +496,18 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 {t('transactions.completed')} ({completedTransactions.length})
-                {unreadCompleted.length > 0 && (
+                {(unreadCompleted.length > 0 || newCounts.completed > 0) && (
                   <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {unreadCompleted.length}
+                    {unreadCompleted.length + newCounts.completed}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 relative">
                 <AlertTriangle className="h-4 w-4" />
                 {t('transactions.disputed')} ({disputedTransactions.length})
-                {unreadDisputed.length > 0 && (
+                {(unreadDisputed.length > 0 || newCounts.disputed > 0) && (
                   <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {unreadDisputed.length}
+                    {unreadDisputed.length + newCounts.disputed}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -495,18 +518,18 @@ export default function TransactionsPage() {
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
-                {unreadCompleted.length > 0 && (
+                {(unreadCompleted.length > 0 || newCounts.completed > 0) && (
                   <Badge className="bg-green-500 text-white hover:bg-green-600 ml-1">
-                    {unreadCompleted.length}
+                    {unreadCompleted.length + newCounts.completed}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3 relative">
                 <AlertTriangle className="h-4 w-4" />
                 <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
-                {unreadDisputed.length > 0 && (
+                {(unreadDisputed.length > 0 || newCounts.disputed > 0) && (
                   <Badge className="bg-red-500 text-white hover:bg-red-600 ml-1">
-                    {unreadDisputed.length}
+                    {unreadDisputed.length + newCounts.disputed}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -562,6 +585,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}
@@ -613,6 +637,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}
@@ -673,6 +698,7 @@ export default function TransactionsPage() {
                         transaction={transaction}
                         user={user}
                         showActions={true}
+                        hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
                         onCopyLink={handleCopyLink}
                         onPayment={handlePayment}
                         onRefetch={refetch}
