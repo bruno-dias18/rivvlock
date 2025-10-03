@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Security: Never log auth errors that might expose token info
+function sanitizeAuthError(error: any): string {
+  if (!error) return 'Authentication failed';
+  // Only log generic error message, never the actual error details
+  return 'Invalid or expired authentication token';
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -41,7 +48,7 @@ serve(async (req) => {
     const { data: userData, error: userError } = await userClient.auth.getUser(token);
     
     if (userError || !userData.user) {
-      console.error("❌ [CREATE-PAYMENT-INTENT] Invalid user token:", userError);
+      console.error("❌ [CREATE-PAYMENT-INTENT]", sanitizeAuthError(userError));
       throw new Error("Invalid authentication token");
     }
     

@@ -7,6 +7,12 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
 };
 
+// Security: Mask sensitive tokens in logs
+function maskToken(token: string): string {
+  if (!token || token.length < 12) return '***MASKED***';
+  return `${token.substring(0, 4)}...${token.substring(token.length - 4)}`;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -85,8 +91,8 @@ serve(async (req) => {
 
     if (abuseCheck?.is_suspicious) {
       console.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', { 
-        token, 
-        ipAddress, 
+        token: maskToken(token), 
+        ipAddress: maskToken(ipAddress), 
         reason: abuseCheck.reason,
         attempts: abuseCheck.attempts_last_hour
       });
@@ -115,7 +121,7 @@ serve(async (req) => {
       );
     }
 
-    console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with token:', token);
+    console.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
     // Try by shared_link_token using the secure view (only exposes non-sensitive data)
     let transaction: any = null;
