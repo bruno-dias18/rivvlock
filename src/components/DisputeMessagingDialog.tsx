@@ -267,6 +267,14 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
+          onOpenAutoFocus={(e) => {
+            e.preventDefault();
+            // Defer focus to ensure content is mounted and visible (iOS Safari friendly)
+            requestAnimationFrame(() => {
+              textareaRef.current?.focus({ preventScroll: true });
+              setTimeout(() => textareaRef.current?.focus({ preventScroll: true }), 300);
+            });
+          }}
           className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
           style={{ height: getDialogHeight() }}
         >
@@ -452,6 +460,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                   <div className="flex gap-2 items-end">
                     <Textarea
                       ref={textareaRef}
+                      autoFocus
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
@@ -491,6 +500,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                     <div className="flex gap-2 items-end">
                       <Textarea
                         ref={textareaRef}
+                        autoFocus
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
