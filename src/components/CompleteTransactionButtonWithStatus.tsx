@@ -19,6 +19,8 @@ export function CompleteTransactionButtonWithStatus({
       isUserBuyer={true}
       sellerHasStripeAccount={sellerStatus?.hasActiveAccount || false}
       onTransferComplete={onTransferComplete}
+      transactionTitle={transaction.title}
+      transactionAmount={transaction.amount}
     />
   );
 }

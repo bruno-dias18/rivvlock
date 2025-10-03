@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { CompleteTransactionConfirmDialog } from '@/components/CompleteTransactionConfirmDialog';
 
 interface CompleteTransactionButtonProps {
   transactionId: string;
@@ -11,6 +12,8 @@ interface CompleteTransactionButtonProps {
   isUserBuyer: boolean;
   sellerHasStripeAccount?: boolean;
   onTransferComplete?: () => void;
+  transactionTitle?: string;
+  transactionAmount?: number;
 }
 
 export default function CompleteTransactionButton({
@@ -18,9 +21,12 @@ export default function CompleteTransactionButton({
   transactionStatus,
   isUserBuyer,
   sellerHasStripeAccount = false,
-  onTransferComplete
+  onTransferComplete,
+  transactionTitle = 'Transaction',
+  transactionAmount = 0
 }: CompleteTransactionButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Only show for paid transactions where user is buyer
   if (transactionStatus !== 'paid' || !isUserBuyer) {
@@ -71,23 +77,23 @@ export default function CompleteTransactionButton({
   return (
     <div className="space-y-3">
       <Button
-        onClick={handleCompleteTransaction}
+        onClick={() => setShowConfirmDialog(true)}
         disabled={isProcessing}
         className="w-full"
         size="lg"
       >
-        {isProcessing ? (
-          <>
-            <Clock className="h-4 w-4 mr-2 animate-spin" />
-            Transfert en cours...
-          </>
-        ) : (
-          <>
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Finaliser la transaction
-          </>
-        )}
+        <CheckCircle className="h-4 w-4 mr-2" />
+        Finaliser la transaction
       </Button>
+
+      <CompleteTransactionConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleCompleteTransaction}
+        transactionTitle={transactionTitle}
+        transactionAmount={transactionAmount}
+        isProcessing={isProcessing}
+      />
     </div>
   );
 }
