@@ -96,6 +96,34 @@ export default function ActivityHistoryPage() {
     navigate('/dashboard');
   };
 
+  const getTabForActivity = (activityType: string) => {
+    switch (activityType) {
+      case 'transaction_created':
+      case 'buyer_joined_transaction':
+        return 'pending';
+      case 'funds_blocked':
+        return 'blocked';
+      case 'dispute_created':
+        return 'disputed';
+      case 'funds_released':
+      case 'transaction_completed':
+      case 'seller_validation':
+      case 'buyer_validation':
+        return 'completed';
+      default:
+        return 'pending';
+    }
+  };
+
+  const handleActivityClick = (activity: any) => {
+    if (activity.activity_type === 'profile_updated') {
+      navigate('/dashboard/profile');
+    } else {
+      const tab = getTabForActivity(activity.activity_type);
+      navigate(`/dashboard/transactions?tab=${tab}`);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -148,9 +176,10 @@ export default function ActivityHistoryPage() {
                   const iconColor = getActivityColor(activity.activity_type);
                   
                   return (
-                    <div
+                    <button
                       key={activity.id}
-                      className={`flex items-start ${isMobile ? 'space-x-3 p-3' : 'space-x-4 p-4'} rounded-lg hover:bg-muted/50 transition-colors`}
+                      onClick={() => handleActivityClick(activity)}
+                      className={`w-full text-left flex items-start ${isMobile ? 'space-x-3 p-3' : 'space-x-4 p-4'} rounded-lg hover:bg-muted/50 transition-colors cursor-pointer`}
                     >
                       <div className={`mt-1 ${iconColor} flex-shrink-0`}>
                         <IconComponent className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
@@ -185,7 +214,7 @@ export default function ActivityHistoryPage() {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
