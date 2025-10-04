@@ -22,22 +22,7 @@ interface ValidationStatus {
 
 export function useValidationStatus(transaction: any, userId?: string): ValidationStatus {
   return useMemo(() => {
-    console.debug('🔍 useValidationStatus called:', {
-      transactionId: transaction?.id,
-      transactionTitle: transaction?.title,
-      userId,
-      buyerId: transaction?.buyer_id,
-      sellerId: transaction?.user_id,
-      status: transaction?.status,
-      sellerValidated: transaction?.seller_validated,
-      buyerValidated: transaction?.buyer_validated,
-      validationDeadline: transaction?.validation_deadline,
-      serviceDate: transaction?.service_date,
-      serviceEndDate: transaction?.service_end_date
-    });
-
     if (!transaction || !userId) {
-      console.debug('⚠️ Missing transaction or userId');
       return {
         phase: 'pending',
         isValidationDeadlineActive: false,
@@ -70,27 +55,17 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
     const isUserBuyer = transaction.buyer_id === userId;
     const isUserSeller = transaction.user_id === userId;
 
-    console.debug('🔍 Computed values:', {
-      isUserBuyer,
-      isUserSeller,
-      serviceDateInFuture: serviceDate ? serviceDate > now : 'no service date',
-      validationDeadlineExists: !!validationDeadline,
-      validationDeadlineInFuture: validationDeadline ? validationDeadline > now : 'no deadline'
-    });
-
     // Disputed status
     if (transaction.status === 'disputed') {
-      const result = {
-        phase: 'disputed' as ValidationPhase,
+      return {
+        phase: 'disputed',
         isValidationDeadlineActive: false,
         canFinalize: false,
         canDispute: false,
         canManuallyFinalize: false,
         displayLabel: 'En litige',
-        displayColor: 'destructive' as const
+        displayColor: 'destructive'
       };
-      console.debug('✅ Returning result (disputed):', result);
-      return result;
     }
 
     // Completed/validated status
@@ -175,60 +150,52 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         
         if (timeRemaining <= 0) {
           // Validation deadline expired
-          const result = {
-            phase: 'validation_expired' as ValidationPhase,
+          return {
+            phase: 'validation_expired',
             timeRemaining: 0,
             isValidationDeadlineActive: false,
             canFinalize: false,
             canDispute: false,
             canManuallyFinalize: false,
             displayLabel: 'Finalisation automatique',
-            displayColor: 'secondary' as const
+            displayColor: 'secondary'
           };
-          console.debug('✅ Returning result (validation_expired):', result);
-          return result;
         } else {
           // Validation deadline active
-          const result = {
-            phase: 'validation_active' as ValidationPhase,
+          return {
+            phase: 'validation_active',
             timeRemaining,
             isValidationDeadlineActive: true,
             canFinalize: isUserBuyer,
             canDispute: isUserBuyer,
             canManuallyFinalize: false,
             displayLabel: 'Validation en cours',
-            displayColor: 'secondary' as const
+            displayColor: 'secondary'
           };
-          console.debug('✅ Returning result (validation_active):', result);
-          return result;
         }
       }
 
       // Paid but no validation deadline yet (seller hasn't validated)
-      const result = {
-        phase: 'service_pending' as ValidationPhase,
+      return {
+        phase: 'service_pending',
         isValidationDeadlineActive: false,
         canFinalize: transaction.seller_validated && isUserBuyer,
         canDispute: transaction.seller_validated && isUserBuyer,
         canManuallyFinalize: isUserBuyer,
         displayLabel: transaction.seller_validated ? 'Service terminé' : 'En attente validation vendeur',
-        displayColor: 'default' as const
+        displayColor: 'default'
       };
-      console.debug('✅ Returning result (service_pending):', result);
-      return result;
     }
 
     // Default fallback
-    const result = {
-      phase: 'pending' as ValidationPhase,
+    return {
+      phase: 'pending',
       isValidationDeadlineActive: false,
       canFinalize: false,
       canDispute: false,
       canManuallyFinalize: false,
       displayLabel: 'Statut inconnu',
-      displayColor: 'default' as const
+      displayColor: 'default'
     };
-    console.debug('✅ Returning result (default fallback):', result);
-    return result;
   }, [transaction, userId]);
 }
