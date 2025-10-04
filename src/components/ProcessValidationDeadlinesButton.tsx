@@ -30,22 +30,39 @@ export function ProcessValidationDeadlinesButton() {
     setIsProcessing(true);
     
     try {
+      console.log('[ProcessValidationDeadlines] Appel de la fonction edge...');
       const { data, error } = await supabase.functions.invoke('process-validation-deadline', {
         body: {}
       });
 
-      if (error) throw error;
+      console.log('[ProcessValidationDeadlines] Réponse brute:', { data, error });
+
+      if (error) {
+        console.error('[ProcessValidationDeadlines] Erreur de la fonction:', error);
+        throw error;
+      }
 
       const processed = data?.processed || 0;
       const errors = data?.errors || 0;
+      const found = data?.found || 0;
+      const transactionIds = data?.transactionIds || [];
+
+      console.log('[ProcessValidationDeadlines] Résultats:', { 
+        found, 
+        processed, 
+        errors,
+        transactionIds 
+      });
 
       if (processed > 0) {
         toast.success('Traitement terminé', {
-          description: `${processed} transaction(s) finalisée(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
+          description: `${processed}/${found} transaction(s) finalisée(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
         });
       } else {
         toast.error('Aucune transaction traitée', {
-          description: errors > 0 ? `${errors} erreur(s) rencontrée(s)` : 'Aucune transaction à traiter',
+          description: found > 0 
+            ? `${found} transaction(s) trouvée(s) mais ${errors} erreur(s) rencontrée(s)` 
+            : 'Aucune transaction expirée trouvée',
         });
       }
 
@@ -55,7 +72,7 @@ export function ProcessValidationDeadlinesButton() {
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       
     } catch (error) {
-      console.error('Erreur lors du traitement:', error);
+      console.error('[ProcessValidationDeadlines] Erreur lors du traitement:', error);
       toast.error('Erreur', {
         description: error instanceof Error ? error.message : 'Impossible de traiter les validations expirées',
       });
