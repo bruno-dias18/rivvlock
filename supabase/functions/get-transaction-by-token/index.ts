@@ -5,7 +5,7 @@ import { logger } from "../_shared/logger.ts";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 // Security: Mask sensitive tokens in logs
@@ -49,8 +49,19 @@ serve(async (req) => {
                       req.headers.get('x-real-ip') || 'unknown';
     const userAgent = req.headers.get('user-agent') || 'unknown';
 
+    // Support both GET (query param) and POST (JSON body)
+    let token: string | null = null;
     const url = new URL(req.url);
-    const token = url.searchParams.get('token');
+    token = url.searchParams.get('token');
+
+    if (!token && req.method === 'POST') {
+      try {
+        const body = await req.json();
+        token = body?.token ?? null;
+      } catch (_) {
+        // ignore JSON parse errors
+      }
+    }
     
     if (!token) {
       return new Response(
@@ -244,10 +255,21 @@ serve(async (req) => {
       }
     }
 
+    // Whitelist-only response (no sensitive fields)
+    const safeTransaction = {
+      id: transaction.id,
+      title: transaction.title,
+      description: transaction.description,
+      price: transaction.price,
+      currency: transaction.currency,
+      seller_display_name: transaction.seller_display_name,
+      service_date: transaction.service_date,
+    };
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        transaction: transaction,
+        transaction: safeTransaction,
         seller_profile: sellerProfile,
         buyer_profile: buyerProfile
       }),

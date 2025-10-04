@@ -49,33 +49,15 @@ export default function PaymentLinkPage() {
         throw new Error('No transaction token found in URL or query params');
       }
       
-      const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
-      
-      // Use supabase client for authenticated requests
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // Get anon key from supabase client config
-      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0';
-      const headers: Record<string, string> = {
-        'apikey': anonKey
-      };
-      
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
-      
-      const response = await fetch(functionUrl, {
-        method: 'GET',
-        cache: 'no-store',
-        headers
+      // Invoke Edge Function securely (no hardcoded keys)
+      const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
+        body: { token: finalToken }
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+      if (error) {
+        throw error;
       }
-      
-      const data = await response.json();
-      
+
       if (!data || !data.success) {
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       } else if (data.transaction) {
