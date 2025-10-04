@@ -65,9 +65,13 @@ export const useTransactionMessages = (transactionId: string) => {
           event: 'INSERT',
           schema: 'public',
           table: 'transaction_messages',
-          filter: `transaction_id=eq.${transactionId}`,
         },
-        () => {
+        (payload) => {
+          // Client-side filter to only process messages for this transaction
+          if (payload.new && (payload.new as any).transaction_id !== transactionId) {
+            return;
+          }
+          
           // Throttle: max 1 invalidation per second
           const now = Date.now();
           if (now - lastInvalidationRef.current > 1000) {

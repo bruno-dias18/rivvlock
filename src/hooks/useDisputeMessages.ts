@@ -72,9 +72,12 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
           event: 'INSERT',
           schema: 'public',
           table: 'dispute_messages',
-          filter: `dispute_id=eq.${disputeId}`,
         },
-        () => {
+        (payload) => {
+          // Client-side filter: check dispute_id matches
+          if (payload.new && (payload.new as any).dispute_id !== disputeId) {
+            return;
+          }
           queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
         }
       )

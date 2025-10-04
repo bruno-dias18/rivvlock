@@ -66,9 +66,12 @@ export function useUnreadTransactionMessages(transactionId: string | undefined) 
           event: 'INSERT',
           schema: 'public',
           table: 'transaction_messages',
-          filter: `transaction_id=eq.${transactionId}`,
         },
         (payload) => {
+          // Client-side filter: check transaction_id matches
+          if (payload.new && (payload.new as any).transaction_id !== transactionId) {
+            return;
+          }
           // Refetch seulement si le message n'est pas de l'utilisateur courant
           if (payload.new && (payload.new as any).sender_id !== user.id) {
             refetch();

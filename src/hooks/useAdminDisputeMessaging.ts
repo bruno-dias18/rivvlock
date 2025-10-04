@@ -94,8 +94,12 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
       .channel(`admin-dispute-messages-${disputeId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'dispute_messages', filter: `dispute_id=eq.${disputeId}` },
+        { event: 'INSERT', schema: 'public', table: 'dispute_messages' },
         (payload) => {
+          // Client-side filter: check dispute_id matches
+          if (payload.new && (payload.new as any).dispute_id !== disputeId) {
+            return;
+          }
           queryClient.invalidateQueries({ queryKey: ['admin-dispute-messages', disputeId] });
         }
       )
