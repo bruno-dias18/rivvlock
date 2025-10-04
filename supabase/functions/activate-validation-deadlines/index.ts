@@ -24,20 +24,21 @@ serve(async (req) => {
     const now = new Date();
     
     // Find transactions that need validation deadline activation
-    // - seller_validated = true
-    // - COALESCE(service_end_date, service_date) <= now (use end date if exists, otherwise start date)
-    // - validation_deadline IS NULL
+    // - seller_validated = false
     // - buyer_validated = false
     // - funds_released = false
     // - status = 'paid'
+    // - seller_validation_deadline < now (seller deadline expired)
+    // - validation_deadline IS NULL (not activated yet)
     const { data: transactions, error: fetchError } = await adminClient
       .from("transactions")
       .select("*")
-      .eq("seller_validated", true)
+      .eq("seller_validated", false)
       .eq("buyer_validated", false)
       .eq("funds_released", false)
       .eq("status", "paid")
-      .is("validation_deadline", null);
+      .is("validation_deadline", null)
+      .not("seller_validation_deadline", "is", null);
 
     if (fetchError) {
       logger.error("❌ [ACTIVATE-VALIDATION-DEADLINES] Error fetching transactions:", fetchError);
@@ -47,11 +48,10 @@ serve(async (req) => {
       });
     }
 
-    // Filter transactions where service_end_date (or service_date) + 2h grace period has passed
+    // Filter transactions where seller_validation_deadline has passed
     const filteredTransactions = transactions?.filter(t => {
-      const referenceDate = new Date(t.service_end_date || t.service_date);
-      const gracePeriodEnd = new Date(referenceDate.getTime() + 2 * 60 * 60 * 1000); // +2h grace period
-      return gracePeriodEnd <= now;
+      const sellerDeadline = new Date(t.seller_validation_deadline);
+      return sellerDeadline <= now;
     }) || [];
 
     if (!filteredTransactions || filteredTransactions.length === 0) {
@@ -87,15 +87,39 @@ serve(async (req) => {
           continue;
         }
 
-        // Send notification to buyer about deadline activation
-        await adminClient.functions.invoke('send-notifications', {
-          body: {
-            type: 'validation_deadline_activated',
-            transactionId: transaction.id,
-            message: `🎯 Le service "${transaction.title}" a été livré ! Vous avez maintenant 48 heures pour valider la libération des fonds. Montant : ${transaction.price} ${transaction.currency}.`,
-            recipients: [transaction.buyer_id].filter(Boolean)
-          }
-        });
+        // Log activity for buyer
+        try {
+          await adminClient
+            .from('activity_logs')
+            .insert({
+              user_id: transaction.buyer_id,
+              activity_type: 'validation_deadline_activated',
+              title: 'Délai de validation activé',
+              description: `Le délai de validation vendeur a expiré. Vous avez maintenant 48h pour valider la transaction "${transaction.title}"`,
+              metadata: {
+                transaction_id: transaction.id
+              }
+            });
+        } catch (logError) {
+          logger.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error logging activity for buyer:`, logError);
+        }
+
+        // Log activity for seller
+        try {
+          await adminClient
+            .from('activity_logs')
+            .insert({
+              user_id: transaction.user_id,
+              activity_type: 'seller_validation_expired',
+              title: 'Délai de validation vendeur expiré',
+              description: `Votre délai de validation a expiré pour "${transaction.title}". Le délai acheteur est maintenant activé.`,
+              metadata: {
+                transaction_id: transaction.id
+              }
+            });
+        } catch (logError) {
+          logger.error(`❌ [ACTIVATE-VALIDATION-DEADLINES] Error logging activity for seller:`, logError);
+        }
 
         logger.log(`✅ [ACTIVATE-VALIDATION-DEADLINES] Activated deadline for transaction ${transaction.id}`);
         activatedCount++;

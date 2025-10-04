@@ -1,13 +1,14 @@
 import { useMemo } from 'react';
 
 export type ValidationPhase = 
-  | 'pending'           // En attente de paiement
-  | 'expired'           // Délai de paiement expiré
-  | 'service_pending'   // Service pas encore rendu (paid mais service futur)
-  | 'validation_active' // En phase de validation (48h countdown)
-  | 'validation_expired'// Délai de validation expiré
-  | 'completed'         // Terminé/validé
-  | 'disputed';         // En litige
+  | 'pending'                  // En attente de paiement
+  | 'expired'                  // Délai de paiement expiré
+  | 'service_pending'          // Service pas encore rendu (paid mais service futur)
+  | 'seller_validation_pending'// En attente de validation vendeur (48h countdown)
+  | 'validation_active'        // En phase de validation acheteur (48h countdown)
+  | 'validation_expired'       // Délai de validation expiré
+  | 'completed'                // Terminé/validé
+  | 'disputed';                // En litige
 
 interface ValidationStatus {
   phase: ValidationPhase;
@@ -52,6 +53,7 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       ? new Date(transaction.service_end_date) 
       : (transaction.service_date ? new Date(transaction.service_date) : null);
     const validationDeadline = transaction.validation_deadline ? new Date(transaction.validation_deadline) : null;
+    const sellerValidationDeadline = transaction.seller_validation_deadline ? new Date(transaction.seller_validation_deadline) : null;
     const isUserBuyer = transaction.buyer_id === userId;
     const isUserSeller = transaction.user_id === userId;
 
@@ -142,6 +144,26 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
           displayLabel: 'Service en cours',
           displayColor: 'default'
         };
+      }
+
+      // Check if seller validation deadline is active
+      if (sellerValidationDeadline && !transaction.seller_validated) {
+        const timeRemaining = sellerValidationDeadline.getTime() - now.getTime();
+        
+        if (timeRemaining > 0) {
+          // Seller validation deadline active
+          return {
+            phase: 'seller_validation_pending',
+            timeRemaining,
+            isValidationDeadlineActive: false,
+            canFinalize: false,
+            canDispute: false,
+            canManuallyFinalize: isUserBuyer,
+            displayLabel: 'En attente validation vendeur',
+            displayColor: 'secondary'
+          };
+        }
+        // If seller deadline expired, check if buyer validation deadline is active
       }
 
       // Check if validation deadline is active

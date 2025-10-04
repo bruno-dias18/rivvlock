@@ -235,10 +235,33 @@ const TransactionCardComponent = ({
             </Alert>
           )}
           
-          {/* Validation countdown for sellers during validation phase */}
+          {/* Seller validation countdown - for seller when they need to validate */}
+          {userRole === 'seller' && validationStatus.phase === 'seller_validation_pending' && transaction.seller_validation_deadline && (
+            <div className="mt-3">
+              <SellerValidationCountdown 
+                sellerValidationDeadline={transaction.seller_validation_deadline}
+                isUserSeller={true}
+              />
+            </div>
+          )}
+
+          {/* Seller validation countdown - for buyer waiting for seller */}
+          {userRole === 'buyer' && validationStatus.phase === 'seller_validation_pending' && transaction.seller_validation_deadline && (
+            <div className="mt-3">
+              <SellerValidationCountdown 
+                sellerValidationDeadline={transaction.seller_validation_deadline}
+                isUserSeller={false}
+              />
+            </div>
+          )}
+          
+          {/* Validation countdown for sellers during buyer validation phase */}
           {userRole === 'seller' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
             <div className="mt-3">
-              <SellerValidationCountdown validationDeadline={transaction.validation_deadline} />
+              <SellerValidationCountdown 
+                validationDeadline={transaction.validation_deadline}
+                isUserSeller={false}
+              />
             </div>
           )}
           

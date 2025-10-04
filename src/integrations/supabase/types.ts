@@ -624,6 +624,7 @@ export type Database = {
           renewal_count: number
           seller_display_name: string | null
           seller_validated: boolean | null
+          seller_validation_deadline: string | null
           service_date: string | null
           service_end_date: string | null
           shared_link_expires_at: string | null
@@ -658,6 +659,7 @@ export type Database = {
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
+          seller_validation_deadline?: string | null
           service_date?: string | null
           service_end_date?: string | null
           shared_link_expires_at?: string | null
@@ -692,6 +694,7 @@ export type Database = {
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
+          seller_validation_deadline?: string | null
           service_date?: string | null
           service_end_date?: string | null
           shared_link_expires_at?: string | null
