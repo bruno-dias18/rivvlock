@@ -204,7 +204,9 @@
     "paymentErrorDescription": "Zahlungssitzung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
     "fundsReleased": "Gelder erfolgreich freigegeben!",
     "releaseError": "Fehler beim Freigeben der Gelder",
-    "invoiceError": "Fehler beim Erstellen der Rechnung"
+    "invoiceError": "Fehler beim Erstellen der Rechnung",
+    "sellerHasValidated": "✅ Der Verkäufer hat den Service validiert",
+    "buyerCanNowFinalize": "Sie können nun die Transaktion abschließen oder bei Bedarf einen Streitfall melden."
   },
   "admin": {
     "dashboard": "Verwaltung",

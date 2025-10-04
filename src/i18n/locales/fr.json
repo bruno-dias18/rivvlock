@@ -204,7 +204,9 @@
     "paymentErrorDescription": "Impossible de créer la session de paiement. Veuillez réessayer.",
     "fundsReleased": "Fonds libérés avec succès !",
     "releaseError": "Erreur lors de la libération des fonds",
-    "invoiceError": "Erreur lors de la génération de la facture"
+    "invoiceError": "Erreur lors de la génération de la facture",
+    "sellerHasValidated": "✅ Le vendeur a validé le service",
+    "buyerCanNowFinalize": "Vous pouvez maintenant finaliser la transaction ou déclarer un litige si nécessaire."
   },
   "admin": {
     "dashboard": "Administration",
