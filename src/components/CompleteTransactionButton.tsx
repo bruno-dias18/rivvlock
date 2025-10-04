@@ -65,18 +65,20 @@ export default function CompleteTransactionButton({
     }
   };
 
+  if (!sellerHasStripeAccount) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Le vendeur n'a pas encore configuré ses coordonnées bancaires. 
+          Le transfert des fonds ne peut pas être effectué pour le moment.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {!sellerHasStripeAccount && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Le vendeur n'a pas encore configuré ses coordonnées bancaires. 
-            Le transfert des fonds ne peut pas être effectué pour le moment.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Button
         onClick={() => setShowConfirmDialog(true)}
         disabled={isProcessing}
