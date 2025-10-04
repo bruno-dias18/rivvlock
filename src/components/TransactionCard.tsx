@@ -220,12 +220,17 @@ const TransactionCardComponent = ({
           )}
           
           {/* Alert for buyer when seller has validated */}
-          {userRole === 'buyer' && transaction.status === 'paid' && transaction.seller_validated && !transaction.buyer_validated && validationStatus.phase === 'validation_active' && (
+          {userRole === 'buyer' && transaction.status === 'paid' && transaction.seller_validated && !transaction.buyer_validated && (
             <Alert className="mt-3 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
               <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-800 dark:text-green-200">
                 <div className="font-semibold">{t('transactions.sellerHasValidated')}</div>
-                <div className="text-sm mt-1">{t('transactions.buyerCanNowFinalize')}</div>
+                <div className="text-sm mt-1">
+                  {validationStatus.phase === 'validation_active' 
+                    ? t('transactions.buyerCanNowFinalize')
+                    : t('transactions.buyerCanFinalizeEarly')
+                  }
+                </div>
               </AlertDescription>
             </Alert>
           )}

@@ -206,7 +206,8 @@
     "releaseError": "Fehler beim Freigeben der Gelder",
     "invoiceError": "Fehler beim Erstellen der Rechnung",
     "sellerHasValidated": "✅ Der Verkäufer hat den Service validiert",
-    "buyerCanNowFinalize": "Sie können nun die Transaktion abschließen oder bei Bedarf einen Streitfall melden."
+    "buyerCanNowFinalize": "Sie können nun die Transaktion abschließen oder bei Bedarf einen Streitfall melden.",
+    "buyerCanFinalizeEarly": "Sie können jetzt abschließen. Der automatische Countdown startet nach dem Servicedatum."
   },
   "admin": {
     "dashboard": "Verwaltung",

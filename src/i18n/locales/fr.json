@@ -206,7 +206,8 @@
     "releaseError": "Erreur lors de la libération des fonds",
     "invoiceError": "Erreur lors de la génération de la facture",
     "sellerHasValidated": "✅ Le vendeur a validé le service",
-    "buyerCanNowFinalize": "Vous pouvez maintenant finaliser la transaction ou déclarer un litige si nécessaire."
+    "buyerCanNowFinalize": "Vous pouvez maintenant finaliser la transaction ou déclarer un litige si nécessaire.",
+    "buyerCanFinalizeEarly": "Vous pouvez finaliser dès maintenant. Le compte à rebours automatique démarrera après la date de service."
   },
   "admin": {
     "dashboard": "Administration",

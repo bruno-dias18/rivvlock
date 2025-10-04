@@ -179,8 +179,8 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       return {
         phase: 'service_pending',
         isValidationDeadlineActive: false,
-        canFinalize: false,
-        canDispute: false,
+        canFinalize: transaction.seller_validated && isUserBuyer,
+        canDispute: transaction.seller_validated && isUserBuyer,
         canManuallyFinalize: isUserBuyer,
         displayLabel: transaction.seller_validated ? 'Service terminé' : 'En attente validation vendeur',
         displayColor: 'default'
