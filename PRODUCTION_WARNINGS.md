@@ -1,16 +1,17 @@
-# Warnings de Production - Acceptés
+# Production Readiness & Security Warnings
 
-Date de validation : 2025-10-03
+Date de validation : 2025-10-04
 
 ## État de l'Application
 
 ✅ **Application prête pour lancement en production**
 
-- 18 transactions actives
-- 0 erreur critique
+- 6 transactions actives avec validation de tokens sécurisée
+- 0 erreur critique après corrections de sécurité
 - Performance optimisée (React Query, memoization)
-- Sécurité renforcée (RLS policies actives, logs client sécurisés)
+- Sécurité renforcée (RLS policies actives, tokens durcis, logs sécurisés)
 - Cron jobs fonctionnels
+- **Erreurs Realtime corrigées** (plus d'erreurs de filtrage Postgres)
 
 ## Warnings Supabase (Permanents et Acceptés)
 
@@ -39,7 +40,41 @@ Date de validation : 2025-10-03
 
 **Conclusion:** Ce warning est **normal et ignorable** - il apparaîtra toujours dans le scanner
 
-## ✅ Corrections Sécurité Appliquées (2025-10-03)
+## ✅ Corrections Sécurité Appliquées (2025-10-04)
+
+### "Erreurs Realtime Postgres" - RÉSOLU ✅
+
+**Problème identifié:**
+- Multiples erreurs "invalid column for filter transaction_id" dans les logs Postgres
+- Abonnements Realtime avec filtres côté serveur sur colonnes inexistantes
+
+**Solutions implémentées:**
+1. **Suppression des filtres Realtime côté serveur** dans tous les hooks
+2. **Filtrage côté client** dans les callbacks des abonnements Realtime
+3. **Vérification transaction_id/dispute_id** avant traitement des messages
+
+**Fichiers modifiés:**
+- `src/hooks/useTransactionMessages.ts`: Filtre côté client
+- `src/hooks/useUnreadTransactionMessages.ts`: Filtre côté client 
+- `src/hooks/useDisputeMessages.ts`: Filtre côté client
+- `src/hooks/useAdminDisputeMessaging.ts`: Filtre côté client
+
+**Résultat:**
+- ✅ Plus d'erreurs Postgres "invalid column for filter"
+- ✅ Abonnements Realtime robustes et performants
+- ✅ Logs Postgres propres
+
+### "Token Security & Admin Role Auditing" - RENFORCÉ ✅
+
+**Améliorations implémentées:**
+1. **Trigger de sécurisation des tokens partagés** automatique
+2. **Expiration forcée à 24h maximum** pour tous les liens
+3. **Indexation optimisée** pour la détection d'abus
+4. **Audit complet** des changements de rôles admin
+
+**Triggers ajoutés:**
+- `trg_secure_shared_link_token`: Génération sécurisée automatique
+- `trg_admin_role_audit_detailed`: Audit complet des rôles admin
 
 ### "Hackers Can See Failed Login Attempts and Security Patterns" - RÉSOLU
 
