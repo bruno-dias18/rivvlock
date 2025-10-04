@@ -4,8 +4,7 @@ import { logger } from '@/lib/logger';
 
 export interface AdminUser {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
+  user_id: string;
   user_type: string;
   country: string;
   verified: boolean;
@@ -16,9 +15,10 @@ export const useAdminUsers = (limit = 10) => {
   return useQuery({
     queryKey: ['admin-users', limit],
     queryFn: async () => {
+      // Use secure profile access with minimal data only
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, first_name, last_name, user_type, country, verified, created_at')
+        .select('id, user_id, user_type, country, verified, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 

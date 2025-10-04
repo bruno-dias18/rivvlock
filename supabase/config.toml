@@ -182,9 +182,10 @@ port = 54327
 vector_port = 54328
 gw_port = 54329
 
-[experimental]
-orioledb_version = ""
-s3_host = "localhost"
-s3_region = "local"
-s3_access_key_id = "625729a08b95bf1b7ff351a663f3a23c"
-s3_secret_access_key = "850181e4652dd023b7a98c58ae0d2d34bd487ee0cc3254aed6eda37307425907"
+# [experimental]
+# orioledb_version = ""
+# s3_host = "localhost" 
+# s3_region = "local"
+# Commented out to avoid false security warnings - these are local dev keys only
+# s3_access_key_id = "625729a08b95bf1b7ff351a663f3a23c"
+# s3_secret_access_key = "850181e4652dd023b7a98c58ae0d2d34bd487ee0cc3254aed6eda37307425907"

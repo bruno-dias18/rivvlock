@@ -22,22 +22,16 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
         if (authError) logger.log('[useSellerStripeStatus] auth getUser error:', authError);
 
         if (viewerId && viewerId === sellerId) {
-          // Seller checking their own status -> direct read allowed by RLS
-          const { data: selfData, error: selfError } = await supabase
-            .from('stripe_accounts')
-            .select('charges_enabled, payouts_enabled, onboarding_completed, account_status')
-            .eq('user_id', sellerId)
-            .maybeSingle();
+          // Seller checking their own status -> use secure RPC instead
+          const { data: selfData, error: selfError } = await supabase.rpc('get_counterparty_stripe_status', {
+            stripe_user_id: sellerId
+          });
 
           logger.log('[useSellerStripeStatus] Self status read:', { selfData, selfError });
 
-          if (!selfError && selfData) {
-            hasActive = !!(
-              selfData.charges_enabled &&
-              selfData.payouts_enabled &&
-              selfData.onboarding_completed &&
-              selfData.account_status === 'active'
-            );
+          if (!selfError && Array.isArray(selfData) && selfData.length > 0) {
+            const status = selfData[0];
+            hasActive = !!status?.has_active_account;
           }
         } else {
           // Counterparty or external viewer -> use secure RPC restricted to counterparties

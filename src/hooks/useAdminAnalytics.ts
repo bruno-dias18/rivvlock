@@ -58,10 +58,10 @@ export const useAdminAnalytics = (period: AnalyticsPeriod = '30d', customStartDa
 
       if (txError) throw txError;
 
-      // Fetch users with specific columns only
+      // Fetch users - only basic, non-sensitive fields for analytics
       const { data: users, error: usersError } = await supabase
         .from('profiles')
-        .select('id, created_at')
+        .select('id, created_at, user_type, country')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .order('created_at', { ascending: true });

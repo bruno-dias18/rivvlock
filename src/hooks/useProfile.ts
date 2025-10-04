@@ -12,17 +12,20 @@ export const useProfile = () => {
         throw new Error('User not authenticated');
       }
       
+      // For user's own profile, we need full access. Use direct query with full permissions.
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
       
+      const profileData = data;
+      
       if (error) {
         throw error;
       }
       
-      return data;
+      return profileData;
     },
     enabled: !!user?.id,
   });

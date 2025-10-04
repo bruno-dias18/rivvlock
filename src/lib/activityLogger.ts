@@ -28,6 +28,25 @@ interface LogActivityParams {
   metadata?: Record<string, any>;
 }
 
+// Sanitize metadata to remove sensitive fields
+const sanitizeLogMetadata = (metadata: Record<string, any>): Record<string, any> => {
+  const sanitized = { ...metadata };
+  
+  // Remove sensitive fields that shouldn't be logged
+  const sensitiveFields = [
+    'password', 'token', 'key', 'secret', 'stripe_customer_id', 
+    'stripe_account_id', 'payment_intent_id', 'phone', 'email',
+    'first_name', 'last_name', 'address', 'postal_code', 'city',
+    'siret_uid', 'vat_number', 'avs_number', 'company_address'
+  ];
+  
+  sensitiveFields.forEach(field => {
+    delete sanitized[field];
+  });
+  
+  return sanitized;
+};
+
 export const logActivity = async ({ type, title, description, metadata }: LogActivityParams) => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -37,6 +56,9 @@ export const logActivity = async ({ type, title, description, metadata }: LogAct
       return;
     }
 
+    // Sanitize metadata to remove sensitive data before logging
+    const sanitizedMetadata = sanitizeLogMetadata(metadata || {});
+    
     const { error } = await supabase
       .from('activity_logs')
       .insert({
@@ -44,7 +66,7 @@ export const logActivity = async ({ type, title, description, metadata }: LogAct
         activity_type: type,
         title,
         description,
-        metadata: metadata || {}
+        metadata: sanitizedMetadata
       });
 
     if (error) {

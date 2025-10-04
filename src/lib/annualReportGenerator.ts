@@ -311,30 +311,29 @@ export const downloadAllInvoicesAsZip = async (
       });
     }
 
-    // Fetch seller profile once
-    const { data: sellerProfile, error: sellerError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', sellerId)
-      .single();
+    // Fetch seller profile once - use secure RPC
+    const { data: sellerProfileData, error: sellerError } = await supabase.rpc('get_seller_invoice_data', {
+      p_seller_id: sellerId,
+      p_requesting_user_id: sellerId
+    });
+    const sellerProfile = Array.isArray(sellerProfileData) && sellerProfileData.length > 0 ? sellerProfileData[0] : null;
 
     if (sellerError || !sellerProfile) {
       throw new Error('Impossible de récupérer le profil vendeur');
     }
 
-    // Fetch all buyer profiles at once
+    // Fetch all buyer profiles at once - use secure RPCs
     const buyerIds = [...new Set(transactions.map(t => t.buyer_id).filter(Boolean))];
     let buyerProfilesMap = new Map();
     if (buyerIds.length > 0) {
-      const { data: buyerProfiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('user_id', buyerIds);
-      
-      if (buyerProfiles) {
-        buyerProfiles.forEach(profile => {
-          buyerProfilesMap.set(profile.user_id, profile);
+      for (const buyerId of buyerIds) {
+        const { data: buyerProfileData } = await supabase.rpc('get_buyer_invoice_data', {
+          p_buyer_id: buyerId,
+          p_requesting_user_id: sellerId
         });
+        if (Array.isArray(buyerProfileData) && buyerProfileData.length > 0) {
+          buyerProfilesMap.set(buyerId, buyerProfileData[0]);
+        }
       }
     }
 

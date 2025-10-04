@@ -20,25 +20,25 @@ export const useAdminStats = () => {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-      // Récupérer le nombre total d'utilisateurs
+      // Récupérer le nombre total d'utilisateurs - count only, no sensitive data
       const { count: usersCount, error: usersError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('id', { count: 'exact', head: true });
 
       if (usersError) throw usersError;
 
-      // Récupérer le nombre d'utilisateurs des 30 derniers jours
+      // Récupérer le nombre d'utilisateurs des 30 derniers jours - count only
       const { count: usersLast30Days, error: users30Error } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .gte('created_at', thirtyDaysAgo.toISOString());
 
       if (users30Error) throw users30Error;
 
-      // Récupérer le nombre d'utilisateurs entre 30 et 60 jours
+      // Récupérer le nombre d'utilisateurs entre 30 et 60 jours - count only
       const { count: usersPrevious30Days, error: usersPrevError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .gte('created_at', sixtyDaysAgo.toISOString())
         .lt('created_at', thirtyDaysAgo.toISOString());
 
