@@ -123,6 +123,17 @@ const TransactionCardComponent = ({
     ? transaction.buyer_display_name || t('transactions.anonymousClient')
     : transaction.seller_display_name || t('common.seller');
 
+  console.debug('🎯 TransactionCard render:', {
+    transactionId: transaction.id,
+    transactionTitle: transaction.title,
+    userId: user?.id,
+    userRole,
+    validationStatusPhase: validationStatus.phase,
+    canFinalize: validationStatus.canFinalize,
+    canDispute: validationStatus.canDispute,
+    isValidationDeadlineActive: validationStatus.isValidationDeadlineActive
+  });
+
   // Check if messaging is available
   const isMessagingAvailable = () => {
     const validStatuses = ['pending', 'paid'];
