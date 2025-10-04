@@ -13,6 +13,7 @@ import { Edit, Trash2, FileText, Mail, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
+import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -326,6 +327,8 @@ export default function ProfilePage() {
         </Card>
 
         <BankAccountSetupCard />
+
+        <ProfileAccessLogsCard />
 
       </div>
 

@@ -303,7 +303,18 @@
     "helpDescription": "Accédez aux ressources d'aide",
     "termsOfService": "Conditions générales",
     "contactUs": "Nous contacter",
-    "website": "Site web"
+    "website": "Site web",
+    "accessLogs": {
+      "title": "Historique des accès",
+      "description": "Consultez qui a accédé à vos données personnelles",
+      "noAccess": "Aucun accès enregistré à vos données",
+      "adminAccess": "Accès administrateur à votre profil",
+      "counterpartyView": "Consultation par une contrepartie de transaction",
+      "stripeStatusView": "Vérification du statut Stripe",
+      "adminStripeAccess": "Accès administrateur aux données Stripe",
+      "emailAccess": "Accès à votre adresse email",
+      "fields": "Champs consultés"
+    }
   },
   "deleteAccount": {
     "dangerZone": "Zone de danger",

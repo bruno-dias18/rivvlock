@@ -295,20 +295,17 @@
      "termsOfService": "Allgemeine Geschäftsbedingungen",
      "contactUs": "Kontaktieren Sie uns",
      "website": "Website",
-     "managePersonalInfo": "Verwalten Sie Ihre persönlichen Informationen",
-     "accountInfo": "Kontoinformationen",
-     "basicInfo": "Ihre Grundinformationen",
-     "userType": "Benutzertyp",
-     "personalData": "Ihre persönlichen Daten",
-     "notProvided": "Nicht angegeben",
-     "notProvidedFeminine": "Nicht angegeben",
-     "companyData": "Ihre Unternehmensdaten",
-     "headOfficePostalCode": "Postleitzahl der Hauptgeschäftsstelle",
-     "headOfficeCity": "Stadt der Hauptgeschäftsstelle",
-     "vatInfo": "Ihre Mehrwertsteuerinformationen",
-     "accountSettings": "Kontoeinstellungen",
-     "accountConfiguration": "Ihre Kontokonfiguration",
-     "registrationComplete": "Registrierung vollständig"
+     "accessLogs": {
+      "title": "Zugriffsverlauf",
+      "description": "Sehen Sie, wer auf Ihre persönlichen Daten zugegriffen hat",
+      "noAccess": "Kein Zugriff auf Ihre Daten aufgezeichnet",
+      "adminAccess": "Admin-Zugriff auf Ihr Profil",
+      "counterpartyView": "Von Transaktionspartner eingesehen",
+      "stripeStatusView": "Stripe-Status-Überprüfung",
+      "adminStripeAccess": "Admin-Zugriff auf Stripe-Daten",
+      "emailAccess": "Zugriff auf Ihre E-Mail-Adresse",
+      "fields": "Zugegriffene Felder"
+    }
   },
   "bankAccount": {
     "title": "Bankverbindung",

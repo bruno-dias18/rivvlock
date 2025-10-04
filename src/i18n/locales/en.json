@@ -295,7 +295,18 @@
     "helpDescription": "Access help resources",
     "termsOfService": "Terms of Service",
     "contactUs": "Contact Us",
-    "website": "Website"
+    "website": "Website",
+    "accessLogs": {
+      "title": "Access History",
+      "description": "See who accessed your personal data",
+      "noAccess": "No access recorded to your data",
+      "adminAccess": "Admin access to your profile",
+      "counterpartyView": "Viewed by transaction counterparty",
+      "stripeStatusView": "Stripe status verification",
+      "adminStripeAccess": "Admin access to Stripe data",
+      "emailAccess": "Access to your email address",
+      "fields": "Fields accessed"
+    }
   },
   "bankAccount": {
     "title": "Bank details",
