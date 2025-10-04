@@ -490,6 +490,36 @@ export type Database = {
           },
         ]
       }
+      stripe_account_access_audit: {
+        Row: {
+          access_type: string
+          accessed_at: string
+          accessed_by_user_id: string
+          accessed_user_id: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          access_type: string
+          accessed_at?: string
+          accessed_by_user_id: string
+          accessed_user_id: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          access_type?: string
+          accessed_at?: string
+          accessed_by_user_id?: string
+          accessed_user_id?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       stripe_accounts: {
         Row: {
           account_status: string
@@ -864,6 +894,14 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: string
+      }
+      purge_old_activity_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      scheduled_security_cleanup: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       validate_shared_link_secure: {
         Args: {
