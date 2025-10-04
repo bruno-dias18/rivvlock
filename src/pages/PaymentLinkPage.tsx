@@ -6,8 +6,6 @@ import { Loader2, AlertCircle, CreditCard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
 
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0";
-
 interface TransactionData {
   id: string;
   title: string;
@@ -53,10 +51,13 @@ export default function PaymentLinkPage() {
       
       const functionUrl = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
       
-      // Check if user is authenticated and prepare headers
+      // Use supabase client for authenticated requests
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Get anon key from supabase client config
+      const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0';
       const headers: Record<string, string> = {
-        'apikey': SUPABASE_ANON_KEY
+        'apikey': anonKey
       };
       
       if (session?.access_token) {

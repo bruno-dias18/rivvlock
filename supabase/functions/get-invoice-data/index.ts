@@ -101,7 +101,8 @@ serve(async (req) => {
       if (buyerError) {
         logger.error('Error fetching buyer profile:', buyerError);
       }
-      buyerProfile = data;
+      // RPC returns an array, get first element
+      buyerProfile = data && data.length > 0 ? data[0] : null;
     }
 
     // Log access for audit trail (with admin flag if applicable)
@@ -120,7 +121,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        sellerProfile,
+        // RPC functions return arrays, get first element
+        sellerProfile: sellerProfile && sellerProfile.length > 0 ? sellerProfile[0] : null,
         buyerProfile
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
