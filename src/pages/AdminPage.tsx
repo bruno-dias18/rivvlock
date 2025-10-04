@@ -17,7 +17,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
-import { ProcessValidationDeadlinesButton } from '@/components/ProcessValidationDeadlinesButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
 
@@ -484,13 +483,6 @@ export default function AdminPage() {
                   Validation des comptes Stripe Connect
                 </p>
                 <ValidateStripeAccountsButton />
-              </div>
-              
-              <div className="pt-3 border-t">
-                <p className="text-sm text-muted-foreground mb-3">
-                  Traitement automatique des validations expirées
-                </p>
-                <ProcessValidationDeadlinesButton />
               </div>
             </CardContent>
           </Card>

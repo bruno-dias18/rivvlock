@@ -20,9 +20,7 @@ serve(async (req) => {
   );
 
   try {
-    const now = new Date().toISOString();
     logger.log("🕐 [PROCESS-VALIDATION-DEADLINE] Starting deadline processing");
-    logger.log(`📅 Current time (ISO): ${now}`);
 
     // Find transactions where validation deadline has passed and funds not released
     // Only process transactions that have an active validation deadline
@@ -33,7 +31,7 @@ serve(async (req) => {
       .eq("buyer_validated", false)
       .eq("funds_released", false)
       .not("validation_deadline", "is", null)
-      .lt("validation_deadline", now)
+      .lt("validation_deadline", new Date().toISOString())
       .eq("status", "paid");
 
     if (fetchError) {
@@ -41,30 +39,19 @@ serve(async (req) => {
       throw new Error("Failed to fetch expired transactions");
     }
 
-    const foundCount = expiredTransactions?.length || 0;
-    logger.log(`📋 [PROCESS-VALIDATION-DEADLINE] Found ${foundCount} expired transactions`);
-
-    if (foundCount > 0) {
-      logger.log("📝 Transaction details:");
-      expiredTransactions.forEach(t => {
-        logger.log(`  - ID: ${t.id}, Title: "${t.title}", Deadline: ${t.validation_deadline}, PaymentIntent: ${t.stripe_payment_intent_id}`);
-      });
-    }
-
-    if (foundCount === 0) {
+    if (!expiredTransactions || expiredTransactions.length === 0) {
       logger.log("ℹ️ [PROCESS-VALIDATION-DEADLINE] No expired transactions found");
       return new Response(JSON.stringify({
         success: true,
-        found: 0,
         processed: 0,
-        errors: 0,
-        transactionIds: [],
         message: "No expired transactions to process"
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     }
+
+    logger.log(`📋 [PROCESS-VALIDATION-DEADLINE] Found ${expiredTransactions.length} expired transactions`);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -73,14 +60,11 @@ serve(async (req) => {
 
     let processedCount = 0;
     let errorCount = 0;
-    const transactionIds: string[] = [];
 
     // Process each expired transaction
     for (const transaction of expiredTransactions) {
       try {
-        logger.log(`\n💰 [PROCESS-VALIDATION-DEADLINE] Processing transaction ${transaction.id}`);
-        logger.log(`   Title: "${transaction.title}"`);
-        logger.log(`   Deadline: ${transaction.validation_deadline}`);
+        logger.log(`💰 [PROCESS-VALIDATION-DEADLINE] Processing transaction ${transaction.id}`);
 
         if (!transaction.stripe_payment_intent_id) {
           logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] No payment intent for transaction ${transaction.id}`);
@@ -88,41 +72,27 @@ serve(async (req) => {
           continue;
         }
 
-        logger.log(`   Payment Intent ID: ${transaction.stripe_payment_intent_id}`);
-        logger.log(`   Attempting Stripe capture...`);
-
         // Capture the payment intent
         const paymentIntent = await stripe.paymentIntents.capture(
           transaction.stripe_payment_intent_id
         );
 
-        logger.log(`   Stripe response status: ${paymentIntent.status}`);
-
         if (paymentIntent.status === "succeeded") {
-          logger.log(`✅ [PROCESS-VALIDATION-DEADLINE] Payment captured successfully for transaction ${transaction.id}`);
-          
-          logger.log(`   Updating database...`);
-          // Update transaction to mark funds as released, buyer as validated, and status as completed
+          // Update transaction to mark funds as released and buyer as validated
           const { error: updateError } = await adminClient
             .from("transactions")
             .update({
               funds_released: true,
               buyer_validated: true, // Auto-validate since deadline passed
-              status: 'completed',
-              funds_released_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
             .eq("id", transaction.id);
 
           if (updateError) {
             logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Error updating transaction ${transaction.id}:`, updateError);
-            logger.error(`   Update error details:`, JSON.stringify(updateError));
             errorCount++;
             continue;
           }
-
-          logger.log(`   Database updated successfully`);
-          logger.log(`   Sending notification...`);
 
           // Send notification about automatic fund release
           await adminClient.functions.invoke('send-notifications', {
@@ -134,9 +104,7 @@ serve(async (req) => {
             }
           });
 
-          logger.log(`   Notification sent`);
-          transactionIds.push(transaction.id);
-          logger.log(`✅✅✅ [PROCESS-VALIDATION-DEADLINE] Successfully processed transaction ${transaction.id}\n`);
+          logger.log(`✅ [PROCESS-VALIDATION-DEADLINE] Successfully processed transaction ${transaction.id}`);
           processedCount++;
         } else {
           logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Payment capture failed for transaction ${transaction.id}:`, paymentIntent.status);
@@ -144,48 +112,27 @@ serve(async (req) => {
         }
 
       } catch (error) {
-        logger.error(`❌❌❌ [PROCESS-VALIDATION-DEADLINE] Error processing transaction ${transaction.id}:`, error);
-        if (error instanceof Error) {
-          logger.error(`   Error message: ${error.message}`);
-          logger.error(`   Error stack: ${error.stack}`);
-        }
+        logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Error processing transaction ${transaction.id}:`, error);
         errorCount++;
       }
     }
 
-    logger.log(`\n🏁 [PROCESS-VALIDATION-DEADLINE] ===== PROCESSING COMPLETE =====`);
-    logger.log(`   Found: ${foundCount}`);
-    logger.log(`   Successfully processed: ${processedCount}`);
-    logger.log(`   Errors: ${errorCount}`);
-    logger.log(`   Transaction IDs processed: ${transactionIds.join(', ') || 'none'}`);
-    logger.log(`============================================\n`);
+    logger.log(`🏁 [PROCESS-VALIDATION-DEADLINE] Processing complete. Processed: ${processedCount}, Errors: ${errorCount}`);
 
     return new Response(JSON.stringify({ 
       success: true,
-      found: foundCount,
       processed: processedCount,
       errors: errorCount,
-      transactionIds: transactionIds
+      total: expiredTransactions.length
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
 
   } catch (error) {
-    logger.error("❌❌❌ [PROCESS-VALIDATION-DEADLINE] FATAL FUNCTION ERROR:", error);
-    if (error instanceof Error) {
-      logger.error(`   Error message: ${error.message}`);
-      logger.error(`   Error stack: ${error.stack}`);
-    }
+    logger.error("❌ [PROCESS-VALIDATION-DEADLINE] Function error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage,
-      found: 0,
-      processed: 0,
-      errors: 1,
-      transactionIds: []
-    }), {
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
