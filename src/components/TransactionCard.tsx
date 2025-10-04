@@ -340,7 +340,7 @@ const TransactionCardComponent = ({
               </Button>
             )}
             
-            {transaction.status === 'paid' && userRole === 'buyer' && validationStatus.canFinalize && (
+            {transaction.status === 'paid' && userRole === 'buyer' && transaction.seller_validated && !transaction.buyer_validated && (
               <ValidationActionButtons
                 transaction={transaction}
                 isUserBuyer={true}
