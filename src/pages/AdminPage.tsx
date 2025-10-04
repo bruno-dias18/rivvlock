@@ -284,15 +284,12 @@ export default function AdminPage() {
                     <div className="flex items-center space-x-2">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <span className="text-xs font-medium">
-                          {(user.first_name?.[0] || user.last_name?.[0] || 'U').toUpperCase()}
+                          {user.user_type?.[0]?.toUpperCase() || 'U'}
                         </span>
                       </div>
                       <div>
                         <p className="text-sm font-medium">
-                          {user.first_name && user.last_name 
-                            ? `${user.first_name} ${user.last_name}` 
-                            : 'Utilisateur'
-                          }
+                          User {user.user_id.slice(0, 8)}...
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {format(new Date(user.created_at), 'dd/MM/yyyy', { locale: fr })}
