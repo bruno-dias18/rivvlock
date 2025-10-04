@@ -47,13 +47,26 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
         stripe_user_id: sellerId,
       });
       
-      if (error) {
-        logger.error('[useSellerStripeStatus] RPC error:', error);
-        return { hasActiveAccount: false };
+      let hasActive = false;
+      if (!error && Array.isArray(data) && data.length > 0) {
+        hasActive = data[0]?.has_active_account || false;
+        logger.debug('[useSellerStripeStatus] RPC result:', { hasActive, data });
       }
-      
-      const hasActive = data?.[0]?.has_active_account || false;
-      logger.debug('[useSellerStripeStatus] RPC result:', { hasActive, data });
+
+      // If inactive or error, refresh from Stripe to avoid stale DB state
+      if (!hasActive) {
+        logger.debug('[useSellerStripeStatus] Triggering refresh for seller:', sellerId);
+        const { data: refreshed, error: refreshError } = await supabase.functions.invoke(
+          'refresh-counterparty-stripe-status',
+          { body: { seller_id: sellerId } }
+        );
+        
+        if (!refreshError && refreshed) {
+          hasActive = refreshed.hasActiveAccount || false;
+          logger.debug('[useSellerStripeStatus] Refreshed result:', { hasActive, refreshed });
+        }
+      }
+
       return { hasActiveAccount: hasActive };
     },
     enabled: !!sellerId,
