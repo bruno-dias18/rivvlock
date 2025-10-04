@@ -62,14 +62,63 @@ export const useNewItemsNotifications = () => {
       for (const category of Object.keys(ACTIVITY_TYPES_MAP) as CategoryKey[]) {
         const lastSeen = getLastSeenTimestamp(category);
         
-        const { count } = await supabase
+        // Récupérer les logs d'activité avec leurs métadonnées
+        const { data: logs } = await supabase
           .from('activity_logs')
-          .select('id', { count: 'exact', head: true })
+          .select('id, metadata')
           .eq('user_id', user.id)
           .in('activity_type', ACTIVITY_TYPES_MAP[category])
           .gt('created_at', lastSeen);
 
-        counts[category] = count || 0;
+        if (!logs || logs.length === 0) {
+          counts[category] = 0;
+          continue;
+        }
+
+        // Extraire les transaction_ids
+        const transactionIds = logs
+          .map(log => (log.metadata as any)?.transaction_id)
+          .filter(Boolean);
+
+        if (transactionIds.length === 0) {
+          counts[category] = 0;
+          continue;
+        }
+
+        // Vérifier le statut actuel des transactions
+        let filteredCount = 0;
+
+        if (category === 'pending') {
+          const { count } = await supabase
+            .from('transactions')
+            .select('id', { count: 'exact', head: true })
+            .in('id', transactionIds)
+            .eq('status', 'pending');
+          filteredCount = count || 0;
+        } else if (category === 'blocked') {
+          const { count } = await supabase
+            .from('transactions')
+            .select('id', { count: 'exact', head: true })
+            .in('id', transactionIds)
+            .eq('status', 'paid');
+          filteredCount = count || 0;
+        } else if (category === 'disputed') {
+          const { data: disputes } = await supabase
+            .from('disputes')
+            .select('transaction_id')
+            .in('transaction_id', transactionIds)
+            .neq('status', 'resolved');
+          filteredCount = disputes?.length || 0;
+        } else if (category === 'completed') {
+          const { count } = await supabase
+            .from('transactions')
+            .select('id', { count: 'exact', head: true })
+            .in('id', transactionIds)
+            .eq('status', 'validated');
+          filteredCount = count || 0;
+        }
+
+        counts[category] = filteredCount;
       }
 
       return counts;
@@ -97,7 +146,42 @@ export const useNewItemsNotifications = () => {
       })
       .filter(Boolean) || [];
     
-    return new Set(transactionIds);
+    if (transactionIds.length === 0) return new Set();
+
+    // Filtrer par statut actuel
+    let filteredIds: string[] = [];
+
+    if (category === 'pending') {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('id')
+        .in('id', transactionIds)
+        .eq('status', 'pending');
+      filteredIds = txs?.map(t => t.id) || [];
+    } else if (category === 'blocked') {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('id')
+        .in('id', transactionIds)
+        .eq('status', 'paid');
+      filteredIds = txs?.map(t => t.id) || [];
+    } else if (category === 'disputed') {
+      const { data: disputes } = await supabase
+        .from('disputes')
+        .select('transaction_id')
+        .in('transaction_id', transactionIds)
+        .neq('status', 'resolved');
+      filteredIds = disputes?.map(d => d.transaction_id).filter(Boolean) || [];
+    } else if (category === 'completed') {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('id')
+        .in('id', transactionIds)
+        .eq('status', 'validated');
+      filteredIds = txs?.map(t => t.id) || [];
+    }
+    
+    return new Set(filteredIds);
   };
 
   return {
