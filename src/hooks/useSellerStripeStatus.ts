@@ -23,7 +23,6 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
           .from('stripe_accounts')
           .select('charges_enabled, payouts_enabled, onboarding_completed, account_status')
           .eq('user_id', sellerId)
-          .neq('account_status', 'inactive')
           .maybeSingle();
         
         if (error) {
@@ -31,13 +30,27 @@ export const useSellerStripeStatus = (sellerId: string | null) => {
           return { hasActiveAccount: false };
         }
         
-        if (!data) {
-          logger.debug('[useSellerStripeStatus] No Stripe account found for seller');
-          return { hasActiveAccount: false };
-        }
+        let hasActive = false;
         
-        const hasActive = data.charges_enabled && data.payouts_enabled && data.onboarding_completed;
-        logger.debug('[useSellerStripeStatus] Admin result:', { hasActive, data });
+        if (data) {
+          hasActive = !!(data.charges_enabled && data.payouts_enabled && data.onboarding_completed && data.account_status !== 'inactive');
+          logger.debug('[useSellerStripeStatus] Admin preliminary result:', { hasActive, data });
+        }
+
+        // If not active, trigger server refresh to avoid stale DB state
+        if (!hasActive) {
+          logger.debug('[useSellerStripeStatus] Admin triggering refresh for seller:', sellerId);
+          const { data: refreshed, error: refreshError } = await supabase.functions.invoke(
+            'refresh-counterparty-stripe-status',
+            { body: { seller_id: sellerId } }
+          );
+
+          if (!refreshError && refreshed) {
+            hasActive = refreshed.hasActiveAccount || false;
+            logger.debug('[useSellerStripeStatus] Admin refreshed result:', { hasActive, refreshed });
+          }
+        }
+
         return { hasActiveAccount: hasActive };
       }
 
