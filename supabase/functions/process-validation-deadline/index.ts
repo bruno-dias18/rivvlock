@@ -78,12 +78,16 @@ serve(async (req) => {
         );
 
         if (paymentIntent.status === "succeeded") {
-          // Update transaction to mark funds as released and buyer as validated
+          logger.log(`✅ [PROCESS-VALIDATION-DEADLINE] Payment captured successfully for transaction ${transaction.id}`);
+          
+          // Update transaction to mark funds as released, buyer as validated, and status as completed
           const { error: updateError } = await adminClient
             .from("transactions")
             .update({
               funds_released: true,
               buyer_validated: true, // Auto-validate since deadline passed
+              status: 'completed',
+              funds_released_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
             .eq("id", transaction.id);
