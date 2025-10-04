@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { logger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
+import { validate, requestDateChangeSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +23,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Rate limiting - protection contre les abus
+    const clientIp = getClientIp(req);
+    await checkRateLimit(clientIp);
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -48,9 +54,24 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { transactionId, proposedDate, proposedEndDate, message }: DateChangeRequest = await req.json();
+    // Rate limiting par utilisateur
+    await checkRateLimit(clientIp, user.id);
 
-    logger.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedDate, proposedEndDate, userId: user.id });
+    // Parse et validation des données
+    const requestBody = await req.json();
+    
+    // Adapter les noms de champs pour la validation
+    const validationData = {
+      transactionId: requestBody.transactionId,
+      proposedServiceDate: requestBody.proposedDate,
+      proposedServiceEndDate: requestBody.proposedEndDate,
+      message: requestBody.message
+    };
+    
+    const validatedData = validate(requestDateChangeSchema, validationData);
+    const { transactionId, proposedServiceDate, proposedServiceEndDate, message } = validatedData;
+
+    logger.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedServiceDate, proposedServiceEndDate, userId: user.id });
 
     // First, check if the transaction exists at all
     const { data: transactionExists, error: existsError } = await supabase
@@ -105,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Update transaction with proposed date change
     const updateData: any = {
-      proposed_service_date: proposedDate,
+      proposed_service_date: proposedServiceDate,
       date_change_status: 'pending_approval',
       date_change_requested_at: new Date().toISOString(),
       date_change_message: message || null,
@@ -113,8 +134,8 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     // Add proposed_service_end_date if provided
-    if (proposedEndDate) {
-      updateData.proposed_service_end_date = proposedEndDate;
+    if (proposedServiceEndDate) {
+      updateData.proposed_service_end_date = proposedServiceEndDate;
     }
 
     const { error: updateError } = await supabase
@@ -137,11 +158,11 @@ const handler = async (req: Request): Promise<Response> => {
         user_id: user.id,
         activity_type: 'seller_validation',
         title: 'Demande de modification de date',
-        description: `Nouvelle date proposée: ${new Date(proposedDate).toLocaleString('fr-FR')}${message ? `. Message: ${message}` : ''}`,
+        description: `Nouvelle date proposée: ${new Date(proposedServiceDate).toLocaleString('fr-FR')}${message ? `. Message: ${message}` : ''}`,
         metadata: {
           transaction_id: transactionId,
           old_service_date: transaction.service_date,
-          proposed_service_date: proposedDate
+          proposed_service_date: proposedServiceDate
         }
       });
 

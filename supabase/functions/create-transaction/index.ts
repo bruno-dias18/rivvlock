@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
+import { validate, createTransactionSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +23,10 @@ serve(async (req) => {
 
   try {
     logStep('Function started');
+
+    // Rate limiting - protection contre les abus
+    const clientIp = getClientIp(req);
+    await checkRateLimit(clientIp);
 
     // Initialize Supabase clients
     const supabaseClient = createClient(
@@ -49,14 +55,17 @@ serve(async (req) => {
     
     logStep('User authenticated', { userId: user.id, email: user.email });
 
-    // Parse request body
-    const { title, description, price, currency, serviceDate, serviceEndDate } = await req.json();
-    
-    if (!title || !description || !price || !currency || !serviceDate) {
-      throw new Error('Missing required fields');
-    }
+    // Rate limiting par utilisateur
+    await checkRateLimit(clientIp, user.id);
 
-    logStep('Request data received', { title, price, currency, serviceEndDate });
+    // Parse request body
+    const requestBody = await req.json();
+    
+    // Validation des données d'entrée
+    const validatedData = validate(createTransactionSchema, requestBody);
+    const { title, description, price, currency, serviceDate, serviceEndDate } = validatedData;
+
+    logStep('Request data validated', { title, price, currency, serviceEndDate });
 
     // Generate unique token for shared link
     const sharedLinkToken = crypto.randomUUID();

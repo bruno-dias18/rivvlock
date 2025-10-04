@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
+import { validate, createProposalSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +25,10 @@ serve(async (req) => {
   );
 
   try {
+    // Rate limiting - protection contre les abus
+    const clientIp = getClientIp(req);
+    await checkRateLimit(clientIp);
+
     const token = authHeader.replace("Bearer ", "");
     const { data: userData } = await supabaseClient.auth.getUser(token);
     const user = userData.user;
@@ -31,16 +37,15 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const { disputeId, proposalType, refundPercentage, message } = await req.json();
+    // Rate limiting par utilisateur
+    await checkRateLimit(clientIp, user.id);
+
+    // Parse et validation des données
+    const requestBody = await req.json();
+    const validatedData = validate(createProposalSchema, requestBody);
+    const { disputeId, proposalType, refundPercentage, message } = validatedData;
 
     logger.log("Creating proposal:", { disputeId, proposalType, refundPercentage, userId: user.id });
-
-    // Simple validation for partial refunds
-    if (proposalType === 'partial_refund') {
-      if (typeof refundPercentage !== 'number' || refundPercentage < 0 || refundPercentage > 100) {
-        throw new Error("Invalid refundPercentage. Must be between 0 and 100.");
-      }
-    }
 
     // Get the dispute
     const { data: dispute, error: disputeError } = await supabaseClient

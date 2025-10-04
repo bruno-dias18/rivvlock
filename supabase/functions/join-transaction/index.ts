@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
+import { validate, joinTransactionSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +17,10 @@ serve(async (req) => {
 
   try {
     logger.log('🔍 [JOIN-TRANSACTION] Starting request processing');
+
+    // Rate limiting - protection contre les abus
+    const clientIp = getClientIp(req);
+    await checkRateLimit(clientIp);
 
     // User client for authentication
     const userClient = createClient(
@@ -43,14 +49,16 @@ serve(async (req) => {
 
     logger.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
 
+    // Rate limiting par utilisateur
+    await checkRateLimit(clientIp, userData.user.id);
+
     // Parse request body (support both `token` and `linkToken`)
     const body = await req.json();
-    const transaction_id = body.transaction_id;
-    const linkToken = body.linkToken || body.token;
-
-    if (!transaction_id || !linkToken) {
-      throw new Error('ID de transaction ou token manquant');
-    }
+    
+    // Validation des données d'entrée
+    const validatedData = validate(joinTransactionSchema, body);
+    const transaction_id = validatedData.transaction_id;
+    const linkToken = validatedData.linkToken || validatedData.token;
 
     logger.log('🔍 [JOIN-TRANSACTION] Processing transaction:', transaction_id);
 

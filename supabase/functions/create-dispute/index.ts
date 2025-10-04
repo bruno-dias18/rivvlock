@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
+import { validate, createDisputeSchema } from "../_shared/validation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +22,10 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Rate limiting - protection contre les abus
+    const clientIp = getClientIp(req);
+    await checkRateLimit(clientIp);
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -36,11 +42,15 @@ serve(async (req) => {
     if (!user?.id) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    const { transactionId, disputeType, reason } = await req.json();
-    if (!transactionId || !reason) {
-      throw new Error("Transaction ID and reason are required");
-    }
-    logStep("Request data parsed", { transactionId, disputeType, reason });
+    // Rate limiting par utilisateur
+    await checkRateLimit(clientIp, user.id);
+
+    // Parse et validation des données
+    const requestBody = await req.json();
+    const validatedData = validate(createDisputeSchema, requestBody);
+    const { transactionId, disputeType, reason } = validatedData;
+    
+    logStep("Request data validated", { transactionId, disputeType, reason });
 
     // Verify user is part of the transaction and it's in paid status
     const { data: transaction, error: transactionError } = await supabaseClient
