@@ -8,22 +8,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const logStep = (step: string, details?: any) => {
+  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
+  logger.log(`[PROCESS-VALIDATION-DEADLINE] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Admin client for database operations
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
   );
 
   try {
-    logger.log("🕐 [PROCESS-VALIDATION-DEADLINE] Starting deadline processing");
+    logStep("🕐 Starting deadline processing");
 
     // Find transactions where validation deadline has passed and funds not released
-    // Only process transactions that have an active validation deadline
     const { data: expiredTransactions, error: fetchError } = await adminClient
       .from("transactions")
       .select("*")
@@ -35,12 +39,12 @@ serve(async (req) => {
       .eq("status", "paid");
 
     if (fetchError) {
-      logger.error("❌ [PROCESS-VALIDATION-DEADLINE] Error fetching expired transactions:", fetchError);
+      logStep("❌ Error fetching expired transactions", fetchError);
       throw new Error("Failed to fetch expired transactions");
     }
 
     if (!expiredTransactions || expiredTransactions.length === 0) {
-      logger.log("ℹ️ [PROCESS-VALIDATION-DEADLINE] No expired transactions found");
+      logStep("ℹ️ No expired transactions found");
       return new Response(JSON.stringify({
         success: true,
         processed: 0,
@@ -51,77 +55,236 @@ serve(async (req) => {
       });
     }
 
-    logger.log(`📋 [PROCESS-VALIDATION-DEADLINE] Found ${expiredTransactions.length} expired transactions`);
+    logStep(`📋 Found ${expiredTransactions.length} expired transactions`);
 
-    // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2024-06-20",
     });
 
     let processedCount = 0;
     let errorCount = 0;
+    let skippedCount = 0;
 
-    // Process each expired transaction
     for (const transaction of expiredTransactions) {
       try {
-        logger.log(`💰 [PROCESS-VALIDATION-DEADLINE] Processing transaction ${transaction.id}`);
+        logStep(`💰 Processing transaction ${transaction.id}`, { 
+          sellerId: transaction.user_id,
+          amount: transaction.price 
+        });
 
         if (!transaction.stripe_payment_intent_id) {
-          logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] No payment intent for transaction ${transaction.id}`);
+          logStep(`❌ No payment intent for transaction ${transaction.id}`);
           errorCount++;
           continue;
         }
 
-        // Capture the payment intent
-        const paymentIntent = await stripe.paymentIntents.capture(
+        // Get seller's Stripe account
+        const { data: sellerStripeAccount, error: accountError } = await adminClient
+          .from('stripe_accounts')
+          .select('*')
+          .eq('user_id', transaction.user_id)
+          .single();
+
+        if (accountError || !sellerStripeAccount) {
+          logStep(`⚠️ Seller has no Stripe account`, { 
+            transactionId: transaction.id, 
+            sellerId: transaction.user_id 
+          });
+          skippedCount++;
+          continue;
+        }
+
+        // LIVE verification on Stripe to ensure account is truly active
+        let isSellerAccountActive = false;
+        try {
+          const stripeAccount = await stripe.accounts.retrieve(sellerStripeAccount.stripe_account_id);
+          logStep("✅ Stripe account validated live", { 
+            accountId: sellerStripeAccount.stripe_account_id,
+            payoutsEnabled: stripeAccount.payouts_enabled,
+            chargesEnabled: stripeAccount.charges_enabled
+          });
+
+          isSellerAccountActive = !!(stripeAccount.payouts_enabled && stripeAccount.charges_enabled);
+
+          // Update database with live status
+          await adminClient
+            .from('stripe_accounts')
+            .update({
+              account_status: isSellerAccountActive ? 'active' : 'pending',
+              payouts_enabled: stripeAccount.payouts_enabled || false,
+              charges_enabled: stripeAccount.charges_enabled || false,
+              last_status_check: new Date().toISOString(),
+            })
+            .eq('user_id', transaction.user_id);
+
+        } catch (stripeError: any) {
+          logStep("⚠️ Stripe account validation failed", { 
+            accountId: sellerStripeAccount.stripe_account_id,
+            error: stripeError.message 
+          });
+
+          // Mark as inactive in DB
+          await adminClient
+            .from('stripe_accounts')
+            .update({
+              account_status: 'inactive',
+              payouts_enabled: false,
+              charges_enabled: false,
+              last_status_check: new Date().toISOString(),
+            })
+            .eq('user_id', transaction.user_id);
+
+          isSellerAccountActive = false;
+        }
+
+        // Skip if seller account is not active
+        if (!isSellerAccountActive) {
+          logStep(`⏭️ SKIPPED - Seller Stripe account inactive`, { 
+            transactionId: transaction.id,
+            sellerId: transaction.user_id 
+          });
+          skippedCount++;
+          continue;
+        }
+
+        // Retrieve payment intent to check status
+        let paymentIntent = await stripe.paymentIntents.retrieve(
           transaction.stripe_payment_intent_id
         );
+        logStep("Payment intent retrieved", { 
+          paymentIntentId: paymentIntent.id, 
+          status: paymentIntent.status 
+        });
 
-        if (paymentIntent.status === "succeeded") {
-          // Update transaction to mark funds as released and buyer as validated
-          const { error: updateError } = await adminClient
-            .from("transactions")
-            .update({
-              funds_released: true,
-              buyer_validated: true, // Auto-validate since deadline passed
-              updated_at: new Date().toISOString()
-            })
-            .eq("id", transaction.id);
+        // Capture if needed
+        if (paymentIntent.status === 'requires_capture') {
+          paymentIntent = await stripe.paymentIntents.capture(
+            transaction.stripe_payment_intent_id
+          );
+          logStep("Payment intent captured", { paymentIntentId: paymentIntent.id });
+        } else if (paymentIntent.status === 'succeeded') {
+          logStep("Payment intent already succeeded");
+        } else {
+          logStep(`⚠️ Payment intent status invalid for release: ${paymentIntent.status}`);
+          errorCount++;
+          continue;
+        }
 
-          if (updateError) {
-            logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Error updating transaction ${transaction.id}:`, updateError);
-            errorCount++;
-            continue;
+        // Get charge ID for transfer
+        const chargeId = paymentIntent.latest_charge as string;
+        if (!chargeId) {
+          logStep("❌ No charge ID found in payment intent");
+          errorCount++;
+          continue;
+        }
+
+        // Calculate transfer amount
+        const platformFeePercent = 0.05;
+        const originalAmount = Math.round(transaction.price * 100);
+        const platformFee = Math.round(originalAmount * platformFeePercent);
+        const transferAmount = originalAmount - platformFee;
+
+        logStep("Transfer amount calculated", { 
+          originalAmount, 
+          platformFee, 
+          transferAmount 
+        });
+
+        // Create transfer to seller's connected account
+        const transfer = await stripe.transfers.create({
+          amount: transferAmount,
+          currency: transaction.currency.toLowerCase(),
+          destination: sellerStripeAccount.stripe_account_id,
+          source_transaction: chargeId,
+          description: `Automatic transfer - validation deadline expired: ${transaction.title}`,
+          metadata: {
+            transaction_id: transaction.id,
+            seller_id: transaction.user_id,
+            buyer_id: transaction.buyer_id,
+            auto_released: 'true'
           }
+        });
 
-          // Send notification about automatic fund release
-          await adminClient.functions.invoke('send-notifications', {
-            body: {
-              type: 'automatic_fund_release',
-              transactionId: transaction.id,
-              message: `Les fonds ont été libérés automatiquement suite à l'expiration du délai de validation (48h).`,
-              recipients: [transaction.user_id, transaction.buyer_id].filter(Boolean)
+        logStep("✅ Transfer created", { transferId: transfer.id });
+
+        // Update transaction to validated and mark funds released
+        const { error: updateError } = await adminClient
+          .from("transactions")
+          .update({
+            status: "validated",
+            funds_released: true,
+            buyer_validated: true, // Auto-validate since deadline passed
+            funds_released_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", transaction.id);
+
+        if (updateError) {
+          logStep(`❌ Error updating transaction ${transaction.id}`, updateError);
+          errorCount++;
+          continue;
+        }
+
+        logStep("Transaction updated to validated");
+
+        // Log activity for seller
+        await adminClient
+          .from('activity_logs')
+          .insert({
+            user_id: transaction.user_id,
+            activity_type: 'funds_released',
+            title: 'Fonds transférés automatiquement',
+            description: `${(transferAmount / 100).toFixed(2)} ${transaction.currency} reçus pour "${transaction.title}" (délai de validation expiré)`,
+            metadata: {
+              transaction_id: transaction.id,
+              transfer_id: transfer.id,
+              amount: transferAmount,
+              currency: transaction.currency,
+              platform_fee: platformFee,
+              auto_released: true
             }
           });
 
-          logger.log(`✅ [PROCESS-VALIDATION-DEADLINE] Successfully processed transaction ${transaction.id}`);
-          processedCount++;
-        } else {
-          logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Payment capture failed for transaction ${transaction.id}:`, paymentIntent.status);
-          errorCount++;
-        }
+        // Log activity for buyer
+        await adminClient
+          .from('activity_logs')
+          .insert({
+            user_id: transaction.buyer_id,
+            activity_type: 'transaction_completed',
+            title: 'Transaction validée automatiquement',
+            description: `Délai de validation expiré, fonds transférés au vendeur pour "${transaction.title}"`,
+            metadata: {
+              transaction_id: transaction.id,
+              transfer_id: transfer.id,
+              amount: transferAmount,
+              currency: transaction.currency,
+              auto_released: true
+            }
+          });
+
+        logStep("✅ Successfully processed transaction", { 
+          transactionId: transaction.id,
+          transferId: transfer.id 
+        });
+        processedCount++;
 
       } catch (error) {
-        logger.error(`❌ [PROCESS-VALIDATION-DEADLINE] Error processing transaction ${transaction.id}:`, error);
+        logStep(`❌ Error processing transaction ${transaction.id}`, error);
         errorCount++;
       }
     }
 
-    logger.log(`🏁 [PROCESS-VALIDATION-DEADLINE] Processing complete. Processed: ${processedCount}, Errors: ${errorCount}`);
+    logStep(`🏁 Processing complete`, { 
+      processed: processedCount,
+      skipped: skippedCount,
+      errors: errorCount,
+      total: expiredTransactions.length 
+    });
 
     return new Response(JSON.stringify({ 
       success: true,
       processed: processedCount,
+      skipped: skippedCount,
       errors: errorCount,
       total: expiredTransactions.length
     }), {
@@ -130,7 +293,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logger.error("❌ [PROCESS-VALIDATION-DEADLINE] Function error:", error);
+    logStep("❌ Function error", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
