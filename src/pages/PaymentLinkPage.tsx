@@ -6,6 +6,8 @@ import { Loader2, AlertCircle, CreditCard, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0";
+
 interface TransactionData {
   id: string;
   title: string;
@@ -54,7 +56,7 @@ export default function PaymentLinkPage() {
       // Check if user is authenticated and prepare headers
       const { data: { session } } = await supabase.auth.getSession();
       const headers: Record<string, string> = {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
+        'apikey': SUPABASE_ANON_KEY
       };
       
       if (session?.access_token) {

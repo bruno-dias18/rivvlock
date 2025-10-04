@@ -754,6 +754,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_buyer_invoice_data: {
+        Args: { p_buyer_id: string; p_requesting_user_id: string }
+        Returns: {
+          address: string
+          city: string
+          company_name: string
+          country: Database["public"]["Enums"]["country_code"]
+          first_name: string
+          last_name: string
+          postal_code: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+        }[]
+      }
       get_counterparty_safe_profile: {
         Args: { profile_user_id: string }
         Returns: {
@@ -791,6 +805,26 @@ export type Database = {
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
           verified: boolean
+        }[]
+      }
+      get_seller_invoice_data: {
+        Args: { p_requesting_user_id: string; p_seller_id: string }
+        Returns: {
+          address: string
+          avs_number: string
+          city: string
+          company_name: string
+          country: Database["public"]["Enums"]["country_code"]
+          first_name: string
+          is_subject_to_vat: boolean
+          last_name: string
+          postal_code: string
+          siret_uid: string
+          tva_rate: number
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
+          vat_number: string
+          vat_rate: number
         }[]
       }
       has_role: {

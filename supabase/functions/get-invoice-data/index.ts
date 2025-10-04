@@ -78,51 +78,25 @@ serve(async (req) => {
     const { data: isAdminResult } = await supabaseClient.rpc('get_current_user_admin_status');
     const isAdmin = isAdminResult === true;
 
-    // Fetch seller profile with all necessary fields for invoice
+    // Use secure functions to fetch only necessary profile fields
     const { data: sellerProfile, error: sellerError } = await adminClient
-      .from('profiles')
-      .select(`
-        user_id,
-        first_name,
-        last_name,
-        company_name,
-        user_type,
-        country,
-        address,
-        postal_code,
-        city,
-        siret_uid,
-        vat_rate,
-        tva_rate,
-        is_subject_to_vat,
-        avs_number,
-        vat_number
-      `)
-      .eq('user_id', transaction.user_id)
-      .maybeSingle();
+      .rpc('get_seller_invoice_data', { 
+        p_seller_id: transaction.user_id,
+        p_requesting_user_id: user.id
+      });
 
     if (sellerError) {
       logger.error('Error fetching seller profile:', sellerError);
     }
 
-    // Fetch buyer profile with necessary fields
+    // Fetch buyer profile with minimal fields using secure function
     let buyerProfile = null;
     if (transaction.buyer_id) {
       const { data, error: buyerError } = await adminClient
-        .from('profiles')
-        .select(`
-          user_id,
-          first_name,
-          last_name,
-          company_name,
-          user_type,
-          country,
-          address,
-          postal_code,
-          city
-        `)
-        .eq('user_id', transaction.buyer_id)
-        .maybeSingle();
+        .rpc('get_buyer_invoice_data', {
+          p_buyer_id: transaction.buyer_id,
+          p_requesting_user_id: user.id
+        });
 
       if (buyerError) {
         logger.error('Error fetching buyer profile:', buyerError);

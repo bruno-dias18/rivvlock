@@ -216,43 +216,31 @@ serve(async (req) => {
       logger.error('Failed to log successful access:', logError);
     }
 
-    // Fetch seller profile and email
+    // Fetch minimal seller profile (no PII exposure via direct query)
     let sellerProfile = null;
     if (transaction.user_id) {
       const { data: profileData } = await adminClient
         .from('profiles')
-        .select('first_name, last_name, company_name, user_type')
+        .select('first_name, last_name, user_type')
         .eq('user_id', transaction.user_id)
         .maybeSingle();
       
-      const { data: userData } = await adminClient
-        .auth.admin.getUserById(transaction.user_id);
-        
-      if (profileData && userData.user) {
-        sellerProfile = {
-          ...profileData,
-          email: userData.user.email
-        };
+      if (profileData) {
+        sellerProfile = profileData;
       }
     }
 
-    // Fetch buyer profile and email if buyer exists
+    // Fetch minimal buyer profile if buyer exists (no email exposure)
     let buyerProfile = null;
     if (transaction.buyer_id) {
       const { data: profileData } = await adminClient
         .from('profiles')
-        .select('first_name, last_name, company_name, user_type')
+        .select('first_name, last_name, user_type')
         .eq('user_id', transaction.buyer_id)
         .maybeSingle();
         
-      const { data: userData } = await adminClient
-        .auth.admin.getUserById(transaction.buyer_id);
-        
-      if (profileData && userData.user) {
-        buyerProfile = {
-          ...profileData,
-          email: userData.user.email
-        };
+      if (profileData) {
+        buyerProfile = profileData;
       }
     }
 
