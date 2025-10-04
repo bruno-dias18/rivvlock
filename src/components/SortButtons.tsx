@@ -21,8 +21,8 @@ export function SortButtons({ sortBy, sortOrder, onSortChange, isMobile, options
   
   // Options par défaut
   const defaultOptions: SortOption[] = [
-    { value: 'created_at', label: t('transactions.sort.creation'), icon: Clock },
     { value: 'service_date', label: t('transactions.sort.service'), icon: Calendar },
+    { value: 'created_at', label: t('transactions.sort.creation'), icon: Clock },
   ];
 
   const sortOptions = options || defaultOptions;

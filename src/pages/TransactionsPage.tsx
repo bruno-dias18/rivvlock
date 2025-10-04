@@ -53,12 +53,12 @@ export default function TransactionsPage() {
     if (saved) {
       try {
         const { sortBy } = JSON.parse(saved);
-        return sortBy || 'created_at';
+        return sortBy || 'service_date';
       } catch {
-        return 'created_at';
+        return 'service_date';
       }
     }
-    return 'created_at';
+    return 'service_date';
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
     const saved = localStorage.getItem(SORT_STORAGE_KEY);
