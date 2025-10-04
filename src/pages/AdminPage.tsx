@@ -19,6 +19,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
+import { AdminValidationDeadlineButton } from '@/components/AdminValidationDeadlineButton';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -173,6 +174,9 @@ export default function AdminPage() {
 
       {/* Management Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Validation Deadline Button */}
+        <AdminValidationDeadlineButton />
+
         {/* Disputes Management - PRIORITAIRE */}
         <Card className="relative">
           {/* Badge de notification pour les escalades */}
