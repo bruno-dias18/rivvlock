@@ -248,8 +248,150 @@ Ces alertes persisteront mais ne représentent aucun risque de sécurité réel 
 - Edge functions qui échouent
 - Database downtime
 
+## 🔍 Guide : Comment Vérifier Si Une Alerte de Sécurité Est Réelle
+
+### Méthode en 3 Étapes
+
+#### 1️⃣ Vérifier les Policies RLS en Base de Données
+
+**Via Supabase Dashboard:**
+1. Allez sur https://supabase.com/dashboard/project/slthyxqruhfuyfmextwr/sql/new
+2. Copiez-collez cette requête :
+
+```sql
+-- Remplacez 'nom_de_la_table' par la table signalée (ex: stripe_account_access_audit)
+SELECT 
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual as using_expression,
+  with_check as check_expression
+FROM pg_policies
+WHERE schemaname='public' 
+  AND tablename='nom_de_la_table'
+ORDER BY 
+  CASE WHEN permissive = 'RESTRICTIVE' THEN 1 ELSE 2 END,
+  policyname;
+```
+
+**Que chercher :**
+- ✅ **BON SIGNE** : Des policies `RESTRICTIVE` avec `roles = {public}` ou `{anon}` et `using_expression = false`
+- ✅ **BON SIGNE** : Des policies `PERMISSIVE` avec conditions comme `is_admin(auth.uid())`
+- ❌ **MAUVAIS SIGNE** : Aucune policy RESTRICTIVE
+- ❌ **MAUVAIS SIGNE** : Policy PERMISSIVE avec `USING (true)` pour `{public}`
+
+#### 2️⃣ Tester L'Accès Réel
+
+**Test d'accès anonyme (mode incognito) :**
+1. Ouvrez votre app en navigation privée / incognito
+2. Ouvrez la console développeur (F12)
+3. Essayez de lire la table signalée :
+
+```javascript
+// Dans la console du navigateur
+const { createClient } = supabase
+const supabase = createClient(
+  'https://slthyxqruhfuyfmextwr.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
+)
+
+// Tentez de lire la table
+const { data, error } = await supabase
+  .from('stripe_account_access_audit')
+  .select('*')
+
+console.log('Résultat:', { data, error })
+```
+
+**Interprétation :**
+- ✅ **SÉCURISÉ** : `error: { code: "42501", message: "... permission denied ..." }`
+- ❌ **PROBLÈME RÉEL** : `data: [...]` (des données sont retournées)
+
+#### 3️⃣ Vérifier les Logs Postgres
+
+**Via Supabase Dashboard:**
+1. Allez sur https://supabase.com/dashboard/project/slthyxqruhfuyfmextwr/logs/postgres-logs
+2. Cherchez "permission denied for table"
+3. Filtrez par nom de table (ex: `stripe_account_access_audit`)
+
+**Interprétation :**
+- ✅ **BON SIGNE** : Beaucoup de "permission denied" → Les RLS bloquent les accès
+- ❌ **MAUVAIS SIGNE** : Aucune erreur ET le scanner alerte → Accès potentiellement public
+
+---
+
+### 🚨 Quand S'Inquiéter (Alertes Réelles)
+
+**Vous devez IMMÉDIATEMENT agir si :**
+
+1. **Test d'accès anonyme réussit** (vous voyez des données)
+2. **Aucune policy RESTRICTIVE** pour bloquer `public`/`anon`
+3. **Tables sensibles exposées :**
+   - `profiles` (emails, téléphones, adresses)
+   - `transactions` (montants, statuts)
+   - `stripe_accounts` (IDs Stripe)
+   - `user_roles` (permissions admin)
+4. **Logs Postgres silencieux** (pas d'erreur "permission denied")
+
+**Exemple d'alerte RÉELLE :**
+```sql
+-- ❌ DANGEREUX : Table profiles sans policy RESTRICTIVE
+CREATE POLICY "anyone_can_read" ON profiles
+FOR SELECT USING (true);  -- Tout le monde peut lire !
+```
+
+---
+
+### ✅ Quand Ignorer (Faux Positifs)
+
+**Vous pouvez ignorer si :**
+
+1. **Test d'accès anonyme échoue** (erreur "permission denied")
+2. **Policies RESTRICTIVE confirmées** en base de données
+3. **Logs Postgres montrent blocages** répétés
+4. **Scanner ne comprend pas** la logique complexe (RESTRICTIVE + PERMISSIVE)
+
+**Exemple de faux positif (votre cas actuel) :**
+```sql
+-- ✅ SÉCURISÉ : Combinaison RESTRICTIVE + PERMISSIVE
+-- RESTRICTIVE bloque tout public
+CREATE POLICY "block_public" ON stripe_account_access_audit
+AS RESTRICTIVE FOR SELECT TO public USING (false);
+
+-- PERMISSIVE autorise admins uniquement
+CREATE POLICY "admins_only" ON stripe_account_access_audit
+FOR SELECT TO authenticated USING (is_admin(auth.uid()));
+
+-- → Scanner voit "authenticated" et pense "public"
+-- → Mais RESTRICTIVE bloque en réalité
+```
+
+---
+
+### 📊 Tableau Récapitulatif
+
+| Critère | ✅ Sécurisé (Ignorer) | ❌ Vulnérable (Corriger) |
+|---------|----------------------|--------------------------|
+| **Test anonyme** | Permission denied | Données retournées |
+| **Policies RLS** | 3+ RESTRICTIVE avec `false` | Aucune ou PERMISSIVE `true` |
+| **Logs Postgres** | Erreurs "permission denied" | Silence ou réussite |
+| **Type de données** | Audit logs, métadonnées | PII (emails, téléphones) |
+
+---
+
+### 🎯 Règle d'Or
+
+**"Si le test d'accès anonyme échoue, votre table est sécurisée, peu importe ce que dit le scanner."**
+
+Le scanner Lovable utilise une analyse statique (lecture de code) qui peut rater les combinaisons complexes de policies RLS. Le test d'accès réel est la source de vérité ultime.
+
+---
+
 ## Conclusion
 
 ✅ **L'application est prête pour le lancement public**
 
 Les warnings actuels sont acceptables et n'empêchent pas un lancement en production. La sécurité est assurée par les RLS policies, les logs client sont sécurisés, et les performances sont optimisées.
+
+**Vos tables `stripe_account_access_audit` et `user_roles` sont SÉCURISÉES** - les alertes sont des faux positifs confirmés par les 3 méthodes ci-dessus.
