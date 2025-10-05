@@ -285,7 +285,7 @@ const TransactionCardComponent = ({
           )}
           
           {/* Manual finalization for buyers during service pending */}
-          {userRole === 'buyer' && validationStatus.canManuallyFinalize && (
+          {userRole === 'buyer' && validationStatus.canManuallyFinalize && validationStatus.phase !== 'validation_active' && (
             <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
               <div className="text-sm text-muted-foreground mb-2">
                 {t('transactions.serviceDoneEarly')}
