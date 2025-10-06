@@ -150,16 +150,20 @@ export const swissUidSchema = z
   .trim()
   .min(1, { message: "Le numéro UID est requis" })
   .refine((val) => {
+    // Allow empty during typing
+    if (!val || val === 'CHE-') {
+      return false;
+    }
     // Check for valid characters and basic structure
     const cleaned = cleanUidString(val);
     // Must start with CHE- and have the right structure
     if (!cleaned.startsWith('CHE-')) {
       return false;
     }
-    // Must match exact format: CHE-XXX.XXX.XXX
+    // Must match exact format: CHE-XXX.XXX.XXX with exactly 9 digits
     return /^CHE-[0-9]{3}\.[0-9]{3}\.[0-9]{3}$/.test(cleaned);
   }, {
-    message: "Le numéro UID doit avoir le format CHE-XXX.XXX.XXX (exemple: CHE-123.456.789)"
+    message: "Le numéro UID doit contenir exactement 9 chiffres au format CHE-XXX.XXX.XXX"
   })
   .transform(cleanUidString);
 
