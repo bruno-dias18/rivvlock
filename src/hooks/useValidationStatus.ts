@@ -4,7 +4,6 @@ export type ValidationPhase =
   | 'pending'                  // En attente de paiement
   | 'expired'                  // Délai de paiement expiré
   | 'service_pending'          // Service pas encore rendu (paid mais service futur)
-  | 'seller_validation_pending'// En attente de validation vendeur (48h countdown)
   | 'validation_active'        // En phase de validation acheteur (48h countdown)
   | 'validation_expired'       // Délai de validation expiré
   | 'completed'                // Terminé/validé
@@ -138,32 +137,12 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         return {
           phase: 'service_pending',
           isValidationDeadlineActive: false,
-          canFinalize: false,
-          canDispute: false,
-          canManuallyFinalize: isUserBuyer,
+          canFinalize: isUserBuyer,
+          canDispute: isUserBuyer,
+          canManuallyFinalize: false,
           displayLabel: 'Service en cours',
           displayColor: 'default'
         };
-      }
-
-      // Check if seller validation deadline is active
-      if (sellerValidationDeadline && !transaction.seller_validated) {
-        const timeRemaining = sellerValidationDeadline.getTime() - now.getTime();
-        
-        if (timeRemaining > 0) {
-          // Seller validation deadline active
-          return {
-            phase: 'seller_validation_pending',
-            timeRemaining,
-            isValidationDeadlineActive: false,
-            canFinalize: false,
-            canDispute: false,
-            canManuallyFinalize: isUserBuyer,
-            displayLabel: 'En attente validation vendeur',
-            displayColor: 'secondary'
-          };
-        }
-        // If seller deadline expired, check if buyer validation deadline is active
       }
 
       // Check if validation deadline is active
@@ -197,14 +176,14 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
         }
       }
 
-      // Paid but no validation deadline yet (seller hasn't validated)
+      // Paid but no validation deadline yet (service date not passed)
       return {
         phase: 'service_pending',
         isValidationDeadlineActive: false,
-        canFinalize: transaction.seller_validated && isUserBuyer,
-        canDispute: transaction.seller_validated && isUserBuyer,
-        canManuallyFinalize: isUserBuyer,
-        displayLabel: transaction.seller_validated ? 'Service terminé' : 'En attente validation vendeur',
+        canFinalize: isUserBuyer,
+        canDispute: isUserBuyer,
+        canManuallyFinalize: false,
+        displayLabel: 'Service terminé',
         displayColor: 'default'
       };
     }

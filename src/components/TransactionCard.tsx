@@ -7,7 +7,6 @@ import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Bankn
 import { cn } from '@/lib/utils';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
-import { SellerValidationCountdown } from '@/components/SellerValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -56,7 +55,6 @@ const TransactionCardComponent = ({
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
-  const [isSellerValidating, setIsSellerValidating] = useState(false);
   const { t, i18n } = useTranslation();
   const { unreadCount } = useUnreadTransactionMessages(transaction.id);
   const hasMessages = useHasTransactionMessages(transaction.id);
@@ -79,29 +77,6 @@ const TransactionCardComponent = ({
     if (transaction.user_id === user?.id) return 'seller';
     if (transaction.buyer_id === user?.id) return 'buyer';
     return null;
-  };
-
-  const handleSellerValidation = async () => {
-    setIsSellerValidating(true);
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { error } = await supabase.functions.invoke('validate-seller', {
-        body: { transactionId: transaction.id }
-      });
-
-      if (error) throw error;
-
-      const { toast } = await import('sonner');
-      toast.success(t('transactions.sellerValidationSuccess', 'Votre validation a été envoyée à l\'acheteur'));
-      
-      onRefetch();
-    } catch (error) {
-      logger.error('Error validating seller:', error);
-      const { toast } = await import('sonner');
-      toast.error(t('transactions.sellerValidationError', 'Impossible de valider la transaction'));
-    } finally {
-      setIsSellerValidating(false);
-    }
   };
 
   // Détection si la date de service est passée (ou la date de fin si elle existe)
@@ -236,32 +211,11 @@ const TransactionCardComponent = ({
             </Alert>
           )}
           
-          {/* Seller validation countdown - for seller when they need to validate */}
-          {userRole === 'seller' && validationStatus.phase === 'seller_validation_pending' && transaction.seller_validation_deadline && (
-            <div className="mt-3">
-              <SellerValidationCountdown 
-                sellerValidationDeadline={transaction.seller_validation_deadline}
-                isUserSeller={true}
-              />
-            </div>
-          )}
-
-          {/* Seller validation countdown - for buyer waiting for seller */}
-          {userRole === 'buyer' && validationStatus.phase === 'seller_validation_pending' && transaction.seller_validation_deadline && (
-            <div className="mt-3">
-              <SellerValidationCountdown 
-                sellerValidationDeadline={transaction.seller_validation_deadline}
-                isUserSeller={false}
-              />
-            </div>
-          )}
-          
           {/* Validation countdown for sellers during buyer validation phase */}
           {userRole === 'seller' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
             <div className="mt-3">
-              <SellerValidationCountdown 
+              <ValidationCountdown 
                 validationDeadline={transaction.validation_deadline}
-                isUserSeller={false}
               />
             </div>
           )}
@@ -325,19 +279,6 @@ const TransactionCardComponent = ({
                   ? t('transactions.deadlineExpired')
                   : (isMobile ? t('transactions.payAndBlockMobile') : t('transactions.payAndBlock'))
                 }
-              </Button>
-            )}
-            
-            {transaction.status === 'paid' && userRole === 'seller' && !transaction.seller_validated && (
-              <Button 
-                variant="outline" 
-                size={isMobile ? "default" : "sm"}
-                className={isMobile ? "justify-center" : ""}
-                onClick={handleSellerValidation}
-                disabled={isSellerValidating}
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {isSellerValidating ? t('common.loading', 'Chargement...') : t('common.validate')}
               </Button>
             )}
 
