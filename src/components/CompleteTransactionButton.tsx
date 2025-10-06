@@ -39,12 +39,22 @@ export default function CompleteTransactionButton({
   const handleCompleteTransaction = async () => {
     try {
       setIsProcessing(true);
+      setShowConfirmDialog(false);
       
       const { data, error } = await supabase.functions.invoke('release-funds', {
         body: { transactionId }
       });
 
-      if (error) throw error;
+      if (error) {
+        logger.error('Edge function error:', error);
+        throw new Error(error.message || 'Erreur lors de l\'appel à la fonction');
+      }
+
+      // Check if the response contains an error in the data
+      if (data?.error) {
+        logger.error('Function returned error:', data.error);
+        throw new Error(data.error);
+      }
       
       toast.success('Transaction finalisée ! Les fonds ont été transférés au vendeur.');
       
@@ -55,11 +65,23 @@ export default function CompleteTransactionButton({
       logger.error('Error processing transfer:', error);
       
       let errorMessage = 'Erreur lors du transfert des fonds';
+      
       if (error.message) {
-        errorMessage = error.message;
+        // Check for common error patterns and provide clearer messages
+        if (error.message.includes('not found') || error.message.includes('not authorized')) {
+          errorMessage = 'Transaction non trouvée ou non autorisée';
+        } else if (error.message.includes('Stripe account')) {
+          errorMessage = 'Le compte bancaire du vendeur n\'est pas configuré correctement';
+        } else if (error.message.includes('payment intent')) {
+          errorMessage = 'Problème avec le paiement. Veuillez contacter le support.';
+        } else {
+          errorMessage = error.message;
+        }
       }
       
-      toast.error(errorMessage);
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
