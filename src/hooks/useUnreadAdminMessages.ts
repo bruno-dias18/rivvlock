@@ -1,14 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 
 const STORAGE_KEY = 'last_seen_admin_messages';
 
 export const useUnreadAdminMessages = () => {
   const { user } = useAuth();
-  const previousCount = useRef<number | null>(null);
 
   const getLastSeenTimestamp = (): string | null => {
     return localStorage.getItem(STORAGE_KEY);
