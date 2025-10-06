@@ -477,7 +477,8 @@ export default function TransactionsPage() {
       generateInvoicePDF({
         ...invoiceData,
         language: i18n.language,
-        t
+        t,
+        viewerRole: userRole,
       });
     } catch (error) {
       logger.error('Erreur lors de la génération de la facture:', error);

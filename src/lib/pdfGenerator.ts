@@ -18,6 +18,7 @@ export interface InvoiceData {
   buyerEmail?: string;
   language?: string;
   t?: any;
+  viewerRole?: 'seller' | 'buyer';
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
@@ -373,6 +374,12 @@ export const generateInvoicePDF = async (
   const rivvlockFee = amountPaid * 0.05;
   const amountReceived = amountPaid - rivvlockFee;
   const currency = invoiceData.currency.toUpperCase();
+
+  // Pré-calcul TVA pour la ligne "Total HT"
+  const earlySellerCountry = invoiceData.sellerProfile?.country;
+  const earlySellerVatRate = earlySellerCountry === 'FR' ? invoiceData.sellerProfile?.tva_rate : invoiceData.sellerProfile?.vat_rate;
+  const earlySellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && invoiceData.sellerProfile?.is_subject_to_vat && earlySellerVatRate;
+  const baseAmountRow = earlySellerHasVat ? amountPaid / (1 + (earlySellerVatRate / 100)) : amountPaid;
   
   // En-tête tableau avec bordure
   doc.setDrawColor(0, 0, 0);
@@ -385,7 +392,7 @@ export const generateInvoicePDF = async (
   doc.setTextColor(0, 0, 0);
   
   doc.text(t?.('invoice.designation') || 'Désignation', margin + 2, yPosition + 5.5);
-  doc.text(t?.('invoice.price') || 'Prix', margin + 100, yPosition + 5.5);
+  doc.text(earlySellerHasVat ? (t?.('invoice.priceHT') || 'Prix HT') : (t?.('invoice.price') || 'Prix'), margin + 100, yPosition + 5.5);
   doc.text(t?.('invoice.quantity') || 'Qté', margin + 130, yPosition + 5.5);
   doc.text(t?.('invoice.totalHT') || 'Total HT', margin + 150, yPosition + 5.5);
   
@@ -409,9 +416,10 @@ export const generateInvoicePDF = async (
   }
   
   // Valeurs
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, margin + 100, yPosition + 6);
+  const rowUnitAmount = earlySellerHasVat ? baseAmountRow : amountPaid;
+  doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, margin + 100, yPosition + 6);
   doc.text('1', margin + 135, yPosition + 6);
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
+  doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
   
   yPosition += contentHeight + 15;
   
@@ -461,23 +469,25 @@ export const generateInvoicePDF = async (
     doc.setFont('helvetica', 'normal');
   }
   
-  // Frais RivvLock
-  doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
-  doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
-  
-  yPosition += 8;
-  
-  // À payer (montant total que le client paye)
-  doc.setFont('helvetica', 'bold');
-  doc.text(`${t?.('invoice.toPay') || 'À payer'}:`, labelX, yPosition, { align: 'left' });
-  doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
-  
-  yPosition += 10;
-  
-  // Net reçu (montant reçu par le vendeur après frais)
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${t?.('invoice.netReceived') || 'Net reçu'}:`, labelX, yPosition, { align: 'left' });
-  doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+  // Frais RivvLock et montants finaux selon le rôle du lecteur
+  if (invoiceData.viewerRole === 'seller') {
+    // Afficher les frais plateforme pour le vendeur uniquement
+    doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 8;
+
+    // Net reçu par le vendeur
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${t?.('invoice.netReceived') || 'Net reçu'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 10;
+  } else {
+    // Côté acheteur: afficher seulement le montant à payer (TTC)
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${t?.('invoice.toPay') || 'À payer'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 10;
+  }
   
   yPosition += 20;
   
