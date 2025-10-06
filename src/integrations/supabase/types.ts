@@ -789,6 +789,7 @@ export type Database = {
         Returns: {
           address: string
           city: string
+          company_address: string
           company_name: string
           country: Database["public"]["Enums"]["country_code"]
           first_name: string
@@ -843,6 +844,7 @@ export type Database = {
           address: string
           avs_number: string
           city: string
+          company_address: string
           company_name: string
           country: Database["public"]["Enums"]["country_code"]
           first_name: string
