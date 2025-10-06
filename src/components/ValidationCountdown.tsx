@@ -64,11 +64,17 @@ export function ValidationCountdown({ validationDeadline, isUserBuyer = true, cl
   let urgencyLevel: 'safe' | 'warning' | 'critical' = 'safe';
   let badgeVariant: 'default' | 'secondary' | 'destructive' = 'default';
 
-  if (hoursRemaining < 12) {
-    urgencyLevel = 'critical';
-    badgeVariant = 'destructive';
-  } else if (hoursRemaining < 24) {
-    urgencyLevel = 'warning';
+  // Only show urgency colors for buyers who need to act
+  if (isUserBuyer) {
+    if (hoursRemaining < 12) {
+      urgencyLevel = 'critical';
+      badgeVariant = 'destructive';
+    } else if (hoursRemaining < 24) {
+      urgencyLevel = 'warning';
+      badgeVariant = 'secondary';
+    }
+  } else {
+    // For sellers, always show neutral color (just informational)
     badgeVariant = 'secondary';
   }
 
