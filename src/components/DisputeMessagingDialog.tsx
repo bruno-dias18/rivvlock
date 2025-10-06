@@ -72,6 +72,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
+  const previousKeyboardInsetRef = useRef(0);
 
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
   const { 
@@ -129,6 +130,15 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       }, 300);
     }
   }, [open]);
+
+  // Close messaging when keyboard closes
+  useEffect(() => {
+    // Detect keyboard closing: transition from > 0 to 0
+    if (previousKeyboardInsetRef.current > 0 && keyboardInset === 0 && open) {
+      onOpenChange(false);
+    }
+    previousKeyboardInsetRef.current = keyboardInset;
+  }, [keyboardInset, open, onOpenChange]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
