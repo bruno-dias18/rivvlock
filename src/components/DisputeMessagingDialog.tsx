@@ -17,6 +17,7 @@ import { CreateProposalDialog } from './CreateProposalDialog';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
+import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 
 // Avatar component inline
 const Avatar = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -87,6 +88,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
   const { markAsSeen } = useUnreadDisputeAdminMessages(disputeId);
+  const { markAsSeen: markGlobalAsSeen } = useUnreadAdminMessages();
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -124,8 +126,10 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   // Auto-focus textarea when opened (including mobile) + mark messages as seen
   useEffect(() => {
     if (open) {
-      // Mark dispute messages as seen
+      // Mark dispute messages as seen (specific dispute)
       markAsSeen();
+      // Mark admin messages as seen (global count)
+      markGlobalAsSeen();
       
       if (textareaRef.current) {
         // Focus immédiat d'abord
@@ -137,7 +141,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, markAsSeen]);
+  }, [open, markAsSeen, markGlobalAsSeen]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {

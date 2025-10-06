@@ -26,6 +26,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useUnreadTransactionsCount } from '@/hooks/useUnreadTransactionMessages';
+import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
 import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
@@ -78,6 +79,7 @@ export default function TransactionsPage() {
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
+  const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   
   const activeTab = searchParams.get('tab') || 'pending';
   
@@ -568,6 +570,12 @@ export default function TransactionsPage() {
                       {unreadDisputed.length}
                     </Badge>
                   )}
+                  {unreadAdminMessages > 0 && (
+                    <Badge variant="destructive" className="bg-purple-600 text-white hover:bg-purple-700">
+                      <MessageSquare className="h-3 w-3 mr-1" />
+                      {unreadAdminMessages}
+                    </Badge>
+                  )}
                 </div>
               </TabsTrigger>
             </>
@@ -606,6 +614,12 @@ export default function TransactionsPage() {
                     <Badge className="bg-red-600 text-white hover:bg-red-700 text-[10px] h-5 px-1.5">
                       <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
                       {unreadDisputed.length}
+                    </Badge>
+                  )}
+                  {unreadAdminMessages > 0 && (
+                    <Badge variant="destructive" className="bg-purple-600 text-white hover:bg-purple-700 text-[10px] h-5 px-1.5">
+                      <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
+                      {unreadAdminMessages}
                     </Badge>
                   )}
                 </div>

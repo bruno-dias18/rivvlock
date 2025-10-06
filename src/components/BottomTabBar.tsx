@@ -5,7 +5,6 @@ import { NavLink } from 'react-router-dom';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { Badge } from '@/components/ui/badge';
-import { useEffect } from 'react';
 
 const navigationItems = [
   {
@@ -34,14 +33,7 @@ export function BottomTabBar() {
   const { t } = useTranslation();
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
-  const { unreadCount, markAsSeen } = useUnreadAdminMessages();
-
-  // Marquer comme lu quand on accède à la page des transactions (où se trouvent les litiges)
-  useEffect(() => {
-    if (location.pathname === '/dashboard/transactions') {
-      markAsSeen();
-    }
-  }, [location.pathname, markAsSeen]);
+  const { unreadCount } = useUnreadAdminMessages();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
