@@ -97,10 +97,6 @@ serve(async (req) => {
 
     logStep('Seller display name determined', { sellerDisplayName });
 
-    // Calculate seller validation deadline (48h after service date)
-    const referenceDate = serviceEndDate ? new Date(serviceEndDate) : serviceDateObj;
-    const sellerValidationDeadline = new Date(referenceDate.getTime() + 48 * 60 * 60 * 1000);
-
     // Create transaction
     const transactionData: any = {
       user_id: user.id,
@@ -113,7 +109,6 @@ serve(async (req) => {
       shared_link_expires_at: sharedLinkExpiresAt.toISOString(),
       payment_deadline: paymentDeadline.toISOString(),
       seller_display_name: sellerDisplayName,
-      seller_validation_deadline: sellerValidationDeadline.toISOString(),
       status: 'pending'
     };
 
