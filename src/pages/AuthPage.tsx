@@ -285,6 +285,22 @@ export default function AuthPage() {
               </div>
             )}
 
+            {/* DEBUG: Show validation errors */}
+            {isSignUp && Object.keys(form.formState.errors).length > 0 && (
+              <div className="rounded-md bg-yellow-500/15 border border-yellow-500/20 p-4">
+                <div className="text-yellow-700 text-sm font-semibold mb-2">
+                  ⚠️ Champs requis manquants :
+                </div>
+                <ul className="text-yellow-700 text-xs space-y-1 list-disc list-inside">
+                  {Object.entries(form.formState.errors).map(([field, error]) => (
+                    <li key={field}>
+                      <strong>{field}</strong>: {error?.message?.toString() || 'Requis'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {isSignUp && (
               <>
                 {/* Country Selection */}
