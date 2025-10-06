@@ -31,6 +31,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   // Watch form values for dynamic validation
   const [country, setCountry] = useState<'FR' | 'CH'>('FR');
@@ -204,6 +205,9 @@ export default function AuthPage() {
         };
 
         await register(data.email, data.password, metadata);
+        // Registration successful - show email verification message
+        setRegistrationSuccess(true);
+        setError('');
       } else {
         await login(data.email, data.password);
       }
@@ -285,8 +289,20 @@ export default function AuthPage() {
               </div>
             )}
 
+            {registrationSuccess && (
+              <div className="rounded-md bg-green-500/15 border border-green-500/20 p-4">
+                <div className="text-green-700 text-sm font-semibold mb-2">
+                  ✅ Compte créé avec succès !
+                </div>
+                <div className="text-green-700 text-sm">
+                  Un email de confirmation a été envoyé à votre adresse. 
+                  Veuillez vérifier votre boîte mail et cliquer sur le lien de validation pour activer votre compte.
+                </div>
+              </div>
+            )}
+
             {/* DEBUG: Show validation errors */}
-            {isSignUp && Object.keys(form.formState.errors).length > 0 && (
+            {isSignUp && !registrationSuccess && Object.keys(form.formState.errors).length > 0 && (
               <div className="rounded-md bg-yellow-500/15 border border-yellow-500/20 p-4">
                 <div className="text-yellow-700 text-sm font-semibold mb-2">
                   ⚠️ Champs requis manquants :
@@ -672,7 +688,7 @@ export default function AuthPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={loading || resetEmailSent}
+                disabled={loading || resetEmailSent || registrationSuccess}
               >
                 {loading ? t('common.loading') : (
                   isResetPassword ? t('auth.changePassword') :
@@ -692,6 +708,8 @@ export default function AuthPage() {
                       onClick={() => {
                         setIsSignUp(!isSignUp);
                         setResetEmailSent(false);
+                        setRegistrationSuccess(false);
+                        setError('');
                       }}
                       className="text-primary hover:underline text-sm"
                     >
