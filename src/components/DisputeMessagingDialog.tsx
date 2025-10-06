@@ -87,8 +87,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     isAccepting,
     isRejecting 
   } = useDisputeProposals(disputeId);
-  const { markAsSeen } = useUnreadDisputeAdminMessages(disputeId);
-  const { markAsSeen: markGlobalAsSeen } = useUnreadAdminMessages();
+  const { markAsSeen, refetch: refetchDisputeUnread } = useUnreadDisputeAdminMessages(disputeId);
+  const { markAsSeen: markGlobalAsSeen, refetch: refetchGlobalUnread } = useUnreadAdminMessages();
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -131,6 +131,12 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       // Mark admin messages as seen (global count)
       markGlobalAsSeen();
       
+      // Force immediate refresh of unread counts
+      setTimeout(() => {
+        refetchDisputeUnread();
+        refetchGlobalUnread();
+      }, 100);
+      
       if (textareaRef.current) {
         // Focus immédiat d'abord
         textareaRef.current.focus();
@@ -141,7 +147,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, markAsSeen, markGlobalAsSeen]);
+  }, [open, markAsSeen, markGlobalAsSeen, refetchDisputeUnread, refetchGlobalUnread]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {
