@@ -395,6 +395,21 @@ export default function TransactionsPage() {
       const { sellerProfile, buyerProfile } = invoiceDataResponse;
       
       logger.log('Invoice data received:', { sellerProfile, buyerProfile });
+
+      // Fallback: if sellerProfile is missing, call secure RPC directly from client
+      let sellerProfileFinal = sellerProfile;
+      try {
+        if (!sellerProfileFinal) {
+          const { data: fallbackSeller } = await supabase.rpc('get_seller_invoice_data', {
+            p_seller_id: transaction.user_id,
+            p_requesting_user_id: user?.id,
+          });
+          sellerProfileFinal = Array.isArray(fallbackSeller) && fallbackSeller.length > 0 ? fallbackSeller[0] : null;
+          logger.log('Fallback seller profile via RPC:', sellerProfileFinal);
+        }
+      } catch (e) {
+        logger.warn('Fallback seller RPC failed', e);
+      }
       
       // Pour maintenant, utiliser l'approche actuelle mais améliorer la logique
       const currentUser = user;
@@ -428,8 +443,8 @@ export default function TransactionsPage() {
       }
 
       const userRole = getUserRole(transaction);
-      const sellerName = sellerProfile 
-        ? `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim() || 'Vendeur'
+      const sellerName = sellerProfileFinal 
+        ? `${sellerProfileFinal.first_name || ''} ${sellerProfileFinal.last_name || ''}`.trim() || 'Vendeur'
         : transaction.seller_display_name || 'Vendeur';
       
       const buyerName = buyerProfile
@@ -446,7 +461,7 @@ export default function TransactionsPage() {
         buyerName,
         serviceDate: transaction.service_date,
         validatedDate: transaction.updated_at,
-        sellerProfile,
+        sellerProfile: sellerProfileFinal,
         buyerProfile,
         sellerEmail,
         buyerEmail,
