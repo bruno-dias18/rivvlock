@@ -111,7 +111,7 @@ export function SellerValidationCountdown({ validationDeadline, sellerValidation
       if (isUserSeller) {
         return `${formatTimeRemaining()} pour valider la livraison`;
       } else {
-        return `${formatTimeRemaining()} avant activation automatique de votre délai`;
+        return `En attente de validation du vendeur (${formatTimeRemaining()} restant)`;
       }
     } else {
       return `${formatTimeRemaining()} avant libération automatique des fonds`;
@@ -122,12 +122,12 @@ export function SellerValidationCountdown({ validationDeadline, sellerValidation
     const deadline = new Date(deadlineStr);
     if (isSellerDeadline) {
       if (isUserSeller) {
-        return `Si vous ne validez pas avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, le délai acheteur sera activé automatiquement`;
+        return `Validez avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} pour activer le délai acheteur`;
       } else {
-        return `Si le vendeur ne valide pas avant le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, vous pourrez valider la transaction`;
+        return `Après le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}, votre délai de validation sera activé`;
       }
     } else {
-      return `Fonds libérés automatiquement le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+      return `Libération automatique le ${deadline.toLocaleDateString('fr-FR')} à ${deadline.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     }
   };
 
