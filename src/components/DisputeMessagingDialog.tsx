@@ -451,7 +451,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
 
           {/* Input Area */}
           {!status.startsWith('resolved') && (
-            <div className="border-t shrink-0" style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px + 8px)` }}>
+            <div className="border-t shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
               {/* Official Proposal Button - Only visible if not escalated */}
               {!isExpired && (
                 <div className="p-2 border-b bg-primary/5">
