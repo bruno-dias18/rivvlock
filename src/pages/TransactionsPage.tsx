@@ -394,6 +394,8 @@ export default function TransactionsPage() {
 
       const { sellerProfile, buyerProfile } = invoiceDataResponse;
       
+      logger.log('Invoice data received:', { sellerProfile, buyerProfile });
+      
       // Pour maintenant, utiliser l'approche actuelle mais améliorer la logique
       const currentUser = user;
       let sellerEmail = undefined;

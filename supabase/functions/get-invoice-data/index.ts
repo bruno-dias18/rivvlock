@@ -88,6 +88,8 @@ serve(async (req) => {
     if (sellerError) {
       logger.error('Error fetching seller profile:', sellerError);
     }
+    
+    logger.log('Seller profile data:', JSON.stringify(sellerProfile));
 
     // Fetch buyer profile with minimal fields using secure function
     let buyerProfile = null;
@@ -103,6 +105,7 @@ serve(async (req) => {
       }
       // RPC returns an array, get first element
       buyerProfile = data && data.length > 0 ? data[0] : null;
+      logger.log('Buyer profile data:', JSON.stringify(buyerProfile));
     }
 
     // Log access for audit trail (with admin flag if applicable)
