@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/r
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { logger } from '@/lib/logger';
+import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
 
 interface DisputeCardProps {
   dispute: any;
@@ -37,6 +38,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
   const { proposals } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
+  const { unreadCount: unreadAdminMessages } = useUnreadDisputeAdminMessages(dispute.id);
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -386,7 +388,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         {!dispute.status.startsWith('resolved') && (
           <div>
             <Button
-              variant="default"
+              variant={unreadAdminMessages > 0 ? "default" : "outline"}
               className="w-full"
               onClick={() => setShowMessaging(true)}
             >

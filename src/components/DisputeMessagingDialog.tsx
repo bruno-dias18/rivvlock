@@ -16,6 +16,7 @@ import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
+import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
 
 // Avatar component inline
 const Avatar = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -85,6 +86,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     isAccepting,
     isRejecting 
   } = useDisputeProposals(disputeId);
+  const { markAsSeen } = useUnreadDisputeAdminMessages(disputeId);
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -119,18 +121,23 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
   }, [open, messages.length]);
 
-  // Auto-focus textarea when opened (including mobile)
+  // Auto-focus textarea when opened (including mobile) + mark messages as seen
   useEffect(() => {
-    if (open && textareaRef.current) {
-      // Focus immédiat d'abord
-      textareaRef.current.focus();
+    if (open) {
+      // Mark dispute messages as seen
+      markAsSeen();
       
-      // Puis re-focus avec délai pour assurer que ça fonctionne sur tous les mobiles
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 300);
+      if (textareaRef.current) {
+        // Focus immédiat d'abord
+        textareaRef.current.focus();
+        
+        // Puis re-focus avec délai pour assurer que ça fonctionne sur tous les mobiles
+        setTimeout(() => {
+          textareaRef.current?.focus();
+        }, 300);
+      }
     }
-  }, [open]);
+  }, [open, markAsSeen]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {

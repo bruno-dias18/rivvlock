@@ -43,22 +43,7 @@ export const useUnreadAdminMessages = () => {
     refetchInterval: 30000, // Rafraîchir toutes les 30 secondes
   });
 
-  // Afficher une notification toast quand de nouveaux messages arrivent
-  useEffect(() => {
-    if (unreadCount !== undefined && unreadCount !== null) {
-      if (previousCount.current !== null && unreadCount > previousCount.current) {
-        const newCount = unreadCount - previousCount.current;
-        toast.info(
-          `${newCount} nouveau${newCount > 1 ? 'x' : ''} message${newCount > 1 ? 's' : ''} de l'administration`,
-          {
-            description: 'Consultez vos litiges pour plus de détails.',
-            duration: 8000,
-          }
-        );
-      }
-      previousCount.current = unreadCount;
-    }
-  }, [unreadCount]);
+  // Toast removed - visual indicators only via badges and button colors
 
   return {
     unreadCount,
