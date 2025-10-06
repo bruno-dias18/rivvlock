@@ -31,6 +31,5 @@
   "lang": "fr",
   "dir": "ltr",
   "scope": "/",
-  "prefer_related_applications": false,
-  "capture_links": "existing-client-navigate"
+  "prefer_related_applications": false
 }

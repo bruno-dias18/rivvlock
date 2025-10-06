@@ -26,7 +26,6 @@ import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { queryClient } from "./lib/queryClient";
 import i18n from "./i18n/config";
-import { OpenInAppBanner } from "./components/OpenInAppBanner";
 import "./index.css";
 
 const App: React.FC = () => {
@@ -40,7 +39,6 @@ const App: React.FC = () => {
         AuthProvider,
         null,
         React.createElement(Toaster, { position: "top-right" }),
-        React.createElement(OpenInAppBanner),
         React.createElement(
           GlobalErrorBoundary,
           null,
