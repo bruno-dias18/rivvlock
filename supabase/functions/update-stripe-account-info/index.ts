@@ -85,8 +85,8 @@ serve(async (req) => {
     // Create account link (using account_onboarding for Express accounts)
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.stripe_account_id,
-      refresh_url: `${req.headers.get('origin')}/profile`,
-      return_url: `${req.headers.get('origin')}/profile`,
+      refresh_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
+      return_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
       type: 'account_onboarding',
     });
 

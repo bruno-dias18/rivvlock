@@ -174,11 +174,11 @@ serve(async (req) => {
 
     // Create onboarding link if needed
     if (needsOnboarding) {
-      const origin = req.headers.get("origin") || "http://localhost:3000";
+      const origin = req.headers.get("origin") || "https://app.rivvlock.com";
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.stripe_account_id,
-        refresh_url: `${origin}/stripe/connect?refresh=true`,
-        return_url: `${origin}/stripe/connect?status=returned`,
+        refresh_url: `${origin}/dashboard/profile`,
+        return_url: `${origin}/dashboard/profile`,
         type: 'account_onboarding',
       });
       onboardingUrl = accountLink.url;

@@ -162,11 +162,11 @@ serve(async (req) => {
         logStep("Database record updated with new account");
 
         // Create onboarding link for the new account
-        const origin = req.headers.get("origin") || "http://localhost:3000";
+        const origin = req.headers.get("origin") || "https://app.rivvlock.com";
         const accountLink = await stripe.accountLinks.create({
           account: newAccount.id,
-          refresh_url: `${origin}/profile`,
-          return_url: `${origin}/profile`,
+          refresh_url: `${origin}/dashboard/profile`,
+          return_url: `${origin}/dashboard/profile`,
           type: 'account_onboarding',
         });
 
@@ -192,11 +192,11 @@ serve(async (req) => {
         logStep("Account exists but needs onboarding completion");
         
         // Create onboarding link
-        const origin = req.headers.get("origin") || "http://localhost:3000";
+        const origin = req.headers.get("origin") || "https://app.rivvlock.com";
         const accountLink = await stripe.accountLinks.create({
           account: existingAccount.stripe_account_id,
-          refresh_url: `${origin}/profile`,
-          return_url: `${origin}/profile`,
+          refresh_url: `${origin}/dashboard/profile`,
+          return_url: `${origin}/dashboard/profile`,
           type: 'account_onboarding',
         });
 
@@ -290,11 +290,11 @@ serve(async (req) => {
     });
 
     // Create an account onboarding link
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const origin = req.headers.get("origin") || "https://app.rivvlock.com";
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
-      refresh_url: `${origin}/stripe/connect?refresh=true`,
-      return_url: `${origin}/stripe/connect?status=returned`,
+      refresh_url: `${origin}/dashboard/profile`,
+      return_url: `${origin}/dashboard/profile`,
       type: 'account_onboarding',
     });
 
