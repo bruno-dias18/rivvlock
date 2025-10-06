@@ -44,6 +44,7 @@ export const TransactionMessaging = ({
   const [newMessage, setNewMessage] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
   const previousKeyboardInsetRef = useRef(0);
@@ -83,12 +84,11 @@ export const TransactionMessaging = ({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // Detect keyboard closing with a universal threshold for cross-browser reliability
+    // Safari-only auto-close when keyboard fully retracts
     const wasOpen = previousKeyboardInsetRef.current >= 40;
-    const isClosedNow = keyboardInset <= 6;
+    const isClosedNow = keyboardInset === 0;
     
-    if (open && wasOpen && isClosedNow) {
-      // Delay to allow different browsers (Brave, Firefox) to stabilize
+    if (open && wasOpen && isSafariiOS && isClosedNow) {
       timeoutId = setTimeout(() => {
         onOpenChange(false);
       }, 150);
@@ -97,7 +97,44 @@ export const TransactionMessaging = ({
     previousKeyboardInsetRef.current = keyboardInset;
 
     return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange]);
+  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+
+  // Tap-outside closer for non-Safari browsers (iOS Brave/Chrome/Firefox and Android)
+  useEffect(() => {
+    if (!open) return;
+    if (isSafariiOS) return; // Safari already handled by keyboardInset logic
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const sendBtn = sendButtonRef.current;
+
+    const handler = (e: TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      // Ignore taps inside the textarea or send button
+      if (textarea.contains(target) || (sendBtn && sendBtn.contains(target))) return;
+      // Close on tap outside
+      textarea.blur();
+      setTimeout(() => onOpenChange(false), 120);
+    };
+
+    const onFocus = () => {
+      document.addEventListener('touchstart', handler, true);
+    };
+    const onBlur = () => {
+      document.removeEventListener('touchstart', handler, true);
+    };
+
+    textarea.addEventListener('focus', onFocus);
+    textarea.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('touchstart', handler, true);
+      textarea.removeEventListener('focus', onFocus);
+      textarea.removeEventListener('blur', onBlur);
+    };
+  }, [open, onOpenChange, isSafariiOS]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
@@ -253,16 +290,17 @@ export const TransactionMessaging = ({
               enterKeyHint="send"
             />
             <Button
-              type="button"
-              onClick={handleSendMessage}
-              onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
-              disabled={!newMessage.trim() || isSendingMessage}
-              size="icon"
-              className="h-14 w-14 shrink-0"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+               ref={sendButtonRef}
+               type="button"
+               onClick={handleSendMessage}
+               onMouseDown={(e) => e.preventDefault()}
+               onTouchStart={(e) => e.preventDefault()}
+               disabled={!newMessage.trim() || isSendingMessage}
+               size="icon"
+               className="h-14 w-14 shrink-0"
+             >
+               <Send className="h-4 w-4" />
+             </Button>
           </div>
           <div className="text-xs text-muted-foreground mt-1 text-right">
             {newMessage.length}/500

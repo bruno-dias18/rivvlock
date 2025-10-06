@@ -69,6 +69,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
@@ -131,16 +132,14 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
   }, [open]);
 
-  // Close messaging when keyboard closes (with delay for browser compatibility)
+  // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // Detect keyboard closing with a universal threshold for cross-browser reliability
     const wasOpen = previousKeyboardInsetRef.current >= 40;
-    const isClosedNow = keyboardInset <= 6;
+    const isClosedNow = keyboardInset === 0;
     
-    if (open && wasOpen && isClosedNow) {
-      // Delay to allow different browsers (Brave, Firefox) to stabilize
+    if (open && wasOpen && isSafariiOS && isClosedNow) {
       timeoutId = setTimeout(() => {
         onOpenChange(false);
       }, 150);
@@ -149,7 +148,42 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     previousKeyboardInsetRef.current = keyboardInset;
 
     return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange]);
+  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+
+  // Tap-outside closer for non-Safari browsers (iOS Brave/Chrome/Firefox and Android)
+  useEffect(() => {
+    if (!open) return;
+    if (isSafariiOS) return; // Safari already handled by keyboardInset logic
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const sendBtn = sendButtonRef.current;
+
+    const handler = (e: TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (textarea.contains(target) || (sendBtn && sendBtn.contains(target))) return;
+      textarea.blur();
+      setTimeout(() => onOpenChange(false), 120);
+    };
+
+    const onFocus = () => {
+      document.addEventListener('touchstart', handler, true);
+    };
+    const onBlur = () => {
+      document.removeEventListener('touchstart', handler, true);
+    };
+
+    textarea.addEventListener('focus', onFocus);
+    textarea.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('touchstart', handler, true);
+      textarea.removeEventListener('focus', onFocus);
+      textarea.removeEventListener('blur', onBlur);
+    };
+  }, [open, onOpenChange, isSafariiOS]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
@@ -516,6 +550,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                       enterKeyHint="send"
                     />
                     <Button
+                      ref={sendButtonRef}
                       type="button"
                       onClick={handleSendMessage}
                       onMouseDown={(e) => e.preventDefault()}
@@ -556,6 +591,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                         enterKeyHint="send"
                       />
                       <Button
+                        ref={sendButtonRef}
                         type="button"
                         onClick={handleSendMessage}
                         onMouseDown={(e) => e.preventDefault()}
