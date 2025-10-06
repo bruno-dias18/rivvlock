@@ -1,0 +1,22 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "app.rivvlock.com",
+        "paths": [
+          "/payment/*",
+          "/join/*",
+          "/transaction/*",
+          "/dashboard/*",
+          "/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "app.rivvlock.com"
+    ]
+  }
+}

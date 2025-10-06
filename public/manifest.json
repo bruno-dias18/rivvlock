@@ -8,6 +8,7 @@
   "theme_color": "#007BFF",
   "orientation": "portrait-primary",
   "categories": ["finance", "business"],
+  "scope": "/",
   "icons": [
     {
       "src": "/favicon.ico",
