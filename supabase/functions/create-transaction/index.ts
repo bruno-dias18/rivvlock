@@ -155,8 +155,8 @@ serve(async (req) => {
       logger.error('❌ [CREATE-TRANSACTION] Error logging activity:', logError);
     }
 
-    // Return transaction data with share link - always use the rivvlock domain
-    const baseUrl = 'https://rivvlock.lovable.app';
+    // Return transaction data with share link - always use the public domain
+    const baseUrl = 'https://app.rivvlock.com';
     const shareLink = `${baseUrl}/join/${sharedLinkToken}`;
 
     return new Response(JSON.stringify({

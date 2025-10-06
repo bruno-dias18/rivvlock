@@ -17,6 +17,7 @@ import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotificat
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
+import { getPublicBaseUrl } from '@/lib/appUrl';
 import { useUnreadTransactionMessages } from '@/hooks/useUnreadTransactionMessages';
 import { useHasTransactionMessages } from '@/hooks/useHasTransactionMessages';
 import { logger } from '@/lib/logger';
@@ -304,7 +305,7 @@ const TransactionCardComponent = ({
               <Button
                 variant="outline"
                 size={isMobile ? "default" : "sm"}
-                onClick={() => onCopyLink(`${window.location.origin}/join/${transaction.shared_link_token}`)}
+                onClick={() => onCopyLink(`${getPublicBaseUrl()}/join/${transaction.shared_link_token}`)}
                 className={isMobile ? "justify-center" : ""}
               >
                 <Copy className="h-4 w-4 mr-2" />
