@@ -71,19 +71,36 @@ export const AdminDisputeMessaging = ({
       }
 
       setMessage('');
-      toast.success("Message envoyé avec succès");
       
-      // Log activity for the recipient
+      // Créer une notification pour l'utilisateur destinataire
       const { supabase } = await import('@/integrations/supabase/client');
       await supabase.from('activity_logs').insert({
         user_id: recipientId,
         activity_type: 'dispute_admin_message',
-        title: 'Message de l\'administrateur',
-        description: 'L\'administrateur vous a envoyé un message concernant le litige',
+        title: 'Nouveau message de l\'administration',
+        description: 'L\'administration vous a envoyé un message concernant votre litige',
         metadata: {
-          dispute_id: disputeId
+          dispute_id: disputeId,
+          sender_type: 'admin',
+          message_preview: message.substring(0, 100),
         }
       });
+
+      // Log pour l'admin
+      await supabase.from('activity_logs').insert({
+        user_id: user.id,
+        activity_type: 'dispute_admin_message',
+        title: `Message envoyé au ${messageType === 'admin_to_seller' ? 'vendeur' : 'acheteur'}`,
+        description: `Message admin envoyé dans le litige #${disputeId.substring(0, 8)}`,
+        metadata: {
+          dispute_id: disputeId,
+          recipient_type: messageType === 'admin_to_seller' ? 'seller' : 'buyer',
+          recipient_id: recipientId,
+          message_preview: message.substring(0, 50),
+        }
+      });
+
+      toast.success("Message envoyé avec succès");
     } catch (error) {
       logger.error('Error sending message:', error);
       toast.error("Impossible d'envoyer le message");

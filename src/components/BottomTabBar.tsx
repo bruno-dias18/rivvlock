@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { Home, CreditCard, User, Users, FileText } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { Badge } from '@/components/ui/badge';
+import { useEffect } from 'react';
 
 const navigationItems = [
   {
@@ -31,6 +34,14 @@ export function BottomTabBar() {
   const { t } = useTranslation();
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
+  const { unreadCount, markAsSeen } = useUnreadAdminMessages();
+
+  // Marquer comme lu quand on accède à la page des transactions (où se trouvent les litiges)
+  useEffect(() => {
+    if (location.pathname === '/dashboard/transactions') {
+      markAsSeen();
+    }
+  }, [location.pathname, markAsSeen]);
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -63,7 +74,17 @@ export function BottomTabBar() {
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
-              <item.icon className={`h-5 w-5 mb-1 ${isItemActive ? 'text-primary' : ''}`} />
+              <div className="relative">
+                <item.icon className={`h-5 w-5 mb-1 ${isItemActive ? 'text-primary' : ''}`} />
+                {item.url === '/dashboard/transactions' && unreadCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Badge>
+                )}
+              </div>
               <span className="text-xs font-medium truncate">
                 {t(item.title)}
               </span>

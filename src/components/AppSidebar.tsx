@@ -4,6 +4,9 @@ import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, File
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
+import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { Badge } from '@/components/ui/badge';
+import { useEffect } from 'react';
 
 import {
   Sidebar,
@@ -60,6 +63,14 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { state } = useSidebar();
   const { isAdmin } = useIsAdmin();
+  const { unreadCount, markAsSeen } = useUnreadAdminMessages();
+
+  // Marquer comme lu quand on accède à la page des transactions
+  useEffect(() => {
+    if (location.pathname === '/dashboard/transactions') {
+      markAsSeen();
+    }
+  }, [location.pathname, markAsSeen]);
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -89,9 +100,17 @@ export function AppSidebar() {
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url}>
+                    <NavLink to={item.url} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{t(item.title)}</span>
+                      {item.url === '/dashboard/transactions' && unreadCount > 0 && (
+                        <Badge 
+                          variant="destructive" 
+                          className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
+                        >
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
