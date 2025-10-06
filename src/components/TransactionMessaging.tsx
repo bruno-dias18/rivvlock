@@ -83,9 +83,9 @@ export const TransactionMessaging = ({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // Detect keyboard closing with browser-specific thresholds
+    // Detect keyboard closing with a universal threshold for cross-browser reliability
     const wasOpen = previousKeyboardInsetRef.current >= 40;
-    const isClosedNow = keyboardInset <= (isBraveiOS ? 2 : 0);
+    const isClosedNow = keyboardInset <= 6;
     
     if (open && wasOpen && isClosedNow) {
       // Delay to allow different browsers (Brave, Firefox) to stabilize
@@ -97,7 +97,7 @@ export const TransactionMessaging = ({
     previousKeyboardInsetRef.current = keyboardInset;
 
     return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange, isBraveiOS]);
+  }, [keyboardInset, open, onOpenChange]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
