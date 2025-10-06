@@ -23,8 +23,8 @@ import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
 
 const transactionSchema = z.object({
-  title: z.string().min(1, 'Le titre est requis').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
-  description: z.string().min(1, 'La description est requise').max(500, 'La description ne peut pas dépasser 500 caractères'),
+  title: z.string().min(3, 'Le titre doit contenir au moins 3 caractères').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
+  description: z.string().min(10, 'La description doit contenir au moins 10 caractères').max(500, 'La description ne peut pas dépasser 500 caractères'),
   price: z.number().min(0.01, 'Le prix doit être supérieur à 0'),
   currency: z.enum(['EUR', 'CHF'], { required_error: 'Veuillez sélectionner une devise' }),
   serviceDate: z.date({
@@ -127,20 +127,24 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
         }
       });
 
-      if (error) throw error;
-      if (result.error) throw new Error(result.error);
+      if (error) {
+        // Try to surface the server message if available
+        const serverMsg = (result as any)?.error || error.message;
+        throw new Error(serverMsg || 'Erreur lors de la création de la transaction');
+      }
+      if ((result as any)?.error) throw new Error((result as any).error);
 
       // Show success and share link
-      setTransactionTitle(result.transaction.title);
-      setShareLink(result.transaction.shareLink);
+      setTransactionTitle((result as any).transaction.title);
+      setShareLink((result as any).transaction.shareLink);
       
       // Log the activity
       await logActivity({
         type: 'transaction_created',
-        title: `Transaction "${result.transaction.title}" créée`,
+        title: `Transaction "${(result as any).transaction.title}" créée`,
         description: `Nouvelle transaction d'escrow créée pour ${data.price} ${data.currency}`,
         metadata: {
-          transaction_id: result.transaction.id,
+          transaction_id: (result as any).transaction.id,
           amount: data.price,
           currency: data.currency,
           service_date: data.serviceDate.toISOString()
