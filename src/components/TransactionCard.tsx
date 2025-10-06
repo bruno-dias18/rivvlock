@@ -216,6 +216,7 @@ const TransactionCardComponent = ({
             <div className="mt-3">
               <ValidationCountdown 
                 validationDeadline={transaction.validation_deadline}
+                isUserBuyer={false}
               />
             </div>
           )}

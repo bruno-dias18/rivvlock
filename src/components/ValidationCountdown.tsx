@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface ValidationCountdownProps {
   validationDeadline: string;
+  isUserBuyer?: boolean;
   className?: string;
 }
 
@@ -16,7 +17,7 @@ interface TimeRemaining {
   total: number;
 }
 
-export function ValidationCountdown({ validationDeadline, className }: ValidationCountdownProps) {
+export function ValidationCountdown({ validationDeadline, isUserBuyer = true, className }: ValidationCountdownProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
   const [isExpired, setIsExpired] = useState(false);
 
@@ -86,10 +87,13 @@ export function ValidationCountdown({ validationDeadline, className }: Validatio
       <Clock className="h-4 w-4 text-muted-foreground" />
       <div className="flex flex-col gap-1">
         <Badge variant={badgeVariant} className="font-normal">
-          {formatTimeRemaining()} pour finaliser ou contester
+          {formatTimeRemaining()} {isUserBuyer ? 'pour finaliser ou contester' : 'avant libération automatique'}
         </Badge>
         <div className="text-xs text-muted-foreground">
-          Validation requise avant le {new Date(validationDeadline).toLocaleDateString('fr-FR')} à {new Date(validationDeadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          {isUserBuyer 
+            ? `Validation requise avant le ${new Date(validationDeadline).toLocaleDateString('fr-FR')} à ${new Date(validationDeadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+            : `Libération automatique le ${new Date(validationDeadline).toLocaleDateString('fr-FR')} à ${new Date(validationDeadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+          }
         </div>
       </div>
     </div>
