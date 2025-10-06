@@ -135,8 +135,11 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
 
-    // Detect keyboard closing
-    if (previousKeyboardInsetRef.current > 0 && keyboardInset === 0 && open) {
+    // Detect keyboard closing with browser-specific thresholds
+    const wasOpen = previousKeyboardInsetRef.current >= 40;
+    const isClosedNow = keyboardInset <= (isBraveiOS ? 2 : 0);
+    
+    if (open && wasOpen && isClosedNow) {
       // Delay to allow different browsers (Brave, Firefox) to stabilize
       timeoutId = setTimeout(() => {
         onOpenChange(false);
@@ -146,7 +149,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     previousKeyboardInsetRef.current = keyboardInset;
 
     return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange]);
+  }, [keyboardInset, open, onOpenChange, isBraveiOS]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
