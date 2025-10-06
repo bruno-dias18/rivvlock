@@ -73,6 +73,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
   const previousKeyboardInsetRef = useRef(0);
+  const lastInnerHeightRef = useRef<number>(typeof window !== 'undefined' ? window.innerHeight : 0);
 
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
   const { 
@@ -131,22 +132,41 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
   }, [open]);
 
-  // Close messaging when keyboard closes (with delay for browser compatibility)
+  // Close messaging when keyboard closes (with delay and threshold for browser compatibility)
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
-    // Detect keyboard closing: transition from > 0 to 0
-    if (previousKeyboardInsetRef.current > 0 && keyboardInset === 0 && open) {
+
+    // Detect keyboard closing with threshold to avoid jitter
+    if (previousKeyboardInsetRef.current > 10 && keyboardInset <= 6 && open) {
       // Delay to allow different browsers (Brave, Firefox) to stabilize
       timeoutId = setTimeout(() => {
         onOpenChange(false);
-      }, 150);
+      }, 180);
     }
-    
+
     previousKeyboardInsetRef.current = keyboardInset;
-    
+
     return () => clearTimeout(timeoutId);
   }, [keyboardInset, open, onOpenChange]);
+
+  // Safety net: close when window height increases significantly (keyboard retract)
+  useEffect(() => {
+    if (!open) return;
+
+    const onResize = () => {
+      const current = window.innerHeight;
+      const delta = current - lastInnerHeightRef.current;
+      lastInnerHeightRef.current = current;
+      if (delta >= 120 && document.activeElement !== textareaRef.current) {
+        setTimeout(() => onOpenChange(false), 120);
+      }
+    };
+
+    // Initialize baseline
+    lastInnerHeightRef.current = window.innerHeight;
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [open, onOpenChange]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;

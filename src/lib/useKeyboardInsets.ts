@@ -9,29 +9,49 @@ export function useKeyboardInsets() {
 
   useEffect(() => {
     const visualViewport = (window as any).visualViewport as VisualViewport | undefined;
-    
-    if (!visualViewport) {
-      return;
-    }
-    
-    const updateInset = () => {
-      const keyboardHeight = Math.max(
-        0,
-        window.innerHeight - visualViewport.height - visualViewport.offsetTop
-      );
-      setBottomInset(Math.max(0, keyboardHeight));
+    const initialInnerHeight = window.innerHeight;
+    let rafId: number | null = null;
+
+    const computeKeyboardHeight = () => {
+      let vvHeight = 0;
+      if (visualViewport) {
+        vvHeight = Math.max(
+          0,
+          window.innerHeight - visualViewport.height - visualViewport.offsetTop
+        );
+      }
+      const innerHeightDelta = Math.max(0, initialInnerHeight - window.innerHeight);
+      return Math.max(vvHeight, innerHeightDelta);
     };
 
-    // Update on initial mount
+    const updateInset = () => {
+      const height = computeKeyboardHeight();
+      const filtered = height > 6 ? height : 0; // filter small jitters
+      setBottomInset(filtered);
+    };
+
+    const onChange = () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(updateInset);
+    };
+
+    // Initial update
     updateInset();
 
-    // Listen for viewport changes
-    visualViewport.addEventListener('resize', updateInset);
-    visualViewport.addEventListener('scroll', updateInset);
+    // Listen for viewport changes and window resize as fallback
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', onChange);
+      visualViewport.addEventListener('scroll', onChange);
+    }
+    window.addEventListener('resize', onChange);
 
     return () => {
-      visualViewport.removeEventListener('resize', updateInset);
-      visualViewport.removeEventListener('scroll', updateInset);
+      if (visualViewport) {
+        visualViewport.removeEventListener('resize', onChange);
+        visualViewport.removeEventListener('scroll', onChange);
+      }
+      window.removeEventListener('resize', onChange);
+      if (rafId) cancelAnimationFrame(rafId);
     };
   }, []);
 
