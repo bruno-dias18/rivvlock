@@ -47,7 +47,9 @@
     "otherParticipant": "Autre participant",
     "send": "Envoyer",
     "contact": "Contacter",
-    "viewConversation": "Voir la discussion"
+    "viewConversation": "Voir la discussion",
+    "noDeadline": "Pas de délai",
+    "expired": "Expiré"
   },
   "countries": {
     "france": "France",
@@ -314,7 +316,12 @@
       "adminStripeAccess": "Accès administrateur aux données Stripe",
       "emailAccess": "Accès à votre adresse email",
       "fields": "Champs consultés"
-    }
+    },
+    "transactionsCountdown": "Délais de validation",
+    "validationDeadlines": "Compteurs à rebours pour vos transactions en cours",
+    "noActiveTransactions": "Aucune transaction active nécessitant une validation",
+    "sellerValidation": "Validation vendeur",
+    "automaticRelease": "Libération automatique des fonds"
   },
   "deleteAccount": {
     "dangerZone": "Zone de danger",

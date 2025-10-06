@@ -47,7 +47,9 @@
     "otherParticipant": "Other participant",
     "send": "Send",
     "contact": "Contact",
-    "viewConversation": "View conversation"
+    "viewConversation": "View conversation",
+    "noDeadline": "No deadline",
+    "expired": "Expired"
   },
   "countries": {
     "france": "France",
@@ -306,7 +308,12 @@
       "adminStripeAccess": "Admin access to Stripe data",
       "emailAccess": "Access to your email address",
       "fields": "Fields accessed"
-    }
+    },
+    "transactionsCountdown": "Validation Deadlines",
+    "validationDeadlines": "Countdowns for your active transactions",
+    "noActiveTransactions": "No active transactions requiring validation",
+    "sellerValidation": "Seller validation",
+    "automaticRelease": "Automatic fund release"
   },
   "bankAccount": {
     "title": "Bank details",

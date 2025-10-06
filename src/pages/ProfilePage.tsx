@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
+import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -327,6 +328,8 @@ export default function ProfilePage() {
         </Card>
 
         <BankAccountSetupCard />
+
+        <SellerTransactionsCountdownCard />
 
         <ProfileAccessLogsCard />
 

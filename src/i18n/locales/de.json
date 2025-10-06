@@ -47,7 +47,9 @@
     "otherParticipant": "Anderer Teilnehmer",
     "send": "Senden",
     "contact": "Kontaktieren",
-    "viewConversation": "Unterhaltung ansehen"
+    "viewConversation": "Unterhaltung ansehen",
+    "noDeadline": "Keine Frist",
+    "expired": "Abgelaufen"
   },
   "countries": {
     "france": "Frankreich",
@@ -305,7 +307,12 @@
       "adminStripeAccess": "Admin-Zugriff auf Stripe-Daten",
       "emailAccess": "Zugriff auf Ihre E-Mail-Adresse",
       "fields": "Zugegriffene Felder"
-    }
+    },
+    "transactionsCountdown": "Validierungsfristen",
+    "validationDeadlines": "Countdown für Ihre aktiven Transaktionen",
+    "noActiveTransactions": "Keine aktiven Transaktionen, die eine Validierung erfordern",
+    "sellerValidation": "Verkäufervalidierung",
+    "automaticRelease": "Automatische Freigabe der Gelder"
   },
   "bankAccount": {
     "title": "Bankverbindung",
