@@ -79,13 +79,21 @@ export const TransactionMessaging = ({
     }
   }, [open, messages.length, markAsRead]);
 
-  // Close messaging when keyboard closes
+  // Close messaging when keyboard closes (with delay for browser compatibility)
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     // Detect keyboard closing: transition from > 0 to 0
     if (previousKeyboardInsetRef.current > 0 && keyboardInset === 0 && open) {
-      onOpenChange(false);
+      // Delay to allow different browsers (Brave, Firefox) to stabilize
+      timeoutId = setTimeout(() => {
+        onOpenChange(false);
+      }, 150);
     }
+    
     previousKeyboardInsetRef.current = keyboardInset;
+    
+    return () => clearTimeout(timeoutId);
   }, [keyboardInset, open, onOpenChange]);
 
   const handleSendMessage = async () => {
@@ -225,6 +233,16 @@ export const TransactionMessaging = ({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               onFocus={() => setTimeout(ensureBottom, 100)}
+              onBlur={() => {
+                // Backup detection: if keyboard was open and textarea loses focus, close messaging
+                if (keyboardInset > 0 || previousKeyboardInsetRef.current > 0) {
+                  setTimeout(() => {
+                    if (document.activeElement !== textareaRef.current) {
+                      onOpenChange(false);
+                    }
+                  }, 200);
+                }
+              }}
               placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
               className="flex-1 h-14 resize-none"
               rows={2}
