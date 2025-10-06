@@ -407,6 +407,11 @@ export default function TransactionsPage() {
           sellerProfileFinal = Array.isArray(fallbackSeller) && fallbackSeller.length > 0 ? fallbackSeller[0] : null;
           logger.log('Fallback seller profile via RPC:', sellerProfileFinal);
         }
+        // Fallback 2: if current user is the seller, use their own profile from hook
+        if (!sellerProfileFinal && user?.id === transaction.user_id && profile) {
+          sellerProfileFinal = profile as any;
+          logger.log('Using local profile as seller profile fallback');
+        }
       } catch (e) {
         logger.warn('Fallback seller RPC failed', e);
       }
@@ -444,8 +449,10 @@ export default function TransactionsPage() {
 
       const userRole = getUserRole(transaction);
       const sellerName = sellerProfileFinal 
-        ? `${sellerProfileFinal.first_name || ''} ${sellerProfileFinal.last_name || ''}`.trim() || 'Vendeur'
-        : transaction.seller_display_name || 'Vendeur';
+        ? (sellerProfileFinal.user_type === 'company' && sellerProfileFinal.company_name
+            ? sellerProfileFinal.company_name
+            : (`${sellerProfileFinal.first_name || ''} ${sellerProfileFinal.last_name || ''}`.trim() || 'Vendeur'))
+        : (transaction.seller_display_name || 'Vendeur');
       
       const buyerName = buyerProfile
         ? `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Client'

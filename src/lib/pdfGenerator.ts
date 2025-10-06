@@ -221,8 +221,9 @@ export const generateInvoicePDF = async (
         doc.text(`${t?.('invoice.vatSubject') || 'Assujetti TVA'}`, margin, leftColumnY);
         leftColumnY += 4;
         
-        if (profile.tva_rate) {
-          doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${profile.tva_rate}%`, margin, leftColumnY);
+        const rate = profile.country === 'FR' ? profile.tva_rate : profile.vat_rate;
+        if (rate) {
+          doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${rate}%`, margin, leftColumnY);
           leftColumnY += 4;
         }
       }
