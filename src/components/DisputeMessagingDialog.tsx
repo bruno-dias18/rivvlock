@@ -56,6 +56,16 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
   
+  // Browser detection to tailor viewport units (iOS Safari vs others)
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isFirefoxiOS = /FxiOS/i.test(ua);
+  const isChromeiOS = /CriOS/i.test(ua);
+  const isBraveiOS = /Brave/i.test(ua);
+  const isEdgiOS = /EdgiOS/i.test(ua);
+  const isDuckiOS = /DuckDuckGo/i.test(ua);
+  const isSafariiOS = isIOS && /Safari/i.test(ua) && !(isFirefoxiOS || isChromeiOS || isBraveiOS || isEdgiOS || isDuckiOS);
+  
   const [newMessage, setNewMessage] = useState('');
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -257,10 +267,13 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   // Calculate dynamic height based on keyboard
   const getDialogHeight = () => {
     if (!isMobile) return '85vh';
+
+    const baseUnit = isSafariiOS ? '100vh' : '100dvh';
+
     if (keyboardInset > 0) {
-      return `calc(100dvh - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
+      return `calc(${baseUnit} - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
     }
-    return `calc(100dvh - env(safe-area-inset-top, 0px))`;
+    return `calc(${baseUnit} - env(safe-area-inset-top, 0px))`;
   };
 
   return (

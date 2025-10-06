@@ -32,6 +32,15 @@ export const TransactionMessaging = ({
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
   
+  // Browser detection to tailor viewport units (iOS Safari vs others)
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isFirefoxiOS = /FxiOS/i.test(ua);
+  const isChromeiOS = /CriOS/i.test(ua);
+  const isBraveiOS = /Brave/i.test(ua);
+  const isEdgiOS = /EdgiOS/i.test(ua);
+  const isDuckiOS = /DuckDuckGo/i.test(ua);
+  const isSafariiOS = isIOS && /Safari/i.test(ua) && !(isFirefoxiOS || isChromeiOS || isBraveiOS || isEdgiOS || isDuckiOS);
   const [newMessage, setNewMessage] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -133,10 +142,14 @@ export const TransactionMessaging = ({
   // Calculate dynamic height based on keyboard
   const getDialogHeight = () => {
     if (!isMobile) return '85vh';
+
+    // Use 100vh on iOS Safari (was already correct before), 100dvh elsewhere (fixes Brave/Firefox)
+    const baseUnit = isSafariiOS ? '100vh' : '100dvh';
+
     if (keyboardInset > 0) {
-      return `calc(100dvh - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
+      return `calc(${baseUnit} - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
     }
-    return `calc(100dvh - env(safe-area-inset-top, 0px))`;
+    return `calc(${baseUnit} - env(safe-area-inset-top, 0px))`;
   };
 
   // Use Dialog for both mobile and desktop (stable, predictable)
