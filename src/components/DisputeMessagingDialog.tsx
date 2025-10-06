@@ -258,9 +258,9 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const getDialogHeight = () => {
     if (!isMobile) return '85vh';
     if (keyboardInset > 0) {
-      return `calc(100vh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - 8px)`;
+      return `calc(100dvh - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
     }
-    return '45vh';
+    return `calc(100dvh - env(safe-area-inset-top, 0px))`;
   };
 
   return (
@@ -438,7 +438,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
 
           {/* Input Area */}
           {!status.startsWith('resolved') && (
-            <div className="border-t shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+            <div className="border-t shrink-0" style={{ paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px + 8px)` }}>
               {/* Official Proposal Button - Only visible if not escalated */}
               {!isExpired && (
                 <div className="p-2 border-b bg-primary/5">
