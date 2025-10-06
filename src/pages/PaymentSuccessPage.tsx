@@ -6,12 +6,24 @@ import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function PaymentSuccessPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [syncing, setSyncing] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to be ready
+    if (authLoading) return;
+    
+    // Check if user is authenticated
+    if (!user) {
+      logger.warn('User not authenticated on payment success page');
+      toast.error('Session expirée, veuillez vous reconnecter');
+      navigate('/auth');
+      return;
+    }
     // Auto-sync payments after successful payment with retries
     const syncPayments = async () => {
       let attempts = 0;
@@ -47,7 +59,7 @@ export default function PaymentSuccessPage() {
     };
 
     syncPayments();
-  }, []);
+  }, [authLoading, user, navigate]);
 
   const handleViewTransactions = () => {
     navigate('/dashboard/transactions?tab=blocked');
