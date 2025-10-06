@@ -9,25 +9,19 @@ export function useKeyboardInsets() {
 
   useEffect(() => {
     const visualViewport = (window as any).visualViewport as VisualViewport | undefined;
-    const initialInnerHeight = window.innerHeight;
     let rafId: number | null = null;
 
     const computeKeyboardHeight = () => {
-      let vvHeight = 0;
-      if (visualViewport) {
-        vvHeight = Math.max(
-          0,
-          window.innerHeight - visualViewport.height - visualViewport.offsetTop
-        );
-      }
-      const innerHeightDelta = Math.max(0, initialInnerHeight - window.innerHeight);
-      return Math.max(vvHeight, innerHeightDelta);
+      if (!visualViewport) return 0;
+      return Math.max(
+        0,
+        window.innerHeight - visualViewport.height - visualViewport.offsetTop
+      );
     };
 
     const updateInset = () => {
       const height = computeKeyboardHeight();
-      const filtered = height > 6 ? height : 0; // filter small jitters
-      setBottomInset(filtered);
+      setBottomInset(height);
     };
 
     const onChange = () => {
