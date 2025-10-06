@@ -420,9 +420,11 @@ export const generateInvoicePDF = async (
   const valueX = tableRightEdge; // Alignement parfait avec le bord droit du tableau
   
   // Déterminer si on doit afficher la TVA
+  const sellerCountry = invoiceData.sellerProfile?.country;
+  const sellerVatRate = sellerCountry === 'FR' ? invoiceData.sellerProfile?.tva_rate : invoiceData.sellerProfile?.vat_rate;
   const sellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && 
                        invoiceData.sellerProfile?.is_subject_to_vat && 
-                       invoiceData.sellerProfile?.vat_rate;
+                       sellerVatRate;
   
   let baseAmount = amountPaid;
   let vatAmount = 0;
@@ -430,7 +432,7 @@ export const generateInvoicePDF = async (
   
   if (sellerHasVat) {
     // Calcul inverse : le montant payé contient déjà la TVA
-    const vatRate = invoiceData.sellerProfile.vat_rate / 100;
+    const vatRate = sellerVatRate / 100;
     baseAmount = amountPaid / (1 + vatRate);
     vatAmount = amountPaid - baseAmount;
   }
@@ -446,8 +448,7 @@ export const generateInvoicePDF = async (
   
   // TVA (si applicable)
   if (sellerHasVat) {
-    const vatRate = invoiceData.sellerProfile.vat_rate;
-    doc.text(`${t?.('invoice.vatAmount') || 'TVA'} (${vatRate}%):`, labelX, yPosition, { align: 'left' });
+    doc.text(`${t?.('invoice.vatAmount') || 'TVA'} (${sellerVatRate}%):`, labelX, yPosition, { align: 'left' });
     doc.text(`${vatAmount.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 8;
     
