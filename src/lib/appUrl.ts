@@ -9,16 +9,16 @@ export const getAppBaseUrl = (): string => {
 
 export const getPublicBaseUrl = (): string => {
   if (typeof window === 'undefined') {
-    return 'https://rivvlock.lovable.app';
+    return 'https://app.rivvlock.com';
   }
   
   const host = window.location.host;
   
-  // If we're on a Lovable development/editor domain, use the public domain
+  // If we're on a Lovable development/editor domain, use the custom domain
   if (host.includes('lovable.dev') || 
       host.includes('lovableproject.com') || 
       host.match(/^[a-f0-9-]+\.lovable\.app$/)) {
-    return 'https://rivvlock.lovable.app';
+    return 'https://app.rivvlock.com';
   }
   
   // Otherwise use the current origin
