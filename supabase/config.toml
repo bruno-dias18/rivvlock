@@ -97,12 +97,6 @@ verify_jwt = false
 [functions.delete-user-account]
 verify_jwt = true
 
-[functions.activate-validation-deadlines]
-verify_jwt = false
-
-[functions.activate-validation-deadlines.cron]
-schedule = "*/10 * * * *"
-
 [functions.release-funds]
 verify_jwt = true
 
