@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle, CreditCard, Users } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/lib/logger';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface TransactionData {
   id: string;
@@ -176,6 +178,16 @@ export default function PaymentLinkPage() {
                 <p className="text-sm">{transaction.description}</p>
               </div>
               
+              {transaction.service_date && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Date du service</label>
+                  <p className="font-medium flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(transaction.service_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                  </p>
+                </div>
+              )}
+              
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
@@ -240,6 +252,16 @@ export default function PaymentLinkPage() {
                 <label className="text-sm font-medium text-muted-foreground">Description</label>
                 <p className="text-sm">{transaction.description}</p>
               </div>
+              
+              {transaction.service_date && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Date du service</label>
+                  <p className="font-medium flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    {format(new Date(transaction.service_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                  </p>
+                </div>
+              )}
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
