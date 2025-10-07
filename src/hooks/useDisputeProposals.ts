@@ -96,12 +96,13 @@ export const useDisputeProposals = (disputeId: string) => {
             ? 'Remboursement intégral (100%)'
             : 'Aucun remboursement';
 
-          // Add rejection message
+          // Add rejection message visible to all participants
           await supabase
             .from('dispute_messages')
             .insert({
               dispute_id: proposal.dispute_id,
               sender_id: user?.id,
+              recipient_id: null, // Message public visible par tous les participants
               message: `❌ Proposition refusée : ${proposalText}`,
               message_type: 'system',
             });
