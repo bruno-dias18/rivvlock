@@ -298,15 +298,25 @@ export const downloadAllInvoicesAsZip = async (
     // Fetch disputes and their accepted proposals
     const { data: disputes } = await supabase
       .from('disputes')
-      .select('transaction_id, dispute_proposals(refund_percentage, status)')
+      .select('transaction_id, resolution, dispute_proposals(refund_percentage, status, proposal_type)')
       .in('transaction_id', transactionIds);
     
     // Create map of refund percentages
     const refundMap = new Map<string, number>();
     disputes?.forEach(dispute => {
-      const acceptedProposal = (dispute.dispute_proposals as any)?.find((p: any) => p.status === 'accepted');
+      const proposals = (dispute.dispute_proposals as any[]) || [];
+      const acceptedProposal = proposals.find((p: any) => p.status === 'accepted' && (p.proposal_type === 'partial_refund' || (p.refund_percentage ?? 0) > 0));
       if (acceptedProposal?.refund_percentage) {
-        refundMap.set(dispute.transaction_id, acceptedProposal.refund_percentage);
+        refundMap.set(dispute.transaction_id, Number(acceptedProposal.refund_percentage));
+        return;
+      }
+      // Fallback: parse percentage from resolution text
+      if ((dispute as any).resolution && typeof (dispute as any).resolution === 'string') {
+        const m = (dispute as any).resolution.match(/(\d{1,3})\s*%/);
+        const pct = m ? parseInt(m[1], 10) : 0;
+        if (pct > 0 && pct < 100) {
+          refundMap.set(dispute.transaction_id, pct);
+        }
       }
     });
     
@@ -408,7 +418,7 @@ export const downloadAllInvoicesAsZip = async (
 
         const buyerProfile = transaction.buyer_id ? buyerProfilesMap.get(transaction.buyer_id) : null;
 
-        // Prepare invoice data
+        // Prepare invoice data with refund information
         const invoiceDataForPDF: InvoiceData = {
           transactionId: transaction.id,
           title: transaction.title,
@@ -424,7 +434,10 @@ export const downloadAllInvoicesAsZip = async (
           sellerEmail: '',
           buyerEmail: '',
           language: language,
-          t: t
+          t: t,
+          viewerRole: 'seller',
+          refundStatus: (transaction.refund_status as 'none' | 'partial' | 'full') || 'none',
+          refundPercentage: transaction.refund_percentage || 0
         };
 
         // Generate PDF as blob with the determined invoice number

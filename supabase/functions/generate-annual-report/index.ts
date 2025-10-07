@@ -126,8 +126,9 @@ function generateCSV(transactions: any[], invoices: any[]): string {
   const rows = transactions.map(transaction => {
     // Calculer le montant réel après remboursement partiel
     let amountPaid = Number(transaction.price);
-    if (transaction.refund_status === 'partial' && transaction.refund_percentage) {
-      amountPaid = amountPaid * (1 - transaction.refund_percentage / 100);
+    const pct = Number(transaction.refund_percentage || 0);
+    if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
+      amountPaid = amountPaid * (1 - pct / 100);
     }
     const rivvlockFee = amountPaid * 0.05;
     const amountReceived = amountPaid - rivvlockFee;

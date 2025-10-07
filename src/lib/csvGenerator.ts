@@ -29,22 +29,24 @@ export const generateAnnualReportCSV = (
   const invoiceMap = new Map(invoices.map(inv => [inv.transaction_id, inv.invoice_number]));
   
   const rows = transactions.map(transaction => {
-    const amountPaid = Number(transaction.price);
+    let amountPaid = Number(transaction.price);
+    const pct = Number(transaction.refund_percentage || 0);
+    
+    // Appliquer le remboursement partiel si applicable
+    if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
+      amountPaid = amountPaid * (1 - pct / 100);
+    }
+    
     const rivvlockFee = amountPaid * 0.05;
     let amountReceived = amountPaid - rivvlockFee;
     const invoiceNumber = invoiceMap.get(transaction.id) || '-';
     
     let description = transaction.description || transaction.title;
-    if (transaction.refund_status === 'partial') {
-      const refundNote = language === 'fr' ? ' (Remboursement partiel)' :
-                         language === 'de' ? ' (Teilrückerstattung)' :
-                         ' (Partial refund)';
+    if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
+      const refundNote = language === 'fr' ? ` (Remb. partiel ${pct}%)` :
+                         language === 'de' ? ` (Teilrückerstattung ${pct}%)` :
+                         ` (Partial refund ${pct}%)`;
       description += refundNote;
-      
-      if (transaction.refund_percentage) {
-        const refundAmount = amountPaid * (transaction.refund_percentage / 100);
-        amountReceived = amountPaid - refundAmount - rivvlockFee;
-      }
     }
     
     const date = new Date(transaction.updated_at).toLocaleDateString(
