@@ -206,7 +206,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Décrivez votre service en détail..."
+                      placeholder="Décrivez votre service en détail (ex: type de prestation, durée, adresse d'intervention, matériel inclus...)"
                       className="min-h-[100px]"
                       enterKeyHint="next"
                       {...field} 
