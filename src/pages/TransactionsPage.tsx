@@ -478,6 +478,8 @@ export default function TransactionsPage() {
         buyerProfile,
         sellerEmail,
         buyerEmail,
+        refundStatus: transaction.refund_status || 'none',
+        refundPercentage: transaction.refund_percentage || null,
       };
 
       generateInvoicePDF({
