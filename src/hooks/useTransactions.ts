@@ -23,7 +23,17 @@ export const useTransactions = () => {
       
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          disputes!left(
+            id,
+            status,
+            dispute_proposals!left(
+              refund_percentage,
+              status
+            )
+          )
+        `)
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       
@@ -35,7 +45,31 @@ export const useTransactions = () => {
       logger.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
       logger.debug('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
       
-      return data || [];
+      // Enrichir avec refund_percentage depuis les propositions acceptées
+      const enrichedData = data?.map(transaction => {
+        let refundPercentage = null;
+        
+        if (transaction.disputes && Array.isArray(transaction.disputes)) {
+          for (const dispute of transaction.disputes) {
+            if (dispute.dispute_proposals && Array.isArray(dispute.dispute_proposals)) {
+              const acceptedProposal = dispute.dispute_proposals.find(
+                (p: any) => p.status === 'accepted'
+              );
+              if (acceptedProposal && acceptedProposal.refund_percentage) {
+                refundPercentage = acceptedProposal.refund_percentage;
+                break;
+              }
+            }
+          }
+        }
+        
+        return {
+          ...transaction,
+          refund_percentage: refundPercentage
+        };
+      });
+      
+      return enrichedData || [];
     },
     enabled: !!user?.id,
     staleTime: 30000, // Cache for 30 seconds

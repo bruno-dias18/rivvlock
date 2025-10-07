@@ -134,8 +134,62 @@ const TransactionCardComponent = ({
             </CardDescription>
           </div>
           <div className={`${isMobile ? 'flex justify-between items-center' : 'text-right ml-4'}`}>
-            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
-              {transaction.price} {transaction.currency?.toUpperCase()}
+            <div className="space-y-1">
+              {/* Affichage du montant avec remboursement si applicable */}
+              {transaction.status === 'validated' && transaction.refund_status !== 'none' && transaction.refund_status && (
+                <div className="space-y-1">
+                  {/* Prix original barré */}
+                  <div className="text-sm text-muted-foreground line-through">
+                    {transaction.price} {transaction.currency?.toUpperCase()}
+                  </div>
+                  
+                  {/* Nouveau montant */}
+                  <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
+                    {transaction.refund_status === 'full' ? (
+                      <>0 {transaction.currency?.toUpperCase()}</>
+                    ) : (
+                      <>
+                        {userRole === 'seller' ? (
+                          // Vendeur : montant net reçu après remboursement et frais RivvLock (5%)
+                          (() => {
+                            const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
+                            const amountAfterRefund = transaction.price - refundAmount;
+                            const netAmount = amountAfterRefund * 0.95; // 5% de frais RivvLock
+                            return `${netAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                          })()
+                        ) : (
+                          // Acheteur : montant remboursé
+                          (() => {
+                            const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
+                            return `${refundAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                          })()
+                        )}
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Badge de remboursement */}
+                  <Badge 
+                    className={
+                      transaction.refund_status === 'full' 
+                        ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200 border-red-200 dark:border-red-800' 
+                        : 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200 border-orange-200 dark:border-orange-800'
+                    }
+                  >
+                    {transaction.refund_status === 'full' 
+                      ? t('disputes.fullRefund', 'Remboursement total')
+                      : `${t('disputes.partialRefund', 'Remboursement partiel')} (${transaction.refund_percentage}%)`
+                    }
+                  </Badge>
+                </div>
+              )}
+              
+              {/* Affichage normal si pas de remboursement */}
+              {(!transaction.refund_status || transaction.refund_status === 'none' || transaction.status !== 'validated') && (
+                <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold`}>
+                  {transaction.price} {transaction.currency?.toUpperCase()}
+                </div>
+              )}
             </div>
             <Badge variant="outline" className="mt-1">
               {userRole === 'seller' ? t('roles.seller') : t('roles.client')}
