@@ -127,6 +127,10 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   useEffect(() => {
     if (open) {
       // Mark dispute messages as seen (specific dispute)
+      const lastSeenKey = `last_seen_dispute_${disputeId}`;
+      localStorage.setItem(lastSeenKey, new Date().toISOString());
+      
+      // Mark dispute messages as seen (old hook for admin messages)
       markAsSeen();
       // Mark admin messages as seen (global count)
       markGlobalAsSeen();
@@ -147,7 +151,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, markAsSeen, markGlobalAsSeen, refetchDisputeUnread, refetchGlobalUnread]);
+  }, [open, disputeId, markAsSeen, markGlobalAsSeen, refetchDisputeUnread, refetchGlobalUnread]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {

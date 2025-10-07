@@ -17,7 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/r
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { logger } from '@/lib/logger';
-import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
+import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
 
 interface DisputeCardProps {
   dispute: any;
@@ -38,7 +38,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
   const { proposals } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
-  const { unreadCount: unreadAdminMessages } = useUnreadDisputeAdminMessages(dispute.id);
+  const { unreadCount: unreadMessages, markAsSeen } = useUnreadDisputeMessages(dispute.id);
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -388,9 +388,12 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         {!dispute.status.startsWith('resolved') && (
           <div>
             <Button
-              variant={unreadAdminMessages > 0 ? "default" : "outline"}
+              variant={unreadMessages > 0 ? "default" : "outline"}
               className="w-full"
-              onClick={() => setShowMessaging(true)}
+              onClick={() => {
+                setShowMessaging(true);
+                markAsSeen();
+              }}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Voir la discussion
