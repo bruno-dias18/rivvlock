@@ -239,6 +239,14 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
             <CardTitle className="text-sm md:text-lg flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
               Litige #{dispute.id.slice(0, 8)}
+              {unreadMessages > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 animate-pulse text-xs"
+                >
+                  {unreadMessages}
+                </Badge>
+              )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1 truncate">
               {dispute.transactions?.title}
@@ -389,7 +397,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           <div>
             <Button
               variant={unreadMessages > 0 ? "default" : "outline"}
-              className="w-full"
+              className="w-full relative"
               onClick={() => {
                 setShowMessaging(true);
                 markAsSeen();
@@ -397,6 +405,14 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Voir la discussion
+              {unreadMessages > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="ml-2 animate-pulse"
+                >
+                  {unreadMessages} nouveau{unreadMessages > 1 ? 'x' : ''}
+                </Badge>
+              )}
             </Button>
           </div>
         )}
