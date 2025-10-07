@@ -34,6 +34,7 @@ import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { SortButtons } from '@/components/SortButtons';
 import { logger } from '@/lib/logger';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 
 export default function TransactionsPage() {
   const { t } = useTranslation();
@@ -80,6 +81,7 @@ export default function TransactionsPage() {
   const { syncPayments } = useSyncStripePayments();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
+  const { unreadCount: unreadDisputeMsgs, markAllAsSeen: markDisputesSeen } = useUnreadDisputesGlobal();
   
   const activeTab = searchParams.get('tab') || 'pending';
   
@@ -174,7 +176,11 @@ export default function TransactionsPage() {
       markAsSeen(category);
       refetchNotifications();
     }
-  }, [activeTab, markAsSeen, refetchNotifications]);
+    if (activeTab === 'disputed') {
+      // Clear global dispute message badge when user visits Litiges
+      markDisputesSeen();
+    }
+  }, [activeTab, markAsSeen, refetchNotifications, markDisputesSeen]);
 
   // Scroll to transaction when scrollTo parameter is present
   useEffect(() => {
@@ -589,10 +595,10 @@ export default function TransactionsPage() {
                       {newCounts.disputed}
                     </Badge>
                   )}
-                  {unreadDisputed.length > 0 && (
+                  {unreadDisputeMsgs > 0 && (
                     <Badge className="bg-red-600 text-white hover:bg-red-700">
                       <MessageSquare className="h-3 w-3 mr-1" />
-                      {unreadDisputed.length}
+                      {unreadDisputeMsgs}
                     </Badge>
                   )}
                   {unreadAdminMessages > 0 && (
@@ -635,10 +641,10 @@ export default function TransactionsPage() {
                       {newCounts.disputed}
                     </Badge>
                   )}
-                  {unreadDisputed.length > 0 && (
+                  {unreadDisputeMsgs > 0 && (
                     <Badge className="bg-red-600 text-white hover:bg-red-700 text-[10px] h-5 px-1.5">
                       <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
-                      {unreadDisputed.length}
+                      {unreadDisputeMsgs}
                     </Badge>
                   )}
                   {unreadAdminMessages > 0 && (
