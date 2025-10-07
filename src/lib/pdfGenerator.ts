@@ -422,10 +422,10 @@ export const generateInvoicePDF = async (
   const earlySellerCountry = invoiceData.sellerProfile?.country;
   const earlySellerVatRate = (earlySellerCountry === 'FR' ? invoiceData.sellerProfile?.tva_rate : invoiceData.sellerProfile?.vat_rate) ?? 0;
   const earlySellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && invoiceData.sellerProfile?.is_subject_to_vat && earlySellerVatRate;
-  // Use ORIGINAL transaction amount for the row (do not include fees/refunds here)
+  // Use amountPaid (which includes refund calculation) for the table row
   const baseAmountRow = earlySellerHasVat
-    ? (invoiceData.amount / (1 + (earlySellerVatRate / 100)))
-    : invoiceData.amount;
+    ? (amountPaid / (1 + (earlySellerVatRate / 100)))
+    : amountPaid;
   
   // En-tête tableau avec bordure
   doc.setDrawColor(0, 0, 0);
@@ -469,27 +469,8 @@ export const generateInvoicePDF = async (
   
   yPosition += contentHeight + 15;
   
-  // Ajouter ligne de remboursement partiel si applicable
-  if (invoiceData.refundStatus === 'partial' && invoiceData.refundPercentage) {
-    const refundAmountTTC = invoiceData.amount * (invoiceData.refundPercentage / 100);
-    const refundLabel = language === 'fr' ? `Remboursement (${invoiceData.refundPercentage}%)` :
-                        language === 'de' ? `Rückerstattung (${invoiceData.refundPercentage}%)` :
-                        `Refund (${invoiceData.refundPercentage}%)`;
-    
-    const refundRowHeight = 10;
-    doc.rect(margin, yPosition, pageWidth - 2 * margin, refundRowHeight);
-    doc.setTextColor(220, 38, 38);
-    doc.text(refundLabel, margin + 2, yPosition + 6);
-    // Display refund in the SAME column unit as the table (HT if VAT applies)
-    const refundDisplay = earlySellerHasVat
-      ? (refundAmountTTC / (1 + (earlySellerVatRate / 100)))
-      : refundAmountTTC;
-    doc.text(`-${refundDisplay.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
-    doc.setTextColor(0, 0, 0);
-    yPosition += refundRowHeight + 15;
-  } else {
-    // Comportement normal si pas de remboursement partiel
-  }
+  // Ne plus afficher de ligne de remboursement séparée
+  // Le montant dans le tableau est déjà le montant final (après remboursement)
   
   // === CALCULS FINANCIERS (alignés avec le bord droit du tableau) ===
   
@@ -503,15 +484,15 @@ export const generateInvoicePDF = async (
                        invoiceData.sellerProfile?.is_subject_to_vat && 
                        sellerVatRate;
   
-  let baseAmount = invoiceData.amount;
+  let baseAmount = amountPaid;
   let vatAmount = 0;
-  let totalTTC = invoiceData.amount;
+  let totalTTC = amountPaid;
   
   if (sellerHasVat) {
-    // Compute totals from ORIGINAL amount (do not include platform fees)
+    // Compute totals from amount after refund
     const vatRate = (sellerVatRate ?? 0) / 100;
-    baseAmount = invoiceData.amount / (1 + vatRate);
-    vatAmount = invoiceData.amount - baseAmount;
+    baseAmount = amountPaid / (1 + vatRate);
+    vatAmount = amountPaid - baseAmount;
   }
   
   // Total HT
