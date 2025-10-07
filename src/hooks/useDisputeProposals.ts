@@ -85,10 +85,7 @@ export const useDisputeProposals = (disputeId: string) => {
 
   const rejectProposal = useMutation({
     mutationFn: async (proposalId: string) => {
-      if (!user?.id) throw new Error('User not authenticated');
-
-      // 1) Met à jour le statut de la proposition
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('dispute_proposals')
         .update({ 
           status: 'rejected', 
@@ -96,93 +93,12 @@ export const useDisputeProposals = (disputeId: string) => {
         })
         .eq('id', proposalId);
 
-      if (updateError) throw updateError;
-
-      // 2) Récupère les infos nécessaires (proposal -> dispute -> transaction)
-      const { data: proposal } = await supabase
-        .from('dispute_proposals')
-        .select(`
-          dispute_id,
-          proposal_type,
-          refund_percentage
-        `)
-        .eq('id', proposalId)
-        .maybeSingle();
-
-      if (proposal?.dispute_id) {
-        const { data: dispute } = await supabase
-          .from('disputes')
-          .select(`
-            transaction_id,
-            transactions (
-              id,
-              title,
-              user_id,
-              buyer_id
-            )
-          `)
-          .eq('id', proposal.dispute_id)
-          .single();
-
-        const transaction = (dispute as any)?.transactions as any;
-
-        // 3) Insère un message système en broadcast (visible par TOUS)
-        const proposalText = proposal.proposal_type === 'partial_refund'
-          ? `Remboursement de ${proposal.refund_percentage}%`
-          : proposal.proposal_type === 'full_refund'
-          ? 'Remboursement intégral (100%)'
-          : 'Aucun remboursement';
-
-        try {
-          await supabase
-            .from('dispute_messages')
-            .insert({
-              dispute_id: proposal.dispute_id,
-              sender_id: user.id,
-              recipient_id: null, // broadcast
-              message: `❌ Proposition refusée : ${proposalText}`,
-              message_type: 'system',
-            });
-        } catch (e) {
-          console.error('Error inserting system message:', e);
-        }
-
-        // 4) Notifs push aux autres participants
-        try {
-          const recipients = [transaction?.user_id, transaction?.buyer_id]
-            .filter((id) => id && id !== user.id);
-
-          if (recipients.length > 0) {
-            await supabase.functions.invoke('send-notifications', {
-              body: {
-                type: 'dispute_proposal_rejected',
-                transactionId: transaction?.id,
-                message: `🚫 Proposition refusée concernant "${transaction?.title}" : ${proposalText}`,
-                recipients,
-              }
-            });
-          }
-        } catch (notificationError) {
-          console.error('Error sending notifications:', notificationError);
-        }
-      }
-
+      if (error) throw error;
       return { success: true };
     },
-    onSuccess: async () => {
-      // Rafraîchir les listes pour afficher immédiatement le message
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
-      queryClient.invalidateQueries({ queryKey: ['disputes'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
-
-      try {
-        const { toast } = await import('sonner');
-        toast.success('Proposition refusée', {
-          description: "Votre refus a été envoyé et notifié à l'autre partie",
-          duration: 4000,
-        });
-      } catch {}
     },
   });
 
