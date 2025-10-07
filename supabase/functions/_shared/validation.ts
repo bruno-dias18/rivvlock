@@ -75,7 +75,7 @@ export const createDisputeSchema = z.object({
 export const createProposalSchema = z.object({
   disputeId: uuidSchema,
   
-  proposalType: z.enum(['refund', 'release', 'partial_refund'], {
+  proposalType: z.enum(['partial_refund', 'full_refund', 'no_refund'], {
     errorMap: () => ({ message: "Type de proposition invalide" })
   }),
   
