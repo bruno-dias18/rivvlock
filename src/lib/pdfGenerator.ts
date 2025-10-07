@@ -19,6 +19,8 @@ export interface InvoiceData {
   language?: string;
   t?: any;
   viewerRole?: 'seller' | 'buyer';
+  refundStatus?: 'none' | 'partial' | 'full';
+  refundPercentage?: number;
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
@@ -367,10 +369,30 @@ export const generateInvoicePDF = async (
   // Ajuster la position selon la colonne la plus longue
   yPosition = Math.max(leftColumnY, rightColumnY) + 15;
   
+  // Affichage pour remboursement total
+  if (invoiceData.refundStatus === 'full') {
+    doc.setFontSize(16);
+    doc.setTextColor(220, 38, 38);
+    doc.setFont("helvetica", "bold");
+    const cancelText = language === 'fr' ? 'FACTURE ANNULÉE - REMBOURSEMENT TOTAL' :
+                       language === 'de' ? 'RECHNUNG STORNIERT - VOLLSTÄNDIGE RÜCKERSTATTUNG' :
+                       'INVOICE CANCELLED - FULL REFUND';
+    doc.text(cancelText, pageWidth / 2, yPosition, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("helvetica", "normal");
+    yPosition += 15;
+  }
+  
   // === TABLEAU SIMPLIFIÉ (selon modèle) ===
   
   // Calculs pour le tableau
-  const amountPaid = invoiceData.amount;
+  let amountPaid = invoiceData.amount;
+  
+  // Pour remboursement total, montants à 0
+  if (invoiceData.refundStatus === 'full') {
+    amountPaid = 0;
+  }
+  
   const rivvlockFee = amountPaid * 0.05;
   const amountReceived = amountPaid - rivvlockFee;
   const currency = invoiceData.currency.toUpperCase();
@@ -422,6 +444,24 @@ export const generateInvoicePDF = async (
   doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
   
   yPosition += contentHeight + 15;
+  
+  // Ajouter ligne de remboursement partiel si applicable
+  if (invoiceData.refundStatus === 'partial' && invoiceData.refundPercentage) {
+    const refundAmount = invoiceData.amount * (invoiceData.refundPercentage / 100);
+    const refundLabel = language === 'fr' ? `Remboursement (${invoiceData.refundPercentage}%)` :
+                        language === 'de' ? `Rückerstattung (${invoiceData.refundPercentage}%)` :
+                        `Refund (${invoiceData.refundPercentage}%)`;
+    
+    const refundRowHeight = 10;
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, refundRowHeight);
+    doc.setTextColor(220, 38, 38);
+    doc.text(refundLabel, margin + 2, yPosition + 6);
+    doc.text(`-${refundAmount.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
+    doc.setTextColor(0, 0, 0);
+    yPosition += refundRowHeight + 15;
+  } else {
+    // Comportement normal si pas de remboursement partiel
+  }
   
   // === CALCULS FINANCIERS (alignés avec le bord droit du tableau) ===
   

@@ -107,7 +107,7 @@ export const useNewItemsNotifications = () => {
             .from('disputes')
             .select('transaction_id')
             .in('transaction_id', transactionIds)
-            .neq('status', 'resolved');
+            .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
           filteredCount = disputes?.length || 0;
         } else if (category === 'completed') {
           const { count } = await supabase
@@ -170,7 +170,7 @@ export const useNewItemsNotifications = () => {
         .from('disputes')
         .select('transaction_id')
         .in('transaction_id', transactionIds)
-        .neq('status', 'resolved');
+        .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
       filteredIds = disputes?.map(d => d.transaction_id).filter(Boolean) || [];
     } else if (category === 'completed') {
       const { data: txs } = await supabase

@@ -313,12 +313,21 @@ serve(async (req) => {
     }
 
     // Update transaction status and price
+    // Déterminer le refund_status
+    let refundStatus: 'none' | 'partial' | 'full' = 'none';
+    if (proposal.proposal_type === 'full_refund' || proposal.refund_percentage === 100) {
+      refundStatus = 'full';
+    } else if (proposal.proposal_type === 'partial_refund') {
+      refundStatus = 'partial';
+    }
+
     const { error: txUpdateError } = await adminClient
       .from("transactions")
       .update({ 
         status: newTransactionStatus,
         price: updatedPrice,
         funds_released: proposal.proposal_type === 'no_refund',
+        refund_status: refundStatus,
         updated_at: new Date().toISOString()
       })
       .eq("id", transaction.id);

@@ -273,14 +273,15 @@ export const downloadAllInvoicesAsZip = async (
 ) => {
   try {
     // Fetch all validated transactions for the year with all necessary fields
-    const { data: transactions, error: txError } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('user_id', sellerId)
-      .eq('status', 'validated')
-      .gte('updated_at', `${year}-01-01`)
-      .lte('updated_at', `${year}-12-31`)
-      .order('updated_at', { ascending: true });
+  const { data: transactions, error: txError } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('user_id', sellerId)
+    .eq('status', 'validated')
+    .neq('refund_status', 'full')
+    .gte('updated_at', `${year}-01-01`)
+    .lte('updated_at', `${year}-12-31`)
+    .order('updated_at', { ascending: true });
 
     if (txError) throw txError;
     if (!transactions || transactions.length === 0) {

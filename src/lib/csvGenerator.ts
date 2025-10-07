@@ -6,6 +6,8 @@ interface Transaction {
   currency: string;
   updated_at: string;
   buyer_display_name?: string;
+  refund_status?: 'none' | 'partial' | 'full';
+  refund_percentage?: number;
 }
 
 interface Invoice {
@@ -29,8 +31,21 @@ export const generateAnnualReportCSV = (
   const rows = transactions.map(transaction => {
     const amountPaid = Number(transaction.price);
     const rivvlockFee = amountPaid * 0.05;
-    const amountReceived = amountPaid - rivvlockFee;
+    let amountReceived = amountPaid - rivvlockFee;
     const invoiceNumber = invoiceMap.get(transaction.id) || '-';
+    
+    let description = transaction.description || transaction.title;
+    if (transaction.refund_status === 'partial') {
+      const refundNote = language === 'fr' ? ' (Remboursement partiel)' :
+                         language === 'de' ? ' (Teilrückerstattung)' :
+                         ' (Partial refund)';
+      description += refundNote;
+      
+      if (transaction.refund_percentage) {
+        const refundAmount = amountPaid * (transaction.refund_percentage / 100);
+        amountReceived = amountPaid - refundAmount - rivvlockFee;
+      }
+    }
     
     const date = new Date(transaction.updated_at).toLocaleDateString(
       language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : 'fr-FR',
@@ -41,7 +56,7 @@ export const generateAnnualReportCSV = (
       date,
       invoiceNumber,
       transaction.buyer_display_name || '-',
-      `"${(transaction.description || transaction.title).replace(/"/g, '""')}"`,
+      `"${description.replace(/"/g, '""')}"`,
       amountPaid.toFixed(2),
       '0.00', // TVA
       amountPaid.toFixed(2),

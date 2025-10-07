@@ -214,7 +214,7 @@ export default function TransactionsPage() {
   // Filter and sort transactions by status
   const pendingTransactions = sortTransactions(transactions.filter(t => t.status === 'pending'));
   const blockedTransactions = sortTransactions(transactions.filter(t => t.status === 'paid'));
-  const completedTransactions = sortTransactions(transactions.filter(t => t.status === 'validated'));
+  const completedTransactions = sortTransactions(transactions.filter(t => t.status === 'validated' && t.refund_status !== 'full'));
   const disputedTransactions = sortTransactions(transactions.filter(t => t.status === 'disputed'));
   
   // Get unread messages counts

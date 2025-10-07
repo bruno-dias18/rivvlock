@@ -44,6 +44,7 @@ serve(async (req) => {
       .select('*')
       .eq('user_id', user.id)
       .eq('status', 'validated')
+      .neq('refund_status', 'full')
       .gte('updated_at', startDate)
       .lte('updated_at', endDate)
       .order('updated_at', { ascending: false });

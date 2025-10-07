@@ -651,6 +651,7 @@ export type Database = {
           price: number
           proposed_service_date: string | null
           proposed_service_end_date: string | null
+          refund_status: string
           renewal_count: number
           seller_display_name: string | null
           seller_validated: boolean | null
@@ -686,6 +687,7 @@ export type Database = {
           price: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
+          refund_status?: string
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
@@ -721,6 +723,7 @@ export type Database = {
           price?: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
+          refund_status?: string
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
