@@ -489,10 +489,11 @@ export const generateInvoicePDF = async (
   let totalTTC = (invoiceData.amount - refundAmount);
   
   if (sellerHasVat) {
-    // Compute totals from amount after refund
+    // Compute VAT based on amount AFTER refund (effective TTC)
     const vatRate = (sellerVatRate ?? 0) / 100;
-    baseAmount = amountPaid / (1 + vatRate);
-    vatAmount = amountPaid - baseAmount;
+    const effectiveTTC = (invoiceData.amount - refundAmount);
+    baseAmount = effectiveTTC / (1 + vatRate);
+    vatAmount = effectiveTTC - baseAmount;
   }
   
   // Total HT
