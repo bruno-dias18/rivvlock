@@ -18,6 +18,8 @@ import { toast } from 'sonner';
 import { MessageSquare } from 'lucide-react';
 import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 
 // Avatar component inline
 const Avatar = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -89,6 +91,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   } = useDisputeProposals(disputeId);
   const { markAsSeen, refetch: refetchDisputeUnread } = useUnreadDisputeAdminMessages(disputeId);
   const { markAsSeen: markGlobalAsSeen, refetch: refetchGlobalUnread } = useUnreadAdminMessages();
+  const { markAsSeen: markDisputeAsSeen, refetch: refetchDisputeMessages } = useUnreadDisputeMessages(disputeId);
+  const { markAllAsSeen: markAllDisputesAsSeen, refetch: refetchGlobalDisputes } = useUnreadDisputesGlobal();
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -155,15 +159,18 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       // Mark global disputes as seen (clears sidebar badge)
       localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
       
-      // Mark dispute messages as seen (old hook for admin messages)
-      markAsSeen();
-      // Mark admin messages as seen (global count)
-      markGlobalAsSeen();
+      // Mark all message types as seen
+      markAsSeen(); // Admin messages (specific dispute)
+      markGlobalAsSeen(); // Admin messages (global)
+      markDisputeAsSeen(); // Regular dispute messages (specific dispute)
+      markAllDisputesAsSeen(); // All disputes (global)
       
-      // Force immediate refresh of unread counts
+      // Force immediate refresh of all unread counts
       setTimeout(() => {
         refetchDisputeUnread();
         refetchGlobalUnread();
+        refetchDisputeMessages();
+        refetchGlobalDisputes();
       }, 100);
       
       if (textareaRef.current) {
@@ -176,7 +183,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, disputeId, markAsSeen, markGlobalAsSeen, refetchDisputeUnread, refetchGlobalUnread]);
+  }, [open, disputeId, markAsSeen, markGlobalAsSeen, markDisputeAsSeen, markAllDisputesAsSeen, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   useEffect(() => {
