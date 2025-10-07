@@ -82,8 +82,14 @@ export const useDisputeProposals = (disputeId: string) => {
     },
   });
 
+  // Separate admin and user proposals
+  const adminProposals = proposals.filter(p => p.admin_created);
+  const userProposals = proposals.filter(p => !p.admin_created);
+
   return {
     proposals,
+    adminProposals,
+    userProposals,
     isLoading,
     createProposal: createProposal.mutateAsync,
     acceptProposal: acceptProposal.mutateAsync,

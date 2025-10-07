@@ -26,6 +26,7 @@ import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { CreateProposalDialog } from './CreateProposalDialog';
+import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock as ClockIcon } from 'lucide-react';
 
@@ -60,6 +61,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { messages, isLoading, sendMessage, isSendingMessage } = useDisputeMessages(disputeId);
   const { 
     proposals, 
+    adminProposals,
+    userProposals,
     createProposal, 
     acceptProposal, 
     rejectProposal,
@@ -197,8 +200,9 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     || status.startsWith('resolved')
     || (isDeadlinePassed && ['open', 'negotiating', 'responded'].includes(status));
   
-  const pendingProposals = proposals.filter(p => p.status === 'pending');
-  const canAcceptProposals = pendingProposals.some(p => p.proposer_id !== user?.id);
+  const pendingAdminProposals = adminProposals.filter(p => p.status === 'pending');
+  const pendingUserProposals = userProposals.filter(p => p.status === 'pending');
+  const canAcceptProposals = pendingUserProposals.some(p => p.proposer_id !== user?.id);
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
@@ -251,15 +255,34 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         </div>
       )}
 
-      {/* Pending Proposals Section */}
-      {pendingProposals.length > 0 && (
+      {/* Admin Official Proposals Section - Priority display */}
+      {pendingAdminProposals.length > 0 && (
+        <div className="flex-shrink-0 border-b bg-purple-50 dark:bg-purple-950/20">
+          <div className="p-3 space-y-3">
+            {pendingAdminProposals.map((proposal) => (
+              <AdminOfficialProposalCard
+                key={proposal.id}
+                proposal={proposal}
+                transaction={{ 
+                  user_id: proposal.proposer_id, // Will be set correctly by the card based on actual transaction
+                  buyer_id: user?.id 
+                }}
+                onRefetch={onProposalSent}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* User Proposals Section */}
+      {pendingUserProposals.length > 0 && (
         <div className="flex-shrink-0 border-b bg-amber-50 dark:bg-amber-950/20">
           <div className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-300 font-medium text-sm">
               <ClockIcon className="h-4 w-4" />
-              {pendingProposals.length === 1 ? 'Proposition en attente' : `${pendingProposals.length} propositions en attente`}
+              {pendingUserProposals.length === 1 ? 'Proposition en attente' : `${pendingUserProposals.length} propositions en attente`}
             </div>
-            {pendingProposals.map((proposal) => {
+            {pendingUserProposals.map((proposal) => {
               const isOwnProposal = proposal.proposer_id === user?.id;
               const proposalText = proposal.proposal_type === 'partial_refund'
                 ? `Remboursement de ${proposal.refund_percentage}%`
