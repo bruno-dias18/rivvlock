@@ -185,6 +185,7 @@ serve(async (req) => {
 
           const buyerRefund = totalAmount - captureAmount; // uncaptured authorization amount auto-releases to buyer
           logger.log(`✅ Partial via capture (destination): Buyer auto-receives ${buyerRefund / 100} ${currency}; Seller auto-receives ${(captureAmount - platformFee) / 100} ${currency}; Rivvlock ${platformFee / 100} ${currency}`);
+        }
       } else {
         // PaymentIntent already captured - transfer seller share first, then refund buyer
         logger.log(`PaymentIntent already captured - transferring seller share then refunding buyer`);
