@@ -93,12 +93,25 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
                   />
                   <span className="font-medium text-lg w-20 text-right">{percentage}%</span>
                 </div>
-                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 space-y-2">
                   <div className="text-sm font-medium text-center">
                     {percentage}% = {((transactionAmount * percentage) / 100).toFixed(2)} {currency.toUpperCase()}
                   </div>
-                  <div className="text-xs text-muted-foreground text-center mt-1">
-                    Remboursement de {((transactionAmount * percentage) / 100).toFixed(2)} {currency.toUpperCase()} sur {transactionAmount.toFixed(2)} {currency.toUpperCase()}
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>💰 Acheteur reçoit:</span>
+                      <span className="font-medium">{((transactionAmount * percentage) / 100).toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>💵 Vendeur reçoit (net):</span>
+                      <span className="font-medium">
+                        {(transactionAmount * (100 - percentage) / 100 - transactionAmount * 0.05 * (100 - percentage) / 100).toFixed(2)} {currency.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-orange-600 dark:text-orange-400">
+                      <span>⚡ Frais RivvLock (5%):</span>
+                      <span className="font-medium">{(transactionAmount * 0.05).toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
                   </div>
                 </div>
               </div>
