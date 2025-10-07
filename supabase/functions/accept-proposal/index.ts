@@ -126,7 +126,7 @@ serve(async (req) => {
       logger.log(`PaymentIntent status: ${paymentIntent.status}`);
 
       if (paymentIntent.status === 'requires_capture') {
-        // PaymentIntent is not captured yet - we need to cancel or capture partially
+        // Authorization only (not captured yet)
         logger.log(`PaymentIntent not captured - handling authorization`);
 
         if (isFullRefund) {
@@ -134,20 +134,16 @@ serve(async (req) => {
           await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
           logger.log(`✅ Authorization cancelled (full refund, no Rivvlock fees)`);
         } else {
-          // Partial refund: Rivvlock fees (5%) are shared proportionally
-          const capturePercentage = 100 - refundPercentage;
+          // Partial refund via partial capture: capture seller share + platform fee
           const platformFee = Math.round(totalAmount * 0.05);
-          
-          // Calculate amounts after sharing fees proportionally
+          const capturePercentage = 100 - refundPercentage;
           const sellerShare = capturePercentage / 100;
-          const buyerShare = refundPercentage / 100;
-          
+          const currency = String(transaction.currency).toLowerCase();
+
           // Seller receives their share minus their portion of fees
           const sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
-          // Buyer refund = total - seller amount - platform fees
+          // Capture amount on platform (seller share + platform fee)
           const captureAmount = sellerAmount + platformFee;
-          
-          const currency = String(transaction.currency).toLowerCase();
 
           // Ensure seller has a connected Stripe account before capturing
           const { data: sellerAccount, error: sellerAccountError } = await adminClient
@@ -165,46 +161,61 @@ serve(async (req) => {
           logger.log(`Capturing ${captureAmount / 100} ${currency} (seller: ${sellerAmount / 100}, fees: ${platformFee / 100})`);
 
           // Capture on platform account
-          await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
+          const capturedPI = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
             amount_to_capture: captureAmount,
           });
 
-          // Transfer net amount to the seller's connected account (seller share minus their portion of fees)
+          // Retrieve the charge created by the capture
+          const chargeId = typeof capturedPI.latest_charge === 'string' ? capturedPI.latest_charge : null;
+          logger.log(`Captured charge id: ${chargeId}`);
+
+          // Transfer net amount to the seller's connected account directly from the source charge
           if (sellerAmount > 0) {
             await stripe.transfers.create({
               amount: sellerAmount,
               currency,
               destination: sellerAccount.stripe_account_id,
               transfer_group: `txn_${transaction.id}`,
+              ...(chargeId ? { source_transaction: chargeId } : {}),
+              metadata: {
+                dispute_id: dispute.id,
+                proposal_id: proposalId,
+                type: 'partial_refund_seller_share_capture'
+              }
             });
             logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (after proportional fees)`);
           }
 
-          const buyerRefund = totalAmount - captureAmount;
-          logger.log(`✅ Partial refund: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
+          const buyerRefund = totalAmount - captureAmount; // uncaptured authorization amount auto-releases to buyer
+          logger.log(`✅ Partial via capture: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
         }
-
+      } else {
         // PaymentIntent already captured - transfer seller share first, then refund buyer
         logger.log(`PaymentIntent already captured - transferring seller share then refunding buyer`);
 
         const platformFee = Math.round(totalAmount * 0.05);
         const currency = String(transaction.currency).toLowerCase();
 
+        // Determine amounts
         let refundAmount: number;
         let sellerAmount = 0;
 
         if (isFullRefund) {
-          // Full refund: return everything to buyer, no Rivvlock fees
+          // Full refund: return everything to buyer, no seller transfer
           refundAmount = totalAmount;
           logger.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees, no seller transfer)`);
         } else {
-          // Partial refund: buyer gets their share minus their portion of fees; seller gets their share minus their portion of fees
+          // Partial refund: buyer and seller split amount and fees proportionally
           const buyerShare = refundPercentage / 100;
           const sellerShare = (100 - refundPercentage) / 100;
           refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
           sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
-          logger.log(`Partial refund distribution computed -> refund: ${refundAmount / 100}, seller: ${sellerAmount / 100}, fee: ${platformFee / 100}`);
+          logger.log(`Partial refund distribution -> refund: ${refundAmount / 100}, seller: ${sellerAmount / 100}, fee: ${platformFee / 100}`);
         }
+
+        // Get latest charge to link transfer to the original charge
+        const refreshedPI = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+        const chargeId = typeof refreshedPI.latest_charge === 'string' ? refreshedPI.latest_charge : null;
 
         // Transfer seller's share first (if partial refund)
         if (sellerAmount > 0) {
@@ -215,7 +226,6 @@ serve(async (req) => {
             .order('created_at', { ascending: false })
             .limit(1)
             .maybeSingle();
-          
           if (sellerAccountError) throw sellerAccountError;
           if (!sellerAccount?.stripe_account_id) {
             throw new Error('Seller Stripe account not found');
@@ -226,6 +236,7 @@ serve(async (req) => {
             currency,
             destination: sellerAccount.stripe_account_id,
             transfer_group: `txn_${transaction.id}`,
+            ...(chargeId ? { source_transaction: chargeId } : {}),
             metadata: {
               dispute_id: dispute.id,
               proposal_id: proposalId,
@@ -264,7 +275,6 @@ serve(async (req) => {
         }
 
         logger.log(`✅ Transfer and refund completed: ${refundPercentage}%`);
-        throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
 
       // Transaction is now validated with refund processed
