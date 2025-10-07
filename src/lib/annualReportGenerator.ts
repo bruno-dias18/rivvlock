@@ -228,7 +228,11 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
       { year: 'numeric', month: '2-digit', day: '2-digit' }
     );
     
-    const amount = Number(transaction.price);
+    // Calculer le montant réel après remboursement partiel
+    let amount = Number(transaction.price);
+    if (transaction.refund_status === 'partial' && transaction.refund_percentage) {
+      amount = amount * (1 - transaction.refund_percentage / 100);
+    }
     const fee = amount * 0.05;
     const net = amount - fee;
     const invoiceNum = invoiceMap.get(transaction.id) || '-';
@@ -272,7 +276,7 @@ export const downloadAllInvoicesAsZip = async (
   onProgress?: (current: number, total: number) => void
 ) => {
   try {
-    // Fetch all validated transactions for the year with all necessary fields
+  // Fetch all validated transactions for the year
   const { data: transactions, error: txError } = await supabase
     .from('transactions')
     .select('*')
@@ -289,6 +293,27 @@ export const downloadAllInvoicesAsZip = async (
     }
 
     const transactionIds = transactions.map(t => t.id);
+    
+    // Fetch disputes and their accepted proposals
+    const { data: disputes } = await supabase
+      .from('disputes')
+      .select('transaction_id, dispute_proposals(refund_percentage, status)')
+      .in('transaction_id', transactionIds);
+    
+    // Create map of refund percentages
+    const refundMap = new Map<string, number>();
+    disputes?.forEach(dispute => {
+      const acceptedProposal = (dispute.dispute_proposals as any)?.find((p: any) => p.status === 'accepted');
+      if (acceptedProposal?.refund_percentage) {
+        refundMap.set(dispute.transaction_id, acceptedProposal.refund_percentage);
+      }
+    });
+    
+    // Enrich transactions with refund_percentage
+    const allTransactions = transactions.map(t => ({
+      ...t,
+      refund_percentage: refundMap.get(t.id) || 0
+    }));
 
     // Fetch all invoices for these transactions
     const { data: allInvoices, error: invError } = await supabase
@@ -324,7 +349,7 @@ export const downloadAllInvoicesAsZip = async (
     }
 
     // Fetch all buyer profiles at once - use secure RPCs
-    const buyerIds = [...new Set(transactions.map(t => t.buyer_id).filter(Boolean))];
+    const buyerIds = [...new Set(allTransactions.map(t => t.buyer_id).filter(Boolean))];
     let buyerProfilesMap = new Map();
     if (buyerIds.length > 0) {
       for (const buyerId of buyerIds) {
@@ -342,12 +367,12 @@ export const downloadAllInvoicesAsZip = async (
     const zip = new JSZip();
     
     // Loop through transactions (not invoices)
-    for (let i = 0; i < transactions.length; i++) {
-      const transaction = transactions[i];
+    for (let i = 0; i < allTransactions.length; i++) {
+      const transaction = allTransactions[i];
       
       // Report progress
       if (onProgress) {
-        onProgress(i + 1, transactions.length);
+        onProgress(i + 1, allTransactions.length);
       }
 
       try {
@@ -427,7 +452,7 @@ export const downloadAllInvoicesAsZip = async (
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
 
-    return transactions.length;
+    return allTransactions.length;
   } catch (error) {
     logger.error('Error generating invoices ZIP:', error);
     throw error;

@@ -39,7 +39,8 @@ serve(async (req) => {
     const startDate = new Date(year, 0, 1).toISOString();
     const endDate = new Date(year, 11, 31, 23, 59, 59).toISOString();
 
-    const { data: transactions, error: txError } = await supabase
+    // Fetch all transactions
+    const { data: txData, error: txError } = await supabase
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
@@ -50,12 +51,33 @@ serve(async (req) => {
       .order('updated_at', { ascending: false });
 
     if (txError) throw txError;
-
-    if (!transactions || transactions.length === 0) {
+    if (!txData || txData.length === 0) {
       throw new Error('No transactions found for this year');
     }
+    
+    const transactionIds = txData.map(t => t.id);
+    
+    // Fetch disputes and their accepted proposals
+    const { data: disputes } = await supabase
+      .from('disputes')
+      .select('transaction_id, dispute_proposals(refund_percentage, status)')
+      .in('transaction_id', transactionIds);
+    
+    // Create map of refund percentages
+    const refundMap = new Map();
+    disputes?.forEach(dispute => {
+      const acceptedProposal = (dispute.dispute_proposals as any)?.find((p: any) => p.status === 'accepted');
+      if (acceptedProposal?.refund_percentage) {
+        refundMap.set(dispute.transaction_id, acceptedProposal.refund_percentage);
+      }
+    });
+    
+    // Enrich transactions with refund_percentage
+    const transactions = txData.map(t => ({
+      ...t,
+      refund_percentage: refundMap.get(t.id) || 0
+    }));
 
-    const transactionIds = transactions.map(t => t.id);
     const { data: invoices } = await supabase
       .from('invoices')
       .select('invoice_number, transaction_id')
@@ -92,7 +114,11 @@ function generateCSV(transactions: any[], invoices: any[]): string {
   const invoiceMap = new Map(invoices.map(inv => [inv.transaction_id, inv.invoice_number]));
   
   const rows = transactions.map(transaction => {
-    const amountPaid = Number(transaction.price);
+    // Calculer le montant réel après remboursement partiel
+    let amountPaid = Number(transaction.price);
+    if (transaction.refund_status === 'partial' && transaction.refund_percentage) {
+      amountPaid = amountPaid * (1 - transaction.refund_percentage / 100);
+    }
     const rivvlockFee = amountPaid * 0.05;
     const amountReceived = amountPaid - rivvlockFee;
     const invoiceNumber = invoiceMap.get(transaction.id) || '-';
