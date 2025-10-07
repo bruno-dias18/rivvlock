@@ -42,17 +42,35 @@ export const useTransactions = () => {
         // Récupérer les disputes avec propositions acceptées
         const { data: disputesData } = await supabase
           .from('disputes')
-          .select('transaction_id, dispute_proposals!inner(refund_percentage, status)')
+          .select('transaction_id, dispute_proposals!inner(refund_percentage, proposal_type, status, updated_at)')
           .in('transaction_id', transactionIds)
           .eq('dispute_proposals.status', 'accepted');
-        
-        // Créer un map des remboursements par transaction
-        const refundMap = new Map();
+          
+        // Créer un map des remboursements par transaction (choisir la bonne proposition acceptée)
+        const refundMap = new Map<string, number>();
         if (disputesData) {
           disputesData.forEach((dispute: any) => {
-            if (dispute.dispute_proposals && dispute.dispute_proposals.length > 0) {
-              refundMap.set(dispute.transaction_id, dispute.dispute_proposals[0].refund_percentage);
+            const proposals = (dispute.dispute_proposals || []) as any[];
+            if (!proposals.length) return;
+
+            // Trier par updated_at desc si disponible pour privilégier la dernière acceptée
+            proposals.sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime());
+
+            // 1) Priorité au full_refund
+            const full = proposals.find(p => p.proposal_type === 'full_refund');
+            if (full) {
+              refundMap.set(dispute.transaction_id, 100);
+              return;
             }
+
+            // 2) Sinon prendre la dernière partial_refund avec pourcentage défini
+            const partial = proposals.find(p => p.proposal_type === 'partial_refund' && p.refund_percentage != null);
+            if (partial) {
+              refundMap.set(dispute.transaction_id, Number(partial.refund_percentage));
+              return;
+            }
+            
+            // 3) Sinon ne rien définir (no_refund ou données incomplètes)
           });
         }
         
