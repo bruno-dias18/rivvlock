@@ -118,23 +118,39 @@ serve(async (req) => {
             .eq('user_id', transaction.user_id);
 
         } catch (stripeError: any) {
+          const code = stripeError?.code || stripeError?.raw?.code;
+          const status = stripeError?.statusCode || stripeError?.raw?.statusCode;
+          const message = String(stripeError?.message || '');
+          const isMissing = code === 'resource_missing' || status === 404 || /No such account/i.test(message);
+          
           logStep("⚠️ Stripe account validation failed", { 
             accountId: sellerStripeAccount.stripe_account_id,
-            error: stripeError.message 
+            code,
+            status,
+            message
           });
 
-          // Mark as inactive in DB
-          await adminClient
-            .from('stripe_accounts')
-            .update({
-              account_status: 'inactive',
-              payouts_enabled: false,
-              charges_enabled: false,
-              last_status_check: new Date().toISOString(),
-            })
-            .eq('user_id', transaction.user_id);
-
-          isSellerAccountActive = false;
+          // Only mark inactive if account truly doesn't exist
+          if (isMissing) {
+            await adminClient
+              .from('stripe_accounts')
+              .update({
+                account_status: 'inactive',
+                payouts_enabled: false,
+                charges_enabled: false,
+                last_status_check: new Date().toISOString(),
+              })
+              .eq('user_id', transaction.user_id);
+            
+            isSellerAccountActive = false;
+          } else {
+            // Transient error: assume account is still valid, skip this transaction
+            logStep(`⏭️ SKIPPED - Transient Stripe API error, assuming account valid`, { 
+              transactionId: transaction.id 
+            });
+            skippedCount++;
+            continue;
+          }
         }
 
         // Skip if seller account is not active
