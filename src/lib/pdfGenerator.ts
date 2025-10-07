@@ -377,7 +377,7 @@ export const generateInvoicePDF = async (
 
   // Pré-calcul TVA pour la ligne "Total HT"
   const earlySellerCountry = invoiceData.sellerProfile?.country;
-  const earlySellerVatRate = earlySellerCountry === 'FR' ? invoiceData.sellerProfile?.tva_rate : invoiceData.sellerProfile?.vat_rate;
+  const earlySellerVatRate = (earlySellerCountry === 'FR' ? invoiceData.sellerProfile?.tva_rate : invoiceData.sellerProfile?.vat_rate) ?? 0;
   const earlySellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && invoiceData.sellerProfile?.is_subject_to_vat && earlySellerVatRate;
   const baseAmountRow = earlySellerHasVat ? amountPaid / (1 + (earlySellerVatRate / 100)) : amountPaid;
   
@@ -441,7 +441,7 @@ export const generateInvoicePDF = async (
   
   if (sellerHasVat) {
     // Calcul inverse : le montant payé contient déjà la TVA
-    const vatRate = sellerVatRate / 100;
+    const vatRate = (sellerVatRate ?? 0) / 100;
     baseAmount = amountPaid / (1 + vatRate);
     vatAmount = amountPaid - baseAmount;
   }
