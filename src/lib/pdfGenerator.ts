@@ -387,20 +387,35 @@ export const generateInvoicePDF = async (
   
   // Calculs pour le tableau
   let amountPaid = invoiceData.amount;
+  let refundAmount = 0;
+  let buyerFees = 0;
+  let sellerFees = 0;
   
   // Appliquer le remboursement partiel si applicable
   if (invoiceData.refundStatus === 'partial' && invoiceData.refundPercentage) {
-    const refundAmount = invoiceData.amount * (invoiceData.refundPercentage / 100);
-    amountPaid = invoiceData.amount - refundAmount;
+    refundAmount = invoiceData.amount * (invoiceData.refundPercentage / 100);
+    const totalFees = invoiceData.amount * 0.05; // 5% de frais totaux
+    
+    // Les frais sont partagés proportionnellement
+    buyerFees = totalFees * (invoiceData.refundPercentage / 100); // Frais sur la partie remboursée
+    sellerFees = totalFees * ((100 - invoiceData.refundPercentage) / 100); // Frais sur la partie conservée
+    
+    // Le montant effectivement payé par l'acheteur
+    amountPaid = invoiceData.amount - (refundAmount - buyerFees);
   }
   
   // Pour remboursement total, montants à 0
   if (invoiceData.refundStatus === 'full') {
     amountPaid = 0;
+    refundAmount = invoiceData.amount;
+    const totalFees = invoiceData.amount * 0.05;
+    buyerFees = totalFees; // Tous les frais sont à la charge de l'acheteur
   }
   
-  const rivvlockFee = amountPaid * 0.05;
-  const amountReceived = amountPaid - rivvlockFee;
+  const rivvlockFee = invoiceData.viewerRole === 'seller' ? sellerFees : buyerFees;
+  const amountReceived = invoiceData.viewerRole === 'seller' 
+    ? (invoiceData.amount - refundAmount - sellerFees)
+    : (refundAmount - buyerFees);
   const currency = invoiceData.currency.toUpperCase();
 
   // Pré-calcul TVA pour la ligne "Total HT"
@@ -517,7 +532,7 @@ export const generateInvoicePDF = async (
   
   // Frais RivvLock et montants finaux selon le rôle du lecteur
   if (invoiceData.viewerRole === 'seller') {
-    // Afficher les frais plateforme pour le vendeur uniquement
+    // Afficher les frais plateforme pour le vendeur
     doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
     doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 8;
@@ -529,10 +544,15 @@ export const generateInvoicePDF = async (
     yPosition += 10;
   } else {
     // Côté acheteur
-    // Afficher les frais RivvLock si remboursement partiel
-    if (invoiceData.refundStatus === 'partial') {
-      doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
+    // Afficher les frais RivvLock si remboursement (partiel ou total)
+    if (invoiceData.refundStatus !== 'none') {
+      doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock'}:`, labelX, yPosition, { align: 'left' });
       doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+      yPosition += 8;
+      
+      // Remboursement net (après frais)
+      doc.text(`${t?.('invoice.netRefund') || 'Remboursement net'}:`, labelX, yPosition, { align: 'left' });
+      doc.text(`-${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
       yPosition += 8;
     }
     
