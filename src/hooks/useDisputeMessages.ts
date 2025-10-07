@@ -20,12 +20,12 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
 
       const scope = options?.scope ?? 'participant';
       if (scope === 'participant') {
-        // Only get messages where:
+        // Get messages where:
         // 1. I'm the sender (my own messages)
-        // 2. I'm the explicit recipient (messages addressed to me)
-        // 3. Initial message (always visible to all participants)
-        // This prevents seeing messages sent by the other party or messages addressed to them
-        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id},message_type.eq.initial,and(recipient_id.is.null,message_type.not.ilike.*admin*)`);
+        // 2. I'm the recipient (messages addressed to me)
+        // 3. Broadcast messages (recipient_id is null) - including initial, text, system
+        // Note: Admin messages to other users are filtered client-side
+        query = query.or(`sender_id.eq.${user.id},recipient_id.eq.${user.id},recipient_id.is.null`);
       }
 
       const { data, error } = await query.order('created_at', { ascending: true });
