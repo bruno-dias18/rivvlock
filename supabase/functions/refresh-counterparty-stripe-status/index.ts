@@ -79,9 +79,8 @@ serve(async (req) => {
     // Fetch seller stripe account row
     const { data: sa, error: saErr } = await supabaseAdmin
       .from("stripe_accounts")
-      .select("id, stripe_account_id, account_status")
+      .select("id, stripe_account_id, account_status, charges_enabled, payouts_enabled, onboarding_completed")
       .eq("user_id", seller_id)
-      .neq("account_status", "inactive")
       .maybeSingle();
 
     if (saErr) throw new Error(`DB error fetching stripe_accounts: ${saErr.message}`);
@@ -103,19 +102,38 @@ serve(async (req) => {
     let account;
     try {
       account = await stripe.accounts.retrieve(sa.stripe_account_id);
-    } catch (e) {
-      // Mark inactive if Stripe says it doesn't exist
-      await supabaseAdmin
-        .from("stripe_accounts")
-        .update({ account_status: "inactive", updated_at: new Date().toISOString() })
-        .eq("id", sa.id);
+    } catch (e: any) {
+      const code = e?.code || e?.raw?.code;
+      const status = e?.statusCode || e?.raw?.statusCode;
+      const message = String(e?.message || '');
+      const isMissing = code === 'resource_missing' || status === 404 || /No such account/i.test(message);
 
+      if (isMissing) {
+        // Only mark inactive if Stripe confirms account doesn't exist
+        await supabaseAdmin
+          .from("stripe_accounts")
+          .update({ account_status: "inactive", updated_at: new Date().toISOString() })
+          .eq("id", sa.id);
+
+        return new Response(
+          JSON.stringify({
+            hasActiveAccount: false,
+            charges_enabled: false,
+            payouts_enabled: false,
+            onboarding_completed: false,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+
+      // Transient or auth error: do NOT downgrade; return last known DB state
+      const hasActiveAccount = !!(sa.onboarding_completed && sa.charges_enabled && sa.payouts_enabled);
       return new Response(
         JSON.stringify({
-          hasActiveAccount: false,
-          charges_enabled: false,
-          payouts_enabled: false,
-          onboarding_completed: false,
+          hasActiveAccount,
+          charges_enabled: !!sa.charges_enabled,
+          payouts_enabled: !!sa.payouts_enabled,
+          onboarding_completed: !!sa.onboarding_completed,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );

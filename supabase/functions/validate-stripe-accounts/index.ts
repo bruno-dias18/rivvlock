@@ -88,27 +88,35 @@ serve(async (req) => {
           }
 
         } catch (stripeError: any) {
-          logStep("Account not found on Stripe, marking as inactive", { 
-            accountId: dbAccount.stripe_account_id,
-            error: stripeError.message 
-          });
+          const code = stripeError?.code || stripeError?.raw?.code;
+          const status = stripeError?.statusCode || stripeError?.raw?.statusCode;
+          const message = String(stripeError?.message || '');
+          const isMissing = code === 'resource_missing' || status === 404 || /No such account/i.test(message);
+          
+          logStep("Stripe retrieve error", { accountId: dbAccount.stripe_account_id, code, status, message });
+          
+          if (isMissing) {
+            logStep("Account not found on Stripe, marking as inactive", { accountId: dbAccount.stripe_account_id });
+            // Mark account as inactive ONLY when Stripe confirms it's missing
+            const { error: updateError } = await supabaseClient
+              .from('stripe_accounts')
+              .update({
+                account_status: 'inactive',
+                payouts_enabled: false,
+                charges_enabled: false,
+                last_status_check: new Date().toISOString(),
+              })
+              .eq('id', dbAccount.id);
 
-          // Mark account as inactive
-          const { error: updateError } = await supabaseClient
-            .from('stripe_accounts')
-            .update({
-              account_status: 'inactive',
-              payouts_enabled: false,
-              charges_enabled: false,
-              last_status_check: new Date().toISOString(),
-            })
-            .eq('id', dbAccount.id);
-
-          if (updateError) {
-            logStep("ERROR marking account as inactive", { accountId: dbAccount.stripe_account_id, error: updateError.message });
-            errorCount++;
+            if (updateError) {
+              logStep("ERROR marking account as inactive", { accountId: dbAccount.stripe_account_id, error: updateError.message });
+              errorCount++;
+            } else {
+              inactiveCount++;
+            }
           } else {
-            inactiveCount++;
+            // Transient or auth error: do NOT mark inactive, just count as error and continue
+            errorCount++;
           }
         }
       }
