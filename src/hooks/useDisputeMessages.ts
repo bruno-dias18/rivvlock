@@ -39,7 +39,7 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
 
   // Send a new message
   const sendMessage = useMutation({
-    mutationFn: async ({ message, messageType = 'text' }: { message: string; messageType?: string }) => {
+    mutationFn: async ({ message, messageType = 'text', recipientId = null }: { message: string; messageType?: string; recipientId?: string | null }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
@@ -49,6 +49,7 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
           sender_id: user.id,
           message,
           message_type: messageType,
+          recipient_id: recipientId,
         })
         .select()
         .single();
@@ -60,6 +61,7 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
       queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
     },
   });
+
 
   // Set up real-time subscription for new messages
   useEffect(() => {

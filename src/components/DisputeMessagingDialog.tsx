@@ -109,6 +109,29 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
   );
 
+  const hasInitial = displayMessages.some((m) => m.message_type === 'initial');
+  const [initialInfo, setInitialInfo] = useState<{ message: string; created_at: string } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadInitial = async () => {
+      if (hasInitial || !disputeId) { setInitialInfo(null); return; }
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data } = await supabase
+          .from('disputes')
+          .select('reason, created_at')
+          .eq('id', disputeId)
+          .maybeSingle();
+        if (!cancelled && data?.reason) {
+          setInitialInfo({ message: data.reason, created_at: data.created_at });
+        }
+      } catch {}
+    };
+    loadInitial();
+    return () => { cancelled = true; };
+  }, [hasInitial, disputeId]);
+
   // Simple scroll to bottom
   const ensureBottom = () => {
     if (bottomRef.current) {
@@ -217,7 +240,26 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     }
 
     try {
-      await sendMessage({ message: newMessage.trim() });
+      const { supabase } = await import('@/integrations/supabase/client');
+      // Déterminer la contrepartie comme destinataire explicite (RLS oblige)
+      let recipientId: string | null = null;
+      const { data: dispute } = await supabase
+        .from('disputes')
+        .select('transaction_id')
+        .eq('id', disputeId)
+        .single();
+      if (dispute) {
+        const { data: transaction } = await supabase
+          .from('transactions')
+          .select('id, user_id, buyer_id, title')
+          .eq('id', dispute.transaction_id)
+          .single();
+        if (transaction) {
+          recipientId = user?.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;
+        }
+      }
+
+      await sendMessage({ message: newMessage.trim(), recipientId });
       setNewMessage('');
       lastMessageTimeRef.current = now;
       
@@ -462,6 +504,24 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
               </div>
             ) : (
               <div className="space-y-4">
+                {initialInfo && (
+                  <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                      <div className="flex-1">
+                        <div className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">
+                          Raison du litige
+                        </div>
+                        <p className="text-sm text-amber-900 dark:text-amber-100 whitespace-pre-wrap break-words">
+                          {initialInfo.message}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-xs text-amber-600/70 dark:text-amber-400/70">
+                      {format(new Date(initialInfo.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                    </div>
+                  </div>
+                )}
                 {displayMessages.map((message) => {
                   const isOwnMessage = message.sender_id === user?.id;
                   const isAdminMessage = message.message_type?.startsWith('admin');
