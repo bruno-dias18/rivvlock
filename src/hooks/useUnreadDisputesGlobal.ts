@@ -13,10 +13,11 @@ export const useUnreadDisputesGlobal = () => {
     queryFn: async () => {
       if (!user?.id) return 0;
 
-      // Get all disputes the user can see (RLS will scope correctly)
+      // Get all disputes the user can see, excluding resolved ones
       const { data: disputes, error: disputesError } = await supabase
         .from('disputes')
-        .select('id');
+        .select('id, status')
+        .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
       if (disputesError) throw disputesError;
       const ids = (disputes || []).map((d) => d.id);
       if (!ids.length) return 0;
