@@ -29,8 +29,13 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
 
   const handleSubmit = async () => {
     try {
+      // Convertir les types de proposition pour correspondre au schéma de validation
+      let proposalType = selectedType;
+      if (selectedType === 'full_refund') proposalType = 'refund';
+      if (selectedType === 'no_refund') proposalType = 'release';
+      
       const proposalData = {
-        proposalType: selectedType,
+        proposalType,
         refundPercentage: selectedType === 'partial_refund' ? percentage : selectedType === 'full_refund' ? 100 : 0,
         message: message.trim() || undefined,
       };
