@@ -528,9 +528,17 @@ export const generateInvoicePDF = async (
     doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 10;
   } else {
-    // Côté acheteur: afficher seulement le montant à payer (TTC)
+    // Côté acheteur
+    // Afficher les frais RivvLock si remboursement partiel
+    if (invoiceData.refundStatus === 'partial') {
+      doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock (5%)'}:`, labelX, yPosition, { align: 'left' });
+      doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+      yPosition += 8;
+    }
+    
+    // Montant final à payer
     doc.setFont('helvetica', 'bold');
-    doc.text(`${t?.('invoice.toPay') || 'À payer'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${t?.('invoice.toPay') || 'Montant à payer'}:`, labelX, yPosition, { align: 'left' });
     doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 10;
   }
