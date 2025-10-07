@@ -23,17 +23,7 @@ export const useTransactions = () => {
       
       const { data, error } = await supabase
         .from('transactions')
-        .select(`
-          *,
-          disputes!left(
-            id,
-            status,
-            dispute_proposals!left(
-              refund_percentage,
-              status
-            )
-          )
-        `)
+        .select('*')
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       
@@ -45,31 +35,37 @@ export const useTransactions = () => {
       logger.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
       logger.debug('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
       
-      // Enrichir avec refund_percentage depuis les propositions acceptées
-      const enrichedData = data?.map(transaction => {
-        let refundPercentage = null;
+      // Enrichir avec refund_percentage depuis les propositions acceptées si disponible
+      if (data && data.length > 0) {
+        const transactionIds = data.map(t => t.id);
         
-        if (transaction.disputes && Array.isArray(transaction.disputes)) {
-          for (const dispute of transaction.disputes) {
-            if (dispute.dispute_proposals && Array.isArray(dispute.dispute_proposals)) {
-              const acceptedProposal = dispute.dispute_proposals.find(
-                (p: any) => p.status === 'accepted'
-              );
-              if (acceptedProposal && acceptedProposal.refund_percentage) {
-                refundPercentage = acceptedProposal.refund_percentage;
-                break;
-              }
+        // Récupérer les disputes avec propositions acceptées
+        const { data: disputesData } = await supabase
+          .from('disputes')
+          .select('transaction_id, dispute_proposals!inner(refund_percentage, status)')
+          .in('transaction_id', transactionIds)
+          .eq('dispute_proposals.status', 'accepted');
+        
+        // Créer un map des remboursements par transaction
+        const refundMap = new Map();
+        if (disputesData) {
+          disputesData.forEach((dispute: any) => {
+            if (dispute.dispute_proposals && dispute.dispute_proposals.length > 0) {
+              refundMap.set(dispute.transaction_id, dispute.dispute_proposals[0].refund_percentage);
             }
-          }
+          });
         }
         
-        return {
+        // Enrichir les transactions avec les pourcentages de remboursement
+        const enrichedData = data.map(transaction => ({
           ...transaction,
-          refund_percentage: refundPercentage
-        };
-      });
+          refund_percentage: refundMap.get(transaction.id) || null
+        }));
+        
+        return enrichedData;
+      }
       
-      return enrichedData || [];
+      return data || [];
     },
     enabled: !!user?.id,
     staleTime: 30000, // Cache for 30 seconds
