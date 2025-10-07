@@ -150,7 +150,7 @@ serve(async (req) => {
           const currency = String(transaction.currency).toLowerCase();
 
           // Ensure seller has a connected Stripe account before capturing
-          const { data: sellerAccount, error: sellerAccountError } = await supabaseClient
+          const { data: sellerAccount, error: sellerAccountError } = await adminClient
             .from('stripe_accounts')
             .select('stripe_account_id')
             .eq('user_id', transaction.user_id)
@@ -244,7 +244,7 @@ serve(async (req) => {
       const currency = String(transaction.currency).toLowerCase();
 
       // Ensure seller has a connected Stripe account before proceeding
-      const { data: sellerAccount, error: sellerAccountError } = await supabaseClient
+      const { data: sellerAccount, error: sellerAccountError } = await adminClient
         .from('stripe_accounts')
         .select('stripe_account_id')
         .eq('user_id', transaction.user_id)
