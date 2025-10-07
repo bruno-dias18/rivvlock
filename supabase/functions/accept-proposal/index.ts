@@ -158,37 +158,33 @@ serve(async (req) => {
             throw new Error('Seller Stripe account not found');
           }
 
-          logger.log(`Capturing ${captureAmount / 100} ${currency} (seller: ${sellerAmount / 100}, fees: ${platformFee / 100})`);
-
-          // Capture on platform account
-          const capturedPI = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
-            amount_to_capture: captureAmount,
-          });
-
-          // Retrieve the charge created by the capture
-          const chargeId = typeof capturedPI.latest_charge === 'string' ? capturedPI.latest_charge : null;
-          logger.log(`Captured charge id: ${chargeId}`);
-
-          // Transfer net amount to the seller's connected account directly from the source charge
-          if (sellerAmount > 0) {
-            await stripe.transfers.create({
-              amount: sellerAmount,
-              currency,
-              destination: sellerAccount.stripe_account_id,
-              transfer_group: `txn_${transaction.id}`,
-              ...(chargeId ? { source_transaction: chargeId } : {}),
-              metadata: {
-                dispute_id: dispute.id,
-                proposal_id: proposalId,
-                type: 'partial_refund_seller_share_capture'
-              }
-            });
-            logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (after proportional fees)`);
+          // Configure destination charge so capture auto-sends net to seller
+          try {
+            await stripe.paymentIntents.update(transaction.stripe_payment_intent_id, {
+              transfer_data: { destination: sellerAccount.stripe_account_id },
+              on_behalf_of: sellerAccount.stripe_account_id,
+            } as any);
+            logger.log(`Updated PaymentIntent for destination charge to ${sellerAccount.stripe_account_id}`);
+          } catch (piUpdateErr) {
+            logger.error('Failed to update PaymentIntent for destination charge', piUpdateErr);
+            throw new Error('Could not configure destination charge before capture');
           }
 
+          // Capture with application fee; Stripe auto-transfers net to the seller
+          const capturedPI = await stripe.paymentIntents.capture(
+            transaction.stripe_payment_intent_id,
+            {
+              amount_to_capture: captureAmount,
+              application_fee_amount: platformFee,
+            }
+          );
+
+          // Retrieve the charge created by the capture (for traceability only)
+          const chargeId = typeof capturedPI.latest_charge === 'string' ? capturedPI.latest_charge : null;
+          logger.log(`✅ Captured ${captureAmount / 100} ${currency} as destination charge (fee ${platformFee / 100}). Charge: ${chargeId}`);
+
           const buyerRefund = totalAmount - captureAmount; // uncaptured authorization amount auto-releases to buyer
-          logger.log(`✅ Partial via capture: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
-        }
+          logger.log(`✅ Partial via capture (destination): Buyer auto-receives ${buyerRefund / 100} ${currency}; Seller auto-receives ${(captureAmount - platformFee) / 100} ${currency}; Rivvlock ${platformFee / 100} ${currency}`);
       } else {
         // PaymentIntent already captured - transfer seller share first, then refund buyer
         logger.log(`PaymentIntent already captured - transferring seller share then refunding buyer`);
