@@ -492,13 +492,13 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
           {/* Messages Area */}
           <div 
             ref={messagesContainerRef}
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20 flex flex-col justify-end"
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
           >
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-muted-foreground">Chargement...</div>
               </div>
-            ) : displayMessages.length === 0 ? (
+            ) : displayMessages.length === 0 && !initialInfo ? (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
                 <p className="font-medium">Aucun message pour le moment</p>
