@@ -10,6 +10,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { AdminDisputeCard } from '@/components/AdminDisputeCard';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 
 export default function AdminDisputesPage() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export default function AdminDisputesPage() {
   
   // Hook pour les notifications de litiges escaladés
   const { markAsSeen } = useAdminDisputeNotifications();
+  const { markAllAsSeen } = useUnreadDisputesGlobal();
   
   // Marquer comme vu quand l'utilisateur visite la page avec le filtre escalated
   useEffect(() => {

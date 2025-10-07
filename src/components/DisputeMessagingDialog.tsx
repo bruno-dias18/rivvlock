@@ -152,6 +152,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       // Mark dispute messages as seen (specific dispute)
       const lastSeenKey = `last_seen_dispute_${disputeId}`;
       localStorage.setItem(lastSeenKey, new Date().toISOString());
+      // Mark global disputes as seen (clears sidebar badge)
+      localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
       
       // Mark dispute messages as seen (old hook for admin messages)
       markAsSeen();

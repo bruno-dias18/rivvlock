@@ -4,7 +4,7 @@ import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, File
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
-import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { Badge } from '@/components/ui/badge';
 
 import {
@@ -62,7 +62,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const { state } = useSidebar();
   const { isAdmin } = useIsAdmin();
-  const { unreadCount } = useUnreadAdminMessages();
+  const { unreadCount: disputesUnread } = useUnreadDisputesGlobal();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -95,12 +95,12 @@ export function AppSidebar() {
                     <NavLink to={item.url} className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       <span>{t(item.title)}</span>
-                      {item.url === '/dashboard/transactions' && unreadCount > 0 && (
+                      {item.url === '/dashboard/transactions' && disputesUnread > 0 && (
                         <Badge 
                           variant="destructive" 
                           className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
                         >
-                          {unreadCount > 9 ? '9+' : unreadCount}
+                          {disputesUnread > 9 ? '9+' : disputesUnread}
                         </Badge>
                       )}
                     </NavLink>
@@ -122,12 +122,12 @@ export function AppSidebar() {
                       <NavLink to={item.url} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span>{t(item.title)}</span>
-                        {item.url === '/dashboard/admin/disputes' && unreadCount > 0 && (
+                        {item.url === '/dashboard/admin/disputes' && disputesUnread > 0 && (
                           <Badge 
                             variant="destructive" 
                             className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
                           >
-                            {unreadCount > 9 ? '9+' : unreadCount}
+                            {disputesUnread > 9 ? '9+' : disputesUnread}
                           </Badge>
                         )}
                       </NavLink>
