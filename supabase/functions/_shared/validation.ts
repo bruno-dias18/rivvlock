@@ -59,6 +59,8 @@ export const createDisputeSchema = z.object({
     'not_as_described',
     'delivery_issue',
     'unauthorized_transaction',
+    'not_received',
+    'fraud',
     'other'
   ], { 
     errorMap: () => ({ message: "Type de litige invalide" })

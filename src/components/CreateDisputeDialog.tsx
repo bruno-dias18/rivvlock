@@ -25,9 +25,9 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
 
   const disputeTypes = [
     { value: 'quality_issue', label: 'Problème de qualité' },
-    { value: 'not_received', label: 'Service non reçu' },
+    { value: 'delivery_issue', label: 'Service non reçu' },
     { value: 'not_as_described', label: 'Non conforme à la description' },
-    { value: 'fraud', label: 'Fraude suspectée' },
+    { value: 'unauthorized_transaction', label: 'Fraude suspectée' },
     { value: 'other', label: 'Autre' },
   ];
 
@@ -58,9 +58,9 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
       setDisputeType('quality_issue');
       onOpenChange(false);
       onDisputeCreated?.();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating dispute:', error);
-      toast.error('Erreur lors de la création du litige');
+      toast.error(error?.message || 'Erreur lors de la création du litige');
     } finally {
       setIsLoading(false);
     }
@@ -109,13 +109,16 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
         </div>
 
         <DialogFooter>
+          <div className="mr-auto text-sm text-muted-foreground">
+            Au moins 20 caractères requis pour la description.
+          </div>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
           <Button 
             variant="destructive" 
             onClick={handleCreateDispute} 
-            disabled={isLoading || !reason.trim()}
+            disabled={isLoading || reason.trim().length < 20}
           >
             {isLoading ? 'Création...' : 'Créer le litige'}
           </Button>
