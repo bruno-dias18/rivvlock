@@ -105,11 +105,16 @@ serve(async (req) => {
     logger.log("✅ Proposal created successfully:", proposal.id);
 
     // Create a message in the dispute to notify the other party
-    const proposalText = proposalType === 'partial_refund' 
-      ? `Proposition officielle : Remboursement de ${refundPercentage}%`
-      : proposalType === 'full_refund'
-      ? `Proposition officielle : Remboursement intégral (100%)`
-      : `Proposition officielle : Aucun remboursement`;
+    let proposalText = '';
+    if (proposalType === 'partial_refund') {
+      proposalText = `Proposition officielle : Remboursement de ${refundPercentage}%`;
+    } else if (proposalType === 'full_refund') {
+      proposalText = `Proposition officielle : Remboursement intégral (100%)`;
+    } else if (proposalType === 'no_refund') {
+      proposalText = `Proposition officielle : Aucun remboursement`;
+    } else {
+      proposalText = `Proposition officielle : ${proposalType}`;
+    }
 
     await supabaseClient
       .from("dispute_messages")
