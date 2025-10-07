@@ -388,6 +388,12 @@ export const generateInvoicePDF = async (
   // Calculs pour le tableau
   let amountPaid = invoiceData.amount;
   
+  // Appliquer le remboursement partiel si applicable
+  if (invoiceData.refundStatus === 'partial' && invoiceData.refundPercentage) {
+    const refundAmount = invoiceData.amount * (invoiceData.refundPercentage / 100);
+    amountPaid = invoiceData.amount - refundAmount;
+  }
+  
   // Pour remboursement total, montants à 0
   if (invoiceData.refundStatus === 'full') {
     amountPaid = 0;
