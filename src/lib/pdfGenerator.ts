@@ -517,7 +517,7 @@ export const generateInvoicePDF = async (
     yPosition += 8;
 
     // Net reçu par le vendeur
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('helvetica', 'bold');
     doc.text(`${t?.('invoice.netReceived') || 'Net reçu'}:`, labelX, yPosition, { align: 'left' });
     doc.text(`${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 10;
