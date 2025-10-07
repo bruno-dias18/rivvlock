@@ -228,15 +228,19 @@ serve(async (req) => {
             logger.log(`✅ Partial refund processed: ${refundPercentage}%`);
           }
         } else if (paymentIntent.status === 'succeeded') {
-          // Already captured - create refund
+          // Already captured - create refund AND transfer to seller
           const platformFee = Math.round(totalAmount * 0.05);
+          const currency = String(transaction.currency).toLowerCase();
           let refundAmount: number;
+          let sellerAmount = 0;
 
           if (isFullRefund) {
             refundAmount = totalAmount;
           } else {
             const buyerShare = refundPercentage / 100;
+            const sellerShare = (100 - refundPercentage) / 100;
             refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
+            sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
           }
 
           await stripe.refunds.create({
@@ -250,7 +254,33 @@ serve(async (req) => {
             }
           });
 
-          logger.log(`✅ Refund created: ${refundPercentage}%`);
+          // Transfer seller's share (if partial refund)
+          if (sellerAmount > 0) {
+            const { data: sellerAccount } = await supabaseClient
+              .from('stripe_accounts')
+              .select('stripe_account_id')
+              .eq('user_id', transaction.user_id)
+              .maybeSingle();
+
+            if (!sellerAccount?.stripe_account_id) {
+              throw new Error('Seller Stripe account not found');
+            }
+
+            await stripe.transfers.create({
+              amount: sellerAmount,
+              currency,
+              destination: sellerAccount.stripe_account_id,
+              transfer_group: `txn_${transaction.id}`,
+              metadata: {
+                dispute_id: dispute.id,
+                proposal_id: proposalId,
+                type: 'admin_partial_refund_seller_share'
+              }
+            });
+            logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+          }
+
+          logger.log(`✅ Refund and transfer created: ${refundPercentage}%`);
         }
 
         disputeStatus = 'resolved_refund';

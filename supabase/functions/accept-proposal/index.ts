@@ -183,20 +183,26 @@ serve(async (req) => {
         }
 
       } else if (paymentIntent.status === 'succeeded') {
-        // PaymentIntent already captured - create a refund
-        logger.log(`PaymentIntent already captured - creating refund`);
+        // PaymentIntent already captured - create a refund AND transfer to seller
+        logger.log(`PaymentIntent already captured - creating refund and transferring to seller`);
+
+        const platformFee = Math.round(totalAmount * 0.05);
+        const currency = String(transaction.currency).toLowerCase();
 
         let refundAmount: number;
+        let sellerAmount = 0;
+
         if (isFullRefund) {
           // Full refund: return everything to buyer, no Rivvlock fees
           refundAmount = totalAmount;
-          logger.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees)`);
+          logger.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees, no seller transfer)`);
         } else {
           // Partial refund: buyer gets their share minus their portion of fees
-          const platformFee = Math.round(totalAmount * 0.05);
           const buyerShare = refundPercentage / 100;
+          const sellerShare = (100 - refundPercentage) / 100;
           refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
-          logger.log(`Partial refund: ${refundAmount / 100} (buyer share after proportional fees)`);
+          sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
+          logger.log(`Partial refund: ${refundAmount / 100} to buyer, ${sellerAmount / 100} to seller (after proportional fees)`);
         }
 
         // Idempotency: avoid double refunds if already refunded previously
@@ -224,7 +230,34 @@ serve(async (req) => {
           });
         }
 
-        logger.log(`✅ Refund processed/check completed: ${refundPercentage}%`);
+        // Transfer seller's share (if partial refund)
+        if (sellerAmount > 0) {
+          const { data: sellerAccount, error: sellerAccountError } = await adminClient
+            .from('stripe_accounts')
+            .select('stripe_account_id')
+            .eq('user_id', transaction.user_id)
+            .maybeSingle();
+          
+          if (sellerAccountError) throw sellerAccountError;
+          if (!sellerAccount?.stripe_account_id) {
+            throw new Error('Seller Stripe account not found');
+          }
+
+          await stripe.transfers.create({
+            amount: sellerAmount,
+            currency,
+            destination: sellerAccount.stripe_account_id,
+            transfer_group: `txn_${transaction.id}`,
+            metadata: {
+              dispute_id: dispute.id,
+              proposal_id: proposalId,
+              type: 'partial_refund_seller_share'
+            }
+          });
+          logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+        }
+
+        logger.log(`✅ Refund and transfer completed: ${refundPercentage}%`);
       } else {
         throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
