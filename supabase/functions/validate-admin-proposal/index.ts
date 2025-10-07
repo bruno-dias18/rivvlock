@@ -315,6 +315,9 @@ serve(async (req) => {
         .update({ 
           status: newTransactionStatus,
           funds_released: proposal.proposal_type === 'no_refund',
+          refund_status: (proposal.proposal_type === 'full_refund' || proposal.refund_percentage === 100)
+            ? 'full'
+            : (proposal.proposal_type === 'partial_refund' ? 'partial' : 'none'),
           updated_at: new Date().toISOString()
         })
         .eq("id", transaction.id);
