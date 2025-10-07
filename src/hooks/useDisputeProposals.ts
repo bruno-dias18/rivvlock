@@ -70,15 +70,16 @@ export const useDisputeProposals = (disputeId: string) => {
 
   const rejectProposal = useMutation({
     mutationFn: async (proposalId: string) => {
-      const { error } = await supabase
-        .from('dispute_proposals')
-        .update({ status: 'rejected', updated_at: new Date().toISOString() })
-        .eq('id', proposalId);
+      const { data, error } = await supabase.functions.invoke('reject-proposal', {
+        body: { proposalId },
+      });
 
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
     },
   });
 
