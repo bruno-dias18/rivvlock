@@ -348,12 +348,12 @@ export const downloadAllInvoicesAsZip = async (
       });
     }
 
-    // Fetch seller profile once - use secure RPC
-    const { data: sellerProfileData, error: sellerError } = await supabase.rpc('get_seller_invoice_data', {
-      p_seller_id: sellerId,
-      p_requesting_user_id: sellerId
-    });
-    const sellerProfile = Array.isArray(sellerProfileData) && sellerProfileData.length > 0 ? sellerProfileData[0] : null;
+    // Fetch seller profile directly (self-access allowed by RLS)
+    const { data: sellerProfile, error: sellerError } = await supabase
+      .from('profiles')
+      .select('user_id, first_name, last_name, company_name, user_type, country, address, postal_code, city, siret_uid, vat_rate, tva_rate, is_subject_to_vat, avs_number, vat_number, company_address, phone')
+      .eq('user_id', sellerId)
+      .single();
 
     if (sellerError || !sellerProfile) {
       throw new Error('Impossible de récupérer le profil vendeur');
