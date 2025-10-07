@@ -152,8 +152,10 @@ serve(async (req) => {
           // Ensure seller has a connected Stripe account before capturing
           const { data: sellerAccount, error: sellerAccountError } = await adminClient
             .from('stripe_accounts')
-            .select('stripe_account_id')
+            .select('stripe_account_id, created_at')
             .eq('user_id', transaction.user_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
           if (sellerAccountError) throw sellerAccountError;
           if (!sellerAccount?.stripe_account_id) {
@@ -182,9 +184,8 @@ serve(async (req) => {
           logger.log(`✅ Partial refund: Buyer gets ${buyerRefund / 100} ${currency}, Seller gets ${sellerAmount / 100} ${currency}, Rivvlock ${platformFee / 100} ${currency}`);
         }
 
-      } else if (paymentIntent.status === 'succeeded') {
-        // PaymentIntent already captured - create a refund AND transfer to seller
-        logger.log(`PaymentIntent already captured - creating refund and transferring to seller`);
+        // PaymentIntent already captured - transfer seller share first, then refund buyer
+        logger.log(`PaymentIntent already captured - transferring seller share then refunding buyer`);
 
         const platformFee = Math.round(totalAmount * 0.05);
         const currency = String(transaction.currency).toLowerCase();
@@ -197,45 +198,22 @@ serve(async (req) => {
           refundAmount = totalAmount;
           logger.log(`Full refund: ${refundAmount / 100} (no Rivvlock fees, no seller transfer)`);
         } else {
-          // Partial refund: buyer gets their share minus their portion of fees
+          // Partial refund: buyer gets their share minus their portion of fees; seller gets their share minus their portion of fees
           const buyerShare = refundPercentage / 100;
           const sellerShare = (100 - refundPercentage) / 100;
           refundAmount = Math.round((totalAmount * buyerShare) - (platformFee * buyerShare));
           sellerAmount = Math.round((totalAmount * sellerShare) - (platformFee * sellerShare));
-          logger.log(`Partial refund: ${refundAmount / 100} to buyer, ${sellerAmount / 100} to seller (after proportional fees)`);
+          logger.log(`Partial refund distribution computed -> refund: ${refundAmount / 100}, seller: ${sellerAmount / 100}, fee: ${platformFee / 100}`);
         }
 
-        // Idempotency: avoid double refunds if already refunded previously
-        const existingRefunds = await stripe.refunds.list({
-          payment_intent: transaction.stripe_payment_intent_id,
-          limit: 100,
-        });
-        const alreadyRefunded = existingRefunds.data
-          .filter((r) => r.status !== 'failed')
-          .reduce((sum, r) => sum + (r.amount || 0), 0);
-
-        if (alreadyRefunded >= refundAmount) {
-          logger.log(`⏭️ Refund already processed (amount_refunded=${alreadyRefunded}). Skipping.`);
-        } else {
-          const amountToRefund = refundAmount - alreadyRefunded;
-          await stripe.refunds.create({
-            payment_intent: transaction.stripe_payment_intent_id,
-            amount: amountToRefund,
-            reason: 'requested_by_customer',
-            metadata: {
-              dispute_id: dispute.id,
-              proposal_id: proposalId,
-              refund_percentage: String(refundPercentage)
-            }
-          });
-        }
-
-        // Transfer seller's share (if partial refund)
+        // Transfer seller's share first (if partial refund)
         if (sellerAmount > 0) {
           const { data: sellerAccount, error: sellerAccountError } = await adminClient
             .from('stripe_accounts')
-            .select('stripe_account_id')
+            .select('stripe_account_id, created_at')
             .eq('user_id', transaction.user_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
             .maybeSingle();
           
           if (sellerAccountError) throw sellerAccountError;
@@ -257,8 +235,35 @@ serve(async (req) => {
           logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
         }
 
-        logger.log(`✅ Refund and transfer completed: ${refundPercentage}%`);
-      } else {
+        // Idempotency: avoid double refunds if already refunded previously
+        if (refundAmount > 0) {
+          const existingRefunds = await stripe.refunds.list({
+            payment_intent: transaction.stripe_payment_intent_id,
+            limit: 100,
+          });
+          const alreadyRefunded = existingRefunds.data
+            .filter((r) => r.status !== 'failed')
+            .reduce((sum, r) => sum + (r.amount || 0), 0);
+
+          if (alreadyRefunded >= refundAmount) {
+            logger.log(`⏭️ Refund already processed (amount_refunded=${alreadyRefunded}). Skipping.`);
+          } else {
+            const amountToRefund = refundAmount - alreadyRefunded;
+            await stripe.refunds.create({
+              payment_intent: transaction.stripe_payment_intent_id,
+              amount: amountToRefund,
+              reason: 'requested_by_customer',
+              metadata: {
+                dispute_id: dispute.id,
+                proposal_id: proposalId,
+                refund_percentage: String(refundPercentage)
+              }
+            });
+            logger.log(`✅ Refunded ${amountToRefund / 100} ${currency} to buyer`);
+          }
+        }
+
+        logger.log(`✅ Transfer and refund completed: ${refundPercentage}%`);
         throw new Error(`Cannot process refund - PaymentIntent has status: ${paymentIntent.status}`);
       }
 
