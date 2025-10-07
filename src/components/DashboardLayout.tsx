@@ -5,7 +5,6 @@ import { UserMenu } from './UserMenu';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { RefreshCw } from 'lucide-react';
-import { useDisputeRealtimeNotifications } from '@/hooks/useDisputeRealtimeNotifications';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -15,7 +14,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutProps) {
   const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  useDisputeRealtimeNotifications();
+
   return (
     <div className="flex flex-col min-h-screen w-full overflow-x-hidden">
       {/* Header */}
