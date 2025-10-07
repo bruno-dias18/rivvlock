@@ -424,8 +424,8 @@ export const generateInvoicePDF = async (
   const earlySellerHasVat = invoiceData.sellerProfile?.user_type !== 'individual' && invoiceData.sellerProfile?.is_subject_to_vat && earlySellerVatRate;
   // Use amountPaid (which includes refund calculation) for the table row
   const baseAmountRow = earlySellerHasVat
-    ? (amountPaid / (1 + (earlySellerVatRate / 100)))
-    : amountPaid;
+    ? ((invoiceData.amount - refundAmount) / (1 + (earlySellerVatRate / 100)))
+    : (invoiceData.amount - refundAmount);
   
   // En-tête tableau avec bordure
   doc.setDrawColor(0, 0, 0);
@@ -484,9 +484,9 @@ export const generateInvoicePDF = async (
                        invoiceData.sellerProfile?.is_subject_to_vat && 
                        sellerVatRate;
   
-  let baseAmount = amountPaid;
+  let baseAmount = (invoiceData.amount - refundAmount);
   let vatAmount = 0;
-  let totalTTC = amountPaid;
+  let totalTTC = (invoiceData.amount - refundAmount);
   
   if (sellerHasVat) {
     // Compute totals from amount after refund
@@ -547,7 +547,7 @@ export const generateInvoicePDF = async (
     // Montant final à payer
     doc.setFont('helvetica', 'bold');
     doc.text(`${t?.('invoice.toPay') || 'Montant à payer'}:`, labelX, yPosition, { align: 'left' });
-    doc.text(`${amountPaid.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    doc.text(`${(invoiceData.amount - refundAmount).toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 10;
   }
   
