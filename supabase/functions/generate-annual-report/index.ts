@@ -60,15 +60,25 @@ serve(async (req) => {
     // Fetch disputes and their accepted proposals
     const { data: disputes } = await supabase
       .from('disputes')
-      .select('transaction_id, dispute_proposals(refund_percentage, status)')
+      .select('transaction_id, resolution, dispute_proposals(refund_percentage, status, proposal_type)')
       .in('transaction_id', transactionIds);
     
     // Create map of refund percentages
     const refundMap = new Map();
     disputes?.forEach(dispute => {
-      const acceptedProposal = (dispute.dispute_proposals as any)?.find((p: any) => p.status === 'accepted');
+      const proposals = (dispute.dispute_proposals as any[]) || [];
+      const acceptedProposal = proposals.find((p: any) => p.status === 'accepted' && (p.proposal_type === 'partial_refund' || (p.refund_percentage ?? 0) > 0));
       if (acceptedProposal?.refund_percentage) {
-        refundMap.set(dispute.transaction_id, acceptedProposal.refund_percentage);
+        refundMap.set(dispute.transaction_id, Number(acceptedProposal.refund_percentage));
+        return;
+      }
+      // Fallback: parse percentage from resolution text (e.g., "Remboursement 30%")
+      if ((dispute as any).resolution && typeof (dispute as any).resolution === 'string') {
+        const m = (dispute as any).resolution.match(/(\d{1,3})\s*%/);
+        const pct = m ? parseInt(m[1], 10) : 0;
+        if (pct > 0 && pct < 100) {
+          refundMap.set(dispute.transaction_id, pct);
+        }
       }
     });
     

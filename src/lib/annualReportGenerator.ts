@@ -230,8 +230,9 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     
     // Calculer le montant réel après remboursement partiel
     let amount = Number(transaction.price);
-    if (transaction.refund_status === 'partial' && transaction.refund_percentage) {
-      amount = amount * (1 - transaction.refund_percentage / 100);
+    const pct = Number(transaction.refund_percentage || 0);
+    if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
+      amount = amount * (1 - pct / 100);
     }
     const fee = amount * 0.05;
     const net = amount - fee;

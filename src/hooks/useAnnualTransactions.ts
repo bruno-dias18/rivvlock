@@ -40,15 +40,25 @@ export const useAnnualTransactions = (year: number) => {
       const transactionIds = txData.map(t => t.id);
       const { data: disputes } = await supabase
         .from('disputes')
-        .select('transaction_id, dispute_proposals(refund_percentage, status)')
+        .select('transaction_id, resolution, dispute_proposals(refund_percentage, status, proposal_type)')
         .in('transaction_id', transactionIds);
       
       // Create map of refund percentages
       const refundMap = new Map<string, number>();
       disputes?.forEach(dispute => {
-        const acceptedProposal = (dispute.dispute_proposals as any)?.find((p: any) => p.status === 'accepted');
+        const proposals = (dispute.dispute_proposals as any[]) || [];
+        const acceptedProposal = proposals.find((p: any) => p.status === 'accepted' && (p.proposal_type === 'partial_refund' || (p.refund_percentage ?? 0) > 0));
         if (acceptedProposal?.refund_percentage) {
-          refundMap.set(dispute.transaction_id, acceptedProposal.refund_percentage);
+          refundMap.set(dispute.transaction_id, Number(acceptedProposal.refund_percentage));
+          return;
+        }
+        // Fallback: parse percentage from resolution text like "Remboursement 30%"
+        if (dispute.resolution && typeof dispute.resolution === 'string') {
+          const m = dispute.resolution.match(/(\d{1,3})\s*%/);
+          const pct = m ? parseInt(m[1], 10) : 0;
+          if (pct > 0 && pct < 100) {
+            refundMap.set(dispute.transaction_id, pct);
+          }
         }
       });
       
@@ -72,7 +82,7 @@ export const useAnnualTransactions = (year: number) => {
         const curr = t.currency.toUpperCase();
         let amount = Number(t.price);
         // Appliquer le remboursement partiel si applicable
-        if (t.refund_status === 'partial' && t.refund_percentage) {
+        if ((t.refund_status === 'partial' || (t.refund_percentage ?? 0) > 0) && t.refund_percentage) {
           amount = amount * (1 - t.refund_percentage / 100);
         }
         acc[curr] = (acc[curr] || 0) + amount;
