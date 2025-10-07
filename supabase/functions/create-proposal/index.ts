@@ -138,6 +138,24 @@ serve(async (req) => {
       });
     }
 
+    // Send notification to all other participants
+    try {
+      const { error: notificationError } = await supabaseClient.functions.invoke('send-notifications', {
+        body: {
+          type: 'dispute_proposal_created',
+          transactionId: transaction.id,
+          message: `Une nouvelle proposition a été faite dans le litige concernant "${transaction.title}". ${proposalText}${message ? ` - ${message}` : ''}`,
+          recipients: participants
+        }
+      });
+      
+      if (notificationError) {
+        logger.error("Error sending notification:", notificationError);
+      }
+    } catch (notificationError) {
+      logger.error("Error invoking send-notifications:", notificationError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       proposal 

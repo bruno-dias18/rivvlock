@@ -176,6 +176,24 @@ serve(async (req) => {
       });
     }
 
+    // Send notification to both parties
+    try {
+      const { error: notificationError } = await adminClient.functions.invoke('send-notifications', {
+        body: {
+          type: 'admin_dispute_proposal',
+          transactionId: transaction.id,
+          message: `🔔 L'administration a fait une proposition officielle pour le litige "${transaction.title}". ${proposalText}. Les deux parties doivent valider dans les 48h.`,
+          recipients: participants
+        }
+      });
+      
+      if (notificationError) {
+        logger.error("[ADMIN-PROPOSAL] Error sending notification:", notificationError);
+      }
+    } catch (notificationError) {
+      logger.error("[ADMIN-PROPOSAL] Error invoking send-notifications:", notificationError);
+    }
+
     return new Response(JSON.stringify({
       success: true,
       proposal
