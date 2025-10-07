@@ -188,6 +188,24 @@ const TransactionCardComponent = ({
             </div>
           )}
           
+          {/* Payment countdown for sellers on pending transactions */}
+          {userRole === 'seller' && transaction.status === 'pending' && transaction.payment_deadline && (
+            <Alert className="mt-3 bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800">
+              <Clock className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <div className="font-semibold text-orange-800 dark:text-orange-200">
+                    {t('transactions.awaitingPayment')}
+                  </div>
+                  <PaymentCountdown paymentDeadline={transaction.payment_deadline} className="text-orange-700 dark:text-orange-300" />
+                  <div className="text-sm text-orange-700 dark:text-orange-300">
+                    {t('transactions.reminderSuggestion')}
+                  </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {/* Validation countdown for buyers during validation phase */}
           {userRole === 'buyer' && validationStatus.phase === 'validation_active' && transaction.validation_deadline && (
             <div className="mt-3">

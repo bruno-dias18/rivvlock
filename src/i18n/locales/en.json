@@ -210,7 +210,9 @@
     "invoiceError": "Error generating invoice",
     "sellerHasValidated": "✅ The seller has validated the service",
     "buyerCanNowFinalize": "You can now finalize the transaction or report a dispute if necessary.",
-    "buyerCanFinalizeEarly": "You can finalize now. The automatic countdown will start after the service date."
+    "buyerCanFinalizeEarly": "You can finalize now. The automatic countdown will start after the service date.",
+    "awaitingPayment": "Awaiting buyer payment",
+    "reminderSuggestion": "Consider reminding the buyer if needed before the deadline expires."
   },
   "admin": {
     "dashboard": "Administration",
