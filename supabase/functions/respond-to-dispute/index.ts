@@ -18,25 +18,38 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
   try {
     logStep("Function started");
 
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization")!;
+    // 🔒 SÉCURITÉ: Client séparé pour authentification JWT
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("No authorization header provided");
+
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false }
+      }
+    );
+
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
+    const { data: { user }, error: userError } = await authClient.auth.getUser(token);
     if (userError || !user) {
       logStep("Authentication failed", userError);
       throw new Error("User not authenticated");
     }
 
     logStep("User authenticated", { userId: user.id });
+
+    // 🔒 SÉCURITÉ: Client DB avec SERVICE_ROLE_KEY (non-pollué)
+    // Contourne RLS mais validations manuelles ci-dessous conservées
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
     // Parse request body
     const { disputeId, response } = await req.json();

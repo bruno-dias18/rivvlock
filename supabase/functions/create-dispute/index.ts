@@ -26,21 +26,33 @@ serve(async (req) => {
     const clientIp = getClientIp(req);
     await checkRateLimit(clientIp);
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+  // 🔒 SÉCURITÉ: Client séparé pour authentification JWT
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) throw new Error("No authorization header provided");
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+  const authClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false }
+    }
+  );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.id) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
+  const token = authHeader.replace("Bearer ", "");
+  const { data: userData, error: userError } = await authClient.auth.getUser(token);
+  if (userError) throw new Error(`Authentication error: ${userError.message}`);
+  const user = userData.user;
+  if (!user?.id) throw new Error("User not authenticated");
+  logStep("User authenticated", { userId: user.id });
+
+  // 🔒 SÉCURITÉ: Client DB avec SERVICE_ROLE_KEY (non-pollué)
+  // Contourne RLS mais validations manuelles ci-dessous conservées
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
 
     // Rate limiting par utilisateur
     await checkRateLimit(clientIp, user.id);
