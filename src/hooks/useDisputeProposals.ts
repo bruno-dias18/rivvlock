@@ -85,7 +85,10 @@ export const useDisputeProposals = (disputeId: string) => {
 
   const rejectProposal = useMutation({
     mutationFn: async (proposalId: string) => {
-      const { error } = await supabase
+      if (!user?.id) throw new Error('User not authenticated');
+
+      // 1) Met à jour le statut de la proposition
+      const { error: updateError } = await supabase
         .from('dispute_proposals')
         .update({ 
           status: 'rejected', 
@@ -93,7 +96,37 @@ export const useDisputeProposals = (disputeId: string) => {
         })
         .eq('id', proposalId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // 2) Récupère les infos minimales pour construire le texte du message
+      const { data: proposal, error: propErr } = await supabase
+        .from('dispute_proposals')
+        .select('dispute_id, proposal_type, refund_percentage')
+        .eq('id', proposalId)
+        .maybeSingle();
+      if (propErr) throw propErr;
+
+      if (proposal?.dispute_id) {
+        const proposalText = proposal.proposal_type === 'partial_refund'
+          ? `Remboursement de ${proposal.refund_percentage}%`
+          : proposal.proposal_type === 'full_refund'
+          ? 'Remboursement intégral (100%)'
+          : 'Aucun remboursement';
+
+        const messageText = `❌ Proposition refusée${proposalText ? ` : ${proposalText}` : ''}`;
+
+        // 3) Insère un message système en broadcast (visible par TOUS)
+        await supabase
+          .from('dispute_messages')
+          .insert({
+            dispute_id: proposal.dispute_id,
+            sender_id: user.id,
+            recipient_id: null, // broadcast
+            message: messageText,
+            message_type: 'system',
+          });
+      }
+
       return { success: true };
     },
     onSuccess: () => {
