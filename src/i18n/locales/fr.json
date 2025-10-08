@@ -49,7 +49,8 @@
     "contact": "Contacter",
     "viewConversation": "Voir la discussion",
     "noDeadline": "Pas de délai",
-    "expired": "Expiré"
+    "expired": "Expiré",
+    "back": "Retour"
   },
   "countries": {
     "france": "France",
