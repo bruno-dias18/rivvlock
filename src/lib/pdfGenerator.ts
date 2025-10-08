@@ -402,14 +402,17 @@ export const generateInvoicePDF = async (
     
     // Le montant effectivement payé par l'acheteur
     amountPaid = invoiceData.amount - (refundAmount - buyerFees);
-  }
-  
-  // Pour remboursement total, montants à 0
-  if (invoiceData.refundStatus === 'full') {
+  } else if (invoiceData.refundStatus === 'full') {
+    // Pour remboursement total, montants à 0
     amountPaid = 0;
     refundAmount = invoiceData.amount;
     const totalFees = invoiceData.amount * 0.05;
     buyerFees = totalFees; // Tous les frais sont à la charge de l'acheteur
+  } else {
+    // Transaction normale - le vendeur paie 5% de frais
+    const totalFees = invoiceData.amount * 0.05;
+    sellerFees = totalFees;
+    buyerFees = 0; // L'acheteur ne paie pas de frais sur une transaction normale
   }
   
   const rivvlockFee = invoiceData.viewerRole === 'seller' ? sellerFees : buyerFees;
