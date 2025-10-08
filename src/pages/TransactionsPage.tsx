@@ -461,7 +461,9 @@ export default function TransactionsPage() {
         : (transaction.seller_display_name || 'Vendeur');
       
       const buyerName = buyerProfile
-        ? `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Client'
+        ? (buyerProfile.user_type === 'company' && buyerProfile.company_name
+            ? buyerProfile.company_name
+            : (`${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Client'))
         : transaction.buyer_display_name || 'Client anonyme';
 
       const invoiceData = {
