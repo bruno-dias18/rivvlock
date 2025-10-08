@@ -94,17 +94,16 @@ serve(async (req) => {
     // Fetch buyer profile with minimal fields using secure function
     let buyerProfile = null;
     if (transaction.buyer_id) {
-      const { data, error: buyerError } = await adminClient
-        .rpc('get_buyer_invoice_data', {
-          p_buyer_id: transaction.buyer_id,
-          p_requesting_user_id: user.id
-        });
+      const { data: buyerData, error: buyerError } = await adminClient
+        .from('profiles')
+        .select('user_id, first_name, last_name, company_name, user_type, country, address, postal_code, city, company_address, phone, siret_uid, vat_rate, tva_rate, is_subject_to_vat, avs_number, vat_number')
+        .eq('user_id', transaction.buyer_id)
+        .maybeSingle();
 
       if (buyerError) {
         logger.error('Error fetching buyer profile:', buyerError);
       }
-      // RPC returns an array, get first element
-      buyerProfile = data && data.length > 0 ? data[0] : null;
+      buyerProfile = buyerData || null;
       logger.log('Buyer profile data:', JSON.stringify(buyerProfile));
     }
 
