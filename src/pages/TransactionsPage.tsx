@@ -422,35 +422,43 @@ export default function TransactionsPage() {
         logger.warn('Fallback seller RPC failed', e);
       }
       
-      // Pour maintenant, utiliser l'approche actuelle mais améliorer la logique
+      // Récupération des emails de manière sécurisée
       const currentUser = user;
       let sellerEmail = undefined;
       let buyerEmail = undefined;
       
-      // Si le user connecté est le vendeur, on a son email
-      if (currentUser?.id === transaction.user_id) {
-        sellerEmail = currentUser.email;
-      }
-      // Si le user connecté est l'acheteur, on a son email  
-      if (currentUser?.id === transaction.buyer_id) {
-        buyerEmail = currentUser.email;
-      }
-      
-      // Appeler l'edge function pour récupérer les emails manquants
+      // Toujours appeler l'edge function pour récupérer les emails via la méthode sécurisée
       try {
-        const { data: emailData } = await supabase.functions.invoke('get-user-emails', {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('get-user-emails', {
           body: { 
             sellerUserId: transaction.user_id,
             buyerUserId: transaction.buyer_id 
           }
         });
         
+        if (emailError) {
+          logger.error('Error from get-user-emails:', emailError);
+        }
+        
         if (emailData) {
-          sellerEmail = sellerEmail || emailData.sellerEmail;
-          buyerEmail = buyerEmail || emailData.buyerEmail;
+          sellerEmail = emailData.sellerEmail;
+          buyerEmail = emailData.buyerEmail;
+          logger.log('Emails retrieved:', { sellerEmail: !!sellerEmail, buyerEmail: !!buyerEmail });
+        } else {
+          logger.warn('No email data returned from get-user-emails');
         }
       } catch (error) {
-        logger.warn('Impossible de récupérer les emails via edge function:', error);
+        logger.error('Exception calling get-user-emails:', error);
+      }
+      
+      // Fallback: si l'utilisateur connecté est un des participants, on peut utiliser son email
+      if (!sellerEmail && currentUser?.id === transaction.user_id) {
+        sellerEmail = currentUser.email;
+        logger.log('Using current user email as seller fallback');
+      }
+      if (!buyerEmail && currentUser?.id === transaction.buyer_id) {
+        buyerEmail = currentUser.email;
+        logger.log('Using current user email as buyer fallback');
       }
 
       const userRole = getUserRole(transaction);
