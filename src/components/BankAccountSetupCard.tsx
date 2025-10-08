@@ -190,16 +190,14 @@ export default function BankAccountSetupCard() {
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 {t('bankAccount.verificationRequiredMessage')}
               </p>
-              {stripeAccount.onboarding_url && (
-                <Button 
-                  onClick={handleCompleteOnboarding}
-                  size="sm"
-                  className="mt-2 bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {t('bankAccount.completeNow')}
-                </Button>
-              )}
+              <Button 
+                onClick={stripeAccount.onboarding_url ? handleCompleteOnboarding : handleModifyBankDetails}
+                size="sm"
+                className="mt-2 bg-amber-600 hover:bg-amber-700 text-white"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                {t('bankAccount.completeNow')}
+              </Button>
             </AlertDescription>
           </Alert>
         )}
