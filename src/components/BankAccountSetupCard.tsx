@@ -104,28 +104,40 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
-      
-      const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
-      
-      if (error) {
-        logger.error('Edge function error:', error);
-        toast.error('Erreur: ' + (error.message || 'Impossible de générer le lien Stripe'));
-        return;
+
+      // 1) Always try (idempotent) account creation/lookup → returns onboarding URL when needed
+      const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+      if (createErr) {
+        logger.error('create-stripe-account error:', createErr);
       }
-      
-      if (data?.error) {
-        logger.error('Edge function returned error:', data.error);
-        toast.error('Erreur: ' + data.error);
-        return;
-      }
-      
-      if (data?.url) {
-        window.open(data.url, '_blank');
+
+      if (createData?.onboarding_url) {
+        window.open(createData.onboarding_url, '_blank');
         toast.success('Formulaire Stripe ouvert');
-      } else {
-        logger.error('No URL in response:', data);
-        toast.error('Aucune URL reçue de Stripe');
+        return;
       }
+
+      // 2) If no URL from creation step, request an update link (account_update or onboarding decided server-side)
+      const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+      if (updateErr) {
+        logger.error('update-stripe-account-info error:', updateErr);
+        toast.error('Erreur: ' + (updateErr.message || 'Impossible de générer le lien Stripe'));
+        return;
+      }
+      if (updateData?.error) {
+        logger.error('update-stripe-account-info returned error:', updateData.error);
+        toast.error('Erreur: ' + updateData.error);
+        return;
+      }
+      if (updateData?.url) {
+        window.open(updateData.url, '_blank');
+        toast.success('Formulaire Stripe ouvert');
+        return;
+      }
+
+      // 3) Last fallback – inform clearly
+      logger.error('No onboarding/update URL returned');
+      toast.error('Aucune URL reçue de Stripe');
     } catch (error) {
       logger.error('Unexpected error:', error);
       toast.error('Erreur inattendue');
