@@ -105,38 +105,59 @@ export default function BankAccountSetupCard() {
     try {
       setIsProcessing(true);
 
-      // 1) D'abord essayer update-stripe-account-info (gère à la fois update et onboarding)
-      const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
-      
-      if (updateErr) {
-        logger.error('update-stripe-account-info error:', updateErr);
-      }
+// 1) D'abord essayer update-stripe-account-info (gère à la fois update et onboarding)
+const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
 
-      if (updateData?.url) {
-        window.open(updateData.url, '_blank');
-        toast.success('Formulaire Stripe ouvert');
-        return;
-      }
+// Si erreur réseau ou pas de données, essayer create-stripe-account immédiatement
+if (updateErr || !updateData) {
+  logger.error('update-stripe-account-info failed, trying fallback', { updateErr, updateData });
 
-      // 2) Si update-stripe-account-info indique "pas de compte", créer un nouveau compte
-      if (updateData?.error && updateData.error.includes('No Stripe account found')) {
-        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-        if (createErr) {
-          logger.error('create-stripe-account error:', createErr);
-          toast.error('Erreur: ' + (createErr.message || 'Impossible de créer le compte Stripe'));
-          return;
-        }
+  const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+  if (createErr || !createData) {
+    logger.error('create-stripe-account error:', createErr);
+    toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+    return;
+  }
 
-        if (createData?.onboarding_url) {
-          window.open(createData.onboarding_url, '_blank');
-          toast.success('Formulaire Stripe ouvert');
-          return;
-        }
-      }
+  if (createData.onboarding_url) {
+    window.open(createData.onboarding_url, '_blank');
+    toast.success('Formulaire Stripe ouvert');
+    return;
+  }
 
-      // 3) Last fallback – inform clearly
-      logger.error('No onboarding/update URL returned');
-      toast.error('Aucune URL reçue de Stripe');
+  logger.error('No URL from create-stripe-account');
+  toast.error('Aucune URL reçue de Stripe');
+  return;
+}
+
+// Si succès avec URL depuis update
+if (updateData.url) {
+  window.open(updateData.url, '_blank');
+  toast.success('Formulaire Stripe ouvert');
+  return;
+}
+
+// Si erreur depuis update-stripe-account-info, essayer fallback
+if (updateData.error) {
+  logger.error('update-stripe-account-info returned error, trying fallback:', updateData.error);
+
+  const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+  if (createErr || !createData) {
+    logger.error('create-stripe-account error:', createErr);
+    toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+    return;
+  }
+
+  if (createData.onboarding_url) {
+    window.open(createData.onboarding_url, '_blank');
+    toast.success('Formulaire Stripe ouvert');
+    return;
+  }
+}
+
+// Dernier recours
+logger.error('No URL received from either function');
+toast.error('Aucune URL reçue de Stripe');
     } catch (error) {
       logger.error('Unexpected error:', error);
       toast.error('Erreur inattendue');
