@@ -5,7 +5,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CreditCard, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { EmbeddedStripeOnboarding } from './EmbeddedStripeOnboarding';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
-
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 interface BankAccountRequiredDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,10 +23,52 @@ export function BankAccountRequiredDialog({
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { refetch } = useStripeAccount();
 
-  const handleStartSetup = () => {
-    setShowOnboarding(true);
-  };
+const handleStartSetup = async () => {
+  // Ouvre un nouvel onglet tout de suite pour éviter les bloqueurs de popups
+  const newTab = window.open('', '_blank');
+  try {
+    // 1) Tentative idempotente de création/récupération du compte
+    const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+    if (createErr) {
+      logger.error('create-stripe-account error:', createErr);
+    }
 
+    if (createData?.onboarding_url) {
+      if (newTab) newTab.location.href = createData.onboarding_url; else window.location.href = createData.onboarding_url;
+      toast.success('Formulaire Stripe ouvert');
+      return;
+    }
+
+    // 2) Si pas d’URL, demander un lien de mise à jour (le type est décidé côté serveur)
+    const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+    if (updateErr) {
+      logger.error('update-stripe-account-info error:', updateErr);
+      toast.error('Erreur: ' + (updateErr.message || 'Impossible de générer le lien Stripe'));
+      if (newTab) newTab.close();
+      return;
+    }
+    if (updateData?.error) {
+      logger.error('update-stripe-account-info returned error:', updateData.error);
+      toast.error('Erreur: ' + updateData.error);
+      if (newTab) newTab.close();
+      return;
+    }
+    if (updateData?.url) {
+      if (newTab) newTab.location.href = updateData.url; else window.location.href = updateData.url;
+      toast.success('Formulaire Stripe ouvert');
+      return;
+    }
+
+    // 3) Aucun lien retourné
+    logger.error('No onboarding/update URL returned');
+    toast.error('Aucune URL reçue de Stripe');
+    if (newTab) newTab.close();
+  } catch (err) {
+    logger.error('Unexpected error opening Stripe flow:', err);
+    toast.error('Erreur inattendue');
+    if (newTab) newTab.close();
+  }
+};
   const handleSetupSuccess = async () => {
     setIsSetupComplete(true);
     await refetch(); // Refresh account status
