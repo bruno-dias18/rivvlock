@@ -11,6 +11,7 @@ import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadMessagesByStatus } from '@/hooks/useUnreadTransactionMessages';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
@@ -35,6 +36,7 @@ export default function DashboardPage() {
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { messageCounts } = useUnreadMessagesByStatus();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
+  const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
 
   // Force sync on dashboard load
   useEffect(() => {
@@ -177,6 +179,12 @@ export default function DashboardPage() {
                       <Badge className={status.badgeColor}>
                         <MessageSquare className="h-3 w-3 mr-1" />
                         {messageCounts[status.category]}
+                      </Badge>
+                    )}
+                    {status.category === 'disputed' && unreadDisputeMessages > 0 && (
+                      <Badge className="bg-yellow-600 text-white hover:bg-yellow-700">
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {unreadDisputeMessages}
                       </Badge>
                     )}
                     {status.category === 'disputed' && unreadAdminMessages > 0 && (
