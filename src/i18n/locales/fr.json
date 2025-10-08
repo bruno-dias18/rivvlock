@@ -534,6 +534,7 @@
     "client": "Client",
     "designation": "Désignation",
     "price": "Prix",
+    "priceHT": "Prix HT",
     "quantity": "Qté",
     "totalHT": "Total HT",
     "rivvlockFees": "Frais RivvLock (5%)",

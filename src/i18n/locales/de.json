@@ -476,6 +476,7 @@
     "client": "KUNDE",
     "designation": "Beschreibung",
     "price": "Preis",
+    "priceHT": "Preis ohne MwSt",
     "quantity": "Menge",
     "totalHT": "Gesamt",
     "rivvlockFees": "RivvLock Gebühren (5%)",
