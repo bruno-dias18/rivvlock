@@ -522,11 +522,6 @@ export const generateInvoicePDF = async (
       doc.text(`${t?.('invoice.rivvlockFees') || 'Frais RivvLock'}:`, labelX, yPosition, { align: 'left' });
       doc.text(`${rivvlockFee.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
       yPosition += 8;
-      
-      // Remboursement net (après frais)
-      doc.text(`${t?.('invoice.netRefund') || 'Remboursement net'}:`, labelX, yPosition, { align: 'left' });
-      doc.text(`-${amountReceived.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
-      yPosition += 8;
     }
     
     // Montant final à payer
