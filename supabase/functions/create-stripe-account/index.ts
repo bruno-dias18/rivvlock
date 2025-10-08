@@ -283,11 +283,15 @@ serve(async (req) => {
     if (insertError) throw new Error(`Database insert error: ${insertError.message}`);
     logStep("Account stored in database");
 
-    // Log security event
-    await supabaseClient.rpc('log_security_event', {
-      event_type: 'STRIPE_ACCOUNT_CREATED',
-      details: { stripe_account_id: account.id, user_type: profile.user_type }
-    });
+    // Log security event (optional, ignore if function doesn't exist)
+    try {
+      await supabaseClient.rpc('log_security_event', {
+        event_type: 'STRIPE_ACCOUNT_CREATED',
+        details: { stripe_account_id: account.id, user_type: profile.user_type }
+      });
+    } catch (_err) {
+      logStep("Optional audit log skipped");
+    }
 
     // Create an account onboarding link
     const origin = req.headers.get("origin") || "https://app.rivvlock.com";
