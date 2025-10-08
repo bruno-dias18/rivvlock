@@ -119,8 +119,8 @@ const TermsOfServicePage: React.FC = () => {
             <CardContent className="prose prose-sm max-w-none">
               <p>{t('terms.content.disputesRefunds.policy')}</p>
               <p>{t('terms.content.disputesRefunds.customerWins')}</p>
+              <p>{t('terms.content.disputesRefunds.partialRefund')}</p>
               <p>{t('terms.content.disputesRefunds.sellerWins')}</p>
-              <p className="font-semibold text-amber-700 dark:text-amber-400">{t('terms.content.disputesRefunds.stripeFeesNote')}</p>
               <p>{t('terms.content.disputesRefunds.mediation')}</p>
             </CardContent>
           </Card>

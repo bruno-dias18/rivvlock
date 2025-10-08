@@ -561,11 +561,11 @@
         "included": "Diese Provision umfasst alle Service-Gebühren: Geldsicherheit, Kundensupport, Streitmediation und Bankgebühren."
       },
       "disputesRefunds": {
-        "policy": "Bei Streitigkeiten zwischen den Parteien wendet RIVVLOCK eine faire Rückerstattungspolitik basierend auf der Streitbeilegung an:",
-        "customerWins": "• Wenn die Streitigkeit zugunsten des Käufers gelöst wird: vollständige 100% Rückerstattung des gezahlten Betrags. RivvLock verzichtet in diesem Fall auf seinen Anteil der Provision, nur die Stripe-Bearbeitungsgebühren (ca. 2,9% + €0,25) bleiben nicht erstattungsfähig.",
-        "sellerWins": "• Wenn die Streitigkeit zugunsten des Verkäufers gelöst wird: die 5% Provision wird beibehalten und 95% werden unter normalen Bedingungen an den Verkäufer gezahlt.",
-        "stripeFeesNote": "Wichtig: Stripe-Bearbeitungsgebühren (ca. 2,9% + 0,25€) sind niemals erstattungsfähig, entsprechend den Bedingungen unseres Zahlungspartners.",
-        "mediation": "Unser Mediationsservice prüft jeden Streitfall unparteiisch basierend auf den von beiden Parteien bereitgestellten Beweisen."
+        "policy": "Bei Streitigkeiten zwischen den Parteien wendet RIVVLOCK eine faire Rückerstattungspolitik gemäß der Streitbeilegung an:",
+        "customerWins": "• Wenn die Streitigkeit zugunsten des Käufers gelöst wird: vollständige Rückerstattung von 100 % des gezahlten Betrags, ohne Gebühren. RivvLock und Stripe verzichten in diesem Fall auf ihre Gebühren.",
+        "partialRefund": "• Wenn die Streitigkeit durch eine teilweise Rückerstattung gelöst wird: Die 5 % Provision wird proportional zwischen Käufer und Verkäufer gemäß dem Rückerstattungsbetrag aufgeteilt.",
+        "sellerWins": "• Wenn die Streitigkeit zugunsten des Verkäufers gelöst wird (keine Rückerstattung): Die 5 % Provision bleibt bestehen und 95 % werden unter normalen Bedingungen an den Verkäufer ausgezahlt.",
+        "mediation": "Unser Mediationsservice prüft jede Streitigkeit unparteiisch auf Grundlage der von beiden Parteien vorgelegten Beweise."
       },
       "userResponsibilities": {
         "accurate": "Genaue Informationen bereitstellen und Ihre Daten aktuell halten",

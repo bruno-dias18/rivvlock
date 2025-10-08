@@ -444,9 +444,9 @@
       },
       "disputesRefunds": {
         "policy": "En cas de litige entre les parties, RIVVLOCK applique une politique de remboursement équitable selon la résolution du litige :",
-        "customerWins": "• Si le litige est résolu en faveur de l'acheteur : remboursement intégral à 100% du montant payé. RivvLock renonce à sa part de commission dans ce cas, seuls les frais de traitement Stripe (environ 2,9% + 0,25€) restent non remboursables.",
-        "sellerWins": "• Si le litige est résolu en faveur du vendeur : maintien de la commission de 5% et versement de 95% au vendeur selon les conditions normales.",
-        "stripeFeesNote": "Important : les frais de traitement Stripe (environ 2,9% + 0,25€) ne sont jamais remboursables, conformément aux conditions de notre partenaire de paiement.",
+        "customerWins": "• Si le litige est résolu en faveur de l'acheteur : remboursement intégral à 100% du montant payé, sans aucun frais. RivvLock et Stripe renoncent à leurs frais dans ce cas.",
+        "partialRefund": "• Si le litige est résolu par un remboursement partiel : la commission de 5% est répartie proportionnellement entre l'acheteur et le vendeur selon le montant du remboursement.",
+        "sellerWins": "• Si le litige est résolu en faveur du vendeur (aucun remboursement) : maintien de la commission de 5% et versement de 95% au vendeur selon les conditions normales.",
         "mediation": "Notre service de médiation examine chaque litige de manière impartiale en se basant sur les preuves fournies par les deux parties."
       },
       "userResponsibilities": {
