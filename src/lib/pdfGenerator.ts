@@ -223,11 +223,6 @@ export const generateInvoicePDF = async (
         }
       }
       
-      if (profile.company_name) {
-        doc.text(profile.company_name, margin, leftColumnY);
-        leftColumnY += 4;
-      }
-      
       if (profile.address) {
         doc.text(profile.address, margin, leftColumnY);
         leftColumnY += 4;
@@ -326,12 +321,6 @@ export const generateInvoicePDF = async (
           doc.text(`${t?.('invoice.vatRate') || 'Taux TVA'}: ${profile.tva_rate}%`, clientX, rightColumnY);
           rightColumnY += 4;
         }
-      }
-      
-      if (profile.company_name) {
-        const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
-        doc.text(companyLines, clientX, rightColumnY);
-        rightColumnY += companyLines.length * 4;
       }
       
       if (profile.address) {
