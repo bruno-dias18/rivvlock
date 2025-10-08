@@ -21,12 +21,17 @@ export function BankAccountRequiredDialog({
 }: BankAccountRequiredDialogProps) {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [stripeUrl, setStripeUrl] = useState<string | null>(null);
+  const [showManualOpen, setShowManualOpen] = useState(false);
   const { refetch } = useStripeAccount();
 
 const handleStartSetup = async () => {
-  const newTab = window.open('', '_blank');
+  setIsLoading(true);
   try {
     const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+    
+    let stripeUrl = null;
     
     // Si erreur réseau ou pas de données, essayer create-stripe-account immédiatement
     if (updateErr || !updateData) {
@@ -36,56 +41,65 @@ const handleStartSetup = async () => {
       if (createErr || !createData) {
         logger.error('create-stripe-account error:', createErr);
         toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-        if (newTab) newTab.close();
+        setIsLoading(false);
         return;
       }
 
       if (createData?.onboarding_url) {
-        if (newTab) newTab.location.href = createData.onboarding_url; else window.location.href = createData.onboarding_url;
-        toast.success('Formulaire Stripe ouvert');
+        stripeUrl = createData.onboarding_url;
+      } else {
+        logger.error('No URL from create-stripe-account');
+        toast.error('Aucune URL reçue de Stripe');
+        setIsLoading(false);
         return;
       }
-      
-      logger.error('No URL from create-stripe-account');
-      toast.error('Aucune URL reçue de Stripe');
-      if (newTab) newTab.close();
-      return;
-    }
-
-    // Si succès avec URL depuis update
-    if (updateData.url) {
-      if (newTab) newTab.location.href = updateData.url; else window.location.href = updateData.url;
-      toast.success('Formulaire Stripe ouvert');
-      return;
-    }
-
-    // Si erreur depuis update-stripe-account-info, essayer fallback
-    if (updateData.error) {
+    } else if (updateData.url) {
+      // Si succès avec URL depuis update
+      stripeUrl = updateData.url;
+    } else if (updateData.error) {
+      // Si erreur depuis update-stripe-account-info, essayer fallback
       logger.error('update-stripe-account-info returned error, trying fallback:', updateData.error);
       
       const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
       if (createErr || !createData) {
         logger.error('create-stripe-account error:', createErr);
         toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-        if (newTab) newTab.close();
+        setIsLoading(false);
         return;
       }
 
       if (createData?.onboarding_url) {
-        if (newTab) newTab.location.href = createData.onboarding_url; else window.location.href = createData.onboarding_url;
-        toast.success('Formulaire Stripe ouvert');
+        stripeUrl = createData.onboarding_url;
+      } else {
+        logger.error('No URL from create-stripe-account');
+        toast.error('Aucune URL reçue de Stripe');
+        setIsLoading(false);
         return;
       }
+    } else {
+      logger.error('No URL received from either function');
+      toast.error('Aucune URL reçue de Stripe');
+      setIsLoading(false);
+      return;
     }
 
-    // Dernier recours
-    logger.error('No URL received from either function');
-    toast.error('Aucune URL reçue de Stripe');
-    if (newTab) newTab.close();
+    // Une fois l'URL obtenue, ouvrir DIRECTEMENT l'onglet
+    if (stripeUrl) {
+      const newTab = window.open(stripeUrl, '_blank');
+      if (!newTab) {
+        // Si bloqué par le navigateur, afficher un bouton manuel
+        setStripeUrl(stripeUrl);
+        setShowManualOpen(true);
+        toast.info('Veuillez autoriser les popups pour ouvrir Stripe');
+      } else {
+        toast.success('Formulaire Stripe ouvert');
+      }
+    }
   } catch (err) {
     logger.error('Unexpected error opening Stripe flow:', err);
     toast.error('Erreur inattendue');
-    if (newTab) newTab.close();
+  } finally {
+    setIsLoading(false);
   }
 };
   const handleSetupSuccess = async () => {
@@ -103,6 +117,8 @@ const handleStartSetup = async () => {
     onOpenChange(false);
     setShowOnboarding(false);
     setIsSetupComplete(false);
+    setShowManualOpen(false);
+    setStripeUrl(null);
   };
 
   return (
@@ -119,7 +135,28 @@ const handleStartSetup = async () => {
         </DialogHeader>
 
         <div className="space-y-6">
-          {!showOnboarding && !isSetupComplete && (
+          {isLoading && (
+            <div className="text-center py-8">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-muted-foreground">Connexion à Stripe en cours...</p>
+            </div>
+          )}
+
+          {showManualOpen && stripeUrl && (
+            <div className="text-center py-8 space-y-4">
+              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Ouvrir Stripe</h3>
+              <p className="text-muted-foreground mb-4">
+                Votre navigateur a bloqué l'ouverture automatique. Cliquez sur le bouton ci-dessous pour ouvrir le formulaire Stripe.
+              </p>
+              <Button onClick={() => window.open(stripeUrl, '_blank')} size="lg">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Ouvrir le formulaire Stripe
+              </Button>
+            </div>
+          )}
+
+          {!showOnboarding && !isSetupComplete && !isLoading && !showManualOpen && (
             <>
               <Alert>
                 <AlertCircle className="h-4 w-4" />
