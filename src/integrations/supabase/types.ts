@@ -449,6 +449,39 @@ export type Database = {
         }
         Relationships: []
       }
+      security_audit_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          operation: string
+          suspicious_pattern: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          operation: string
+          suspicious_pattern?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          operation?: string
+          suspicious_pattern?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       shared_link_access_logs: {
         Row: {
           accessed_at: string | null
@@ -783,6 +816,10 @@ export type Database = {
         Args: { check_ip?: string; check_token: string }
         Returns: boolean
       }
+      detect_suspicious_pattern: {
+        Args: { p_operation: string; p_table_name: string; p_user_id?: string }
+        Returns: boolean
+      }
       generate_secure_token: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -919,6 +956,16 @@ export type Database = {
       validate_shared_link_token: {
         Args: { p_token: string; p_transaction_id: string }
         Returns: boolean
+      }
+      verify_token_security: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          has_expiry: boolean
+          is_expired: boolean
+          security_score: number
+          token_length: number
+          transaction_id: string
+        }[]
       }
     }
     Enums: {
