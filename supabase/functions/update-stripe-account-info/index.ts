@@ -75,9 +75,13 @@ serve(async (req) => {
       throw stripeError;
     }
 
-    // Always use account_update for existing accounts to allow editing/completing information
-    const linkType = 'account_update';
-    logStep("Creating account link", { accountId: stripeAccount.stripe_account_id, linkType });
+    // Determine the correct link type based on account state
+    const linkType = accountDetails.details_submitted ? 'account_update' : 'account_onboarding';
+    logStep("Creating account link", { 
+      accountId: stripeAccount.stripe_account_id, 
+      linkType,
+      detailsSubmitted: accountDetails.details_submitted 
+    });
 
     // Create account link with appropriate type
     const accountLink = await stripe.accountLinks.create({
