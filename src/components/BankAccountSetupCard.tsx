@@ -88,7 +88,8 @@ export default function BankAccountSetupCard() {
       // Si on a reçu une URL valide, l'utiliser directement
       if (updateData?.url && !updateErr) {
         toast.success('Redirection vers Stripe...');
-        window.location.href = updateData.url;
+        window.open(updateData.url, '_blank', 'noopener,noreferrer');
+        setIsProcessing(false);
         return;
       }
 
