@@ -75,8 +75,8 @@ serve(async (req) => {
       throw stripeError;
     }
 
-    // Determine link type: account_onboarding for incomplete, account_update for active
-    const linkType = stripeAccount.account_status === 'active' ? 'account_update' : 'account_onboarding';
+    // Always use account_update for existing accounts to allow editing/completing information
+    const linkType = 'account_update';
     logStep("Creating account link", { accountId: stripeAccount.stripe_account_id, linkType });
 
     // Create account link with appropriate type
