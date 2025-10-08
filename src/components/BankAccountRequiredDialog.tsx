@@ -22,8 +22,6 @@ export function BankAccountRequiredDialog({
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [stripeUrl, setStripeUrl] = useState<string | null>(null);
-  const [showManualOpen, setShowManualOpen] = useState(false);
   const { refetch } = useStripeAccount();
 
 const handleStartSetup = async () => {
@@ -111,8 +109,6 @@ const handleStartSetup = async () => {
     onOpenChange(false);
     setShowOnboarding(false);
     setIsSetupComplete(false);
-    setShowManualOpen(false);
-    setStripeUrl(null);
   };
 
   return (
@@ -136,21 +132,7 @@ const handleStartSetup = async () => {
             </div>
           )}
 
-          {showManualOpen && stripeUrl && (
-            <div className="text-center py-8 space-y-4">
-              <AlertCircle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Ouvrir Stripe</h3>
-              <p className="text-muted-foreground mb-4">
-                Votre navigateur a bloqué l'ouverture automatique. Cliquez sur le bouton ci-dessous pour ouvrir le formulaire Stripe.
-              </p>
-              <Button onClick={() => window.open(stripeUrl, '_blank')} size="lg">
-                <CreditCard className="h-4 w-4 mr-2" />
-                Ouvrir le formulaire Stripe
-              </Button>
-            </div>
-          )}
-
-          {!showOnboarding && !isSetupComplete && !isLoading && !showManualOpen && (
+          {!showOnboarding && !isSetupComplete && !isLoading && (
             <>
               <Alert>
                 <AlertCircle className="h-4 w-4" />

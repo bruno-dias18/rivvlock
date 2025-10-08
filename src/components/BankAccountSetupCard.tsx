@@ -19,8 +19,6 @@ export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch, error, isError } = useStripeAccount();
   const createAccount = useCreateStripeAccount();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [stripeUrl, setStripeUrl] = useState<string | null>(null);
-  const [showManualOpen, setShowManualOpen] = useState(false);
   const { t } = useTranslation();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -46,8 +44,6 @@ export default function BankAccountSetupCard() {
   const handleCreateAccount = async () => {
     try {
       setIsProcessing(true);
-      setShowManualOpen(false);
-      setStripeUrl(null);
       
       const result = await createAccount.mutateAsync();
       
@@ -68,7 +64,6 @@ export default function BankAccountSetupCard() {
     } catch (error) {
       logger.error('Error creating Stripe account:', error);
       toast.error(t('bankAccount.createError'));
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -87,8 +82,6 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
-      setShowManualOpen(false);
-      setStripeUrl(null);
 
       // 1) D'abord essayer update-stripe-account-info
       const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
@@ -103,6 +96,7 @@ export default function BankAccountSetupCard() {
         if (createErr || !createData) {
           logger.error('create-stripe-account error:', createErr);
           toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+          setIsProcessing(false);
           return;
         }
 
@@ -111,6 +105,7 @@ export default function BankAccountSetupCard() {
         } else {
           logger.error('No URL from create-stripe-account');
           toast.error('Aucune URL reçue de Stripe');
+          setIsProcessing(false);
           return;
         }
       }
@@ -128,6 +123,7 @@ export default function BankAccountSetupCard() {
         if (createErr || !createData) {
           logger.error('create-stripe-account error:', createErr);
           toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+          setIsProcessing(false);
           return;
         }
 
@@ -143,11 +139,11 @@ export default function BankAccountSetupCard() {
       } else {
         logger.error('No URL received from either function');
         toast.error('Aucune URL reçue de Stripe');
+        setIsProcessing(false);
       }
     } catch (error) {
       logger.error('Unexpected error:', error);
       toast.error('Erreur inattendue');
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -272,34 +268,23 @@ export default function BankAccountSetupCard() {
             
             <PaymentTimingInfo />
             
-            {showManualOpen && stripeUrl ? (
-              <Button 
-                onClick={() => window.open(stripeUrl, '_blank')}
-                className="w-full"
-                variant="default"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ouvrir Stripe
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleCreateAccount}
-                disabled={isProcessing}
-                className="w-full"
-              >
-                {isProcessing ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Connexion à Stripe...
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    {t('bankAccount.setupButton')}
-                  </>
-                )}
-              </Button>
-            )}
+            <Button 
+              onClick={handleCreateAccount}
+              disabled={isProcessing}
+              className="w-full"
+            >
+              {isProcessing ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Connexion à Stripe...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  {t('bankAccount.setupButton')}
+                </>
+              )}
+            </Button>
           </div>
         ) : (
           // Account exists - show status
@@ -390,35 +375,24 @@ export default function BankAccountSetupCard() {
                 <PaymentTimingInfo />
 
                 {stripeAccount.account_status === 'active' && (
-                  showManualOpen && stripeUrl ? (
-                    <Button 
-                      onClick={() => window.open(stripeUrl, '_blank')}
-                      className="w-full"
-                      variant="default"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Ouvrir Stripe
-                    </Button>
-                  ) : (
-                    <Button 
-                      onClick={handleModifyBankDetails}
-                      disabled={isProcessing}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Clock className="h-4 w-4 mr-2 animate-spin" />
-                          Connexion à Stripe...
-                        </>
-                      ) : (
-                        <>
-                          <Settings className="h-4 w-4 mr-2" />
-                          {t('bankAccount.modifyBankDetails')}
-                        </>
-                      )}
-                    </Button>
-                  )
+                  <Button 
+                    onClick={handleModifyBankDetails}
+                    disabled={isProcessing}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Clock className="h-4 w-4 mr-2 animate-spin" />
+                        Connexion à Stripe...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="h-4 w-4 mr-2" />
+                        {t('bankAccount.modifyBankDetails')}
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
             )}
