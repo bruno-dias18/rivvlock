@@ -421,6 +421,26 @@ export default function TransactionsPage() {
       } catch (e) {
         logger.warn('Fallback seller RPC failed', e);
       }
+
+      // Fallback: if buyerProfile is missing, call secure RPC directly from client
+      let buyerProfileFinal = buyerProfile;
+      try {
+        if (!buyerProfileFinal && transaction.buyer_id) {
+          const { data: fallbackBuyer } = await supabase.rpc('get_buyer_invoice_data', {
+            p_buyer_id: transaction.buyer_id,
+            p_requesting_user_id: user?.id,
+          });
+          buyerProfileFinal = Array.isArray(fallbackBuyer) && fallbackBuyer.length > 0 ? fallbackBuyer[0] : null;
+          logger.log('Fallback buyer profile via RPC:', buyerProfileFinal);
+        }
+        // Fallback 2: if current user is the buyer, use their own profile from hook
+        if (!buyerProfileFinal && user?.id === transaction.buyer_id && profile) {
+          buyerProfileFinal = profile as any;
+          logger.log('Using local profile as buyer profile fallback');
+        }
+      } catch (e) {
+        logger.warn('Fallback buyer RPC failed', e);
+      }
       
       // Récupération des emails de manière sécurisée
       const currentUser = user;
@@ -468,10 +488,10 @@ export default function TransactionsPage() {
             : (`${sellerProfileFinal.first_name || ''} ${sellerProfileFinal.last_name || ''}`.trim() || 'Vendeur'))
         : (transaction.seller_display_name || 'Vendeur');
       
-      const buyerName = buyerProfile
-        ? (buyerProfile.user_type === 'company' && buyerProfile.company_name
-            ? buyerProfile.company_name
-            : (`${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 'Client'))
+      const buyerName = buyerProfileFinal
+        ? (buyerProfileFinal.user_type === 'company' && buyerProfileFinal.company_name
+            ? buyerProfileFinal.company_name
+            : (`${buyerProfileFinal.first_name || ''} ${buyerProfileFinal.last_name || ''}`.trim() || 'Client'))
         : transaction.buyer_display_name || 'Client anonyme';
 
       const invoiceData = {
@@ -485,7 +505,7 @@ export default function TransactionsPage() {
         serviceDate: transaction.service_date,
         validatedDate: transaction.updated_at,
         sellerProfile: sellerProfileFinal,
-        buyerProfile,
+        buyerProfile: buyerProfileFinal,
         sellerEmail,
         buyerEmail,
         refundStatus: transaction.refund_status || 'none',
