@@ -594,8 +594,8 @@
         "consequences": "Account closure does not affect ongoing transactions, which will be completed according to initial conditions."
       },
       "applicableLaw": {
-        "governing": "These ToS are governed by French law. Any dispute will be subject to the jurisdiction of French courts.",
-        "jurisdiction": "In case of dispute, the courts of Paris will have sole jurisdiction."
+        "governing": "These ToS are governed by Swiss law. Any dispute will be subject to the jurisdiction of Swiss courts.",
+        "jurisdiction": "In case of dispute, the courts of the canton of Geneva will have sole jurisdiction."
       },
       "contactSupport": {
         "questions": "For any questions about these ToS or our services, contact us:"
