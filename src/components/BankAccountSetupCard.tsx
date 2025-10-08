@@ -104,48 +104,31 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
-
-      // Try to generate an account link (update or onboarding decided by the Edge Function)
-      let { data, error } = await supabase.functions.invoke('update-stripe-account-info');
-
+      
+      const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
+      
       if (error) {
-        logger.error('Edge function error on first try:', error);
-
-        // Fallback: if user has no Stripe account yet, create it then retry generating the link
-        try {
-          const { data: status } = await supabase.functions.invoke('check-stripe-account-status');
-          if (!status?.has_account) {
-            logger.log('No Stripe account found, creating one before retrying...');
-            const { error: createErr } = await supabase.functions.invoke('create-stripe-account');
-            if (createErr) logger.error('Create account failed:', createErr);
-          }
-        } catch (e) {
-          logger.error('Status check before retry failed:', e);
-        }
-
-        // Retry once after attempting creation
-        const retry = await supabase.functions.invoke('update-stripe-account-info');
-        data = retry.data;
-        error = retry.error;
-      }
-
-      if (error) {
-        // Still failing after retry → show a clear message
-        logger.error('Error opening bank details modification (after retry):', error);
-        toast.error(t('bankAccount.modificationError'));
+        logger.error('Edge function error:', error);
+        toast.error('Erreur: ' + (error.message || 'Impossible de générer le lien Stripe'));
         return;
       }
-
-      if (data?.success && data?.url) {
+      
+      if (data?.error) {
+        logger.error('Edge function returned error:', data.error);
+        toast.error('Erreur: ' + data.error);
+        return;
+      }
+      
+      if (data?.url) {
         window.open(data.url, '_blank');
-        toast.success(t('bankAccount.modificationOpened'));
+        toast.success('Formulaire Stripe ouvert');
       } else {
-        logger.error('Invalid response data:', data);
-        throw new Error('No URL returned from edge function');
+        logger.error('No URL in response:', data);
+        toast.error('Aucune URL reçue de Stripe');
       }
     } catch (error) {
-      logger.error('Error opening bank details modification:', error);
-      toast.error(t('bankAccount.modificationError'));
+      logger.error('Unexpected error:', error);
+      toast.error('Erreur inattendue');
     } finally {
       setIsProcessing(false);
     }

@@ -57,8 +57,51 @@ serve(async (req) => {
       throw new Error(`Database error: ${accountError.message}`);
     }
 
+    // If no Stripe account exists, create one first
     if (!stripeAccount?.stripe_account_id) {
-      throw new Error('No Stripe account found for user');
+      logStep("No Stripe account found, creating one first");
+      
+      // Create Stripe Connect account
+      const account = await stripe.accounts.create({
+        type: 'express',
+        country: 'FR',
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+
+      logStep("Stripe account created", { accountId: account.id });
+
+      // Save to database
+      await supabase
+        .from('stripe_accounts')
+        .insert({
+          user_id: userId,
+          stripe_account_id: account.id,
+          account_status: 'pending',
+          country: 'FR',
+        });
+
+      logStep("Account saved to database");
+
+      // Now create onboarding link for the new account
+      const accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
+        return_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
+        type: 'account_onboarding',
+      });
+
+      logStep("Onboarding link created for new account", { url: accountLink.url });
+
+      return new Response(JSON.stringify({
+        success: true,
+        url: accountLink.url
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
     }
 
      // Check if account still exists in Stripe
