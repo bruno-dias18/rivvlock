@@ -532,7 +532,7 @@ export const generateInvoicePDF = async (
     // Montant final à payer
     doc.setFont('helvetica', 'bold');
     doc.text(`${t?.('invoice.toPay') || 'Montant à payer'}:`, labelX, yPosition, { align: 'left' });
-    doc.text(`${(invoiceData.amount - refundAmount).toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    doc.text(`${(invoiceData.amount - refundAmount + rivvlockFee).toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
     yPosition += 10;
   }
   
