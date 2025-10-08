@@ -83,64 +83,19 @@ export default function BankAccountSetupCard() {
     try {
       setIsProcessing(true);
 
-      // 1) D'abord essayer update-stripe-account-info
       const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
 
-      let finalUrl: string | null = null;
-
-      // Si erreur réseau ou pas de données, essayer create-stripe-account immédiatement
-      if (updateErr || !updateData) {
-        logger.error('update-stripe-account-info failed, trying fallback', { updateErr, updateData });
-
-        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-        if (createErr || !createData) {
-          logger.error('create-stripe-account error:', createErr);
-          toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-          setIsProcessing(false);
-          return;
-        }
-
-        if (createData.onboarding_url) {
-          finalUrl = createData.onboarding_url;
-        } else {
-          logger.error('No URL from create-stripe-account');
-          toast.error('Aucune URL reçue de Stripe');
-          setIsProcessing(false);
-          return;
-        }
-      }
-
-      // Si succès avec URL depuis update
-      if (updateData?.url) {
-        finalUrl = updateData.url;
-      }
-
-      // Si erreur depuis update-stripe-account-info, essayer fallback
-      if (updateData?.error && !finalUrl) {
-        logger.error('update-stripe-account-info returned error, trying fallback:', updateData.error);
-
-        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-        if (createErr || !createData) {
-          logger.error('create-stripe-account error:', createErr);
-          toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-          setIsProcessing(false);
-          return;
-        }
-
-        if (createData.onboarding_url) {
-          finalUrl = createData.onboarding_url;
-        }
-      }
-
-      // Rediriger dans le même onglet
-      if (finalUrl) {
+      // Si on a reçu une URL valide, l'utiliser directement
+      if (updateData?.url && !updateErr) {
         toast.success('Redirection vers Stripe...');
-        window.location.href = finalUrl;
-      } else {
-        logger.error('No URL received from either function');
-        toast.error('Aucune URL reçue de Stripe');
-        setIsProcessing(false);
+        window.location.href = updateData.url;
+        return;
       }
+
+      // Sinon afficher l'erreur si elle existe
+      logger.error('update-stripe-account-info failed', { updateErr, updateData });
+      toast.error('Erreur: ' + (updateErr?.message || updateData?.error || 'Impossible de mettre à jour le compte Stripe'));
+      setIsProcessing(false);
     } catch (error) {
       logger.error('Unexpected error:', error);
       toast.error('Erreur inattendue');
