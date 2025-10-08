@@ -104,25 +104,39 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
-      
-      const { data, error } = await supabase.functions.invoke('update-stripe-account-info');
-      
+
+      // Try to generate an account link (update or onboarding decided by the Edge Function)
+      let { data, error } = await supabase.functions.invoke('update-stripe-account-info');
+
       if (error) {
-        logger.error('Edge function error:', error);
-        
-        // Check if it's an account not found error
-        if (error.message?.includes('account not found') || error.message?.includes('No account found')) {
-          toast.error(t('bankAccount.accountNotFound'));
-          // Refetch to update the UI state
-          refetch();
-          return;
+        logger.error('Edge function error on first try:', error);
+
+        // Fallback: if user has no Stripe account yet, create it then retry generating the link
+        try {
+          const { data: status } = await supabase.functions.invoke('check-stripe-account-status');
+          if (!status?.has_account) {
+            logger.log('No Stripe account found, creating one before retrying...');
+            const { error: createErr } = await supabase.functions.invoke('create-stripe-account');
+            if (createErr) logger.error('Create account failed:', createErr);
+          }
+        } catch (e) {
+          logger.error('Status check before retry failed:', e);
         }
-        throw error;
+
+        // Retry once after attempting creation
+        const retry = await supabase.functions.invoke('update-stripe-account-info');
+        data = retry.data;
+        error = retry.error;
       }
-      
+
+      if (error) {
+        // Still failing after retry → show a clear message
+        logger.error('Error opening bank details modification (after retry):', error);
+        toast.error(t('bankAccount.modificationError'));
+        return;
+      }
+
       if (data?.success && data?.url) {
-        
-        // Open in new tab after we have the URL
         window.open(data.url, '_blank');
         toast.success(t('bankAccount.modificationOpened'));
       } else {
