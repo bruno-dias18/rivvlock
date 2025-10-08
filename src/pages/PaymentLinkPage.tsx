@@ -199,6 +199,12 @@ export default function PaymentLinkPage() {
                   {transaction.price} {transaction.currency}
                 </span>
               </div>
+              
+              <div className="bg-muted/50 rounded-lg p-3 border border-muted">
+                <p className="text-xs text-muted-foreground text-center">
+                  Prix incluant les frais de service qui garantissent la sécurité de votre paiement et la protection de la transaction
+                </p>
+              </div>
             </div>
 
             <div className="pt-4">
@@ -273,6 +279,12 @@ export default function PaymentLinkPage() {
                 <span className="text-2xl font-bold">
                   {transaction.price} {transaction.currency}
                 </span>
+              </div>
+              
+              <div className="bg-muted/50 rounded-lg p-3 border border-muted">
+                <p className="text-xs text-muted-foreground text-center">
+                  Prix incluant les frais de service qui garantissent la sécurité de votre paiement et la protection de la transaction
+                </p>
               </div>
             </div>
 
