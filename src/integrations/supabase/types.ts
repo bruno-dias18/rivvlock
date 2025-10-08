@@ -828,16 +828,22 @@ export type Database = {
         Args: { p_buyer_id: string; p_requesting_user_id: string }
         Returns: {
           address: string
+          avs_number: string
           city: string
           company_address: string
           company_name: string
           country: Database["public"]["Enums"]["country_code"]
           first_name: string
+          is_subject_to_vat: boolean
           last_name: string
           phone: string
           postal_code: string
+          siret_uid: string
+          tva_rate: number
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
+          vat_number: string
+          vat_rate: number
         }[]
       }
       get_counterparty_safe_profile: {
