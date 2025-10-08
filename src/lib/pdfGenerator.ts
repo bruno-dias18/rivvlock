@@ -154,11 +154,7 @@ export const generateInvoicePDF = async (
     
     // Affichage adapté selon le type d'utilisateur
     if (profile.user_type === 'company') {
-      // Pour les entreprises
-      if (profile.company_name) {
-        doc.text(profile.company_name, margin, leftColumnY);
-        leftColumnY += 4;
-      }
+      // Pour les entreprises - ne pas réafficher le nom de société (déjà dans sellerName)
       
       if (profile.siret_uid) {
         const siretLabel = profile.country === 'CH' ? 'UID' : 'SIRET';
@@ -196,11 +192,7 @@ export const generateInvoicePDF = async (
         leftColumnY += 4;
       }
     } else {
-      // Pour les particuliers et indépendants
-      if (profile.first_name || profile.last_name) {
-        doc.text(`${profile.first_name || ''} ${profile.last_name || ''}`.trim(), margin, leftColumnY);
-        leftColumnY += 4;
-      }
+      // Pour les particuliers et indépendants - ne pas réafficher le nom (déjà dans sellerName)
       
       if (invoiceData.sellerEmail) {
         doc.text(invoiceData.sellerEmail, margin, leftColumnY);
@@ -264,12 +256,7 @@ export const generateInvoicePDF = async (
     
     // Affichage adapté selon le type d'utilisateur
     if (profile.user_type === 'company') {
-      // Pour les entreprises
-      if (profile.company_name) {
-        const companyLines = doc.splitTextToSize(profile.company_name, clientWidth);
-        doc.text(companyLines, clientX, rightColumnY);
-        rightColumnY += companyLines.length * 4;
-      }
+      // Pour les entreprises - ne pas réafficher le nom de société (déjà dans buyerName)
       
       if (profile.siret_uid) {
         const siretLabel = profile.country === 'CH' ? 'UID' : 'SIRET';
@@ -310,13 +297,7 @@ export const generateInvoicePDF = async (
         rightColumnY += 4;
       }
     } else {
-      // Pour les particuliers et indépendants
-      if (profile.first_name || profile.last_name) {
-        const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-        const nameLines = doc.splitTextToSize(fullName, clientWidth);
-        doc.text(nameLines, clientX, rightColumnY);
-        rightColumnY += nameLines.length * 4;
-      }
+      // Pour les particuliers et indépendants - ne pas réafficher le nom (déjà dans buyerName)
       
       if (invoiceData.buyerEmail) {
         const emailLines = doc.splitTextToSize(invoiceData.buyerEmail, clientWidth);
