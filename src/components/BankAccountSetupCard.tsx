@@ -91,10 +91,9 @@ export default function BankAccountSetupCard() {
   };
 
   const handleCompleteOnboarding = () => {
-    if (stripeAccount?.onboarding_url) {
-      // Open in same tab to avoid popup blockers
-      window.location.href = stripeAccount.onboarding_url;
-    }
+    // Always generate a fresh account_update link instead of using a possibly stale onboarding_url
+    // Reuse the same flow as modification to ensure partial completion
+    void handleModifyBankDetails();
   };
 
   const handleRefreshStatus = () => {

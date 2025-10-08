@@ -54,26 +54,20 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
           return;
         }
 
-        // Get onboarding URL - either from status or generate a new one
-        let onboardingUrl = statusData.onboarding_url;
-
-        // If no URL exists, generate a new one via update-stripe-account-info
-        if (!onboardingUrl) {
-          logger.log('No onboarding URL found, generating new link...');
-          
-          const { data: updateData, error: updateError } = await supabase.functions.invoke('update-stripe-account-info');
-          
-          if (updateError) {
-            throw updateError;
-          }
-
-          if (updateData.error) {
-            throw new Error(updateData.error);
-          }
-
-          onboardingUrl = updateData.url;
-          logger.log('New onboarding URL generated successfully');
+        // Always generate a fresh account_update link to ensure partial completion (avoid full restart)
+        let onboardingUrl: string | undefined;
+        const { data: updateData, error: updateError } = await supabase.functions.invoke('update-stripe-account-info');
+        
+        if (updateError) {
+          throw updateError;
         }
+
+        if (updateData.error) {
+          throw new Error(updateData.error);
+        }
+
+        onboardingUrl = updateData.url;
+        logger.log('Fresh onboarding URL generated via account_update');
 
         // Now we always have a URL - open it in new tab
         const newTab = window.open(onboardingUrl, '_blank');
