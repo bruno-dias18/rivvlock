@@ -29,8 +29,7 @@ export const useUnreadDisputesGlobal = () => {
         .select('id', { count: 'exact', head: true })
         .in('dispute_id', ids)
         .neq('sender_id', user.id)
-        .or(`recipient_id.eq.${user.id},recipient_id.is.null`)
-        .not('message_type', 'ilike', 'admin%');
+        .or(`recipient_id.eq.${user.id},recipient_id.is.null`);
 
       if (lastSeen) {
         query = query.gt('created_at', lastSeen);
