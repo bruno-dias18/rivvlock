@@ -192,11 +192,21 @@ export default function BankAccountSetupCard() {
               </p>
               <Button 
                 onClick={stripeAccount.onboarding_url ? handleCompleteOnboarding : handleModifyBankDetails}
+                disabled={isProcessing}
                 size="sm"
                 className="mt-2 bg-amber-600 hover:bg-amber-700 text-white"
               >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                {t('bankAccount.completeNow')}
+                {isProcessing ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    {t('bankAccount.processingInProgress')}
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    {t('bankAccount.completeNow')}
+                  </>
+                )}
               </Button>
             </AlertDescription>
           </Alert>

@@ -62,13 +62,12 @@ serve(async (req) => {
     }
 
      // Check if account still exists in Stripe
-    let stripeAccountExists = true;
+    let accountDetails;
     try {
-      await stripe.accounts.retrieve(stripeAccount.stripe_account_id);
-      logStep("Stripe account verified in Stripe API");
+      accountDetails = await stripe.accounts.retrieve(stripeAccount.stripe_account_id);
+      logStep("Stripe account verified in Stripe API", { status: stripeAccount.account_status });
     } catch (stripeError: any) {
       logStep("Stripe account not found in Stripe API", { error: stripeError.message });
-      stripeAccountExists = false;
       
       if (stripeError.code === 'account_invalid' || stripeError.code === 'resource_missing') {
         throw new Error('No account found - account may have been deleted');
@@ -76,18 +75,16 @@ serve(async (req) => {
       throw stripeError;
     }
 
-    if (stripeAccount.account_status !== 'active') {
-      throw new Error('Stripe account is not active. Complete setup first.');
-    }
+    // Determine link type: account_onboarding for incomplete, account_update for active
+    const linkType = stripeAccount.account_status === 'active' ? 'account_update' : 'account_onboarding';
+    logStep("Creating account link", { accountId: stripeAccount.stripe_account_id, linkType });
 
-    logStep("Creating account update link", { accountId: stripeAccount.stripe_account_id });
-
-    // Create account link (using account_onboarding for Express accounts)
+    // Create account link with appropriate type
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.stripe_account_id,
       refresh_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
       return_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
-      type: 'account_onboarding',
+      type: linkType,
     });
 
     logStep("Account update link created successfully", { url: accountLink.url });
