@@ -117,8 +117,8 @@ serve(async (req) => {
         accessed_by_user_id: user.id,
         access_type: accessType,
         accessed_fields: user.id === transaction.user_id 
-          ? ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city']
-          : ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city', 'siret_uid', 'vat_rate', 'tva_rate', 'is_subject_to_vat', 'avs_number', 'vat_number']
+          ? ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city', 'phone']
+          : ['first_name', 'last_name', 'company_name', 'user_type', 'country', 'address', 'postal_code', 'city', 'siret_uid', 'vat_rate', 'tva_rate', 'is_subject_to_vat', 'avs_number', 'vat_number', 'phone']
       });
 
     return new Response(

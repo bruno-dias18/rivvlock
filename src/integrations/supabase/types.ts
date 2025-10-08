@@ -834,6 +834,7 @@ export type Database = {
           country: Database["public"]["Enums"]["country_code"]
           first_name: string
           last_name: string
+          phone: string
           postal_code: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"]
