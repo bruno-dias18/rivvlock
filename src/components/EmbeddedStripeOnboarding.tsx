@@ -54,40 +54,56 @@ export function EmbeddedStripeOnboarding({ onSuccess, onCancel }: EmbeddedStripe
           return;
         }
 
-        // If we have an onboarding URL, open new window and redirect
-        if (statusData.onboarding_url) {
-          // Try to open new tab - only after we have a valid URL
-          const newTab = window.open(statusData.onboarding_url, '_blank');
-          
-          if (!newTab) {
-            // Fallback if popup was blocked - redirect in current window
-            window.location.href = statusData.onboarding_url;
-            return;
-          }
-          
-          setIsLoading(false);
-          
-          // Set up polling to check account status
-          const pollAccountStatus = setInterval(async () => {
-            try {
-              const { data: pollStatusData } = await supabase.functions.invoke('check-stripe-account-status');
-              if (pollStatusData?.charges_enabled && pollStatusData?.payouts_enabled) {
-                clearInterval(pollAccountStatus);
-                toast.success('Configuration terminée avec succès !');
-                onSuccess();
-              }
-            } catch (error) {
-              logger.error('Error polling account status:', error);
-            }
-          }, 3000); // Poll every 3 seconds
+        // Get onboarding URL - either from status or generate a new one
+        let onboardingUrl = statusData.onboarding_url;
 
-          // Clean up polling after 5 minutes
-          setTimeout(() => {
-            clearInterval(pollAccountStatus);
-          }, 300000);
-        } else {
-          throw new Error('URL d\'onboarding non disponible');
+        // If no URL exists, generate a new one via update-stripe-account-info
+        if (!onboardingUrl) {
+          logger.log('No onboarding URL found, generating new link...');
+          
+          const { data: updateData, error: updateError } = await supabase.functions.invoke('update-stripe-account-info');
+          
+          if (updateError) {
+            throw updateError;
+          }
+
+          if (updateData.error) {
+            throw new Error(updateData.error);
+          }
+
+          onboardingUrl = updateData.url;
+          logger.log('New onboarding URL generated successfully');
         }
+
+        // Now we always have a URL - open it in new tab
+        const newTab = window.open(onboardingUrl, '_blank');
+        
+        if (!newTab) {
+          // Fallback if popup was blocked - redirect in current window
+          window.location.href = onboardingUrl;
+          return;
+        }
+        
+        setIsLoading(false);
+        
+        // Set up polling to check account status
+        const pollAccountStatus = setInterval(async () => {
+          try {
+            const { data: pollStatusData } = await supabase.functions.invoke('check-stripe-account-status');
+            if (pollStatusData?.charges_enabled && pollStatusData?.payouts_enabled) {
+              clearInterval(pollAccountStatus);
+              toast.success('Configuration terminée avec succès !');
+              onSuccess();
+            }
+          } catch (error) {
+            logger.error('Error polling account status:', error);
+          }
+        }, 3000); // Poll every 3 seconds
+
+        // Clean up polling after 5 minutes
+        setTimeout(() => {
+          clearInterval(pollAccountStatus);
+        }, 300000);
 
       } catch (err: any) {
         logger.error('Error initializing Stripe onboarding:', err);
