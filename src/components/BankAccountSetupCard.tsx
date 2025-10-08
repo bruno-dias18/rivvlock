@@ -19,6 +19,8 @@ export default function BankAccountSetupCard() {
   const { data: stripeAccount, isLoading, refetch, error, isError } = useStripeAccount();
   const createAccount = useCreateStripeAccount();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [stripeUrl, setStripeUrl] = useState<string | null>(null);
+  const [showManualOpen, setShowManualOpen] = useState(false);
   const { t } = useTranslation();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -42,48 +44,36 @@ export default function BankAccountSetupCard() {
   };
 
   const handleCreateAccount = async () => {
-    // Open new tab immediately to avoid popup blockers
-    const newTab = window.open('', '_blank');
-    
     try {
       setIsProcessing(true);
+      setShowManualOpen(false);
+      setStripeUrl(null);
       
       const result = await createAccount.mutateAsync();
       
       if (result.onboarding_url) {
-        // Redirect the opened tab to the onboarding URL
-        if (newTab) {
-          newTab.location.href = result.onboarding_url;
-        } else {
-          // Fallback if popup was blocked
-          window.location.href = result.onboarding_url;
-        }
+        const newTab = window.open(result.onboarding_url, '_blank');
         
-        if (result.recreated) {
-          toast.success(t('bankAccount.accountRecreated'));
+        if (!newTab) {
+          // Popup bloqué, afficher le bouton manuel
+          setStripeUrl(result.onboarding_url);
+          setShowManualOpen(true);
+          toast.info('Veuillez autoriser les popups ou cliquer sur le bouton ci-dessous');
         } else {
-          toast.success(t('bankAccount.onboardingOpened'));
+          if (result.recreated) {
+            toast.success(t('bankAccount.accountRecreated'));
+          } else {
+            toast.success(t('bankAccount.onboardingOpened'));
+          }
         }
       } else {
-        // Close the tab if no URL needed
-        if (newTab) {
-          newTab.close();
-        }
-        
         if (result.existing) {
           toast.info(t('bankAccount.accountAlreadyActive'));
-          // Refresh status to update UI
           refetch();
         }
       }
     } catch (error) {
       logger.error('Error creating Stripe account:', error);
-      
-      // Close the tab on error
-      if (newTab) {
-        newTab.close();
-      }
-      
       toast.error(t('bankAccount.createError'));
     } finally {
       setIsProcessing(false);
@@ -104,60 +94,71 @@ export default function BankAccountSetupCard() {
   const handleModifyBankDetails = async () => {
     try {
       setIsProcessing(true);
+      setShowManualOpen(false);
+      setStripeUrl(null);
 
-// 1) D'abord essayer update-stripe-account-info (gère à la fois update et onboarding)
-const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+      // 1) D'abord essayer update-stripe-account-info
+      const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
 
-// Si erreur réseau ou pas de données, essayer create-stripe-account immédiatement
-if (updateErr || !updateData) {
-  logger.error('update-stripe-account-info failed, trying fallback', { updateErr, updateData });
+      let finalUrl: string | null = null;
 
-  const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-  if (createErr || !createData) {
-    logger.error('create-stripe-account error:', createErr);
-    toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-    return;
-  }
+      // Si erreur réseau ou pas de données, essayer create-stripe-account immédiatement
+      if (updateErr || !updateData) {
+        logger.error('update-stripe-account-info failed, trying fallback', { updateErr, updateData });
 
-  if (createData.onboarding_url) {
-    window.open(createData.onboarding_url, '_blank');
-    toast.success('Formulaire Stripe ouvert');
-    return;
-  }
+        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+        if (createErr || !createData) {
+          logger.error('create-stripe-account error:', createErr);
+          toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+          return;
+        }
 
-  logger.error('No URL from create-stripe-account');
-  toast.error('Aucune URL reçue de Stripe');
-  return;
-}
+        if (createData.onboarding_url) {
+          finalUrl = createData.onboarding_url;
+        } else {
+          logger.error('No URL from create-stripe-account');
+          toast.error('Aucune URL reçue de Stripe');
+          return;
+        }
+      }
 
-// Si succès avec URL depuis update
-if (updateData.url) {
-  window.open(updateData.url, '_blank');
-  toast.success('Formulaire Stripe ouvert');
-  return;
-}
+      // Si succès avec URL depuis update
+      if (updateData?.url) {
+        finalUrl = updateData.url;
+      }
 
-// Si erreur depuis update-stripe-account-info, essayer fallback
-if (updateData.error) {
-  logger.error('update-stripe-account-info returned error, trying fallback:', updateData.error);
+      // Si erreur depuis update-stripe-account-info, essayer fallback
+      if (updateData?.error && !finalUrl) {
+        logger.error('update-stripe-account-info returned error, trying fallback:', updateData.error);
 
-  const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-  if (createErr || !createData) {
-    logger.error('create-stripe-account error:', createErr);
-    toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
-    return;
-  }
+        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+        if (createErr || !createData) {
+          logger.error('create-stripe-account error:', createErr);
+          toast.error('Erreur: ' + (createErr?.message || 'Impossible de créer le compte Stripe'));
+          return;
+        }
 
-  if (createData.onboarding_url) {
-    window.open(createData.onboarding_url, '_blank');
-    toast.success('Formulaire Stripe ouvert');
-    return;
-  }
-}
+        if (createData.onboarding_url) {
+          finalUrl = createData.onboarding_url;
+        }
+      }
 
-// Dernier recours
-logger.error('No URL received from either function');
-toast.error('Aucune URL reçue de Stripe');
+      // Ouvrir l'URL une fois qu'on l'a
+      if (finalUrl) {
+        const newTab = window.open(finalUrl, '_blank');
+        
+        if (!newTab) {
+          // Popup bloqué, afficher le bouton manuel
+          setStripeUrl(finalUrl);
+          setShowManualOpen(true);
+          toast.info('Veuillez autoriser les popups ou cliquer sur le bouton ci-dessous');
+        } else {
+          toast.success('Formulaire Stripe ouvert');
+        }
+      } else {
+        logger.error('No URL received from either function');
+        toast.error('Aucune URL reçue de Stripe');
+      }
     } catch (error) {
       logger.error('Unexpected error:', error);
       toast.error('Erreur inattendue');
@@ -286,23 +287,34 @@ toast.error('Aucune URL reçue de Stripe');
             
             <PaymentTimingInfo />
             
-            <Button 
-              onClick={handleCreateAccount}
-              disabled={isProcessing}
-              className="w-full"
-            >
-              {isProcessing ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  {t('bankAccount.processingInProgress')}
-                </>
-              ) : (
-                <>
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  {t('bankAccount.setupButton')}
-                </>
-              )}
-            </Button>
+            {showManualOpen && stripeUrl ? (
+              <Button 
+                onClick={() => window.open(stripeUrl, '_blank')}
+                className="w-full"
+                variant="default"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ouvrir Stripe
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleCreateAccount}
+                disabled={isProcessing}
+                className="w-full"
+              >
+                {isProcessing ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Connexion à Stripe...
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    {t('bankAccount.setupButton')}
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         ) : (
           // Account exists - show status
@@ -393,24 +405,35 @@ toast.error('Aucune URL reçue de Stripe');
                 <PaymentTimingInfo />
 
                 {stripeAccount.account_status === 'active' && (
-                  <Button 
-                    onClick={handleModifyBankDetails}
-                    disabled={isProcessing}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" />
-                        {t('bankAccount.processingInProgress')}
-                      </>
-                    ) : (
-                      <>
-                        <Settings className="h-4 w-4 mr-2" />
-                        {t('bankAccount.modifyBankDetails')}
-                      </>
-                    )}
-                  </Button>
+                  showManualOpen && stripeUrl ? (
+                    <Button 
+                      onClick={() => window.open(stripeUrl, '_blank')}
+                      className="w-full"
+                      variant="default"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Ouvrir Stripe
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={handleModifyBankDetails}
+                      disabled={isProcessing}
+                      className="w-full"
+                      variant="outline"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Clock className="h-4 w-4 mr-2 animate-spin" />
+                          Connexion à Stripe...
+                        </>
+                      ) : (
+                        <>
+                          <Settings className="h-4 w-4 mr-2" />
+                          {t('bankAccount.modifyBankDetails')}
+                        </>
+                      )}
+                    </Button>
+                  )
                 )}
               </div>
             )}
