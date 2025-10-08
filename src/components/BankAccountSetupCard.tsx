@@ -52,20 +52,13 @@ export default function BankAccountSetupCard() {
       const result = await createAccount.mutateAsync();
       
       if (result.onboarding_url) {
-        const newTab = window.open(result.onboarding_url, '_blank');
-        
-        if (!newTab) {
-          // Popup bloqué, afficher le bouton manuel
-          setStripeUrl(result.onboarding_url);
-          setShowManualOpen(true);
-          toast.info('Veuillez autoriser les popups ou cliquer sur le bouton ci-dessous');
+        // Rediriger dans le même onglet
+        if (result.recreated) {
+          toast.success(t('bankAccount.accountRecreated'));
         } else {
-          if (result.recreated) {
-            toast.success(t('bankAccount.accountRecreated'));
-          } else {
-            toast.success(t('bankAccount.onboardingOpened'));
-          }
+          toast.success(t('bankAccount.redirectingToStripe'));
         }
+        window.location.href = result.onboarding_url;
       } else {
         if (result.existing) {
           toast.info(t('bankAccount.accountAlreadyActive'));
@@ -143,18 +136,10 @@ export default function BankAccountSetupCard() {
         }
       }
 
-      // Ouvrir l'URL une fois qu'on l'a
+      // Rediriger dans le même onglet
       if (finalUrl) {
-        const newTab = window.open(finalUrl, '_blank');
-        
-        if (!newTab) {
-          // Popup bloqué, afficher le bouton manuel
-          setStripeUrl(finalUrl);
-          setShowManualOpen(true);
-          toast.info('Veuillez autoriser les popups ou cliquer sur le bouton ci-dessous');
-        } else {
-          toast.success('Formulaire Stripe ouvert');
-        }
+        toast.success('Redirection vers Stripe...');
+        window.location.href = finalUrl;
       } else {
         logger.error('No URL received from either function');
         toast.error('Aucune URL reçue de Stripe');

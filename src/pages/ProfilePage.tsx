@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,15 @@ export default function ProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Détecter le retour de Stripe et rafraîchir automatiquement
+  useEffect(() => {
+    // Rafraîchir les données Stripe au chargement de la page
+    // Cela permet de voir les mises à jour après le retour de Stripe
+    queryClient.invalidateQueries({ queryKey: ['stripe-account'] });
+    refetch();
+  }, [queryClient, refetch]);
 
   if (isLoading) {
     return (

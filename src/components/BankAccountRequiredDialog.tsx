@@ -83,17 +83,11 @@ const handleStartSetup = async () => {
       return;
     }
 
-    // Une fois l'URL obtenue, ouvrir DIRECTEMENT l'onglet
+    // Rediriger dans le même onglet
     if (stripeUrl) {
-      const newTab = window.open(stripeUrl, '_blank');
-      if (!newTab) {
-        // Si bloqué par le navigateur, afficher un bouton manuel
-        setStripeUrl(stripeUrl);
-        setShowManualOpen(true);
-        toast.info('Veuillez autoriser les popups pour ouvrir Stripe');
-      } else {
-        toast.success('Formulaire Stripe ouvert');
-      }
+      toast.success('Redirection vers Stripe...');
+      // Utiliser location.href pour rester dans le même onglet
+      window.location.href = stripeUrl;
     }
   } catch (err) {
     logger.error('Unexpected error opening Stripe flow:', err);
