@@ -158,10 +158,13 @@ const TransactionCardComponent = ({
                             return `${netAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                           })()
                         ) : (
-                          // Acheteur : montant remboursé
+                          // Acheteur : montant total payé (incluant frais RivvLock 5%)
                           (() => {
                             const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
-                            return `${refundAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                            const amountAfterRefund = transaction.price - refundAmount;
+                            const buyerFees = amountAfterRefund * 0.05; // 5% de frais RivvLock
+                            const totalPaid = amountAfterRefund + buyerFees;
+                            return `${totalPaid.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                           })()
                         )}
                       </>
