@@ -118,6 +118,26 @@ serve(async (req) => {
       throw stripeError;
     }
 
+    // Check if account is fully active and complete
+    const isFullyActive = accountDetails.charges_enabled && 
+                          accountDetails.payouts_enabled && 
+                          accountDetails.details_submitted;
+
+    if (isFullyActive) {
+      // For fully active accounts, redirect to Stripe Dashboard
+      const dashboardUrl = `https://dashboard.stripe.com/${stripeAccount.stripe_account_id}/settings/account`;
+      
+      logStep("Account is fully active, returning dashboard URL", { url: dashboardUrl });
+      
+      return new Response(JSON.stringify({
+        success: true,
+        url: dashboardUrl
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
     // Determine the correct link type based on account state
     const linkType = accountDetails.details_submitted ? 'account_update' : 'account_onboarding';
     logStep("Creating account link", { 
