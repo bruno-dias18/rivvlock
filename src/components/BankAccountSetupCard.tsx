@@ -105,34 +105,33 @@ export default function BankAccountSetupCard() {
     try {
       setIsProcessing(true);
 
-      // 1) Always try (idempotent) account creation/lookup → returns onboarding URL when needed
-      const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-      if (createErr) {
-        logger.error('create-stripe-account error:', createErr);
-      }
-
-      if (createData?.onboarding_url) {
-        window.open(createData.onboarding_url, '_blank');
-        toast.success('Formulaire Stripe ouvert');
-        return;
-      }
-
-      // 2) If no URL from creation step, request an update link (account_update or onboarding decided server-side)
+      // 1) D'abord essayer update-stripe-account-info (gère à la fois update et onboarding)
       const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+      
       if (updateErr) {
         logger.error('update-stripe-account-info error:', updateErr);
-        toast.error('Erreur: ' + (updateErr.message || 'Impossible de générer le lien Stripe'));
-        return;
       }
-      if (updateData?.error) {
-        logger.error('update-stripe-account-info returned error:', updateData.error);
-        toast.error('Erreur: ' + updateData.error);
-        return;
-      }
+
       if (updateData?.url) {
         window.open(updateData.url, '_blank');
         toast.success('Formulaire Stripe ouvert');
         return;
+      }
+
+      // 2) Si update-stripe-account-info indique "pas de compte", créer un nouveau compte
+      if (updateData?.error && updateData.error.includes('No Stripe account found')) {
+        const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+        if (createErr) {
+          logger.error('create-stripe-account error:', createErr);
+          toast.error('Erreur: ' + (createErr.message || 'Impossible de créer le compte Stripe'));
+          return;
+        }
+
+        if (createData?.onboarding_url) {
+          window.open(createData.onboarding_url, '_blank');
+          toast.success('Formulaire Stripe ouvert');
+          return;
+        }
       }
 
       // 3) Last fallback – inform clearly

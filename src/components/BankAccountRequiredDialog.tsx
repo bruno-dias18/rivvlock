@@ -27,36 +27,34 @@ const handleStartSetup = async () => {
   // Ouvre un nouvel onglet tout de suite pour éviter les bloqueurs de popups
   const newTab = window.open('', '_blank');
   try {
-    // 1) Tentative idempotente de création/récupération du compte
-    const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
-    if (createErr) {
-      logger.error('create-stripe-account error:', createErr);
-    }
-
-    if (createData?.onboarding_url) {
-      if (newTab) newTab.location.href = createData.onboarding_url; else window.location.href = createData.onboarding_url;
-      toast.success('Formulaire Stripe ouvert');
-      return;
-    }
-
-    // 2) Si pas d’URL, demander un lien de mise à jour (le type est décidé côté serveur)
+    // 1) D'abord essayer update-stripe-account-info (gère à la fois update et onboarding)
     const { data: updateData, error: updateErr } = await supabase.functions.invoke('update-stripe-account-info');
+    
     if (updateErr) {
       logger.error('update-stripe-account-info error:', updateErr);
-      toast.error('Erreur: ' + (updateErr.message || 'Impossible de générer le lien Stripe'));
-      if (newTab) newTab.close();
-      return;
     }
-    if (updateData?.error) {
-      logger.error('update-stripe-account-info returned error:', updateData.error);
-      toast.error('Erreur: ' + updateData.error);
-      if (newTab) newTab.close();
-      return;
-    }
+
     if (updateData?.url) {
       if (newTab) newTab.location.href = updateData.url; else window.location.href = updateData.url;
       toast.success('Formulaire Stripe ouvert');
       return;
+    }
+
+    // 2) Si update-stripe-account-info indique "pas de compte", créer un nouveau compte
+    if (updateData?.error && updateData.error.includes('No Stripe account found')) {
+      const { data: createData, error: createErr } = await supabase.functions.invoke('create-stripe-account');
+      if (createErr) {
+        logger.error('create-stripe-account error:', createErr);
+        toast.error('Erreur: ' + (createErr.message || 'Impossible de créer le compte Stripe'));
+        if (newTab) newTab.close();
+        return;
+      }
+
+      if (createData?.onboarding_url) {
+        if (newTab) newTab.location.href = createData.onboarding_url; else window.location.href = createData.onboarding_url;
+        toast.success('Formulaire Stripe ouvert');
+        return;
+      }
     }
 
     // 3) Aucun lien retourné
