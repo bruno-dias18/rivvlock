@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useStripeAccount, useCreateStripeAccount } from '@/hooks/useStripeAccount';
-import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock, Settings, RefreshCw, LogOut } from 'lucide-react';
+import { AlertCircle, CheckCircle, ExternalLink, CreditCard, Clock, Settings, RefreshCw, LogOut, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,8 +160,16 @@ export default function BankAccountSetupCard() {
     );
   }
 
+  // Check if Stripe requires more information
+  const needsMoreInfo = stripeAccount?.has_account && (
+    !stripeAccount.details_submitted || 
+    !stripeAccount.charges_enabled || 
+    !stripeAccount.payouts_enabled || 
+    stripeAccount.account_status === 'pending'
+  );
+
   return (
-    <Card>
+    <Card className={needsMoreInfo ? "border-amber-500 border-2" : ""}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
@@ -172,6 +180,29 @@ export default function BankAccountSetupCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {needsMoreInfo && (
+          <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="space-y-3">
+              <p className="font-semibold text-amber-900 dark:text-amber-100">
+                {t('bankAccount.verificationRequired')}
+              </p>
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                {t('bankAccount.verificationRequiredMessage')}
+              </p>
+              {stripeAccount.onboarding_url && (
+                <Button 
+                  onClick={handleCompleteOnboarding}
+                  size="sm"
+                  className="mt-2 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  {t('bankAccount.completeNow')}
+                </Button>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
         {isError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -278,8 +309,8 @@ export default function BankAccountSetupCard() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <label className="font-medium">{t('bankAccount.detailsSubmitted')}</label>
-                <p className={stripeAccount.details_submitted ? "text-green-600" : "text-orange-600"}>
-                  {stripeAccount.details_submitted ? t('bankAccount.complete') : t('bankAccount.incomplete')}
+                <p className={stripeAccount.details_submitted ? "text-green-600" : "text-orange-600 font-semibold"}>
+                  {stripeAccount.details_submitted ? t('bankAccount.complete') : `⚠ ${t('bankAccount.incomplete')} - ${t('bankAccount.documentsRequired')}`}
                 </p>
               </div>
               <div>
@@ -290,8 +321,8 @@ export default function BankAccountSetupCard() {
               </div>
               <div>
                 <label className="font-medium">{t('bankAccount.payoutsEnabled')}</label>
-                <p className={stripeAccount.payouts_enabled ? "text-green-600" : "text-orange-600"}>
-                  {stripeAccount.payouts_enabled ? t('bankAccount.enabled') : t('bankAccount.disabled')}
+                <p className={stripeAccount.payouts_enabled ? "text-green-600" : "text-orange-600 font-semibold"}>
+                  {stripeAccount.payouts_enabled ? t('bankAccount.enabled') : `⚠ ${t('bankAccount.disabled')} - ${t('bankAccount.payoutsBlocked')}`}
                 </p>
               </div>
             </div>

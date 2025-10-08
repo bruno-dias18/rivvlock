@@ -389,7 +389,12 @@
     "website": "Site web",
     "connectionError": "Erreur de connexion Stripe",
     "unknownError": "Erreur inconnue",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "verificationRequired": "⚠️ Vérification requise",
+    "verificationRequiredMessage": "Stripe demande des informations supplémentaires. Sans compléter ces informations, vous ne pourrez pas recevoir de virements sur votre compte bancaire.",
+    "completeNow": "Compléter maintenant",
+    "documentsRequired": "Documents requis",
+    "payoutsBlocked": "Virements bloqués"
   },
   "paymentTiming": {
     "note": "Délai de versement",
