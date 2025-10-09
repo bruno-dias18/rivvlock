@@ -171,7 +171,13 @@ export const swissUidSchema = z
 export const swissAvsSchema = z
   .string()
   .trim()
-  .regex(swissAvsRegex, 'Le numéro AVS doit avoir le format 756.XXXX.XXXX.XX');
+  .refine((val) => {
+    // Accepte les chiffres uniquement (format envoyé par MaskedAvsInput)
+    const cleaned = val.replace(/\D/g, '');
+    return cleaned.length === 13 && cleaned.startsWith('756');
+  }, {
+    message: 'Le numéro AVS doit contenir exactement 13 chiffres (756.XXXX.XXXX.XX)'
+  });
 
 // VAT number validation
 export const vatNumberSchema = (country: 'FR' | 'CH') => {
