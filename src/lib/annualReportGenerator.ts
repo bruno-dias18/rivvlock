@@ -170,6 +170,33 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   // Calculer le taux de TVA
   const vatRate = sellerProfile.tva_rate || sellerProfile.vat_rate || 0;
   
+  // Labels selon la langue
+  const labels = {
+    fr: {
+      revenueTTC: 'CA Total TTC',
+      revenueHT: 'CA Total HT',
+      vat: 'TVA collectée',
+      fees: 'Total frais RivvLock (5%)',
+      net: 'Net reçu'
+    },
+    en: {
+      revenueTTC: 'Total Revenue (incl. VAT)',
+      revenueHT: 'Total Revenue (excl. VAT)',
+      vat: 'VAT Collected',
+      fees: 'Total RivvLock fees (5%)',
+      net: 'Net Received'
+    },
+    de: {
+      revenueTTC: 'Gesamtumsatz (inkl. MwSt)',
+      revenueHT: 'Gesamtumsatz (exkl. MwSt)',
+      vat: 'Gesammelte MwSt',
+      fees: 'Gesamt RivvLock Gebühren (5%)',
+      net: 'Netto erhalten'
+    }
+  };
+  
+  const currentLabels = labels[language as keyof typeof labels] || labels.fr;
+  
   // Ajouter les totaux par devise avec décomposition HT/TVA/TTC
   Object.entries(currencyTotals).sort(([a], [b]) => a.localeCompare(b)).forEach(([curr, amount]) => {
     // Le montant total est TTC
@@ -180,11 +207,11 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     const net = totalTTC - fees;
     
     summaryData.push(
-      [t?.('reports.totalRevenueTTC') || 'CA Total TTC', `${totalTTC.toFixed(2)} ${curr}`],
-      [t?.('reports.totalRevenueHT') || 'CA Total HT', `${totalHT.toFixed(2)} ${curr}`],
-      [t?.('reports.totalVAT') || 'TVA collectée', `${totalVAT.toFixed(2)} ${curr}`],
-      [t?.('reports.totalFees') || 'Total frais RivvLock (5%)', `${fees.toFixed(2)} ${curr}`],
-      [t?.('reports.netReceived') || 'Net reçu', `${net.toFixed(2)} ${curr}`]
+      [currentLabels.revenueTTC, `${totalTTC.toFixed(2)} ${curr}`],
+      [currentLabels.revenueHT, `${totalHT.toFixed(2)} ${curr}`],
+      [currentLabels.vat, `${totalVAT.toFixed(2)} ${curr}`],
+      [currentLabels.fees, `${fees.toFixed(2)} ${curr}`],
+      [currentLabels.net, `${net.toFixed(2)} ${curr}`]
     );
   });
   
@@ -206,6 +233,42 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   
   yPosition += 10;
   
+  // Labels des colonnes selon la langue
+  const columnLabels = {
+    fr: {
+      date: 'Date',
+      invoice: 'Facture',
+      client: 'Client',
+      amountHT: 'Mnt HT',
+      vat: 'TVA',
+      amountTTC: 'Mnt TTC',
+      fees: 'Frais',
+      net: 'Net'
+    },
+    en: {
+      date: 'Date',
+      invoice: 'Invoice',
+      client: 'Client',
+      amountHT: 'Amt excl. VAT',
+      vat: 'VAT',
+      amountTTC: 'Amt incl. VAT',
+      fees: 'Fees',
+      net: 'Net'
+    },
+    de: {
+      date: 'Datum',
+      invoice: 'Rechnung',
+      client: 'Kunde',
+      amountHT: 'Betr. o. MwSt',
+      vat: 'MwSt',
+      amountTTC: 'Betr. m. MwSt',
+      fees: 'Gebühren',
+      net: 'Netto'
+    }
+  };
+  
+  const cols = columnLabels[language as keyof typeof columnLabels] || columnLabels.fr;
+  
   // En-têtes avec colonnes HT/TVA/TTC
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
@@ -213,14 +276,14 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.setFillColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
   doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 7, 'F');
   
-  doc.text(t?.('reports.date') || 'Date', margin + 2, yPosition);
-  doc.text(t?.('reports.invoice') || 'Facture', margin + 25, yPosition);
-  doc.text(t?.('reports.client') || 'Client', margin + 55, yPosition);
-  doc.text(t?.('reports.amountHT') || 'Mnt HT', margin + 95, yPosition);
-  doc.text(t?.('reports.vat') || 'TVA', margin + 115, yPosition);
-  doc.text(t?.('reports.amountTTC') || 'Mnt TTC', margin + 130, yPosition);
-  doc.text(t?.('reports.fees') || 'Frais', margin + 153, yPosition);
-  doc.text(t?.('reports.net') || 'Net', margin + 170, yPosition);
+  doc.text(cols.date, margin + 2, yPosition);
+  doc.text(cols.invoice, margin + 28, yPosition);
+  doc.text(cols.client, margin + 60, yPosition);
+  doc.text(cols.amountHT, margin + 100, yPosition, { align: 'right' });
+  doc.text(cols.vat, margin + 120, yPosition, { align: 'right' });
+  doc.text(cols.amountTTC, margin + 143, yPosition, { align: 'right' });
+  doc.text(cols.fees, margin + 162, yPosition, { align: 'right' });
+  doc.text(cols.net, margin + 180, yPosition, { align: 'right' });
   
   yPosition += 5;
   
@@ -262,13 +325,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     }
     
     doc.text(date, margin + 2, yPosition);
-    doc.text(invoiceNum.substring(0, 12), margin + 25, yPosition);
-    doc.text(client.substring(0, 15), margin + 55, yPosition);
-    doc.text(`${amountHT.toFixed(2)}`, margin + 95, yPosition);
-    doc.text(`${vatAmount.toFixed(2)}`, margin + 115, yPosition);
-    doc.text(`${amountTTC.toFixed(2)}`, margin + 130, yPosition);
-    doc.text(`${fee.toFixed(2)}`, margin + 153, yPosition);
-    doc.text(`${net.toFixed(2)}`, margin + 170, yPosition);
+    doc.text(invoiceNum.substring(0, 12), margin + 28, yPosition);
+    doc.text(client.substring(0, 15), margin + 60, yPosition);
+    doc.text(amountHT.toFixed(2), margin + 100, yPosition, { align: 'right' });
+    doc.text(vatAmount.toFixed(2), margin + 120, yPosition, { align: 'right' });
+    doc.text(amountTTC.toFixed(2), margin + 143, yPosition, { align: 'right' });
+    doc.text(fee.toFixed(2), margin + 162, yPosition, { align: 'right' });
+    doc.text(net.toFixed(2), margin + 180, yPosition, { align: 'right' });
     
     yPosition += 6;
   });
