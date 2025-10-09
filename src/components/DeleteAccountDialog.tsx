@@ -68,11 +68,13 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
     setIsDeleting(true);
 
     try {
-      const { error } = await supabase.functions.invoke('delete-user-account');
+      const { data, error } = await supabase.functions.invoke('delete-user-account');
 
       if (error) {
-        logger.error('Error deleting account:', error);
-        toast.error(error.message || t('deleteAccount.errorMessage'));
+        logger.error('Error deleting account:', { error, data });
+        // Surface backend message when available (e.g., active transactions)
+        const backendMessage = (data as any)?.error || (data as any)?.message;
+        toast.error(backendMessage || error.message || t('deleteAccount.errorMessage'));
         return;
       }
 
