@@ -198,7 +198,16 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   const currentLabels = labels[language as keyof typeof labels] || labels.fr;
   
   // Ajouter les totaux par devise avec décomposition HT/TVA/TTC
-  Object.entries(currencyTotals).sort(([a], [b]) => a.localeCompare(b)).forEach(([curr, amount]) => {
+  Object.entries(currencyTotals).sort(([a], [b]) => a.localeCompare(b)).forEach(([curr, amount], index) => {
+    // Ajouter un séparateur visuel entre devises (sauf pour la première)
+    if (index > 0) {
+      summaryData.push(['', '']); // Ligne vide
+    }
+    
+    // Ajouter le titre de la devise
+    const currencyTitle = language === 'en' ? `Currency ${curr}` : language === 'de' ? `Währung ${curr}` : `Devise ${curr}`;
+    summaryData.push([currencyTitle, '']);
+    
     // Le montant total est TTC
     const totalTTC = amount;
     const totalHT = vatRate > 0 ? totalTTC / (1 + vatRate / 100) : totalTTC;
@@ -216,6 +225,25 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   });
   
   summaryData.forEach(([label, value]) => {
+    // Si c'est une ligne vide (séparateur)
+    if (label === '' && value === '') {
+      yPosition += 3;
+      return;
+    }
+    
+    // Si c'est un titre de devise (pas de ":")
+    if (label.startsWith('Devise ') || label.startsWith('Currency ') || label.startsWith('Währung ')) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+      doc.text(label, margin, yPosition);
+      doc.setFontSize(10);
+      doc.setTextColor(0, 0, 0);
+      yPosition += 8;
+      return;
+    }
+    
+    // Ligne normale
     doc.setFont('helvetica', 'bold');
     doc.text(label + ':', margin, yPosition);
     doc.setFont('helvetica', 'normal');
