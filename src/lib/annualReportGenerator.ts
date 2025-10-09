@@ -167,12 +167,22 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     [t?.('reports.transactionCount') || 'Nombre de transactions', transactionCount.toString()]
   ];
   
-  // Ajouter les totaux par devise
+  // Calculer le taux de TVA
+  const vatRate = sellerProfile.tva_rate || sellerProfile.vat_rate || 0;
+  
+  // Ajouter les totaux par devise avec décomposition HT/TVA/TTC
   Object.entries(currencyTotals).sort(([a], [b]) => a.localeCompare(b)).forEach(([curr, amount]) => {
-    const fees = amount * 0.05;
-    const net = amount - fees;
+    // Le montant total est TTC
+    const totalTTC = amount;
+    const totalHT = vatRate > 0 ? totalTTC / (1 + vatRate / 100) : totalTTC;
+    const totalVAT = totalTTC - totalHT;
+    const fees = totalTTC * 0.05;
+    const net = totalTTC - fees;
+    
     summaryData.push(
-      [t?.('reports.totalRevenue') || 'Chiffre d\'affaires total', `${amount.toFixed(2)} ${curr}`],
+      [t?.('reports.totalRevenueTTC') || 'CA Total TTC', `${totalTTC.toFixed(2)} ${curr}`],
+      [t?.('reports.totalRevenueHT') || 'CA Total HT', `${totalHT.toFixed(2)} ${curr}`],
+      [t?.('reports.totalVAT') || 'TVA collectée', `${totalVAT.toFixed(2)} ${curr}`],
       [t?.('reports.totalFees') || 'Total frais RivvLock (5%)', `${fees.toFixed(2)} ${curr}`],
       [t?.('reports.netReceived') || 'Net reçu', `${net.toFixed(2)} ${curr}`]
     );
@@ -196,7 +206,7 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   
   yPosition += 10;
   
-  // En-têtes
+  // En-têtes avec colonnes HT/TVA/TTC
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
@@ -204,11 +214,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 7, 'F');
   
   doc.text(t?.('reports.date') || 'Date', margin + 2, yPosition);
-  doc.text(t?.('reports.invoice') || 'Facture', margin + 30, yPosition);
-  doc.text(t?.('reports.client') || 'Client', margin + 65, yPosition);
-  doc.text(t?.('reports.amount') || 'Montant', margin + 120, yPosition);
-  doc.text(t?.('reports.fees') || 'Frais', margin + 145, yPosition);
-  doc.text(t?.('reports.net') || 'Net', margin + 165, yPosition);
+  doc.text(t?.('reports.invoice') || 'Facture', margin + 25, yPosition);
+  doc.text(t?.('reports.client') || 'Client', margin + 55, yPosition);
+  doc.text(t?.('reports.amountHT') || 'Mnt HT', margin + 95, yPosition);
+  doc.text(t?.('reports.vat') || 'TVA', margin + 115, yPosition);
+  doc.text(t?.('reports.amountTTC') || 'Mnt TTC', margin + 130, yPosition);
+  doc.text(t?.('reports.fees') || 'Frais', margin + 153, yPosition);
+  doc.text(t?.('reports.net') || 'Net', margin + 170, yPosition);
   
   yPosition += 5;
   
@@ -229,13 +241,18 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     );
     
     // Calculer le montant réel après remboursement partiel
-    let amount = Number(transaction.price);
+    let amountTTC = Number(transaction.price);
     const pct = Number(transaction.refund_percentage || 0);
     if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
-      amount = amount * (1 - pct / 100);
+      amountTTC = amountTTC * (1 - pct / 100);
     }
-    const fee = amount * 0.05;
-    const net = amount - fee;
+    
+    // Décomposer TTC en HT et TVA
+    const amountHT = vatRate > 0 ? amountTTC / (1 + vatRate / 100) : amountTTC;
+    const vatAmount = amountTTC - amountHT;
+    
+    const fee = amountTTC * 0.05;
+    const net = amountTTC - fee;
     const invoiceNum = invoiceMap.get(transaction.id) || '-';
     const client = transaction.buyer_display_name || '-';
     
@@ -245,11 +262,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     }
     
     doc.text(date, margin + 2, yPosition);
-    doc.text(invoiceNum.substring(0, 15), margin + 30, yPosition);
-    doc.text(client.substring(0, 20), margin + 65, yPosition);
-    doc.text(`${amount.toFixed(2)}`, margin + 120, yPosition);
-    doc.text(`${fee.toFixed(2)}`, margin + 145, yPosition);
-    doc.text(`${net.toFixed(2)}`, margin + 165, yPosition);
+    doc.text(invoiceNum.substring(0, 12), margin + 25, yPosition);
+    doc.text(client.substring(0, 15), margin + 55, yPosition);
+    doc.text(`${amountHT.toFixed(2)}`, margin + 95, yPosition);
+    doc.text(`${vatAmount.toFixed(2)}`, margin + 115, yPosition);
+    doc.text(`${amountTTC.toFixed(2)}`, margin + 130, yPosition);
+    doc.text(`${fee.toFixed(2)}`, margin + 153, yPosition);
+    doc.text(`${net.toFixed(2)}`, margin + 170, yPosition);
     
     yPosition += 6;
   });
