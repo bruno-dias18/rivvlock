@@ -18,7 +18,8 @@ interface Invoice {
 export const generateAnnualReportCSV = (
   transactions: Transaction[],
   invoices: Invoice[],
-  language: string = 'fr'
+  language: string = 'fr',
+  vatRate: number = 0
 ): string => {
   const headers = language === 'fr' 
     ? ['Date de validation', 'N° Facture', 'Client', 'Description', 'Montant HT', 'TVA', 'Montant TTC', 'Frais RivvLock', 'Net reçu', 'Devise']
@@ -36,6 +37,10 @@ export const generateAnnualReportCSV = (
     if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
       amountPaid = amountPaid * (1 - pct / 100);
     }
+    
+    // Calculer la TVA et le TTC
+    const vatAmount = amountPaid * (vatRate / 100);
+    const amountWithVat = amountPaid + vatAmount;
     
     const rivvlockFee = amountPaid * 0.05;
     let amountReceived = amountPaid - rivvlockFee;
@@ -60,8 +65,8 @@ export const generateAnnualReportCSV = (
       transaction.buyer_display_name || '-',
       `"${description.replace(/"/g, '""')}"`,
       amountPaid.toFixed(2),
-      '0.00', // TVA
-      amountPaid.toFixed(2),
+      vatAmount.toFixed(2),
+      amountWithVat.toFixed(2),
       rivvlockFee.toFixed(2),
       amountReceived.toFixed(2),
       transaction.currency.toUpperCase()

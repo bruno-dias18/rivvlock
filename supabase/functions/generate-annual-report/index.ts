@@ -93,8 +93,15 @@ serve(async (req) => {
       .select('invoice_number, transaction_id')
       .in('transaction_id', transactionIds);
 
+    // Récupérer le profil du vendeur pour les taux de TVA
+    const { data: sellerProfile } = await supabase
+      .from('profiles')
+      .select('tva_rate, vat_rate, is_subject_to_vat, country')
+      .eq('user_id', user.id)
+      .single();
+
     if (format === 'excel') {
-      const csv = generateCSV(transactions, invoices || []);
+      const csv = generateCSV(transactions, invoices || [], sellerProfile);
       return new Response(csv, {
         headers: {
           ...corsHeaders,
@@ -118,10 +125,20 @@ serve(async (req) => {
   }
 });
 
-function generateCSV(transactions: any[], invoices: any[]): string {
+function generateCSV(transactions: any[], invoices: any[], sellerProfile: any): string {
   const headers = ['Date de validation', 'N° Facture', 'Client', 'Description', 'Montant HT', 'TVA', 'Montant TTC', 'Frais RivvLock', 'Net reçu', 'Devise'];
   
   const invoiceMap = new Map(invoices.map(inv => [inv.transaction_id, inv.invoice_number]));
+  
+  // Déterminer le taux de TVA applicable
+  let vatRate = 0;
+  if (sellerProfile?.is_subject_to_vat) {
+    if (sellerProfile.country === 'FR' && sellerProfile.tva_rate) {
+      vatRate = Number(sellerProfile.tva_rate);
+    } else if (sellerProfile.country === 'CH' && sellerProfile.vat_rate) {
+      vatRate = Number(sellerProfile.vat_rate);
+    }
+  }
   
   const rows = transactions.map(transaction => {
     // Calculer le montant réel après remboursement partiel
@@ -130,6 +147,11 @@ function generateCSV(transactions: any[], invoices: any[]): string {
     if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
       amountPaid = amountPaid * (1 - pct / 100);
     }
+    
+    // Calculer la TVA et le TTC
+    const vatAmount = amountPaid * (vatRate / 100);
+    const amountWithVat = amountPaid + vatAmount;
+    
     const rivvlockFee = amountPaid * 0.05;
     const amountReceived = amountPaid - rivvlockFee;
     const invoiceNumber = invoiceMap.get(transaction.id) || '-';
@@ -146,8 +168,8 @@ function generateCSV(transactions: any[], invoices: any[]): string {
       transaction.buyer_display_name || '-',
       `"${(transaction.description || transaction.title).replace(/"/g, '""')}"`,
       amountPaid.toFixed(2),
-      '0.00',
-      amountPaid.toFixed(2),
+      vatAmount.toFixed(2),
+      amountWithVat.toFixed(2),
       rivvlockFee.toFixed(2),
       amountReceived.toFixed(2),
       transaction.currency.toUpperCase()
