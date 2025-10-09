@@ -148,9 +148,11 @@ function generateCSV(transactions: any[], invoices: any[], sellerProfile: any): 
       amountPaid = amountPaid * (1 - pct / 100);
     }
     
-    // Calculer la TVA et le TTC
-    const vatAmount = amountPaid * (vatRate / 100);
-    const amountWithVat = amountPaid + vatAmount;
+    // Le prix de la transaction est le montant TTC (ce que le client a payé)
+    const amountTTC = amountPaid;
+    // Décomposer pour trouver le HT et la TVA
+    const amountHT = vatRate > 0 ? amountTTC / (1 + vatRate / 100) : amountTTC;
+    const vatAmount = amountTTC - amountHT;
     
     const rivvlockFee = amountPaid * 0.05;
     const amountReceived = amountPaid - rivvlockFee;
@@ -167,9 +169,9 @@ function generateCSV(transactions: any[], invoices: any[], sellerProfile: any): 
       invoiceNumber,
       transaction.buyer_display_name || '-',
       `"${(transaction.description || transaction.title).replace(/"/g, '""')}"`,
-      amountPaid.toFixed(2),
+      amountHT.toFixed(2),
       vatAmount.toFixed(2),
-      amountWithVat.toFixed(2),
+      amountTTC.toFixed(2),
       rivvlockFee.toFixed(2),
       amountReceived.toFixed(2),
       transaction.currency.toUpperCase()
