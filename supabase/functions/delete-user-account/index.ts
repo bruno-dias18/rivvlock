@@ -119,16 +119,17 @@ Deno.serve(async (req) => {
       logger.warn('Error anonymizing transactions:', anonymizeError);
     }
 
-    // 3. Delete related data
+    // 3. Delete related data (use admin client to bypass RLS)
     const tablesToClean = [
       'stripe_accounts',
       'activity_logs', 
       'admin_roles',
+      'user_roles',
       'profiles'
     ];
 
     for (const table of tablesToClean) {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from(table)
         .delete()
         .eq('user_id', user.id);
