@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, CheckCircle2 } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -109,9 +109,7 @@ export const SellerTransactionsCountdownCard = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         {transactions.map((transaction) => {
-          const sellerValidationTime = formatTimeRemaining(transaction.seller_validation_deadline);
           const autoReleaseTime = formatTimeRemaining(transaction.validation_deadline);
-          const isSellerValidated = transaction.seller_validated;
 
           return (
             <Link 
@@ -127,36 +125,6 @@ export const SellerTransactionsCountdownCard = () => {
                       {transaction.price} {transaction.currency}
                     </p>
                   </div>
-                </div>
-
-                {/* Seller validation countdown */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    {isSellerValidated ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Clock className="h-4 w-4 text-orange-600" />
-                    )}
-                    <p className="text-xs font-medium">
-                      {t('profile.sellerValidation')}
-                    </p>
-                  </div>
-                  {isSellerValidated ? (
-                    <Badge variant="default" className="text-xs">
-                      {t('status.validated')}
-                    </Badge>
-                  ) : sellerValidationTime ? (
-                    <Badge 
-                      variant={sellerValidationTime.expired ? "destructive" : "secondary"}
-                      className="text-xs font-mono"
-                    >
-                      {sellerValidationTime.text}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs">
-                      {t('common.noDeadline')}
-                    </Badge>
-                  )}
                 </div>
 
                 {/* Auto release countdown */}

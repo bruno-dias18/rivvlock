@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Copy, CreditCard, CheckCircle2, Clock, Download, Edit3, Calendar, Banknote, MessageCircle, MessageCircleMore } from 'lucide-react';
+import { Copy, CreditCard, Clock, Download, Edit3, Calendar, Banknote, MessageCircle, MessageCircleMore } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
@@ -268,22 +268,6 @@ const TransactionCardComponent = ({
             <div className="mt-3">
               <ValidationCountdown validationDeadline={transaction.validation_deadline} />
             </div>
-          )}
-          
-          {/* Alert for buyer when seller has validated */}
-          {userRole === 'buyer' && transaction.status === 'paid' && transaction.seller_validated && !transaction.buyer_validated && (
-            <Alert className="mt-3 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-              <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                <div className="font-semibold">{t('transactions.sellerHasValidated')}</div>
-                <div className="text-sm mt-1">
-                  {validationStatus.phase === 'validation_active' 
-                    ? t('transactions.buyerCanNowFinalize')
-                    : t('transactions.buyerCanFinalizeEarly')
-                  }
-                </div>
-              </AlertDescription>
-            </Alert>
           )}
           
           {/* Validation countdown for sellers during buyer validation phase */}
