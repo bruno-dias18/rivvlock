@@ -51,7 +51,6 @@ serve(async (req) => {
       const { data: transactions, error: fetchError } = await adminClient
         .from("transactions")
         .select("*")
-        .eq("seller_validated", true)
         .eq("buyer_validated", false)
         .eq("funds_released", false)
         .eq("status", "paid")

@@ -31,7 +31,6 @@ serve(async (req) => {
     const { data: expiredTransactions, error: fetchError } = await adminClient
       .from("transactions")
       .select("*")
-      .eq("seller_validated", true)
       .eq("buyer_validated", false)
       .eq("funds_released", false)
       .not("validation_deadline", "is", null)
