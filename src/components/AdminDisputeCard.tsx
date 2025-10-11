@@ -132,6 +132,22 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const timeRemaining = getTimeRemaining();
   const isExpired = dispute.status === 'escalated' || (timeRemaining === null && dispute.dispute_deadline);
 
+  const getRejectionText = (proposal: any) => {
+    if (proposal.status !== 'rejected' || !proposal.rejected_by) {
+      return "❌ Refusée";
+    }
+    
+    if (proposal.rejected_by === transaction?.user_id) {
+      return "❌ Refusée par le Vendeur";
+    }
+    
+    if (proposal.rejected_by === transaction?.buyer_id) {
+      return "❌ Refusée par l'Acheteur";
+    }
+    
+    return "❌ Refusée";
+  };
+
   const handleSaveNotes = async () => {
     setIsSubmitting(true);
     try {
@@ -368,7 +384,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
 
                 const statusText =
                   proposal.status === 'accepted' ? '✅ Acceptée'
-                  : proposal.status === 'rejected' ? '❌ Refusée'
+                  : proposal.status === 'rejected' ? getRejectionText(proposal)
                   : proposal.status === 'expired' ? '⏰ Expirée'
                   : '⏳ En attente';
 
