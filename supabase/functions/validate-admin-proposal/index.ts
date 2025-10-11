@@ -161,11 +161,20 @@ serve(async (req) => {
         message_type: 'system',
       });
 
-    // Check if both parties have validated
-    const updatedBuyerValidated = isBuyer ? true : proposal.buyer_validated;
-    const updatedSellerValidated = isSeller ? true : proposal.seller_validated;
+    // Re-fetch proposal to get the updated validation status
+    const { data: updatedProposal, error: refetchError } = await adminClient
+      .from("dispute_proposals")
+      .select("*")
+      .eq("id", proposalId)
+      .single();
 
-    if (updatedBuyerValidated && updatedSellerValidated) {
+    if (refetchError || !updatedProposal) {
+      logger.error("Error refetching proposal after update:", refetchError);
+      throw new Error("Could not verify proposal status");
+    }
+
+    // Check if both parties have validated (using fresh data from DB)
+    if (updatedProposal.buyer_validated && updatedProposal.seller_validated) {
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Both parties validated - processing Stripe transaction");
 
       // Both parties validated - process on Stripe
