@@ -24,14 +24,16 @@ serve(async (req) => {
       throw new Error("No authorization header");
     }
 
+    const token = authHeader.replace("Bearer ", "");
+
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
     // Verify user is authenticated
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    const { data: userData, error: userError } = await userClient.auth.getUser(token);
+    const user = userData?.user;
     if (userError || !user) {
       throw new Error("User not authenticated");
     }
