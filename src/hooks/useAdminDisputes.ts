@@ -15,26 +15,7 @@ export const useAdminDisputes = (status?: string) => {
 
       let query = supabase
         .from('disputes')
-        .select(`
-          *,
-          transactions(
-            id,
-            title,
-            price,
-            currency,
-            service_date,
-            status,
-            seller_display_name,
-            buyer_display_name,
-            user_id,
-            buyer_id
-          ),
-          reporter_profiles:profiles!disputes_reporter_id_fkey(
-            first_name,
-            last_name,
-            user_type
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (status && status !== 'all') {

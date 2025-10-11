@@ -39,12 +39,15 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   useEffect(() => {
     const fetchTx = async () => {
       if (!dispute.transactions && dispute.transaction_id) {
-        const { data } = await supabase
-          .from('transactions')
-          .select('id, title, price, currency, service_date, status, seller_display_name, buyer_display_name, user_id, buyer_id')
-          .eq('id', dispute.transaction_id)
-          .maybeSingle();
-        if (data) setTransaction(data);
+        try {
+          const { data, error } = await supabase.functions.invoke('admin-get-transaction', {
+            body: { transactionId: dispute.transaction_id },
+          });
+          if (error) throw error;
+          if (data?.transaction) setTransaction(data.transaction);
+        } catch (e) {
+          // Keep graceful fallback; UI will show placeholders
+        }
       }
     };
     fetchTx();
