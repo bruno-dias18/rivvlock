@@ -228,21 +228,25 @@ serve(async (req) => {
               .eq('user_id', transaction.user_id)
               .maybeSingle();
 
-            if (!sellerAccount?.stripe_account_id) {
-              throw new Error('Seller Stripe account not found');
-            }
-
             await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
               amount_to_capture: captureAmount,
             });
 
             if (sellerAmount > 0) {
-              await stripe.transfers.create({
-                amount: sellerAmount,
-                currency,
-                destination: sellerAccount.stripe_account_id,
-                transfer_group: `txn_${transaction.id}`,
-              });
+              if (sellerAccount?.stripe_account_id) {
+                try {
+                  await stripe.transfers.create({
+                    amount: sellerAmount,
+                    currency,
+                    destination: sellerAccount.stripe_account_id,
+                    transfer_group: `txn_${transaction.id}`,
+                  });
+                } catch (transferErr) {
+                  logger.warn("Skipping seller transfer after capture due to error", transferErr);
+                }
+              } else {
+                logger.warn("Skipping seller transfer after capture: no seller Stripe account found");
+              }
             }
 
             logger.log(`✅ Partial refund processed: ${refundPercentage}%`);
@@ -282,25 +286,29 @@ serve(async (req) => {
               .eq('user_id', transaction.user_id)
               .maybeSingle();
 
-            if (!sellerAccount?.stripe_account_id) {
-              throw new Error('Seller Stripe account not found');
-            }
-
-            await stripe.transfers.create({
-              amount: sellerAmount,
-              currency,
-              destination: sellerAccount.stripe_account_id,
-              transfer_group: `txn_${transaction.id}`,
-              metadata: {
-                dispute_id: dispute.id,
-                proposal_id: proposalId,
-                type: 'admin_partial_refund_seller_share'
+            if (sellerAccount?.stripe_account_id) {
+              try {
+                await stripe.transfers.create({
+                  amount: sellerAmount,
+                  currency,
+                  destination: sellerAccount.stripe_account_id,
+                  transfer_group: `txn_${transaction.id}`,
+                  metadata: {
+                    dispute_id: dispute.id,
+                    proposal_id: proposalId,
+                    type: 'admin_partial_refund_seller_share'
+                  }
+                });
+                logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+              } catch (transferErr) {
+                logger.warn("Skipping seller transfer after refund due to error", transferErr);
               }
-            });
-            logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+            } else {
+              logger.warn("Skipping seller transfer after refund: no seller Stripe account found");
+            }
           }
 
-          logger.log(`✅ Refund and transfer created: ${refundPercentage}%`);
+          logger.log(`✅ Refund and (optional) transfer created: ${refundPercentage}%`);
         }
 
         disputeStatus = 'resolved_refund';
@@ -318,20 +326,24 @@ serve(async (req) => {
           .eq('user_id', transaction.user_id)
           .maybeSingle();
 
-        if (!sellerAccount?.stripe_account_id) {
-          throw new Error('Seller Stripe account not found');
-        }
-
         await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
 
         const transferAmount = totalAmount - platformFee;
         if (transferAmount > 0) {
-          await stripe.transfers.create({
-            amount: transferAmount,
-            currency,
-            destination: sellerAccount.stripe_account_id,
-            transfer_group: `txn_${transaction.id}`,
-          });
+          if (sellerAccount?.stripe_account_id) {
+            try {
+              await stripe.transfers.create({
+                amount: transferAmount,
+                currency,
+                destination: sellerAccount.stripe_account_id,
+                transfer_group: `txn_${transaction.id}`,
+              });
+            } catch (transferErr) {
+              logger.warn("Skipping seller transfer on release due to error", transferErr);
+            }
+          } else {
+            logger.warn("Skipping seller transfer on release: no seller Stripe account found");
+          }
         }
 
         disputeStatus = 'resolved_release';
