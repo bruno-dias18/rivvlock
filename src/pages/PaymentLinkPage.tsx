@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertCircle, CreditCard, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -16,6 +17,8 @@ interface TransactionData {
   currency: string;
   seller_display_name: string;
   service_date: string;
+  payment_deadline?: string;
+  status?: string;
 }
 
 export default function PaymentLinkPage() {
@@ -63,6 +66,16 @@ export default function PaymentLinkPage() {
       if (!data || !data.success) {
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       } else if (data.transaction) {
+        // Vérifier si la deadline est passée
+        if (data.transaction.payment_deadline) {
+          const deadline = new Date(data.transaction.payment_deadline);
+          if (deadline < new Date()) {
+            setError('Cette transaction a expiré. Le délai de paiement est dépassé.');
+            setTransaction(null);
+            setLoading(false);
+            return;
+          }
+        }
         setTransaction(data.transaction);
       } else {
         setError('Données de transaction manquantes');
@@ -199,6 +212,15 @@ export default function PaymentLinkPage() {
                 </div>
               )}
               
+              {transaction.payment_deadline && (
+                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <PaymentCountdown 
+                    paymentDeadline={transaction.payment_deadline} 
+                    className="justify-center"
+                  />
+                </div>
+              )}
+              
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
@@ -280,6 +302,15 @@ export default function PaymentLinkPage() {
                 </div>
               )}
               
+              {transaction.payment_deadline && (
+                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+                  <PaymentCountdown 
+                    paymentDeadline={transaction.payment_deadline} 
+                    className="justify-center"
+                  />
+                </div>
+              )}
+              
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
@@ -314,10 +345,18 @@ export default function PaymentLinkPage() {
                 onClick={handlePayNow}
                 className="w-full"
                 size="lg"
-                disabled={processingPayment}
+                disabled={
+                  processingPayment || 
+                  (transaction.payment_deadline ? new Date(transaction.payment_deadline) < new Date() : false)
+                }
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Payer maintenant
+                {transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()
+                  ? 'Délai expiré'
+                  : processingPayment 
+                    ? 'Préparation...'
+                    : 'Payer maintenant'
+                }
               </Button>
             )}
           </div>

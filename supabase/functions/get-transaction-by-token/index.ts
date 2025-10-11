@@ -264,6 +264,8 @@ serve(async (req) => {
       currency: transaction.currency,
       seller_display_name: transaction.seller_display_name,
       service_date: transaction.service_date,
+      payment_deadline: transaction.payment_deadline,
+      status: transaction.status,
     };
 
     return new Response(
