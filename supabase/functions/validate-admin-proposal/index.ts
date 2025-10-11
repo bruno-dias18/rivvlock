@@ -100,6 +100,7 @@ serve(async (req) => {
         .from("dispute_proposals")
         .update({ 
           status: 'rejected',
+          rejected_by: user.id,
           updated_at: new Date().toISOString()
         })
         .eq("id", proposalId);

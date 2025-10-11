@@ -117,6 +117,12 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
   }
 
   if (proposal.status === 'rejected') {
+    // Déterminer qui a rejeté
+    const rejectedBySeller = proposal.rejected_by === transaction.user_id;
+    const rejectedByBuyer = proposal.rejected_by === transaction.buyer_id;
+    const rejectedByLabel = rejectedBySeller ? 'par le Vendeur' : 
+                            rejectedByBuyer ? 'par l\'Acheteur' : '';
+    
     return (
       <div className="bg-red-50 dark:bg-red-950/20 border-2 border-red-300 dark:border-red-700 p-4 rounded-lg">
         <div className="flex items-start gap-3">
@@ -126,7 +132,9 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
               <h4 className="font-semibold text-red-900 dark:text-red-100">
                 Proposition officielle rejetée ❌
               </h4>
-              <Badge className="bg-red-600 text-white">Refusée</Badge>
+              <Badge className="bg-red-600 text-white">
+                Refusée {rejectedByLabel}
+              </Badge>
             </div>
             <p className="text-sm font-medium text-red-800 dark:text-red-200 mb-1">
               {proposalText}
@@ -134,6 +142,11 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
             {proposal.message && (
               <p className="text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap">
                 {proposal.message}
+              </p>
+            )}
+            {rejectedByLabel && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                🚫 Rejeté {rejectedByLabel}
               </p>
             )}
           </div>

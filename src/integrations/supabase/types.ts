@@ -151,6 +151,7 @@ export type Database = {
           proposal_type: string
           proposer_id: string
           refund_percentage: number | null
+          rejected_by: string | null
           requires_both_parties: boolean | null
           seller_validated: boolean | null
           status: string
@@ -167,6 +168,7 @@ export type Database = {
           proposal_type: string
           proposer_id: string
           refund_percentage?: number | null
+          rejected_by?: string | null
           requires_both_parties?: boolean | null
           seller_validated?: boolean | null
           status?: string
@@ -183,6 +185,7 @@ export type Database = {
           proposal_type?: string
           proposer_id?: string
           refund_percentage?: number | null
+          rejected_by?: string | null
           requires_both_parties?: boolean | null
           seller_validated?: boolean | null
           status?: string
