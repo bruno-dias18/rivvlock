@@ -33,6 +33,7 @@ export const EscalatedDisputeMessaging = ({
     messages, 
     isLoading, 
     isSeller,
+    isRoleReady,
     sendMessage, 
     isSending 
   } = useEscalatedDisputeMessaging({ disputeId, transactionId });
@@ -149,23 +150,28 @@ export const EscalatedDisputeMessaging = ({
           {/* Input Area */}
           {!isResolved && (
             <div className="flex gap-2">
-              <Textarea
-                ref={textareaRef}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyPress}
-                placeholder={t('Écrivez votre message à l\'administration...')}
-                className="resize-none"
-                rows={3}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isSending}
-                size="icon"
-                className="h-auto"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+            <Textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder={
+                isRoleReady 
+                  ? t('Écrivez votre message à l\'administration...')
+                  : t('Initialisation du canal privé...')
+              }
+              disabled={!isRoleReady}
+              className="resize-none"
+              rows={3}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || isSending || !isRoleReady}
+              size="icon"
+              className="h-auto"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
             </div>
           )}
 

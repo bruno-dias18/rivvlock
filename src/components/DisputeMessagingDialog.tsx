@@ -20,6 +20,7 @@ import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMess
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
+import { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
 
 // Avatar component inline
 const Avatar = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -93,6 +94,26 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const { markAsSeen: markGlobalAsSeen, refetch: refetchGlobalUnread } = useUnreadAdminMessages();
   const { markAsSeen: markDisputeAsSeen, refetch: refetchDisputeMessages } = useUnreadDisputeMessages(disputeId);
   const { markAllAsSeen: markAllDisputesAsSeen, refetch: refetchGlobalDisputes } = useUnreadDisputesGlobal();
+
+  // Fetch transaction_id when escalated
+  const [transactionIdForEscalated, setTransactionIdForEscalated] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (status === 'escalated' && !transactionIdForEscalated) {
+      const fetchTxId = async () => {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data } = await supabase
+          .from('disputes')
+          .select('transaction_id')
+          .eq('id', disputeId)
+          .maybeSingle();
+        if (data?.transaction_id) {
+          setTransactionIdForEscalated(data.transaction_id);
+        }
+      };
+      fetchTxId();
+    }
+  }, [disputeId, status, transactionIdForEscalated]);
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -425,8 +446,19 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Escalation Alert */}
-          {isExpired && !status.startsWith('resolved') && (
+          {/* Switch to escalated messaging if status is escalated */}
+          {status === 'escalated' && transactionIdForEscalated ? (
+            <div className="flex-1 overflow-auto">
+              <EscalatedDisputeMessaging 
+                disputeId={disputeId} 
+                transactionId={transactionIdForEscalated}
+                status={status}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Escalation Alert */}
+              {isExpired && !status.startsWith('resolved') && (
             <div className="flex-shrink-0 border-b">
               <div className="p-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-800">
                 <div className="text-red-700 dark:text-red-300 text-sm font-medium">
@@ -700,6 +732,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                 </div>
               )}
             </div>
+          )}
+          </>
           )}
         </DialogContent>
       </Dialog>

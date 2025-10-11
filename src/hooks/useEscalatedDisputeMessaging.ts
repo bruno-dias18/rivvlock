@@ -29,6 +29,7 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
   });
 
   const isSeller = transaction?.user_id === user?.id;
+  const isRoleReady = Boolean(transaction?.user_id && transaction?.buyer_id);
   const messageType = isSeller ? 'seller_to_admin' : 'buyer_to_admin';
   const adminMessageType = isSeller ? 'admin_to_seller' : 'admin_to_buyer';
 
@@ -55,6 +56,19 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
     mutationFn: async ({ message }: { message: string }) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      // CRITICAL: Re-fetch transaction to guarantee correct message_type
+      const { data: txData, error: txError } = await supabase
+        .from('transactions')
+        .select('user_id, buyer_id')
+        .eq('id', transactionId)
+        .single();
+      
+      if (txError || !txData) throw new Error('Transaction not found');
+      
+      // Calculate type AFTER having transaction data
+      const computedIsSeller = txData.user_id === user.id;
+      const computedMessageType = computedIsSeller ? 'seller_to_admin' : 'buyer_to_admin';
+      
       const { error } = await supabase
         .from('dispute_messages')
         .insert({
@@ -62,7 +76,7 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
           sender_id: user.id,
           recipient_id: null, // Admin will see via message_type
           message: message.trim(),
-          message_type: messageType,
+          message_type: computedMessageType,
         });
       
       if (error) throw error;
@@ -109,6 +123,7 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
     messages,
     isLoading,
     isSeller,
+    isRoleReady,
     sendMessage: sendMessageToAdmin.mutateAsync,
     isSending: sendMessageToAdmin.isPending,
   };
