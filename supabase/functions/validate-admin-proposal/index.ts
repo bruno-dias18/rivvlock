@@ -222,31 +222,38 @@ serve(async (req) => {
             const captureAmount = sellerAmount + platformFee;
             const currency = String(transaction.currency).toLowerCase();
 
-            const { data: sellerAccount } = await adminClient
+            const { data: sellerAccount, error: accountError } = await adminClient
               .from('stripe_accounts')
-              .select('stripe_account_id')
+              .select('stripe_account_id, charges_enabled, payouts_enabled')
               .eq('user_id', transaction.user_id)
               .maybeSingle();
 
+            if (accountError) {
+              throw new Error(`Failed to fetch seller Stripe account: ${accountError.message}`);
+            }
+
+            if (!sellerAccount?.stripe_account_id) {
+              throw new Error('Seller Stripe account not found - cannot process payment');
+            }
+
+            if (!sellerAccount.charges_enabled || !sellerAccount.payouts_enabled) {
+              throw new Error('Seller Stripe account not fully activated - cannot transfer funds');
+            }
+
+            logger.log(`Capturing ${captureAmount / 100} ${currency} from payment intent`);
             await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
               amount_to_capture: captureAmount,
             });
 
             if (sellerAmount > 0) {
-              if (sellerAccount?.stripe_account_id) {
-                try {
-                  await stripe.transfers.create({
-                    amount: sellerAmount,
-                    currency,
-                    destination: sellerAccount.stripe_account_id,
-                    transfer_group: `txn_${transaction.id}`,
-                  });
-                } catch (transferErr) {
-                  logger.warn("Skipping seller transfer after capture due to error", transferErr);
-                }
-              } else {
-                logger.warn("Skipping seller transfer after capture: no seller Stripe account found");
-              }
+              logger.log(`Transferring ${sellerAmount / 100} ${currency} to seller account ${sellerAccount.stripe_account_id}`);
+              await stripe.transfers.create({
+                amount: sellerAmount,
+                currency,
+                destination: sellerAccount.stripe_account_id,
+                transfer_group: `txn_${transaction.id}`,
+              });
+              logger.log(`✅ Transfer completed successfully`);
             }
 
             logger.log(`✅ Partial refund processed: ${refundPercentage}%`);
@@ -280,35 +287,40 @@ serve(async (req) => {
 
           // Transfer seller's share (if partial refund)
           if (sellerAmount > 0) {
-            const { data: sellerAccount } = await adminClient
+            const { data: sellerAccount, error: accountError } = await adminClient
               .from('stripe_accounts')
-              .select('stripe_account_id')
+              .select('stripe_account_id, charges_enabled, payouts_enabled')
               .eq('user_id', transaction.user_id)
               .maybeSingle();
 
-            if (sellerAccount?.stripe_account_id) {
-              try {
-                await stripe.transfers.create({
-                  amount: sellerAmount,
-                  currency,
-                  destination: sellerAccount.stripe_account_id,
-                  transfer_group: `txn_${transaction.id}`,
-                  metadata: {
-                    dispute_id: dispute.id,
-                    proposal_id: proposalId,
-                    type: 'admin_partial_refund_seller_share'
-                  }
-                });
-                logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
-              } catch (transferErr) {
-                logger.warn("Skipping seller transfer after refund due to error", transferErr);
-              }
-            } else {
-              logger.warn("Skipping seller transfer after refund: no seller Stripe account found");
+            if (accountError) {
+              throw new Error(`Failed to fetch seller Stripe account: ${accountError.message}`);
             }
+
+            if (!sellerAccount?.stripe_account_id) {
+              throw new Error('Seller Stripe account not found - cannot transfer funds');
+            }
+
+            if (!sellerAccount.charges_enabled || !sellerAccount.payouts_enabled) {
+              throw new Error('Seller Stripe account not fully activated - cannot transfer funds');
+            }
+
+            logger.log(`Transferring ${sellerAmount / 100} ${currency} to seller account ${sellerAccount.stripe_account_id}`);
+            await stripe.transfers.create({
+              amount: sellerAmount,
+              currency,
+              destination: sellerAccount.stripe_account_id,
+              transfer_group: `txn_${transaction.id}`,
+              metadata: {
+                dispute_id: dispute.id,
+                proposal_id: proposalId,
+                type: 'admin_partial_refund_seller_share'
+              }
+            });
+            logger.log(`✅ Transfer completed successfully: ${sellerAmount / 100} ${currency}`);
           }
 
-          logger.log(`✅ Refund and (optional) transfer created: ${refundPercentage}%`);
+          logger.log(`✅ Refund and transfer completed: ${refundPercentage}%`);
         }
 
         disputeStatus = 'resolved_refund';
@@ -320,30 +332,37 @@ serve(async (req) => {
         const platformFee = Math.round(totalAmount * 0.05);
         const currency = String(transaction.currency).toLowerCase();
 
-        const { data: sellerAccount } = await adminClient
+        const { data: sellerAccount, error: accountError } = await adminClient
           .from('stripe_accounts')
-          .select('stripe_account_id')
+          .select('stripe_account_id, charges_enabled, payouts_enabled')
           .eq('user_id', transaction.user_id)
           .maybeSingle();
 
+        if (accountError) {
+          throw new Error(`Failed to fetch seller Stripe account: ${accountError.message}`);
+        }
+
+        if (!sellerAccount?.stripe_account_id) {
+          throw new Error('Seller Stripe account not found - cannot release funds');
+        }
+
+        if (!sellerAccount.charges_enabled || !sellerAccount.payouts_enabled) {
+          throw new Error('Seller Stripe account not fully activated - cannot release funds');
+        }
+
+        logger.log(`Capturing full amount ${totalAmount / 100} ${currency} from payment intent`);
         await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
 
         const transferAmount = totalAmount - platformFee;
         if (transferAmount > 0) {
-          if (sellerAccount?.stripe_account_id) {
-            try {
-              await stripe.transfers.create({
-                amount: transferAmount,
-                currency,
-                destination: sellerAccount.stripe_account_id,
-                transfer_group: `txn_${transaction.id}`,
-              });
-            } catch (transferErr) {
-              logger.warn("Skipping seller transfer on release due to error", transferErr);
-            }
-          } else {
-            logger.warn("Skipping seller transfer on release: no seller Stripe account found");
-          }
+          logger.log(`Transferring ${transferAmount / 100} ${currency} to seller account ${sellerAccount.stripe_account_id}`);
+          await stripe.transfers.create({
+            amount: transferAmount,
+            currency,
+            destination: sellerAccount.stripe_account_id,
+            transfer_group: `txn_${transaction.id}`,
+          });
+          logger.log(`✅ Transfer completed successfully`);
         }
 
         disputeStatus = 'resolved_release';
@@ -352,7 +371,7 @@ serve(async (req) => {
       }
 
       // Update proposal status
-      await adminClient
+      const { error: proposalUpdateError } = await adminClient
         .from("dispute_proposals")
         .update({ 
           status: 'accepted',
@@ -360,8 +379,13 @@ serve(async (req) => {
         })
         .eq("id", proposalId);
 
+      if (proposalUpdateError) {
+        logger.error("Failed to update proposal status:", proposalUpdateError);
+        throw new Error(`Database error updating proposal: ${proposalUpdateError.message}`);
+      }
+
       // Update dispute
-      await adminClient
+      const { error: disputeUpdateError } = await adminClient
         .from("disputes")
         .update({ 
           status: disputeStatus,
@@ -371,8 +395,13 @@ serve(async (req) => {
         })
         .eq("id", dispute.id);
 
+      if (disputeUpdateError) {
+        logger.error("Failed to update dispute status:", disputeUpdateError);
+        throw new Error(`Database error updating dispute: ${disputeUpdateError.message}`);
+      }
+
       // Update transaction (keep original price, use refund_status instead)
-      await adminClient
+      const { error: transactionUpdateError } = await adminClient
         .from("transactions")
         .update({ 
           status: newTransactionStatus,
@@ -383,6 +412,13 @@ serve(async (req) => {
           updated_at: new Date().toISOString()
         })
         .eq("id", transaction.id);
+
+      if (transactionUpdateError) {
+        logger.error("Failed to update transaction:", transactionUpdateError);
+        throw new Error(`Database error updating transaction: ${transactionUpdateError.message}`);
+      }
+
+      logger.log("✅ All database updates completed successfully");
 
       // Send success message
       const confirmationText = proposal.proposal_type === 'partial_refund'
