@@ -447,14 +447,20 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
           </DialogHeader>
 
           {/* Switch to escalated messaging if status is escalated */}
-          {status === 'escalated' && transactionIdForEscalated ? (
-            <div className="flex-1 overflow-auto">
-              <EscalatedDisputeMessaging 
-                disputeId={disputeId} 
-                transactionId={transactionIdForEscalated}
-                status={status}
-              />
-            </div>
+          {status === 'escalated' ? (
+            transactionIdForEscalated ? (
+              <div className="flex-1 overflow-auto">
+                <EscalatedDisputeMessaging 
+                  disputeId={disputeId} 
+                  transactionId={transactionIdForEscalated}
+                  status={status}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center p-4 text-sm text-muted-foreground">
+                Initialisation du canal privé avec l'administration...
+              </div>
+            )
           ) : (
             <>
               {/* Escalation Alert */}
