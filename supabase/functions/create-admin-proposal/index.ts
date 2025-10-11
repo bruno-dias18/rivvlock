@@ -157,24 +157,10 @@ serve(async (req) => {
 
     logger.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
 
-    // Log activity for both seller and buyer
-    const participants = [transaction.user_id, transaction.buyer_id].filter(id => id);
+    // Note: activity_logs insertion removed to prevent constraint violation
+    // Notifications will be sent via send-notifications function instead
     
-    for (const participantId of participants) {
-      await adminClient.from('activity_logs').insert({
-        user_id: participantId,
-        activity_type: 'dispute_proposal_created',
-        title: `Proposition officielle de l'administration "${transaction.title}"`,
-        description: `L'administration propose : ${proposalText}`,
-        metadata: {
-          dispute_id: disputeId,
-          transaction_id: transaction.id,
-          proposal_id: proposal.id,
-          proposal_type: proposalType,
-          admin_created: true
-        }
-      });
-    }
+    const participants = [transaction.user_id, transaction.buyer_id].filter(id => id);
 
     // Send notification to both parties
     try {

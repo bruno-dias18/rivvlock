@@ -46,16 +46,6 @@ export const EscalatedDisputeMessaging = ({
     scrollToBottom();
   }, [messages]);
 
-  // DEBUG LOG (temporary - will remove after validation)
-  useEffect(() => {
-    console.log('[ESCALATED USER VIEW]', {
-      messageCount: messages.length,
-      isSeller,
-      isRoleReady,
-      disputeId
-    });
-  }, [messages.length, isSeller, isRoleReady, disputeId]);
-
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending) return;
 

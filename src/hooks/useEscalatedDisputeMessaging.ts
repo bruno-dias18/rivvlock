@@ -69,14 +69,6 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
       const computedIsSeller = txData.user_id === user.id;
       const computedMessageType = computedIsSeller ? 'seller_to_admin' : 'buyer_to_admin';
       
-      // DEBUG LOG (temporary - will remove after validation)
-      console.log('[ESCALATED MSG INSERT]', {
-        message_type: computedMessageType,
-        sender_id: user.id,
-        recipient_id: user.id,
-        isSeller: computedIsSeller
-      });
-      
       const { error } = await supabase
         .from('dispute_messages')
         .insert({
