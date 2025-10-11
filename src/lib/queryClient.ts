@@ -5,7 +5,7 @@ import { logger } from './logger';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30000, // 30 seconds - data is considered fresh
+      staleTime: 5000, // 5 seconds - realtime updates handle freshness
       gcTime: 300000, // 5 minutes - keep unused data in cache
       retry: 2, // Retry failed requests twice
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),

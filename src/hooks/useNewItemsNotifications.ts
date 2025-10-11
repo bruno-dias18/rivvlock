@@ -124,7 +124,7 @@ export const useNewItemsNotifications = () => {
       return counts;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: false, // Disabled: realtime updates handle this
   });
 
   const getTransactionsWithNewActivity = async (category: CategoryKey): Promise<Set<string>> => {
