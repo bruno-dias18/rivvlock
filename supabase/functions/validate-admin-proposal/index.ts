@@ -388,7 +388,7 @@ serve(async (req) => {
     const otherParticipantId = user.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;
     
     if (otherParticipantId) {
-      await supabaseClient.from('activity_logs').insert({
+      await adminClient.from('activity_logs').insert({
         user_id: otherParticipantId,
         activity_type: 'dispute_proposal_accepted',
         title: `Validation de proposition pour "${transaction.title}"`,
