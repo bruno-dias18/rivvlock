@@ -13,18 +13,44 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
     const { disputeId, action, adminNotes } = await req.json(); // action: 'refund' or 'release'
     
     logger.log("Processing dispute:", disputeId, "Action:", action);
 
+    // Create user client for authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: userError } = await userClient.auth.getUser();
+    if (userError || !user) {
+      throw new Error("User not authenticated");
+    }
+
+    // Verify user is admin
+    const { data: isAdmin, error: adminCheckError } = await userClient.rpc('is_admin', { check_user_id: user.id });
+    if (adminCheckError || !isAdmin) {
+      throw new Error("Unauthorized: Admin access required");
+    }
+
+    // Create admin client for database operations
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     // Get dispute and related transaction
-    const { data: dispute, error: disputeError } = await supabaseClient
+    const { data: dispute, error: disputeError } = await adminClient
       .from("disputes")
       .select(`
         *,
@@ -80,11 +106,12 @@ serve(async (req) => {
       throw new Error("Invalid action. Must be 'refund' or 'release'");
     }
 
-    // Update dispute status
-    const { error: disputeUpdateError } = await supabaseClient
+    // Update dispute status (using admin client)
+    const { error: disputeUpdateError } = await adminClient
       .from("disputes")
       .update({ 
         status: disputeStatus,
+        resolved_at: new Date().toISOString(),
         admin_notes: adminNotes,
         updated_at: new Date().toISOString()
       })
@@ -92,20 +119,29 @@ serve(async (req) => {
 
     if (disputeUpdateError) {
       logger.error("Error updating dispute:", disputeUpdateError);
+      throw disputeUpdateError;
     }
 
-    // Update transaction status
-    const { error: transactionUpdateError } = await supabaseClient
+    // Update transaction status (using admin client)
+    const transactionUpdate: any = {
+      status: newTransactionStatus,
+      funds_released: action === 'release',
+      updated_at: new Date().toISOString()
+    };
+
+    // Add refund status for full refund
+    if (action === 'refund') {
+      transactionUpdate.refund_status = 'full';
+    }
+
+    const { error: transactionUpdateError } = await adminClient
       .from("transactions")
-      .update({ 
-        status: newTransactionStatus,
-        funds_released: action === 'release',
-        updated_at: new Date().toISOString()
-      })
+      .update(transactionUpdate)
       .eq("id", transaction.id);
 
     if (transactionUpdateError) {
       logger.error("Error updating transaction:", transactionUpdateError);
+      throw transactionUpdateError;
     }
 
     // Mock admin notifications
