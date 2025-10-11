@@ -95,25 +95,31 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const { markAsSeen: markDisputeAsSeen, refetch: refetchDisputeMessages } = useUnreadDisputeMessages(disputeId);
   const { markAllAsSeen: markAllDisputesAsSeen, refetch: refetchGlobalDisputes } = useUnreadDisputesGlobal();
 
-  // Fetch transaction_id when escalated
+  // Determine if dispute should display in escalated mode
+  const isEscalatedUI = status === 'escalated' || 
+                        (disputeDeadline && new Date(disputeDeadline) < new Date());
+
+  // Fetch transaction_id when in escalated mode
   const [transactionIdForEscalated, setTransactionIdForEscalated] = useState<string | null>(null);
+  const [escalatedAtTimestamp, setEscalatedAtTimestamp] = useState<string | null>(null);
   
   useEffect(() => {
-    if (status === 'escalated' && !transactionIdForEscalated) {
+    if (isEscalatedUI && !transactionIdForEscalated) {
       const fetchTxId = async () => {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data } = await supabase
           .from('disputes')
-          .select('transaction_id')
+          .select('transaction_id, escalated_at')
           .eq('id', disputeId)
           .maybeSingle();
         if (data?.transaction_id) {
           setTransactionIdForEscalated(data.transaction_id);
+          setEscalatedAtTimestamp(data.escalated_at);
         }
       };
       fetchTxId();
     }
-  }, [disputeId, status, transactionIdForEscalated]);
+  }, [disputeId, isEscalatedUI, transactionIdForEscalated]);
 
   // Filtrage des messages EXACTEMENT comme dans DisputeMessaging.tsx (lignes 71-86)
   const displayMessages = messages.filter(
@@ -446,8 +452,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Switch to escalated messaging if status is escalated */}
-          {status === 'escalated' ? (
+          {/* Switch to escalated messaging if in escalated mode */}
+          {isEscalatedUI ? (
             transactionIdForEscalated ? (
               <div className="flex-1 overflow-auto">
                 <EscalatedDisputeMessaging 

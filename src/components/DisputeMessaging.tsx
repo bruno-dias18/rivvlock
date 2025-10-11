@@ -60,14 +60,18 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const previousMessageCountRef = useRef(0);
   const [transactionId, setTransactionId] = useState<string | null>(null);
 
-  // Fetch transaction_id from dispute if escalated
+  // Determine if dispute should display in escalated mode
+  const isEscalatedUI = status === 'escalated' || 
+                        (disputeDeadline && new Date(disputeDeadline) < new Date());
+
+  // Fetch transaction_id when in escalated mode
   useEffect(() => {
-    if (status === 'escalated' && !transactionId) {
+    if (isEscalatedUI && !transactionId) {
       const fetchTransactionId = async () => {
         const { supabase } = await import('@/integrations/supabase/client');
         const { data } = await supabase
           .from('disputes')
-          .select('transaction_id')
+          .select('transaction_id, escalated_at')
           .eq('id', disputeId)
           .maybeSingle();
         if (data?.transaction_id) {
@@ -76,16 +80,29 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       };
       fetchTransactionId();
     }
-  }, [disputeId, status, transactionId]);
+  }, [disputeId, isEscalatedUI, transactionId]);
 
-  // If dispute is escalated and we have transactionId, use dedicated component
-  if (status === 'escalated' && transactionId) {
+  // If dispute is in escalated mode and we have transactionId, use dedicated component
+  if (isEscalatedUI && transactionId) {
     return (
       <EscalatedDisputeMessaging 
         disputeId={disputeId} 
         transactionId={transactionId}
         status={status}
       />
+    );
+  }
+
+  // If escalated mode but no transactionId yet, show loading
+  if (isEscalatedUI && !transactionId) {
+    return (
+      <Card className="h-full flex items-center justify-center">
+        <div className="text-center space-y-2">
+          <div className="animate-pulse text-muted-foreground">
+            Initialisation du canal privé avec l'administration...
+          </div>
+        </div>
+      </Card>
     );
   }
   

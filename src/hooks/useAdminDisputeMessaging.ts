@@ -60,6 +60,15 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
       (msg.sender_id === buyerId && !msg.recipient_id)
   );
 
+  // DEBUG LOG (temporary - will remove after validation)
+  console.log('[ADMIN DISPUTE THREADS]', {
+    total: allMessages.length,
+    toSeller: messagesToSeller.length,
+    toBuyer: messagesToBuyer.length,
+    sellerId,
+    buyerId
+  });
+
   const sendToSeller = useMutation({
     mutationFn: async ({ message }: { message: string }) => {
       if (!user?.id) throw new Error('User not authenticated');
