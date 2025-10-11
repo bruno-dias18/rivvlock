@@ -72,36 +72,73 @@ serve(async (req) => {
       apiVersion: "2024-06-20",
     });
 
+    // Retrieve current PaymentIntent status to choose safe action
+    const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+
     let result;
     let newTransactionStatus;
     let disputeStatus;
 
+    const totalAmount = Math.round(transaction.price * 100);
+    const platformFee = Math.round(totalAmount * 0.05);
+    const currency = String(transaction.currency).toLowerCase();
+
     if (action === 'refund') {
-      // Cancel authorization to return funds to buyer
-      result = await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+      // Admin refund: 
+      // - If still authorized (requires_capture) -> cancel PI
+      // - If already captured (succeeded) -> create a full refund
+      if (paymentIntent.status === 'requires_capture') {
+        result = await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+        logger.log(`✅ Authorization cancelled - ${(totalAmount / 100).toFixed(2)} ${transaction.currency} returned to buyer`);
+      } else if (paymentIntent.status === 'succeeded') {
+        await stripe.refunds.create({
+          payment_intent: transaction.stripe_payment_intent_id,
+          amount: totalAmount,
+          reason: 'requested_by_customer',
+          metadata: { dispute_id: dispute.id, admin_official: 'true', type: 'admin_full_refund' }
+        });
+        logger.log(`✅ Full refund created - ${(totalAmount / 100).toFixed(2)} ${transaction.currency}`);
+      } else {
+        throw new Error(`PaymentIntent not refundable in status: ${paymentIntent.status}`);
+      }
 
       newTransactionStatus = 'disputed';
       disputeStatus = 'resolved_refund';
 
-      const totalAmount = Math.round(transaction.price * 100);
-      logger.log(`✅ Authorization cancelled - ${(totalAmount / 100).toFixed(2)} ${transaction.currency} returned to buyer`);
-
     } else if (action === 'release') {
-      // Release funds to seller minus platform fee
-      const totalAmount = Math.round(transaction.price * 100);
-      const platformFee = Math.round(totalAmount * 0.05);
+      // Admin release: capture funds (if not already) then transfer seller share
+      // Find seller's connected account
+      const { data: sellerAccount } = await adminClient
+        .from('stripe_accounts')
+        .select('stripe_account_id')
+        .eq('user_id', transaction.user_id)
+        .maybeSingle();
 
-      result = await stripe.paymentIntents.capture(
-        transaction.stripe_payment_intent_id,
-        {
-          application_fee_amount: platformFee,
-        }
-      );
+      if (!sellerAccount?.stripe_account_id) {
+        throw new Error('Seller Stripe account not found');
+      }
+
+      if (paymentIntent.status === 'requires_capture') {
+        await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
+      } else if (paymentIntent.status !== 'succeeded') {
+        throw new Error(`PaymentIntent not capturable in status: ${paymentIntent.status}`);
+      }
+
+      const transferAmount = totalAmount - platformFee;
+      if (transferAmount > 0) {
+        await stripe.transfers.create({
+          amount: transferAmount,
+          currency,
+          destination: sellerAccount.stripe_account_id,
+          transfer_group: `txn_${transaction.id}`,
+          metadata: { dispute_id: dispute.id, type: 'admin_release_transfer' }
+        });
+      }
 
       newTransactionStatus = 'completed';
       disputeStatus = 'resolved_release';
 
-      logger.log(`💰 RELEASE: ${((totalAmount - platformFee) / 100).toFixed(2)} ${transaction.currency} released to seller`);
+      logger.log(`💰 RELEASE: ${((transferAmount) / 100).toFixed(2)} ${transaction.currency} released to seller`);
     } else {
       throw new Error("Invalid action. Must be 'refund' or 'release'");
     }
