@@ -141,10 +141,10 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
                   • Le vendeur recevra <strong>{100 - refundPercentage}%</strong> du montant de la transaction
                 </p>
                 <p className="text-orange-600 dark:text-orange-400">
-                  • Frais RivvLock (5%) : déduits proportionnellement de la part du vendeur
+                  • Frais RivvLock (5%) : déduits du montant total, puis répartis proportionnellement entre les deux parties
                 </p>
                 <p className="text-xs text-muted-foreground mt-2 italic">
-                  Exemple : Transaction 100€, remboursement {refundPercentage}% → Acheteur: {refundPercentage}€ | Vendeur: {(100 - refundPercentage - (5 * (100 - refundPercentage) / 100)).toFixed(2)}€ (net)
+                  Exemple : Transaction 100€, remboursement {refundPercentage}% → Montant net 95€ → Acheteur: {(95 * refundPercentage / 100).toFixed(2)}€ | Vendeur: {(95 * (100 - refundPercentage) / 100).toFixed(2)}€
                 </p>
               </div>
             </div>
