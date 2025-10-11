@@ -34,17 +34,21 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
   // Split messages into two private threads
   const messagesToSeller = allMessages.filter(
     (msg: any) =>
-      // Admin -> Seller strictly private
+      // Admin -> Seller
       msg.message_type === 'admin_to_seller' ||
-      // Seller -> Admin legacy (no recipient, public thread)
+      // Seller -> Admin (with recipient_id pointing to admin)
+      (msg.sender_id === sellerId && msg.recipient_id === user?.id) ||
+      // Seller -> Admin (legacy, no recipient)
       (msg.sender_id === sellerId && !msg.recipient_id)
   );
 
   const messagesToBuyer = allMessages.filter(
     (msg: any) =>
-      // Admin -> Buyer strictly private
+      // Admin -> Buyer
       msg.message_type === 'admin_to_buyer' ||
-      // Buyer -> Admin legacy (no recipient, public thread)
+      // Buyer -> Admin (with recipient_id pointing to admin)
+      (msg.sender_id === buyerId && msg.recipient_id === user?.id) ||
+      // Buyer -> Admin (legacy, no recipient)
       (msg.sender_id === buyerId && !msg.recipient_id)
   );
 
