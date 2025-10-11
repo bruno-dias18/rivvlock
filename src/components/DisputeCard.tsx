@@ -210,24 +210,49 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   const handleDeleteDispute = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir archiver ce litige résolu ? Il restera visible pour les administrateurs.")) return;
+    if (!user?.id) {
+      toast.error("Vous devez être connecté");
+      return;
+    }
+
+    if (!confirm("Êtes-vous sûr de vouloir archiver ce litige résolu ? Il restera visible pour l'autre partie et les administrateurs.")) {
+      return;
+    }
 
     setIsDeleting(true);
     try {
-      // Au lieu de DELETE, faire un UPDATE pour archiver
+      // Déterminer le rôle de l'utilisateur
+      const isSeller = transaction?.user_id === user.id;
+      const isBuyer = transaction?.buyer_id === user.id;
+      
+      if (!isSeller && !isBuyer) {
+        toast.error("Vous n'êtes pas autorisé à archiver ce litige");
+        return;
+      }
+      
+      // Préparer l'update selon le rôle
+      const updateData = isSeller 
+        ? { 
+            archived_by_seller: true, 
+            seller_archived_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        : { 
+            archived_by_buyer: true, 
+            buyer_archived_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+      
       const { error } = await supabase
         .from('disputes')
-        .update({
-          deleted_by_user_id: user?.id,
-          deleted_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', dispute.id);
 
       if (error) throw error;
 
       toast.success("Litige archivé avec succès");
       onRefetch?.();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error archiving dispute:', error);
       toast.error("Erreur lors de l'archivage du litige");
     } finally {

@@ -259,11 +259,14 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             <CardTitle className="text-lg flex items-center gap-2">
               <Settings className="h-5 w-5 text-orange-600" />
               [ADMIN] Litige #{dispute.id.slice(0, 8)}
-              {dispute.deleted_by_user_id && (
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  📁 Archivé par l'utilisateur
-                </Badge>
-              )}
+            {(dispute.archived_by_seller || dispute.archived_by_buyer) && (
+              <Badge variant="secondary" className="ml-2 text-xs">
+                📁 Archivé par: 
+                {dispute.archived_by_seller && ' Vendeur'}
+                {dispute.archived_by_seller && dispute.archived_by_buyer && ' +'}
+                {dispute.archived_by_buyer && ' Acheteur'}
+              </Badge>
+            )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
               Transaction: {transaction?.title || '-'}

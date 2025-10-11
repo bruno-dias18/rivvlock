@@ -204,9 +204,10 @@ export type Database = {
       disputes: {
         Row: {
           admin_notes: string | null
+          archived_by_buyer: boolean
+          archived_by_seller: boolean
+          buyer_archived_at: string | null
           created_at: string
-          deleted_at: string | null
-          deleted_by_user_id: string | null
           dispute_deadline: string | null
           dispute_type: string
           escalated_at: string | null
@@ -215,15 +216,17 @@ export type Database = {
           reporter_id: string
           resolution: string | null
           resolved_at: string | null
+          seller_archived_at: string | null
           status: Database["public"]["Enums"]["dispute_status"]
           transaction_id: string
           updated_at: string
         }
         Insert: {
           admin_notes?: string | null
+          archived_by_buyer?: boolean
+          archived_by_seller?: boolean
+          buyer_archived_at?: string | null
           created_at?: string
-          deleted_at?: string | null
-          deleted_by_user_id?: string | null
           dispute_deadline?: string | null
           dispute_type?: string
           escalated_at?: string | null
@@ -232,15 +235,17 @@ export type Database = {
           reporter_id: string
           resolution?: string | null
           resolved_at?: string | null
+          seller_archived_at?: string | null
           status?: Database["public"]["Enums"]["dispute_status"]
           transaction_id: string
           updated_at?: string
         }
         Update: {
           admin_notes?: string | null
+          archived_by_buyer?: boolean
+          archived_by_seller?: boolean
+          buyer_archived_at?: string | null
           created_at?: string
-          deleted_at?: string | null
-          deleted_by_user_id?: string | null
           dispute_deadline?: string | null
           dispute_type?: string
           escalated_at?: string | null
@@ -249,6 +254,7 @@ export type Database = {
           reporter_id?: string
           resolution?: string | null
           resolved_at?: string | null
+          seller_archived_at?: string | null
           status?: Database["public"]["Enums"]["dispute_status"]
           transaction_id?: string
           updated_at?: string

@@ -42,7 +42,24 @@ export const useDisputes = () => {
       }
 
       const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
-      const enriched = disputes.map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }));
+      
+      // Filtrer les litiges selon l'archivage individuel
+      const enriched = disputes
+        .map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }))
+        .filter((dispute: any) => {
+          const tx = dispute.transactions;
+          if (!tx) return true; // Garder si transaction non trouvée (failsafe)
+          
+          const isSeller = tx.user_id === user?.id;
+          const isBuyer = tx.buyer_id === user?.id;
+          
+          // Filtrer selon l'archivage individuel
+          if (isSeller && dispute.archived_by_seller) return false;
+          if (isBuyer && dispute.archived_by_buyer) return false;
+          
+          return true;
+        });
+      
       return enriched;
 
     },
