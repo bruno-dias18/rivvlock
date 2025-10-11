@@ -17,7 +17,7 @@ export const useAdminDisputes = (status?: string) => {
         .from('disputes')
         .select(`
           *,
-          transactions!inner(
+          transactions(
             id,
             title,
             price,
