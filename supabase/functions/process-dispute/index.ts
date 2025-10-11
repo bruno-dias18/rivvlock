@@ -52,12 +52,7 @@ serve(async (req) => {
 
     if (action === 'refund') {
       // Cancel authorization to return funds to buyer
-      result = await stripe.paymentIntents.cancel(
-        transaction.stripe_payment_intent_id,
-        {
-          cancellation_reason: 'fraudulent'
-        }
-      );
+      result = await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
 
       newTransactionStatus = 'disputed';
       disputeStatus = 'resolved_refund';
