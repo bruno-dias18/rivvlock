@@ -74,12 +74,12 @@ export default function PaymentLinkPage() {
     }
   };
 
-  const handleJoinTransaction = async () => {
+  const handlePayNow = async () => {
     if (!user || !transaction || processingPayment) return;
 
     setProcessingPayment(true);
     try {
-      // Join the transaction
+      // 1. Join the transaction first
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
           transaction_id: transaction.id,
@@ -90,15 +90,26 @@ export default function PaymentLinkPage() {
       if (joinError) throw joinError;
       if (joinData.error) throw new Error(joinData.error);
 
-      // Wait a moment for database to update
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 2. Create Stripe Checkout session immediately
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
+        body: { 
+          transactionId: transaction.id,
+          transactionToken: token || new URLSearchParams(window.location.search).get('txId')
+        }
+      });
 
-      // Redirect to transactions page with success indication
-      window.location.href = '/dashboard/transactions?joined=success';
+      if (checkoutError) throw checkoutError;
+      if (checkoutData.error) throw new Error(checkoutData.error);
+
+      // 3. Redirect to Stripe Checkout
+      if (checkoutData.url || checkoutData.sessionUrl) {
+        window.location.href = checkoutData.url || checkoutData.sessionUrl;
+      } else {
+        throw new Error('URL de paiement manquante');
+      }
     } catch (err: any) {
-      logger.error('Error joining transaction:', err);
-      setError(err.message || 'Erreur lors de l\'ajout de la transaction');
-    } finally {
+      logger.error('Error initiating payment:', err);
+      setError(err.message || 'Erreur lors de la préparation du paiement');
       setProcessingPayment(false);
     }
   };
@@ -213,14 +224,14 @@ export default function PaymentLinkPage() {
                 className="w-full"
                 size="lg"
               >
-                <Users className="w-5 h-5 mr-2" />
-                Joindre la transaction
+                <CreditCard className="w-5 h-5 mr-2" />
+                Se connecter pour payer
               </Button>
             </div>
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Connectez-vous pour rejoindre cette transaction et effectuer le paiement sécurisé
+            Connectez-vous pour effectuer le paiement sécurisé via Stripe
           </p>
         </div>
       </div>
@@ -292,17 +303,21 @@ export default function PaymentLinkPage() {
               <div className="text-center py-4">
                 <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Préparation du paiement...
+                  Préparation de votre paiement sécurisé...
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Vous allez être redirigé vers Stripe
                 </p>
               </div>
             ) : (
               <Button 
-                onClick={handleJoinTransaction}
+                onClick={handlePayNow}
                 className="w-full"
                 size="lg"
+                disabled={processingPayment}
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Rejoindre la transaction
+                Payer maintenant
               </Button>
             )}
           </div>
