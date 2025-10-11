@@ -68,7 +68,7 @@ serve(async (req) => {
     }
 
     // Get transaction details separately
-    const { data: transaction, error: transactionError } = await supabaseClient
+    const { data: transaction, error: transactionError } = await adminClient
       .from("transactions")
       .select("id, user_id, buyer_id, title")
       .eq("id", dispute.transaction_id)
