@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { toast } from 'sonner';
@@ -51,6 +52,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
+  const { isAdmin } = useIsAdmin();
   const [newMessage, setNewMessage] = useState('');
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -119,7 +121,39 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     if (!newMessage.trim()) return;
 
     try {
-      await sendMessage({ message: newMessage.trim() });
+      // Route messages differently when escalated: send privately to admin (without exposing admin id)
+      if (status === 'escalated' && !isAdmin) {
+        const { supabase } = await import('@/integrations/supabase/client');
+        // Fetch transaction to know if current user is seller or buyer
+        const { data: dispute } = await supabase
+          .from('disputes')
+          .select('transaction_id')
+          .eq('id', disputeId)
+          .maybeSingle();
+
+        let messageType: string | undefined = undefined;
+        if (dispute?.transaction_id) {
+          const { data: transaction } = await supabase
+            .from('transactions')
+            .select('id, user_id, buyer_id')
+            .eq('id', dispute.transaction_id)
+            .maybeSingle();
+
+          if (transaction) {
+            const isSeller = user?.id === transaction.user_id;
+            messageType = isSeller ? 'seller_to_admin' : 'buyer_to_admin';
+          }
+        }
+
+        await sendMessage({
+          message: newMessage.trim(),
+          messageType,
+          // Address to self: DB RLS ensures only sender + admins can view; admin hook recognizes *to_admin*
+          recipientId: user?.id || null,
+        });
+      } else {
+        await sendMessage({ message: newMessage.trim() });
+      }
       setNewMessage('');
       
       // Keep keyboard open with robust focus strategy
