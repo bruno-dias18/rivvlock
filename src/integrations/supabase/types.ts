@@ -205,6 +205,8 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string
+          deleted_at: string | null
+          deleted_by_user_id: string | null
           dispute_deadline: string | null
           dispute_type: string
           escalated_at: string | null
@@ -220,6 +222,8 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
           dispute_deadline?: string | null
           dispute_type?: string
           escalated_at?: string | null
@@ -235,6 +239,8 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
           dispute_deadline?: string | null
           dispute_type?: string
           escalated_at?: string | null

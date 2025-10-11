@@ -210,22 +210,26 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   const handleDeleteDispute = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce litige résolu ?")) return;
+    if (!confirm("Êtes-vous sûr de vouloir archiver ce litige résolu ? Il restera visible pour les administrateurs.")) return;
 
     setIsDeleting(true);
     try {
+      // Au lieu de DELETE, faire un UPDATE pour archiver
       const { error } = await supabase
         .from('disputes')
-        .delete()
+        .update({
+          deleted_by_user_id: user?.id,
+          deleted_at: new Date().toISOString()
+        })
         .eq('id', dispute.id);
 
       if (error) throw error;
 
-      toast.success("Litige supprimé avec succès");
+      toast.success("Litige archivé avec succès");
       onRefetch?.();
     } catch (error) {
-      logger.error('Error deleting dispute:', error);
-      toast.error("Erreur lors de la suppression du litige");
+      logger.error('Error archiving dispute:', error);
+      toast.error("Erreur lors de l'archivage du litige");
     } finally {
       setIsDeleting(false);
     }
@@ -470,16 +474,16 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               </div>
             </div>
             
-            {/* Delete button for resolved disputes */}
+            {/* Archive button for resolved disputes */}
             <Button
-              variant="destructive"
+              variant="outline"
               size="sm"
               onClick={handleDeleteDispute}
               disabled={isDeleting}
               className="w-full"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              {isDeleting ? "Suppression..." : "Supprimer ce litige"}
+              {isDeleting ? "Archivage..." : "Archiver ce litige"}
             </Button>
           </div>
         )}
