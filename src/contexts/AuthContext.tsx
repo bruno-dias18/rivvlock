@@ -33,29 +33,51 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           logger.info('Auth state changed:', event);
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Always mark loading as false on auth state change
           setLoading(false);
         }
       }
     );
 
-    // Get initial session - force refresh to handle Stripe redirects
-    const getInitialSession = async () => {
+    // Get initial session with retry for Stripe redirects
+    const getInitialSession = async (retryCount = 0) => {
       try {
-        // Force a fresh session check
+        logger.info('Getting initial session, attempt:', retryCount + 1);
+        
+        // Force a fresh session check with retry
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           logger.error('Error getting session:', error);
+          
+          // Retry once if there's an error (handles Stripe redirect timing)
+          if (retryCount === 0) {
+            setTimeout(() => {
+              if (mounted) {
+                getInitialSession(1);
+              }
+            }, 500);
+            return;
+          }
         }
         
         if (mounted) {
+          logger.info('Session retrieved:', session ? 'Session found' : 'No session');
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
         }
       } catch (error) {
         logger.error('Error getting session:', error);
-        if (mounted) {
+        if (mounted && retryCount === 0) {
+          // Retry once on exception
+          setTimeout(() => {
+            if (mounted) {
+              getInitialSession(1);
+            }
+          }, 500);
+        } else if (mounted) {
           setLoading(false);
         }
       }

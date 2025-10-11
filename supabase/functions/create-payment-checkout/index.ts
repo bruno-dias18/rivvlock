@@ -90,8 +90,9 @@ serve(async (req) => {
     // Calculate amount in cents
     const amountInCents = Math.round(transaction.price * 100);
 
-    // Use the rivvlock domain for all redirects
-    const RIVVLOCK_DOMAIN = 'https://rivvlock.lovable.app';
+    // Use the request origin for redirects to maintain the session
+    const origin = req.headers.get("origin") || 'https://rivvlock.lovable.app';
+    logStep("Using origin for redirects", { origin });
     
     // Create a Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
@@ -112,8 +113,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${RIVVLOCK_DOMAIN}/dashboard?payment=success`,
-      cancel_url: `${RIVVLOCK_DOMAIN}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
+      success_url: `${origin}/dashboard?payment=success`,
+      cancel_url: `${origin}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: finalTransactionId,
         transactionId: finalTransactionId, // Alternative key for compatibility
