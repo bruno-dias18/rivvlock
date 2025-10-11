@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AdminOfficialProposalCardProps {
   proposal: any;
@@ -21,6 +22,7 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
   onRefetch,
 }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isValidating, setIsValidating] = React.useState(false);
 
   const isSeller = user?.id === transaction.user_id;
@@ -52,6 +54,13 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         toast.success("Proposition rejetée");
       }
       
+      // Invalider les caches React Query pour forcer le rafraîchissement
+      queryClient.invalidateQueries({ queryKey: ['dispute-proposals', proposal.dispute_id] });
+      queryClient.invalidateQueries({ queryKey: ['disputes'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dispute-messages', proposal.dispute_id] });
+      
+      // Garder le callback existant pour compatibilité
       onRefetch?.();
     } catch (error) {
       logger.error('Error validating proposal:', error);
