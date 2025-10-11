@@ -71,6 +71,7 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
 
+  const isEscalated = status === 'escalated';
   const displayMessages = messages.filter(
     (m) => {
       const isMyMessage = m.sender_id === user?.id;
@@ -81,6 +82,11 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
       
       // Strict rule: hide all admin messages not explicitly addressed to current user
       if (isAdminMessage && m.recipient_id !== user?.id) {
+        return false;
+      }
+      
+      // In escalated mode: hide public messages from the other party
+      if (isEscalated && isPublicMessage && !isMyMessage) {
         return false;
       }
       
