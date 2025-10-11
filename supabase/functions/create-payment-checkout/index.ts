@@ -113,7 +113,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/dashboard?payment=success`,
+      success_url: `${origin}/payment-success`,
       cancel_url: `${origin}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
       metadata: {
         transaction_id: finalTransactionId,

@@ -12,6 +12,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import AdminDisputesPage from "./pages/AdminDisputesPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import AnnualReportsPage from "./pages/AnnualReportsPage";
@@ -59,6 +60,10 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
+               React.createElement(Route, { 
+                 path: "/payment-success", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage))
+               }),
                // Legacy redirects to preserve old links
                React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
                React.createElement(Route, { path: "/profile", element: React.createElement(Navigate, { to: "/dashboard/profile", replace: true }) }),

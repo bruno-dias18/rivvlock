@@ -38,21 +38,6 @@ export default function DashboardPage() {
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
 
-  // Force sync on dashboard load
-  useEffect(() => {
-    if (user) {
-      const timer = setTimeout(async () => {
-        try {
-          await syncPayments();
-          await refetchCounts();
-        } catch (error) {
-          logger.error('Dashboard auto-sync failed:', error);
-        }
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [user?.id]);
-
   const handleSyncPayments = async () => {
     toast.promise(
       (async () => {
