@@ -422,7 +422,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         )}
 
         {/* Résumé condensé - Litige résolu */}
-        {dispute.status.startsWith('resolved') && resolutionDetails && (
+        {dispute.status.startsWith('resolved') && (
           <div className="space-y-3">
             <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
               <div className="flex items-center gap-2 mb-3">
@@ -431,39 +431,43 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               </div>
               
               <div className="space-y-2 text-sm">
-                <div>
-                  <p className="font-medium text-foreground mb-1">
-                    {dispute.resolution?.includes('administratif') 
-                      ? t('disputes.resolutionDetails.adminAgreement')
-                      : t('disputes.resolutionDetails.agreementReached')
-                    }
-                  </p>
-                  <p className="text-muted-foreground">
-                    {t(`disputes.resolutionTypes.${resolutionDetails.proposalType}`)}
-                    {resolutionDetails.refundPercentage > 0 && ` - ${resolutionDetails.refundPercentage}%`}
-                  </p>
-                </div>
-                
-                <Separator />
-                
-                {/* Show buyer refund if user is buyer */}
-                {userRole === 'buyer' && parseFloat(resolutionDetails.buyerRefund) > 0 && (
-                  <div className="bg-background/50 p-2 rounded">
-                    <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.refundedToBuyer')}</p>
-                    <p className="font-semibold text-green-600">
-                      {resolutionDetails.buyerRefund} {resolutionDetails.currency}
-                    </p>
-                  </div>
-                )}
-                
-                {/* Show seller received if user is seller */}
-                {userRole === 'seller' && parseFloat(resolutionDetails.sellerReceived) > 0 && (
-                  <div className="bg-background/50 p-2 rounded">
-                    <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.receivedBySeller')}</p>
-                    <p className="font-semibold text-green-600">
-                      {resolutionDetails.sellerReceived} {resolutionDetails.currency}
-                    </p>
-                  </div>
+                {resolutionDetails && (
+                  <>
+                    <div>
+                      <p className="font-medium text-foreground mb-1">
+                        {dispute.resolution?.includes('administratif') 
+                          ? t('disputes.resolutionDetails.adminAgreement')
+                          : t('disputes.resolutionDetails.agreementReached')
+                        }
+                      </p>
+                      <p className="text-muted-foreground">
+                        {t(`disputes.resolutionTypes.${resolutionDetails.proposalType}`)}
+                        {resolutionDetails.refundPercentage > 0 && ` - ${resolutionDetails.refundPercentage}%`}
+                      </p>
+                    </div>
+                    
+                    <Separator />
+                    
+                    {/* Show buyer refund if user is buyer */}
+                    {userRole === 'buyer' && parseFloat(resolutionDetails.buyerRefund) > 0 && (
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.refundedToBuyer')}</p>
+                        <p className="font-semibold text-green-600">
+                          {resolutionDetails.buyerRefund} {resolutionDetails.currency}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Show seller received if user is seller */}
+                    {userRole === 'seller' && parseFloat(resolutionDetails.sellerReceived) > 0 && (
+                      <div className="bg-background/50 p-2 rounded">
+                        <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.receivedBySeller')}</p>
+                        <p className="font-semibold text-green-600">
+                          {resolutionDetails.sellerReceived} {resolutionDetails.currency}
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 {dispute.resolved_at && (
