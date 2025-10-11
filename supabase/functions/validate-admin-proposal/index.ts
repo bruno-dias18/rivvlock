@@ -116,14 +116,19 @@ serve(async (req) => {
 
       // Send rejection message
       const rejectMessage = `❌ ${isSeller ? 'Le vendeur' : 'L\'acheteur'} a rejeté la proposition officielle de l'administration.`;
-      await adminClient
-        .from("dispute_messages")
-        .insert({
-          dispute_id: dispute.id,
-          sender_id: user.id,
-          message: rejectMessage,
-          message_type: 'system',
-        });
+      try {
+        await adminClient
+          .from("dispute_messages")
+          .insert({
+            dispute_id: dispute.id,
+            sender_id: user.id,
+            message: rejectMessage,
+            message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
+            recipient_id: null,
+          });
+      } catch (msgError) {
+        logger.warn("Non-critical: Could not insert rejection message", msgError);
+      }
 
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal rejected by", isSeller ? 'seller' : 'buyer');
 
@@ -152,14 +157,19 @@ serve(async (req) => {
 
     // Send validation message
     const validationMessage = `✅ ${isSeller ? 'Le vendeur' : 'L\'acheteur'} a validé la proposition officielle.`;
-    await adminClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: dispute.id,
-        sender_id: user.id,
-        message: validationMessage,
-        message_type: 'system',
-      });
+    try {
+      await adminClient
+        .from("dispute_messages")
+        .insert({
+          dispute_id: dispute.id,
+          sender_id: user.id,
+          message: validationMessage,
+          message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
+          recipient_id: null,
+        });
+    } catch (msgError) {
+      logger.warn("Non-critical: Could not insert validation message", msgError);
+    }
 
     // Re-fetch proposal to get the updated validation status
     const { data: updatedProposal, error: refetchError } = await adminClient
@@ -212,7 +222,7 @@ serve(async (req) => {
             const captureAmount = sellerAmount + platformFee;
             const currency = String(transaction.currency).toLowerCase();
 
-            const { data: sellerAccount } = await supabaseClient
+            const { data: sellerAccount } = await adminClient
               .from('stripe_accounts')
               .select('stripe_account_id')
               .eq('user_id', transaction.user_id)
@@ -266,7 +276,7 @@ serve(async (req) => {
 
           // Transfer seller's share (if partial refund)
           if (sellerAmount > 0) {
-            const { data: sellerAccount } = await supabaseClient
+            const { data: sellerAccount } = await adminClient
               .from('stripe_accounts')
               .select('stripe_account_id')
               .eq('user_id', transaction.user_id)
@@ -302,7 +312,7 @@ serve(async (req) => {
         const platformFee = Math.round(totalAmount * 0.05);
         const currency = String(transaction.currency).toLowerCase();
 
-        const { data: sellerAccount } = await supabaseClient
+        const { data: sellerAccount } = await adminClient
           .from('stripe_accounts')
           .select('stripe_account_id')
           .eq('user_id', transaction.user_id)
@@ -369,14 +379,31 @@ serve(async (req) => {
         ? `✅ Les deux parties ont validé la proposition : Remboursement intégral effectué automatiquement`
         : `✅ Les deux parties ont validé la proposition : Fonds libérés au vendeur`;
 
-      await adminClient
-        .from("dispute_messages")
-        .insert({
-          dispute_id: dispute.id,
-          sender_id: user.id,
-          message: confirmationText,
-          message_type: 'system',
-        });
+      try {
+        // Message au vendeur
+        await adminClient
+          .from("dispute_messages")
+          .insert({
+            dispute_id: dispute.id,
+            sender_id: user.id,
+            message: confirmationText,
+            message_type: 'admin_to_seller',
+            recipient_id: transaction.user_id
+          });
+        
+        // Message à l'acheteur
+        await adminClient
+          .from("dispute_messages")
+          .insert({
+            dispute_id: dispute.id,
+            sender_id: user.id,
+            message: confirmationText,
+            message_type: 'admin_to_buyer',
+            recipient_id: transaction.buyer_id
+          });
+      } catch (msgError) {
+        logger.warn("Non-critical: Could not insert confirmation messages", msgError);
+      }
 
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
 
