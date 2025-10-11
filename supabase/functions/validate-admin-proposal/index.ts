@@ -414,8 +414,8 @@ serve(async (req) => {
       success: true,
       status: 'pending',
       both_validated: false,
-      seller_validated: updatedSellerValidated,
-      buyer_validated: updatedBuyerValidated
+      seller_validated: updatedProposal.seller_validated,
+      buyer_validated: updatedProposal.buyer_validated
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
