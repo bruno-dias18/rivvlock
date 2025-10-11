@@ -74,7 +74,7 @@ export const useEscalatedDisputeMessaging = ({ disputeId, transactionId }: Escal
         .insert({
           dispute_id: disputeId,
           sender_id: user.id,
-          recipient_id: null, // Admin will see via message_type
+          recipient_id: user.id, // Self-recipient to keep private from counterparty
           message: message.trim(),
           message_type: computedMessageType,
         });

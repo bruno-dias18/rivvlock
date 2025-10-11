@@ -38,6 +38,8 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
       msg.message_type === 'admin_to_seller' ||
       // Seller -> Admin (explicit to_admin type)
       (msg.sender_id === sellerId && msg.message_type === 'seller_to_admin') ||
+      // Seller -> Admin (self-recipient to keep private)
+      (msg.sender_id === sellerId && msg.recipient_id === sellerId) ||
       // Seller -> Admin (with recipient_id pointing to admin)
       (msg.sender_id === sellerId && msg.recipient_id === user?.id) ||
       // Seller -> Admin (legacy, no recipient)
@@ -50,6 +52,8 @@ export const useAdminDisputeMessaging = ({ disputeId, sellerId, buyerId }: Admin
       msg.message_type === 'admin_to_buyer' ||
       // Buyer -> Admin (explicit to_admin type)
       (msg.sender_id === buyerId && msg.message_type === 'buyer_to_admin') ||
+      // Buyer -> Admin (self-recipient to keep private)
+      (msg.sender_id === buyerId && msg.recipient_id === buyerId) ||
       // Buyer -> Admin (with recipient_id pointing to admin)
       (msg.sender_id === buyerId && msg.recipient_id === user?.id) ||
       // Buyer -> Admin (legacy, no recipient)
