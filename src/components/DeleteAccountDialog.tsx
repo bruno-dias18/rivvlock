@@ -70,14 +70,16 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
     try {
       const { data, error } = await supabase.functions.invoke('delete-user-account');
 
-      if (error) {
-        logger.error('Error deleting account:', { error, data });
+      // Always parse response data first, even if error is present
+      const responseData = (data || error?.context || {}) as any;
+
+      if (error || responseData?.error) {
+        logger.error('Error deleting account:', { error, responseData });
         
         // Parse detailed error from backend
-        const errorData = data as any;
-        const activeTransactionsCount = errorData?.activeTransactionsCount || 0;
-        const activeDisputesCount = errorData?.activeDisputesCount || 0;
-        const details = errorData?.details;
+        const activeTransactionsCount = responseData?.activeTransactionsCount || 0;
+        const activeDisputesCount = responseData?.activeDisputesCount || 0;
+        const details = responseData?.details;
 
         if (activeTransactionsCount > 0 || activeDisputesCount > 0) {
           // Build detailed error message
@@ -105,7 +107,7 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
           );
         } else {
           // Fallback to generic error message
-          const backendMessage = errorData?.error || errorData?.message;
+          const backendMessage = responseData?.error || responseData?.message;
           toast.error(backendMessage || error.message || t('deleteAccount.errorMessage'));
         }
         return;
