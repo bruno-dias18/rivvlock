@@ -23,6 +23,74 @@ interface DeleteAccountDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Helper function to parse Edge Function errors robustly
+const parseFunctionError = (error: any, data: any) => {
+  // 1) If data is already a valid object, use it
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    return data;
+  }
+  
+  // 2) Try error.context.body (JSON string)
+  if (error?.context?.body && typeof error.context.body === 'string') {
+    try {
+      return JSON.parse(error.context.body);
+    } catch {}
+  }
+  
+  // 3) Try error.context directly (JSON string)
+  if (typeof error?.context === 'string') {
+    try {
+      return JSON.parse(error.context);
+    } catch {}
+  }
+  
+  // 4) Try error.context as object
+  if (error?.context && typeof error.context === 'object') {
+    return error.context;
+  }
+  
+  return {};
+};
+
+// Pre-check function to verify deletion blockers before calling Edge Function
+const checkDeletionBlocks = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.id) return { canDelete: false, blocks: null };
+
+  // Query 1: Count active transactions (pending/paid)
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('status')
+    .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
+    .in('status', ['pending', 'paid']);
+  
+  const pending = (transactions || []).filter(t => t.status === 'pending').length;
+  const paid = (transactions || []).filter(t => t.status === 'paid').length;
+
+  // Query 2: Count active disputes
+  const { data: disputes } = await supabase
+    .from('disputes')
+    .select('id')
+    .or(`reporter_id.eq.${user.id}`)
+    .in('status', ['open', 'responded', 'negotiating', 'escalated']);
+  
+  const disputesCount = disputes?.length || 0;
+  const totalBlocks = pending + paid + disputesCount;
+
+  if (totalBlocks > 0) {
+    return {
+      canDelete: false,
+      blocks: {
+        activeTransactionsCount: pending + paid,
+        activeDisputesCount: disputesCount,
+        details: { pending, paid }
+      }
+    };
+  }
+
+  return { canDelete: true, blocks: null };
+};
+
 export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogProps) => {
   const { t } = useTranslation();
   const { logout } = useAuth();
@@ -65,13 +133,42 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
 
     setIsValidating(false);
 
+    // Pre-check: verify deletion blockers before calling Edge Function (saves credits)
+    const precheck = await checkDeletionBlocks();
+    if (!precheck.canDelete && precheck.blocks) {
+      // Display detailed toast immediately without calling Edge Function
+      const { activeTransactionsCount, activeDisputesCount, details } = precheck.blocks;
+      
+      let detailedMessage = '';
+      if (details.pending > 0) {
+        detailedMessage += t('deleteAccount.pendingTransactionsBlocking', { count: details.pending });
+      }
+      if (details.paid > 0) {
+        if (detailedMessage) detailedMessage += '\n';
+        detailedMessage += t('deleteAccount.paidTransactionsBlocking', { count: details.paid });
+      }
+      if (activeDisputesCount > 0) {
+        if (detailedMessage) detailedMessage += '\n';
+        detailedMessage += t('deleteAccount.activeDisputesError', { count: activeDisputesCount });
+      }
+      
+      toast.error(
+        t('deleteAccount.activeTransactionsError', { count: activeTransactionsCount + activeDisputesCount }),
+        {
+          description: detailedMessage + '\n\n' + t('deleteAccount.resolutionHelp'),
+          duration: 8000,
+        }
+      );
+      return; // Stop here - no Edge Function call
+    }
+
     setIsDeleting(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('delete-user-account');
 
-      // Always parse response data first, even if error is present
-      const responseData = (data || error?.context || {}) as any;
+      // Parse response with robust error handling
+      const responseData = parseFunctionError(error, data) as any;
 
       if (error || responseData?.error) {
         logger.error('Error deleting account:', { error, responseData });
