@@ -15,10 +15,16 @@ Deno.serve(async (req) => {
 
   try {
     // Initialize Supabase clients
+    // Get user JWT for RLS-protected queries
+    const authHeader = req.headers.get('Authorization') ?? '';
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
+        global: { 
+          headers: { Authorization: authHeader }
+        },
         auth: {
           persistSession: false,
         }
@@ -41,7 +47,6 @@ Deno.serve(async (req) => {
     });
 
     // Get user from JWT token
-    const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
