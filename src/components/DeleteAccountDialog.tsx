@@ -72,9 +72,42 @@ export const DeleteAccountDialog = ({ open, onOpenChange }: DeleteAccountDialogP
 
       if (error) {
         logger.error('Error deleting account:', { error, data });
-        // Surface backend message when available (e.g., active transactions)
-        const backendMessage = (data as any)?.error || (data as any)?.message;
-        toast.error(backendMessage || error.message || t('deleteAccount.errorMessage'));
+        
+        // Parse detailed error from backend
+        const errorData = data as any;
+        const activeTransactionsCount = errorData?.activeTransactionsCount || 0;
+        const activeDisputesCount = errorData?.activeDisputesCount || 0;
+        const details = errorData?.details;
+
+        if (activeTransactionsCount > 0 || activeDisputesCount > 0) {
+          // Build detailed error message
+          let detailedMessage = '';
+          
+          if (details?.pending > 0) {
+            detailedMessage += t('deleteAccount.pendingTransactionsBlocking', { count: details.pending });
+          }
+          if (details?.paid > 0) {
+            if (detailedMessage) detailedMessage += '\n';
+            detailedMessage += t('deleteAccount.paidTransactionsBlocking', { count: details.paid });
+          }
+          if (activeDisputesCount > 0) {
+            if (detailedMessage) detailedMessage += '\n';
+            detailedMessage += t('deleteAccount.activeDisputesError', { count: activeDisputesCount });
+          }
+
+          // Show detailed toast with extended duration (8s)
+          toast.error(
+            t('deleteAccount.activeTransactionsError', { count: activeTransactionsCount + activeDisputesCount }),
+            {
+              description: detailedMessage + '\n\n' + t('deleteAccount.resolutionHelp'),
+              duration: 8000,
+            }
+          );
+        } else {
+          // Fallback to generic error message
+          const backendMessage = errorData?.error || errorData?.message;
+          toast.error(backendMessage || error.message || t('deleteAccount.errorMessage'));
+        }
         return;
       }
 

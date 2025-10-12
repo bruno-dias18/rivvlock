@@ -348,7 +348,12 @@
     "success": "Compte supprimé",
     "successMessage": "Votre compte a été supprimé avec succès",
     "error": "Erreur",
-    "errorMessage": "Impossible de supprimer le compte. Veuillez réessayer."
+    "errorMessage": "Impossible de supprimer le compte. Veuillez réessayer.",
+    "activeTransactionsError": "Impossible de supprimer votre compte. Vous avez {{count}} élément(s) actif(s).",
+    "pendingTransactionsBlocking": "📋 {{count}} transaction(s) en attente de paiement",
+    "paidTransactionsBlocking": "💰 {{count}} transaction(s) payée(s) mais non finalisée(s)",
+    "activeDisputesError": "⚖️ {{count}} litige(s) en cours de résolution",
+    "resolutionHelp": "💡 Finalisez ou annulez vos transactions et résolvez vos litiges avant de supprimer votre compte."
   },
   "bankAccount": {
     "title": "Coordonnées bancaires",

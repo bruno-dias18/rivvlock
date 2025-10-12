@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
     logger.log('Deleting account for user:', user.id);
 
-    // Check for active transactions
+    // Check for active transactions (detailed)
     const { data: activeTransactions, error: transactionsError } = await supabase
       .from('transactions')
       .select('id, status')
@@ -76,9 +76,62 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check for active disputes
+    const { data: activeDisputes, error: disputesError } = await supabase
+      .from('disputes')
+      .select('id, status')
+      .eq('reporter_id', user.id)
+      .in('status', ['open', 'responded', 'negotiating', 'escalated']);
+
+    if (disputesError) {
+      logger.error('Error checking disputes:', disputesError);
+    }
+
+    const activeDisputesCount = activeDisputes?.length || 0;
+
+    // Block deletion if active transactions or disputes exist
     if (activeTransactions && activeTransactions.length > 0) {
+      // Count by status
+      const pendingCount = activeTransactions.filter(t => t.status === 'pending').length;
+      const paidCount = activeTransactions.filter(t => t.status === 'paid').length;
+
+      logger.log(`Account deletion blocked: ${activeTransactions.length} active transactions, ${activeDisputesCount} disputes`);
+
       return new Response(
-        JSON.stringify({ error: 'Cannot delete account with active transactions' }), 
+        JSON.stringify({ 
+          error: 'Cannot delete account with active transactions',
+          message: `You have ${activeTransactions.length} active transaction(s)`,
+          activeTransactionsCount: activeTransactions.length,
+          activeDisputesCount: activeDisputesCount,
+          details: {
+            pending: pendingCount,
+            paid: paidCount,
+            disputes: activeDisputesCount
+          }
+        }), 
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Block if active disputes exist (even without transactions)
+    if (activeDisputesCount > 0) {
+      logger.log(`Account deletion blocked: ${activeDisputesCount} active disputes`);
+
+      return new Response(
+        JSON.stringify({ 
+          error: 'Cannot delete account with active disputes',
+          message: `You have ${activeDisputesCount} active dispute(s)`,
+          activeTransactionsCount: 0,
+          activeDisputesCount: activeDisputesCount,
+          details: {
+            pending: 0,
+            paid: 0,
+            disputes: activeDisputesCount
+          }
+        }), 
         { 
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
