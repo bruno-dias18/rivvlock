@@ -109,7 +109,7 @@ serve(async (req) => {
         .from('transactions')
         .delete()
         .lt('created_at', tenYearsAgo.toISOString())
-        .in('status', ['completed', 'expired'])
+        .in('status', ['validated', 'expired'])
         .select('id');
 
       if (txError) throw txError;
