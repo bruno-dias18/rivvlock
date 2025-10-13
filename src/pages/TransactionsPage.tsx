@@ -49,9 +49,8 @@ export default function TransactionsPage() {
   const scrollToTransactionId = searchParams.get('scrollTo');
   
   // Sort states with localStorage persistence
-  const SORT_STORAGE_KEY = 'rivvlock-transactions-sort';
   const [sortBy, setSortBy] = useState<'created_at' | 'service_date' | 'funds_released_at'>(() => {
-    const saved = localStorage.getItem(SORT_STORAGE_KEY);
+    const saved = localStorage.getItem('rivvlock-transactions-sort');
     if (saved) {
       try {
         const { sortBy } = JSON.parse(saved);
@@ -63,7 +62,7 @@ export default function TransactionsPage() {
     return 'service_date';
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
-    const saved = localStorage.getItem(SORT_STORAGE_KEY);
+    const saved = localStorage.getItem('rivvlock-transactions-sort');
     if (saved) {
       try {
         const { sortOrder } = JSON.parse(saved);
@@ -114,7 +113,7 @@ export default function TransactionsPage() {
     
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
-    localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify({
+    localStorage.setItem('rivvlock-transactions-sort', JSON.stringify({
       sortBy: newSortBy,
       sortOrder: newSortOrder
     }));

@@ -3,35 +3,37 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { I18nextProvider } from "react-i18next";
-import HomePage from "./pages/HomePage";
-import AuthPage from "./pages/AuthPage";
-import RegistrationSuccessPage from "./pages/RegistrationSuccessPage";
-import DashboardPage from "./pages/DashboardPage";
-import TransactionsPage from "./pages/TransactionsPage";
-import ProfilePage from "./pages/ProfilePage";
-import PaymentLinkPage from "./pages/PaymentLinkPage";
-import PaymentSuccessPage from "./pages/PaymentSuccessPage";
-
-// Lazy load admin pages for better performance
-const AdminPage = lazy(() => import("./pages/AdminPage"));
-const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
-
-import ActivityHistoryPage from "./pages/ActivityHistoryPage";
-import AnnualReportsPage from "./pages/AnnualReportsPage";
-import TermsOfServicePage from "./pages/TermsOfServicePage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import ContactPage from "./pages/ContactPage";
-import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { AdminRoute } from "./components/AdminRoute";
-import { DashboardLayout } from "./components/DashboardLayout";
-import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
-import { ScrollToTop } from "./components/ScrollToTop";
-import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
 import { queryClient } from "./lib/queryClient";
 import i18n from "./i18n/config";
 import "./index.css";
+
+// Eager-loaded pages (critical path)
+import HomePage from "./pages/HomePage";
+import AuthPage from "./pages/AuthPage";
+import RegistrationSuccessPage from "./pages/RegistrationSuccessPage";
+import NotFound from "./pages/NotFound";
+
+// Lazy load all dashboard pages for better performance
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const PaymentLinkPage = lazy(() => import("./pages/PaymentLinkPage"));
+const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
+const ActivityHistoryPage = lazy(() => import("./pages/ActivityHistoryPage"));
+const AnnualReportsPage = lazy(() => import("./pages/AnnualReportsPage"));
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
+const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+
+// Lazy load components
+const ProtectedRoute = lazy(() => import("./components/ProtectedRoute").then(m => ({ default: m.ProtectedRoute })));
+const AdminRoute = lazy(() => import("./components/AdminRoute").then(m => ({ default: m.AdminRoute })));
+const GlobalErrorBoundary = lazy(() => import("./components/GlobalErrorBoundary").then(m => ({ default: m.GlobalErrorBoundary })));
+const ScrollToTop = lazy(() => import("./components/ScrollToTop").then(m => ({ default: m.ScrollToTop })));
+const RealtimeActivitySync = lazy(() => import("./components/RealtimeActivitySync").then(m => ({ default: m.RealtimeActivitySync })));
 
 const App: React.FC = () => {
   return React.createElement(
@@ -43,15 +45,18 @@ const App: React.FC = () => {
       React.createElement(
         AuthProvider,
         null,
-        React.createElement(RealtimeActivitySync),
+        React.createElement(Suspense, { fallback: null }, React.createElement(RealtimeActivitySync)),
         React.createElement(Toaster, { position: "top-right" }),
         React.createElement(
-          GlobalErrorBoundary,
-          null,
+          Suspense,
+          { fallback: React.createElement("div", { className: "flex items-center justify-center min-h-screen" }, "Loading...") },
           React.createElement(
-            BrowserRouter,
+            GlobalErrorBoundary,
             null,
-            React.createElement(ScrollToTop),
+            React.createElement(
+              BrowserRouter,
+              null,
+              React.createElement(Suspense, { fallback: null }, React.createElement(ScrollToTop)),
             React.createElement(
               Routes,
               null,
@@ -66,43 +71,44 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { 
                  path: "/payment-success", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage))
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage)))
                }),
                // Legacy redirects to preserve old links
                React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
                React.createElement(Route, { path: "/profile", element: React.createElement(Navigate, { to: "/dashboard/profile", replace: true }) }),
                React.createElement(Route, { path: "/admin", element: React.createElement(Navigate, { to: "/dashboard/admin", replace: true }) }),
                React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
-              React.createElement(Route, { 
-                path: "/dashboard", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
-              }),
-              React.createElement(Route, { 
-                path: "/dashboard/transactions", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage))
-              }),
-              React.createElement(Route, { 
-                path: "/dashboard/profile", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(ProfilePage))
-              }),
-              React.createElement(Route, { 
-                path: "/dashboard/reports", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage))
-              }),
-              React.createElement(Route, { 
-                path: "/dashboard/admin", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(AdminPage))))
-              }),
-              React.createElement(Route, { 
-                path: "/dashboard/admin/disputes", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(AdminDisputesPage))))
-              }),
-              React.createElement(Route, { 
-                path: "/activity-history", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(ActivityHistoryPage))
-              }),
+               React.createElement(Route, { 
+                 path: "/dashboard", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(DashboardPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/transactions", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/profile", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(ProfilePage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/reports", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage))))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/disputes", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage))))
+               }),
+               React.createElement(Route, { 
+                 path: "/activity-history", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(ActivityHistoryPage)))
+               }),
               React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
             )
+          )
           )
         )
       )
