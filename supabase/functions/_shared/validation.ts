@@ -19,7 +19,7 @@ export const createTransactionSchema = z.object({
   
   price: z.number()
     .min(1, { message: "Le prix minimum est de 1" })
-    .max(100000, { message: "Le prix ne peut pas dépasser 100 000" }),
+    .max(1000000, { message: "Le prix ne peut pas dépasser 1 000 000" }),
   
   currency: z.enum(['EUR', 'CHF'], { 
     errorMap: () => ({ message: "Devise invalide (EUR ou CHF uniquement)" })

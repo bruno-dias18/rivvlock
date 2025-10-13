@@ -66,8 +66,8 @@ serve(async (req) => {
     const { title, description, price, currency, serviceDate, serviceEndDate } = validatedData;
 
     // Validation supplémentaire des montants (sécurité)
-    if (price < 1 || price > 100000) {
-      throw new Error('Le montant doit être entre 1 et 100 000');
+    if (price < 1 || price > 1000000) {
+      throw new Error('Le montant doit être entre 1 et 1 000 000');
     }
 
     logStep('Request data validated', { title, price, currency, serviceEndDate });
