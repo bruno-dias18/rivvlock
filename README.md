@@ -2,7 +2,7 @@
 
 ## 👋 À propos du projet
 
-**Fondateur** : [Votre nom]  
+**Fondateur** : Bruno Dias  
 **Statut** : Candidat à l'incubation Fongit Genève  
 **Phase** : MVP en production, recherche d'accompagnement entrepreneurial
 
@@ -174,9 +174,9 @@ Je sais que pour passer à l'échelle, j'ai besoin de :
 
 ## 📞 Contact
 
-**Email** : [votre.email@exemple.com]  
-**LinkedIn** : [Votre profil LinkedIn]  
-**Téléphone** : [Votre numéro]  
+**Email** : contact@rivvlock.com  
+**LinkedIn** : https://ch.linkedin.com/in/bruno-dias-2361a1a5  
+**Téléphone** : +41 76 429 40 34
 **Localisation** : Genève, Suisse
 
 ---
