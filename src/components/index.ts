@@ -16,6 +16,7 @@ export { TransactionCard } from './TransactionCard';
 export { default as CompleteTransactionButton } from './CompleteTransactionButton';
 export { CompleteTransactionButtonWithStatus } from './CompleteTransactionButtonWithStatus';
 export { TransactionMessaging } from './TransactionMessaging';
+export { VirtualTransactionList } from './VirtualTransactionList';
 export { NewTransactionDialog } from './NewTransactionDialog';
 export { RenewTransactionDialog } from './RenewTransactionDialog';
 export { ShareLinkDialog } from './ShareLinkDialog';
