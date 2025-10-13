@@ -5,21 +5,22 @@ import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { getPublicBaseUrl } from '@/lib/appUrl';
+import type { Transaction, ValidationStatus } from '@/types';
 
 interface TransactionActionsProps {
-  transaction: any;
+  transaction: Transaction;
   userRole: 'seller' | 'buyer' | null;
-  validationStatus: any;
+  validationStatus: ValidationStatus;
   unreadCount: number;
   hasMessages: boolean;
   isMessagingAvailable: boolean;
   onCopyLink: (text: string) => void;
-  onPayment: (transaction: any) => void;
+  onPayment: (transaction: Transaction) => void;
   setIsDateChangeDialogOpen: (open: boolean) => void;
   setIsMessagingOpen: (open: boolean) => void;
-  onDownloadInvoice: (transaction: any) => void;
+  onDownloadInvoice: (transaction: Transaction) => void;
   onRefetch: () => void;
-  onOpenDispute: (transaction: any) => void;
+  onOpenDispute: (transaction: Transaction) => void;
   CompleteButtonComponent: React.ComponentType<any>;
 }
 

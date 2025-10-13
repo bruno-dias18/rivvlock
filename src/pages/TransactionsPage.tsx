@@ -46,7 +46,7 @@ export default function TransactionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
-  const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: any }>({ open: false, transaction: null });
+  const [disputeDialog, setDisputeDialog] = useState<{ open: boolean; transaction: Transaction | null }>({ open: false, transaction: null });
   
   const scrollToTransactionId = searchParams.get('scrollTo');
   
@@ -122,7 +122,7 @@ export default function TransactionsPage() {
   };
 
   // Sort transactions function
-  const sortTransactions = (transactions: any[]) => {
+  const sortTransactions = (transactions: any[]): any[] => {
     return [...transactions].sort((a, b) => {
       let valueA: string;
       let valueB: string;

@@ -101,6 +101,7 @@ export interface Dispute {
   archived_by_buyer: boolean;
   seller_archived_at: string | null;
   buyer_archived_at: string | null;
+  admin_notes: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields
@@ -227,11 +228,24 @@ export interface DisputeComponentProps {
 /**
  * Validation phase for transaction lifecycle
  */
+export type ValidationPhase = 
+  | 'pending'
+  | 'expired'
+  | 'service_pending'
+  | 'validation_active'
+  | 'validation_expired'
+  | 'completed'
+  | 'disputed';
+
 export interface ValidationStatus {
-  phase: 'awaiting_payment' | 'service_pending' | 'validation_active' | 'validation_expired' | 'validated' | 'expired';
+  phase: ValidationPhase;
+  timeRemaining?: number;
+  isValidationDeadlineActive: boolean;
   canFinalize: boolean;
+  canDispute: boolean;
   canManuallyFinalize: boolean;
   displayLabel: string;
+  displayColor: 'default' | 'secondary' | 'destructive';
 }
 
 /**

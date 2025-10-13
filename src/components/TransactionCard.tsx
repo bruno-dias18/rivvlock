@@ -15,19 +15,20 @@ import { TransactionHeader } from './TransactionCard/TransactionHeader';
 import { TransactionPricing } from './TransactionCard/TransactionPricing';
 import { TransactionTimeline } from './TransactionCard/TransactionTimeline';
 import { TransactionActions } from './TransactionCard/TransactionActions';
+import type { Transaction } from '@/types';
 
 interface TransactionCardProps {
-  transaction: any;
-  user: any;
+  transaction: Transaction;
+  user: { id: string } | null;
   showActions?: boolean;
   hasNewActivity?: boolean;
   onCopyLink: (text: string) => void;
-  onPayment: (transaction: any) => void;
+  onPayment: (transaction: Transaction) => void;
   onRefetch: () => void;
-  onOpenDispute: (transaction: any) => void;
-  onDownloadInvoice: (transaction: any) => void;
-  onDeleteExpired?: (transaction: any) => void;
-  onRenewExpired?: (transaction: any, newServiceDate?: Date, message?: string) => void;
+  onOpenDispute: (transaction: Transaction) => void;
+  onDownloadInvoice: (transaction: Transaction) => void;
+  onDeleteExpired?: (transaction: Transaction) => void;
+  onRenewExpired?: (transaction: Transaction, newServiceDate?: Date, message?: string) => void;
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
@@ -67,7 +68,7 @@ const TransactionCardComponent = ({
   
   const locale = getLocale();
   
-  const getUserRole = (transaction: any) => {
+  const getUserRole = (transaction: Transaction): 'seller' | 'buyer' | null => {
     if (transaction.user_id === user?.id) return 'seller';
     if (transaction.buyer_id === user?.id) return 'buyer';
     return null;

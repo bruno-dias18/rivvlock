@@ -1,9 +1,10 @@
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/lib/mobileUtils';
+import type { Transaction } from '@/types';
 
 interface TransactionPricingProps {
-  transaction: any;
+  transaction: Transaction;
   userRole: 'seller' | 'buyer' | null;
 }
 

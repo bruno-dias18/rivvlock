@@ -16,9 +16,10 @@ import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
 import { DisputeHeader } from './DisputeCard/DisputeHeader';
 import { DisputeContent } from './DisputeCard/DisputeContent';
 import { DisputeResolution } from './DisputeCard/DisputeResolution';
+import type { Dispute, Transaction } from '@/types';
 
 interface DisputeCardProps {
-  dispute: any;
+  dispute: Dispute & { transactions?: Transaction };
   onRefetch?: () => void;
 }
 
@@ -38,7 +39,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   const transaction = dispute.transactions;
   if (!transaction) return null;
 
-  const getUserRole = () => {
+  const getUserRole = (): 'seller' | 'buyer' | 'reporter' => {
     if (transaction.user_id === user?.id) return 'seller';
     if (transaction.buyer_id === user?.id) return 'buyer';
     return 'reporter';

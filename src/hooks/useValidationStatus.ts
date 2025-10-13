@@ -1,26 +1,7 @@
 import { useMemo } from 'react';
+import type { ValidationStatus, Transaction } from '@/types';
 
-export type ValidationPhase = 
-  | 'pending'                  // En attente de paiement
-  | 'expired'                  // Délai de paiement expiré
-  | 'service_pending'          // Service pas encore rendu (paid mais service futur)
-  | 'validation_active'        // En phase de validation acheteur (48h countdown)
-  | 'validation_expired'       // Délai de validation expiré
-  | 'completed'                // Terminé/validé
-  | 'disputed';                // En litige
-
-interface ValidationStatus {
-  phase: ValidationPhase;
-  timeRemaining?: number; // en millisecondes
-  isValidationDeadlineActive: boolean;
-  canFinalize: boolean;
-  canDispute: boolean;
-  canManuallyFinalize: boolean;
-  displayLabel: string;
-  displayColor: 'default' | 'secondary' | 'destructive';
-}
-
-export function useValidationStatus(transaction: any, userId?: string): ValidationStatus {
+export function useValidationStatus(transaction: Transaction | undefined, userId?: string): ValidationStatus {
   return useMemo(() => {
     if (!transaction || !userId) {
       return {
@@ -52,7 +33,6 @@ export function useValidationStatus(transaction: any, userId?: string): Validati
       ? new Date(transaction.service_end_date) 
       : (transaction.service_date ? new Date(transaction.service_date) : null);
     const validationDeadline = transaction.validation_deadline ? new Date(transaction.validation_deadline) : null;
-    const sellerValidationDeadline = transaction.seller_validation_deadline ? new Date(transaction.seller_validation_deadline) : null;
     const isUserBuyer = transaction.buyer_id === userId;
     const isUserSeller = transaction.user_id === userId;
 

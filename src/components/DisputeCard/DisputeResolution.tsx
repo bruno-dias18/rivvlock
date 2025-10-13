@@ -4,10 +4,19 @@ import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import type { Dispute } from '@/types';
+
+interface ResolutionDetails {
+  proposalType: string;
+  refundPercentage: number;
+  buyerRefund: string;
+  sellerReceived: string;
+  currency: string;
+}
 
 interface DisputeResolutionProps {
-  dispute: any;
-  resolutionDetails: any;
+  dispute: Dispute;
+  resolutionDetails: ResolutionDetails | null;
   userRole: 'seller' | 'buyer' | 'reporter';
   isExpired: boolean;
   isDeleting: boolean;

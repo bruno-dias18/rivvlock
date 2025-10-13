@@ -22,7 +22,7 @@ import type { Transaction } from '@/types';
  */
 interface VirtualTransactionListProps {
   transactions: Transaction[];
-  user: any;
+  user: { id: string } | null;
   transactionsWithNewActivity?: Set<string>;
   onCopyLink: (text: string) => void;
   onPayment: (transaction: Transaction) => void;

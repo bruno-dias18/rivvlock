@@ -4,10 +4,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/r
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
+import type { Transaction, Dispute } from '@/types';
 
 interface DisputeContentProps {
-  transaction: any;
-  dispute: any;
+  transaction: Transaction;
+  dispute: Dispute;
   isTransactionDetailsOpen: boolean;
   setIsTransactionDetailsOpen: (open: boolean) => void;
   isDisputeMessageExpanded: boolean;

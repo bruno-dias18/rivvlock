@@ -5,14 +5,15 @@ import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
 import { useTranslation } from 'react-i18next';
+import type { Transaction, ValidationStatus } from '@/types';
 
 interface TransactionTimelineProps {
-  transaction: any;
+  transaction: Transaction;
   userRole: 'seller' | 'buyer' | null;
   displayName: string;
   locale: string;
-  validationStatus: any;
-  onDeleteExpired?: (transaction: any) => void;
+  validationStatus: ValidationStatus;
+  onDeleteExpired?: (transaction: Transaction) => void;
   setIsRenewDialogOpen: (open: boolean) => void;
   CompleteButtonComponent: React.ComponentType<any>;
   onRefetch: () => void;
