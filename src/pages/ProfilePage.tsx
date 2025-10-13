@@ -10,8 +10,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
-import { Edit, Trash2, FileText, Mail, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, FileText, Mail, ExternalLink, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
@@ -24,7 +26,35 @@ export default function ProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
   const queryClient = useQueryClient();
+
+  const handleExportData = async () => {
+    setIsExportingData(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-user-data');
+      
+      if (error) throw error;
+      
+      // Create downloadable file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `rivvlock-donnees-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success(t('profile.dataExported'));
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('profile.exportError'));
+    } finally {
+      setIsExportingData(false);
+    }
+  };
 
   // Détecter le retour de Stripe et rafraîchir automatiquement
   useEffect(() => {
@@ -305,6 +335,40 @@ export default function ProfilePage() {
                 {t('profile.changePassword')}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('profile.dataPrivacy')}</CardTitle>
+            <CardDescription>
+              {t('profile.dataPrivacyDescription')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link to="/privacy">
+              <Button variant="ghost" className="w-full justify-start h-auto p-3">
+                <FileText className="h-4 w-4 mr-3" />
+                <span>{t('profile.privacyPolicy')}</span>
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start h-auto p-3"
+              onClick={handleExportData}
+              disabled={isExportingData}
+            >
+              <Download className="h-4 w-4 mr-3" />
+              <span>{isExportingData ? t('profile.exporting') : t('profile.exportMyData')}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-auto p-3 text-destructive hover:text-destructive"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-3" />
+              <span>{t('profile.deleteAccount')}</span>
+            </Button>
           </CardContent>
         </Card>
 

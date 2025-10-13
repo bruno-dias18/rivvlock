@@ -322,8 +322,15 @@
      "helpSupport": "Hilfe & Support",
      "helpDescription": "Zugang zu Hilferessourcen", 
      "termsOfService": "Allgemeine Geschäftsbedingungen",
+     "privacyPolicy": "Datenschutzrichtlinie",
      "contactUs": "Kontaktieren Sie uns",
      "website": "Website",
+     "dataPrivacy": "Daten & Datenschutz",
+     "dataPrivacyDescription": "Verwalten Sie Ihre personenbezogenen Daten (DSGVO)",
+     "exportMyData": "Meine Daten herunterladen",
+     "exporting": "Export läuft...",
+     "dataExported": "Daten erfolgreich exportiert",
+     "exportError": "Fehler beim Exportieren der Daten",
      "accessLogs": {
       "title": "Zugriffsverlauf",
       "description": "Sehen Sie, wer auf Ihre persönlichen Daten zugegriffen hat",
@@ -722,7 +729,8 @@
   },
   "footer": {
     "terms": "Nutzungsbedingungen",
+    "privacy": "Datenschutz",
     "contact": "Kontakt",
     "copyright": "© 2024 RivvLock. Alle Rechte vorbehalten."
-  }
+  },
 }

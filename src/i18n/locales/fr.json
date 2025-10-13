@@ -307,8 +307,15 @@
     "helpSupport": "Aide & Support",
     "helpDescription": "Accédez aux ressources d'aide",
     "termsOfService": "Conditions générales",
+    "privacyPolicy": "Politique de confidentialité",
     "contactUs": "Nous contacter",
     "website": "Site web",
+    "dataPrivacy": "Données & Confidentialité",
+    "dataPrivacyDescription": "Gérez vos données personnelles (RGPD)",
+    "exportMyData": "Télécharger mes données",
+    "exporting": "Export en cours...",
+    "dataExported": "Données exportées avec succès",
+    "exportError": "Erreur lors de l'export des données",
     "accessLogs": {
       "title": "Historique des accès",
       "description": "Consultez qui a accédé à vos données personnelles",
@@ -711,9 +718,170 @@
     "fees": "Frais",
     "net": "Net"
   },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "lastUpdated": "Dernière mise à jour",
+    "tableOfContents": "Table des matières",
+    "backToRegistration": "Retour à l'inscription",
+    "sections": {
+      "dataController": "Responsable du traitement",
+      "dataCollected": "Données collectées",
+      "purpose": "Finalités du traitement",
+      "legalBasis": "Bases légales",
+      "retention": "Durées de conservation",
+      "security": "Sécurité des données",
+      "yourRights": "Vos droits",
+      "dataSharing": "Partage des données",
+      "cookies": "Cookies",
+      "international": "Transferts internationaux",
+      "changes": "Modifications",
+      "contact": "Contact"
+    },
+    "content": {
+      "dataController": {
+        "intro": "Le responsable du traitement de vos données personnelles est :"
+      },
+      "dataCollected": {
+        "intro": "Nous collectons les données suivantes :",
+        "identity": {
+          "title": "Données d'identité",
+          "name": "Nom et prénom",
+          "email": "Adresse email",
+          "phone": "Numéro de téléphone",
+          "address": "Adresse postale"
+        },
+        "professional": {
+          "title": "Données professionnelles",
+          "company": "Raison sociale",
+          "siret": "SIRET/UID",
+          "vat": "Numéro de TVA",
+          "avs": "Numéro AVS (indépendants suisses)"
+        },
+        "financial": {
+          "title": "Données financières",
+          "stripe": "Identifiants Stripe (compte connecté)",
+          "transactions": "Historique des transactions"
+        },
+        "technical": {
+          "title": "Données techniques",
+          "ip": "Adresse IP",
+          "logs": "Logs de connexion et d'accès"
+        }
+      },
+      "purpose": {
+        "service": "Fourniture du service d'escrow et gestion des transactions",
+        "payment": "Traitement des paiements via Stripe",
+        "compliance": "Respect des obligations légales (comptabilité, fiscalité, KYC)",
+        "security": "Prévention de la fraude et sécurité de la plateforme",
+        "support": "Support client et résolution des litiges",
+        "improvement": "Amélioration de nos services"
+      },
+      "legalBasis": {
+        "contract": {
+          "title": "Exécution du contrat",
+          "desc": "Nécessaire pour la prestation de services"
+        },
+        "legal": {
+          "title": "Obligation légale",
+          "desc": "Facturation, comptabilité, lutte anti-blanchiment"
+        },
+        "consent": {
+          "title": "Consentement",
+          "desc": "Pour les communications marketing (si applicable)"
+        },
+        "legitimate": {
+          "title": "Intérêt légitime",
+          "desc": "Sécurité, prévention de la fraude"
+        }
+      },
+      "retention": {
+        "account": {
+          "title": "Données de compte actif",
+          "duration": "Tant que le compte est actif"
+        },
+        "transactions": {
+          "title": "Transactions et factures",
+          "duration": "10 ans (obligation légale fiscale)"
+        },
+        "invoices": {
+          "title": "Factures",
+          "duration": "10 ans (Suisse, France, Allemagne)"
+        },
+        "logs": {
+          "title": "Logs d'activité",
+          "duration": "90 jours"
+        },
+        "note": "Après suppression de compte, les transactions sont anonymisées mais conservées pour obligations légales."
+      },
+      "security": {
+        "intro": "Nous mettons en œuvre des mesures de sécurité de niveau bancaire :",
+        "encryption": "Chiffrement des données en transit (HTTPS) et au repos",
+        "rls": "Row Level Security (RLS) avec politiques d'accès strictes",
+        "audit": "Logs d'audit pour toute consultation de données sensibles",
+        "access": "Contrôle d'accès basé sur les rôles",
+        "stripe": "Conformité PCI-DSS via Stripe"
+      },
+      "yourRights": {
+        "intro": "Conformément au RGPD et à la nLPD suisse, vous disposez des droits suivants :",
+        "access": {
+          "title": "Droit d'accès",
+          "desc": "Obtenez une copie de vos données (bouton 'Télécharger mes données')"
+        },
+        "rectification": {
+          "title": "Droit de rectification",
+          "desc": "Corrigez vos données inexactes (page Profil)"
+        },
+        "erasure": {
+          "title": "Droit à l'effacement",
+          "desc": "Supprimez votre compte (bouton 'Supprimer mon compte')"
+        },
+        "portability": {
+          "title": "Droit à la portabilité",
+          "desc": "Export JSON de toutes vos données"
+        },
+        "restriction": {
+          "title": "Droit à la limitation",
+          "desc": "Limitez le traitement de vos données"
+        },
+        "objection": {
+          "title": "Droit d'opposition",
+          "desc": "Opposez-vous à certains traitements"
+        },
+        "exercise": "Pour exercer vos droits : privacy@rivvlock.com"
+      },
+      "dataSharing": {
+        "stripe": "Processeur de paiement (conformité PCI-DSS)",
+        "supabase": "Hébergement sécurisé (ISO 27001)",
+        "legal": {
+          "title": "Autorités légales",
+          "desc": "Si requis par la loi"
+        },
+        "noSale": "Nous ne vendons JAMAIS vos données à des tiers."
+      },
+      "cookies": {
+        "essential": "Nous utilisons uniquement des cookies essentiels :",
+        "auth": "Cookies d'authentification (session utilisateur)",
+        "language": "Préférence de langue",
+        "noTracking": "Aucun cookie de tracking publicitaire."
+      },
+      "international": {
+        "hosting": "Vos données sont hébergées en Europe (Supabase/AWS eu-west-1).",
+        "adequacy": "Conformité RGPD et Swiss-US Data Privacy Framework."
+      },
+      "changes": {
+        "update": "Nous pouvons mettre à jour cette politique. La date de 'Dernière mise à jour' sera modifiée.",
+        "notification": "Les changements majeurs vous seront notifiés par email."
+      },
+      "contact": {
+        "intro": "Pour toute question sur vos données personnelles :",
+        "authority": "Autorité de contrôle : CNIL (France), PFPDT (Suisse), BfDI (Allemagne)"
+      }
+    }
+  },
   "footer": {
     "terms": "Conditions Générales",
+    "privacy": "Confidentialité",
     "contact": "Contact",
     "copyright": "© 2024 RivvLock. Tous droits réservés."
-  }
+  },
 }

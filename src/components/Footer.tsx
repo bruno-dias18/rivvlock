@@ -19,6 +19,13 @@ export function Footer() {
             </Link>
             <Separator orientation="vertical" className="h-4" />
             <Link
+              to="/privacy"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t('footer.privacy')}
+            </Link>
+            <Separator orientation="vertical" className="h-4" />
+            <Link
               to="/contact"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >

@@ -17,6 +17,7 @@ import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import AnnualReportsPage from "./pages/AnnualReportsPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactPage from "./pages/ContactPage";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -56,6 +57,7 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
                React.createElement(Route, { path: "/registration-success", element: React.createElement(RegistrationSuccessPage) }),
                React.createElement(Route, { path: "/terms", element: React.createElement(TermsOfServicePage) }),
+               React.createElement(Route, { path: "/privacy", element: React.createElement(PrivacyPolicyPage) }),
                React.createElement(Route, { path: "/contact", element: React.createElement(ContactPage) }),
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
