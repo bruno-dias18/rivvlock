@@ -3,6 +3,10 @@ import App from "./App.tsx";
 import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
+import { initSentry } from "./lib/sentry";
+
+// Initialize Sentry error tracking (production only)
+initSentry();
 
 // Ensure public domain for shared links (redirect from editor/preview domains)
 if (import.meta.env.PROD) {
