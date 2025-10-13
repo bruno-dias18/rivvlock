@@ -47,6 +47,41 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_dispute_notes: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          dispute_id: string
+          id: string
+          notes: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          dispute_id: string
+          id?: string
+          notes: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          dispute_id?: string
+          id?: string
+          notes?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_dispute_notes_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_role_audit_log: {
         Row: {
           changed_by_user_id: string
@@ -203,7 +238,6 @@ export type Database = {
       }
       disputes: {
         Row: {
-          admin_notes: string | null
           archived_by_buyer: boolean
           archived_by_seller: boolean
           buyer_archived_at: string | null
@@ -222,7 +256,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          admin_notes?: string | null
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null
@@ -241,7 +274,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          admin_notes?: string | null
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null

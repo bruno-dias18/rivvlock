@@ -101,7 +101,6 @@ export interface Dispute {
   archived_by_buyer: boolean;
   seller_archived_at: string | null;
   buyer_archived_at: string | null;
-  admin_notes: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields

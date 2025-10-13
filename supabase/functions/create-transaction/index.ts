@@ -65,10 +65,15 @@ serve(async (req) => {
     const validatedData = validate(createTransactionSchema, requestBody);
     const { title, description, price, currency, serviceDate, serviceEndDate } = validatedData;
 
+    // Validation supplémentaire des montants (sécurité)
+    if (price < 1 || price > 100000) {
+      throw new Error('Le montant doit être entre 1 et 100 000');
+    }
+
     logStep('Request data validated', { title, price, currency, serviceEndDate });
 
-    // Generate unique token for shared link
-    const sharedLinkToken = crypto.randomUUID();
+    // Generate secure 256-bit token for shared link
+    const sharedLinkToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
     
     // Calculate payment deadline (24h before service date)
     const serviceDateObj = new Date(serviceDate);

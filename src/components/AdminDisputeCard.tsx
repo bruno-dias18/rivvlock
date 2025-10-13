@@ -151,15 +151,22 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const handleSaveNotes = async () => {
     setIsSubmitting(true);
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error('Non authentifié');
+
       const { error } = await supabase
-        .from('disputes')
-        .update({ admin_notes: adminNotes })
-        .eq('id', dispute.id);
+        .from('admin_dispute_notes')
+        .insert({ 
+          dispute_id: dispute.id,
+          admin_user_id: userData.user.id,
+          notes: adminNotes 
+        });
 
       if (error) throw error;
 
       toast.success("Notes administratives sauvegardées");
       setIsAddingNotes(false);
+      setAdminNotes('');
       onRefetch?.();
     } catch (error) {
       logger.error('Error saving admin notes:', error);

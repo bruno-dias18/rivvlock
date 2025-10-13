@@ -124,15 +124,6 @@ export const DisputeResolution = ({
         </div>
       )}
 
-      {/* Admin Notes */}
-      {dispute.admin_notes && (
-        <div>
-          <h4 className="font-medium text-sm mb-2">Notes administratives:</h4>
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
-            <p className="text-sm whitespace-pre-wrap">{dispute.admin_notes}</p>
-          </div>
-        </div>
-      )}
     </>
   );
 };
