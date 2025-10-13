@@ -1,23 +1,21 @@
 import React, { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare, Clock, AlertTriangle, Send, Users, ChevronDown, ChevronUp, CheckCircle2, Trash2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { MessageSquare } from 'lucide-react';
+import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { DisputeMessagingDialog } from './DisputeMessagingDialog';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useIsMobile } from '@/lib/mobileUtils';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@radix-ui/react-collapsible';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { logger } from '@/lib/logger';
 import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
+import { DisputeHeader } from './DisputeCard/DisputeHeader';
+import { DisputeContent } from './DisputeCard/DisputeContent';
+import { DisputeResolution } from './DisputeCard/DisputeResolution';
 
 interface DisputeCardProps {
   dispute: any;
@@ -28,9 +26,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   const { t } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [isResponding, setIsResponding] = useState(false);
-  const [responseText, setResponseText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showMessaging, setShowMessaging] = useState(false);
   const [isTransactionDetailsOpen, setIsTransactionDetailsOpen] = useState(!isMobile);
   const [isDisputeMessageExpanded, setIsDisputeMessageExpanded] = useState(!isMobile);
@@ -51,15 +46,12 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
   const userRole = getUserRole();
 
-  // Parse resolution to extract details and calculate amounts
   const parseResolution = () => {
     if (!dispute.resolution) return null;
     
-    // Extract refund percentage from resolution string
     const percentMatch = dispute.resolution.match(/(\d+)%/);
     const refundPercentage = percentMatch ? parseInt(percentMatch[1]) : 0;
     
-    // Determine proposal type
     let proposalType = 'no_refund';
     if (dispute.resolution.includes('full_refund') || refundPercentage === 100) {
       proposalType = 'full_refund';
@@ -67,7 +59,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       proposalType = 'partial_refund';
     }
     
-    // Calculate amounts
     const totalAmount = transaction.price;
     const currency = transaction.currency.toUpperCase();
     
@@ -78,7 +69,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       buyerRefund = totalAmount;
       sellerReceived = 0;
     } else if (proposalType === 'partial_refund') {
-      // Rivvlock fees (5%) are shared proportionally
       const platformFee = totalAmount * 0.05;
       const buyerShare = refundPercentage / 100;
       const sellerShare = (100 - refundPercentage) / 100;
@@ -86,7 +76,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       buyerRefund = (totalAmount * buyerShare) - (platformFee * buyerShare);
       sellerReceived = (totalAmount * sellerShare) - (platformFee * sellerShare);
     } else {
-      // no_refund
       const platformFee = totalAmount * 0.05;
       buyerRefund = 0;
       sellerReceived = totalAmount - platformFee;
@@ -102,8 +91,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   const resolutionDetails = parseResolution();
-  const isReporter = dispute.reporter_id === user?.id;
-  const canRespond = userRole === 'seller' && !isReporter && dispute.status === 'open';
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,36 +165,8 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   const timeRemaining = getTimeRemaining();
-  
-  // Check if deadline has passed (even if not yet escalated in DB)
   const isDeadlinePassed = dispute.dispute_deadline && new Date(dispute.dispute_deadline) < new Date();
   const isExpired = dispute.status === 'escalated' || (isDeadlinePassed && ['open', 'negotiating', 'responded'].includes(dispute.status));
-
-  const handleSubmitResponse = async () => {
-    if (!responseText.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.functions.invoke('respond-to-dispute', {
-        body: {
-          disputeId: dispute.id,
-          response: responseText.trim()
-        }
-      });
-
-      if (error) throw error;
-
-      toast.success("Réponse envoyée avec succès");
-      setIsResponding(false);
-      setResponseText('');
-      onRefetch?.();
-    } catch (error) {
-      logger.error('Error responding to dispute:', error);
-      toast.error("Erreur lors de l'envoi de la réponse");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleDeleteDispute = async () => {
     if (!user?.id) {
@@ -221,7 +180,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
     setIsDeleting(true);
     try {
-      // Déterminer le rôle de l'utilisateur
       const isSeller = transaction?.user_id === user.id;
       const isBuyer = transaction?.buyer_id === user.id;
       
@@ -230,7 +188,6 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         return;
       }
       
-      // Préparer l'update selon le rôle
       const updateData = isSeller 
         ? { 
             archived_by_seller: true, 
@@ -263,149 +220,28 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   return (
     <Card className="border-red-200 dark:border-red-800">
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-sm md:text-lg flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Litige #{dispute.id.slice(0, 8)}
-              {unreadMessages > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="ml-2 animate-pulse text-xs"
-                >
-                  {unreadMessages}
-                </Badge>
-              )}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1 truncate">
-              {dispute.transactions?.title}
-            </p>
-            {timeRemaining && !isExpired && !dispute.status.startsWith('resolved') && (
-              <div className="flex items-center gap-1 mt-2 text-orange-600 dark:text-orange-400 overflow-hidden">
-                <Clock className="h-4 w-4 flex-shrink-0" />
-                <span className="text-xs md:text-sm font-medium whitespace-nowrap">
-                  {timeRemaining.hours}h {timeRemaining.minutes}min restantes pour la résolution amiable
-                </span>
-              </div>
-            )}
-            {isExpired && (
-              <div className="flex items-center gap-1 mt-2 text-red-600 dark:text-red-400">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-sm font-medium">
-                  Escaladé au support client pour arbitrage
-                </span>
-              </div>
-            )}
-          </div>
-          <Badge className={`${getStatusColor(dispute.status)} flex-shrink-0 text-xs md:text-sm`}>
-            {getStatusText(dispute.status)}
-          </Badge>
-        </div>
+        <DisputeHeader
+          disputeId={dispute.id}
+          transactionTitle={dispute.transactions?.title}
+          unreadMessages={unreadMessages}
+          timeRemaining={timeRemaining}
+          isExpired={isExpired}
+          status={dispute.status}
+          getStatusColor={getStatusColor}
+          getStatusText={getStatusText}
+        />
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Transaction Details - Only show for non-resolved disputes */}
-        {!dispute.status.startsWith('resolved') && (
-          <Collapsible open={isTransactionDetailsOpen} onOpenChange={setIsTransactionDetailsOpen}>
-          <div className="bg-muted/50 rounded-lg">
-            <CollapsibleTrigger asChild>
-              <button className="w-full p-3 flex items-center justify-between text-left hover:bg-muted/70 transition-colors rounded-lg">
-                <h4 className="font-medium text-sm">Détails de la transaction</h4>
-                {isMobile && (
-                  isTransactionDetailsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                )}
-              </button>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent>
-              <div className="px-3 pb-3">
-                {isMobile ? (
-                  // Mobile: Compact view - only essential info
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Montant:</span>
-                      <span className="font-medium">
-                        {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Statut:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {dispute.transactions?.status}
-                      </Badge>
-                    </div>
-                  </div>
-                ) : (
-                  // Desktop: Full grid view
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Montant:</span>
-                      <span className="ml-2 font-medium">
-                        {dispute.transactions?.price} {dispute.transactions?.currency?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Date du service:</span>
-                      <span className="ml-2">
-                        {dispute.transactions?.service_date 
-                          ? format(new Date(dispute.transactions.service_date), 'dd/MM/yyyy', { locale: fr })
-                          : 'Non définie'
-                        }
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Vendeur:</span>
-                      <span className="ml-2">{dispute.transactions?.seller_display_name || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Acheteur:</span>
-                      <span className="ml-2">{dispute.transactions?.buyer_display_name || 'N/A'}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CollapsibleContent>
-          </div>
-          </Collapsible>
-        )}
-
-        {/* Dispute Information - Only show for non-resolved disputes */}
-        {!dispute.status.startsWith('resolved') && (
-          <Collapsible open={isDisputeMessageExpanded} onOpenChange={setIsDisputeMessageExpanded}>
-          <div>
-            <CollapsibleTrigger asChild>
-              <button className="w-full text-left mb-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    <h4 className="font-medium text-sm">Type: {getDisputeTypeText(dispute.dispute_type)}</h4>
-                  </div>
-                  {isMobile && (
-                    isDisputeMessageExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                  )}
-                </div>
-              </button>
-            </CollapsibleTrigger>
-            
-            <CollapsibleContent>
-              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-3 rounded-lg">
-                <p className="text-sm">
-                  <strong>Message initial du client:</strong>
-                </p>
-                <p className="text-sm mt-1 whitespace-pre-wrap">
-                  {isMobile && !isDisputeMessageExpanded && dispute.reason.length > 100
-                    ? `${dispute.reason.substring(0, 100)}...`
-                    : dispute.reason
-                  }
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Signalé le {format(new Date(dispute.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-              </p>
-            </CollapsibleContent>
-          </div>
-          </Collapsible>
-        )}
+        <DisputeContent
+          transaction={transaction}
+          dispute={dispute}
+          isTransactionDetailsOpen={isTransactionDetailsOpen}
+          setIsTransactionDetailsOpen={setIsTransactionDetailsOpen}
+          isDisputeMessageExpanded={isDisputeMessageExpanded}
+          setIsDisputeMessageExpanded={setIsDisputeMessageExpanded}
+          getDisputeTypeText={getDisputeTypeText}
+        />
 
         {/* Admin Official Proposals */}
         {adminOfficialProposals.length > 0 && !dispute.status.startsWith('resolved') && (
@@ -421,7 +257,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
 
-        {/* Discussion Button - Visible only for non-resolved disputes */}
+        {/* Discussion Button */}
         {!dispute.status.startsWith('resolved') && (
           <div>
             <Button
@@ -446,107 +282,16 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
 
-        {/* Résumé condensé - Litige résolu */}
-        {dispute.status.startsWith('resolved') && (
-          <div className="space-y-3">
-            <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <h4 className="font-medium">Litige résolu</h4>
-              </div>
-              
-              <div className="space-y-2 text-sm">
-                {resolutionDetails && (
-                  <>
-                    <div>
-                      <p className="font-medium text-foreground mb-1">
-                        {dispute.resolution?.includes('administratif') 
-                          ? t('disputes.resolutionDetails.adminAgreement')
-                          : t('disputes.resolutionDetails.agreementReached')
-                        }
-                      </p>
-                      <p className="text-muted-foreground">
-                        {t(`disputes.resolutionTypes.${resolutionDetails.proposalType}`)}
-                        {resolutionDetails.refundPercentage > 0 && ` - ${resolutionDetails.refundPercentage}%`}
-                      </p>
-                    </div>
-                    
-                    <Separator />
-                    
-                    {/* Show buyer refund if user is buyer */}
-                    {userRole === 'buyer' && parseFloat(resolutionDetails.buyerRefund) > 0 && (
-                      <div className="bg-background/50 p-2 rounded">
-                        <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.refundedToBuyer')}</p>
-                        <p className="font-semibold text-green-600">
-                          {resolutionDetails.buyerRefund} {resolutionDetails.currency}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {/* Show seller received if user is seller */}
-                    {userRole === 'seller' && parseFloat(resolutionDetails.sellerReceived) > 0 && (
-                      <div className="bg-background/50 p-2 rounded">
-                        <p className="text-xs text-muted-foreground">{t('disputes.resolutionDetails.receivedBySeller')}</p>
-                        <p className="font-semibold text-green-600">
-                          {resolutionDetails.sellerReceived} {resolutionDetails.currency}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-                
-                {dispute.resolved_at && (
-                  <p className="text-xs text-muted-foreground pt-1">
-                    Résolu le {format(new Date(dispute.resolved_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            {/* Archive button for resolved disputes */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDeleteDispute}
-              disabled={isDeleting}
-              className="w-full"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isDeleting ? "Archivage..." : "Archiver ce litige"}
-            </Button>
-          </div>
-        )}
-
-        {/* Escalated - Admin View */}
-        {isExpired && (
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="h-5 w-5 text-purple-600" />
-              <h4 className="font-medium text-sm">Litige escaladé au support</h4>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Vous allez être contacté par les équipes de Rivvlock pour trouver une solution.
-            </p>
-            {dispute.escalated_at && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Escaladé le {format(new Date(dispute.escalated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Admin Notes */}
-        {dispute.admin_notes && (
-          <div>
-            <h4 className="font-medium text-sm mb-2">Notes administratives:</h4>
-            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
-              <p className="text-sm whitespace-pre-wrap">{dispute.admin_notes}</p>
-            </div>
-          </div>
-        )}
+        <DisputeResolution
+          dispute={dispute}
+          resolutionDetails={resolutionDetails}
+          userRole={userRole}
+          isExpired={isExpired}
+          isDeleting={isDeleting}
+          handleDeleteDispute={handleDeleteDispute}
+        />
       </CardContent>
 
-      {/* Dispute Messaging Dialog */}
       <DisputeMessagingDialog
         disputeId={dispute.id}
         disputeDeadline={dispute.dispute_deadline}
