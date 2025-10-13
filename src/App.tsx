@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
@@ -9,10 +9,12 @@ import RegistrationSuccessPage from "./pages/RegistrationSuccessPage";
 import DashboardPage from "./pages/DashboardPage";
 import TransactionsPage from "./pages/TransactionsPage";
 import ProfilePage from "./pages/ProfilePage";
-import AdminPage from "./pages/AdminPage";
-import AdminDisputesPage from "./pages/AdminDisputesPage";
 import PaymentLinkPage from "./pages/PaymentLinkPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+
+// Lazy load admin pages for better performance
+const AdminPage = lazy(() => import("./pages/AdminPage"));
+const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
 
 import ActivityHistoryPage from "./pages/ActivityHistoryPage";
 import AnnualReportsPage from "./pages/AnnualReportsPage";
@@ -89,11 +91,11 @@ const App: React.FC = () => {
               }),
               React.createElement(Route, { 
                 path: "/dashboard/admin", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(AdminPage))))
               }),
               React.createElement(Route, { 
                 path: "/dashboard/admin/disputes", 
-                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage)))
+                element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(AdminDisputesPage))))
               }),
               React.createElement(Route, { 
                 path: "/activity-history", 
