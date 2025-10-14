@@ -11,7 +11,7 @@ export default defineConfig({
     css: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'], // Added lcov for GitHub
       exclude: [
         'node_modules/',
         'src/test/',
@@ -19,7 +19,19 @@ export default defineConfig({
         '**/*.config.*',
         '**/mockData',
         'src/main.tsx',
+        'src/vite-env.d.ts',
+        'src/App.tsx', // Entry point, no need to test
+        'src/components/ui/**', // Shadcn UI components (already tested by them)
+        'src/pages/**', // Pages are routing only (optional to test)
+        'supabase/**', // Edge functions = backend (test separately)
       ],
+      // Coverage thresholds
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 65,
+        statements: 70,
+      },
     },
   },
   resolve: {
