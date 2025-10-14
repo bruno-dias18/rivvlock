@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -35,8 +35,21 @@ export const EscalatedDisputeMessaging = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const sendButtonRef = useRef<HTMLButtonElement>(null);
+  const lastMessageTimeRef = useRef<number>(0);
+  const previousKeyboardInsetRef = useRef(0);
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
+
+  // Browser detection (same as TransactionMessaging)
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isFirefoxiOS = /FxiOS/i.test(ua);
+  const isChromeiOS = /CriOS/i.test(ua);
+  const isBraveiOS = /Brave/i.test(ua);
+  const isEdgiOS = /EdgiOS/i.test(ua);
+  const isDuckiOS = /DuckDuckGo/i.test(ua);
+  const isSafariiOS = isIOS && /Safari/i.test(ua) && !(isFirefoxiOS || isChromeiOS || isBraveiOS || isEdgiOS || isDuckiOS);
 
   const { 
     messages, 
@@ -48,17 +61,19 @@ export const EscalatedDisputeMessaging = ({
   } = useEscalatedDisputeMessaging({ disputeId, transactionId });
 
   const ensureBottom = () => {
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 50);
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   };
 
+  // Auto-scroll on open and new messages
   useLayoutEffect(() => {
     if (open && messages.length > 0) {
-      ensureBottom();
+      setTimeout(() => ensureBottom(), 300);
     }
-  }, [messages, open]);
+  }, [open, messages.length]);
 
+  // Auto-focus textarea when opened
   useLayoutEffect(() => {
     if (open) {
       setTimeout(() => {
@@ -67,14 +82,89 @@ export const EscalatedDisputeMessaging = ({
     }
   }, [open]);
 
+  // Track keyboard inset changes
+  useEffect(() => {
+    previousKeyboardInsetRef.current = keyboardInset;
+  }, [keyboardInset]);
+
+  // Tap-outside closer for non-Safari browsers (same as TransactionMessaging)
+  useEffect(() => {
+    if (!open) return;
+    if (isSafariiOS) return; // Safari handled by keyboardInset logic
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const sendBtn = sendButtonRef.current;
+
+    const handler = (e: TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      // Ignore taps inside the textarea or send button
+      if (textarea.contains(target) || (sendBtn && sendBtn.contains(target))) return;
+      // Close on tap outside
+      textarea.blur();
+      setTimeout(() => onOpenChange(false), 120);
+    };
+
+    const onFocus = () => {
+      document.addEventListener('touchstart', handler, true);
+    };
+    const onBlur = () => {
+      document.removeEventListener('touchstart', handler, true);
+    };
+
+    textarea.addEventListener('focus', onFocus);
+    textarea.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('touchstart', handler, true);
+      textarea.removeEventListener('focus', onFocus);
+      textarea.removeEventListener('blur', onBlur);
+    };
+  }, [open, onOpenChange, isSafariiOS]);
+
+  // Auto-close on keyboard blur (Safari iOS only)
+  useEffect(() => {
+    const wasOpen = previousKeyboardInsetRef.current >= 40;
+    const isClosedNow = keyboardInset === 0;
+    
+    if (open && wasOpen && isSafariiOS && isClosedNow) {
+      setTimeout(() => onOpenChange(false), 150);
+    }
+    
+    previousKeyboardInsetRef.current = keyboardInset;
+  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || newMessage.length > 500) return;
+
+    // Anti-spam: 2 seconds minimum between messages
+    const now = Date.now();
+    if (now - lastMessageTimeRef.current < 2000) {
+      toast.error(t('Veuillez attendre un peu avant d\'envoyer un autre message'));
+      return;
+    }
 
     try {
       await sendMessage({ message: newMessage.trim() });
       setNewMessage('');
-      toast.success(t('Message envoyé à l\'administrateur'));
-      ensureBottom();
+      lastMessageTimeRef.current = now;
+      
+      // Keep keyboard open with robust focus strategy (same as TransactionMessaging)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          textareaRef.current?.focus({ preventScroll: true });
+        });
+      });
+      
+      // Show toast after focus to avoid interference
+      setTimeout(() => {
+        toast.success(t('Message envoyé à l\'administrateur'));
+      }, 50);
+      
+      // Scroll after everything
+      requestAnimationFrame(() => ensureBottom());
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error(t('Erreur lors de l\'envoi du message'));
@@ -97,10 +187,15 @@ export const EscalatedDisputeMessaging = ({
   };
 
   const getDialogHeight = () => {
+    if (!isMobile) return '85vh';
+
+    // Use 100vh on iOS Safari, 100dvh elsewhere (same as TransactionMessaging)
+    const baseUnit = isSafariiOS ? '100vh' : '100dvh';
+
     if (keyboardInset > 0) {
-      return `calc(100vh - ${keyboardInset}px - env(safe-area-inset-top))`;
+      return `calc(${baseUnit} - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
     }
-    return isMobile ? '100vh' : '85vh';
+    return `calc(${baseUnit} - env(safe-area-inset-top, 0px))`;
   };
 
   const isResolved = status === 'resolved' || status === 'resolved_refund' || status === 'resolved_release';
@@ -108,8 +203,8 @@ export const EscalatedDisputeMessaging = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
+        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
         style={{ height: getDialogHeight() }}
-        className="flex flex-col gap-0 p-0 max-w-2xl"
       >
         <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
           <DialogTitle className="text-lg">
@@ -130,9 +225,6 @@ export const EscalatedDisputeMessaging = ({
         <div 
           ref={messagesContainerRef}
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 py-4 bg-muted/20 flex flex-col justify-end"
-          style={{
-            paddingBottom: isMobile ? 'max(1rem, env(safe-area-inset-bottom))' : '1rem',
-          }}
         >
           {isLoading ? (
             <div className="space-y-3">
@@ -180,45 +272,40 @@ export const EscalatedDisputeMessaging = ({
 
         {/* Input Area */}
         {!isResolved && (
-          <div 
-            className="px-6 py-4 border-t bg-background shrink-0"
-            style={{
-              paddingBottom: isMobile 
-                ? `max(1rem, calc(env(safe-area-inset-bottom) + ${keyboardInset > 0 ? '0.5rem' : '0px'}))`
-                : '1rem',
-            }}
-          >
+          <div className="border-t p-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
             <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Textarea
-                  ref={textareaRef}
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyPress}
-                  placeholder={
-                    isRoleReady 
-                      ? t('Écrivez votre message à l\'administration...')
-                      : t('Initialisation du canal privé...')
-                  }
-                  disabled={!isRoleReady}
-                  className="resize-none min-h-[80px]"
-                  maxLength={500}
-                  enterKeyHint="send"
-                />
-                <div className="flex justify-between items-center mt-1 px-1">
-                  <span className={`text-xs ${newMessage.length > 450 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {newMessage.length}/500
-                  </span>
-                </div>
-              </div>
+              <Textarea
+                ref={textareaRef}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                onFocus={() => setTimeout(ensureBottom, 100)}
+                placeholder={
+                  isRoleReady 
+                    ? t('Écrivez votre message à l\'administration...')
+                    : t('Initialisation du canal privé...')
+                }
+                disabled={!isRoleReady}
+                className="flex-1 h-14 resize-none"
+                rows={2}
+                maxLength={500}
+                enterKeyHint="send"
+              />
               <Button
+                ref={sendButtonRef}
+                type="button"
                 onClick={handleSendMessage}
+                onMouseDown={(e) => e.preventDefault()}
+                onTouchStart={(e) => e.preventDefault()}
                 disabled={!newMessage.trim() || isSending || !isRoleReady || newMessage.length > 500}
                 size="icon"
-                className="h-10 w-10 shrink-0"
+                className="h-14 w-14 shrink-0"
               >
                 <Send className="h-4 w-4" />
               </Button>
+            </div>
+            <div className="text-xs text-muted-foreground mt-1 text-right">
+              {newMessage.length}/500
             </div>
           </div>
         )}
