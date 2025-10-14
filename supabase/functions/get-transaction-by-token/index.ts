@@ -135,63 +135,75 @@ serve(async (req) => {
 
     logger.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
-    // Try using parsed parts
     let transaction: any = null;
     let transactionId: string | null = null;
 
-    // Combined format: strict match on id + token
-    if (parsedTransactionId && parsedLinkToken) {
-      const { data: byBoth } = await adminClient
-        .from('transactions')
-        .select('id')
-        .eq('id', parsedTransactionId)
-        .eq('shared_link_token', parsedLinkToken)
-        .maybeSingle();
+    // PRIORITY 1: Try exact match on shared_link_token (handles "uuid-uuid" format)
+    const { data: txByExactToken } = await adminClient
+      .from('transactions')
+      .select('id')
+      .eq('shared_link_token', token)
+      .maybeSingle();
 
-      if (byBoth) {
-        transactionId = byBoth.id;
-        logger.log('✅ [GET-TX-BY-TOKEN] Found by id+token:', transactionId);
-      } else {
-        // Try reversed order (parts might be swapped)
-        const { data: byBothReversed } = await adminClient
+    if (txByExactToken) {
+      transactionId = txByExactToken.id;
+      logger.log('✅ [GET-TX-BY-TOKEN] Found by exact shared_link_token:', transactionId);
+    } else {
+      // PRIORITY 2: Parse and try combined format fallbacks
+      // Combined format: strict match on id + token
+      if (parsedTransactionId && parsedLinkToken) {
+        const { data: byBoth } = await adminClient
           .from('transactions')
           .select('id')
-          .eq('id', parsedLinkToken)
-          .eq('shared_link_token', parsedTransactionId)
+          .eq('id', parsedTransactionId)
+          .eq('shared_link_token', parsedLinkToken)
           .maybeSingle();
 
-        if (byBothReversed) {
-          transactionId = byBothReversed.id;
-          logger.log('✅ [GET-TX-BY-TOKEN] Found by reversed id+token:', transactionId);
+        if (byBoth) {
+          transactionId = byBoth.id;
+          logger.log('✅ [GET-TX-BY-TOKEN] Found by id+token:', transactionId);
+        } else {
+          // Try reversed order (parts might be swapped)
+          const { data: byBothReversed } = await adminClient
+            .from('transactions')
+            .select('id')
+            .eq('id', parsedLinkToken)
+            .eq('shared_link_token', parsedTransactionId)
+            .maybeSingle();
+
+          if (byBothReversed) {
+            transactionId = byBothReversed.id;
+            logger.log('✅ [GET-TX-BY-TOKEN] Found by reversed id+token:', transactionId);
+          }
         }
       }
-    }
 
-    // Fallback: try by shared_link_token only
-    if (!transactionId && parsedLinkToken) {
-      const { data: txByToken } = await adminClient
-        .from('transactions')
-        .select('id')
-        .eq('shared_link_token', parsedLinkToken)
-        .maybeSingle();
+      // Fallback: try by shared_link_token with parsed token only
+      if (!transactionId && parsedLinkToken && parsedLinkToken !== token) {
+        const { data: txByToken } = await adminClient
+          .from('transactions')
+          .select('id')
+          .eq('shared_link_token', parsedLinkToken)
+          .maybeSingle();
 
-      if (txByToken) {
-        transactionId = txByToken.id;
-        logger.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
+        if (txByToken) {
+          transactionId = txByToken.id;
+          logger.log('✅ [GET-TX-BY-TOKEN] Found by parsed shared_link_token:', transactionId);
+        }
       }
-    }
 
-    // Fallback: try by id only
-    if (!transactionId && parsedTransactionId) {
-      const { data: txById } = await adminClient
-        .from('transactions')
-        .select('id')
-        .eq('id', parsedTransactionId)
-        .maybeSingle();
+      // Fallback: try by id only
+      if (!transactionId && parsedTransactionId) {
+        const { data: txById } = await adminClient
+          .from('transactions')
+          .select('id')
+          .eq('id', parsedTransactionId)
+          .maybeSingle();
 
-      if (txById) {
-        transactionId = txById.id;
-        logger.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
+        if (txById) {
+          transactionId = txById.id;
+          logger.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
+        }
       }
     }
 
