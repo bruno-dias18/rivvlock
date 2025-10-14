@@ -21,6 +21,7 @@ import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
+import { useDisputeMessageReads } from '@/hooks/useDisputeMessageReads';
 
 // Avatar component inline
 const Avatar = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
@@ -94,6 +95,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   const { markAsSeen: markGlobalAsSeen, refetch: refetchGlobalUnread } = useUnreadAdminMessages();
   const { markAsSeen: markDisputeAsSeen, refetch: refetchDisputeMessages } = useUnreadDisputeMessages(disputeId);
   const { markAllAsSeen: markAllDisputesAsSeen, refetch: refetchGlobalDisputes } = useUnreadDisputesGlobal();
+  const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
 
   // Determine if dispute should display in escalated mode
   const isEscalatedUI = status === 'escalated' || 
@@ -180,17 +182,19 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   // Auto-focus textarea when opened (including mobile) + mark messages as seen
   useEffect(() => {
     if (open) {
-      // Mark dispute messages as seen (specific dispute)
+      // ✅ NOUVEAU: Utiliser le hook DB pour marquer comme vu
+      markDisputeAsSeenDB(disputeId);
+      
+      // ✅ DEPRECATED: Garder localStorage comme fallback temporaire
       const lastSeenKey = `last_seen_dispute_${disputeId}`;
       localStorage.setItem(lastSeenKey, new Date().toISOString());
-      // Mark global disputes as seen (clears sidebar badge)
       localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
       
-      // Mark all message types as seen
-      markAsSeen(); // Admin messages (specific dispute)
-      markGlobalAsSeen(); // Admin messages (global)
-      markDisputeAsSeen(); // Regular dispute messages (specific dispute)
-      markAllDisputesAsSeen(); // All disputes (global)
+      // Appeler les anciennes méthodes markAsSeen (qui utilisent encore localStorage)
+      markAsSeen();
+      markGlobalAsSeen();
+      markDisputeAsSeen();
+      markAllDisputesAsSeen();
       
       // Force immediate refresh of all unread counts
       setTimeout(() => {
@@ -210,7 +214,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, disputeId, markAsSeen, markGlobalAsSeen, markDisputeAsSeen, markAllDisputesAsSeen, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
+  }, [open, disputeId, markDisputeAsSeenDB, markAsSeen, markGlobalAsSeen, markDisputeAsSeen, markAllDisputesAsSeen, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   // Skip this for escalated UI (handled by EscalatedDisputeMessaging itself)

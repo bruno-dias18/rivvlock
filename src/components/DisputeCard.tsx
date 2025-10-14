@@ -17,6 +17,7 @@ import { DisputeHeader } from './DisputeCard/DisputeHeader';
 import { DisputeContent } from './DisputeCard/DisputeContent';
 import { DisputeResolution } from './DisputeCard/DisputeResolution';
 import type { Dispute, Transaction } from '@/types';
+import { useDisputeMessageReads } from '@/hooks/useDisputeMessageReads';
 
 interface DisputeCardProps {
   dispute: Dispute & { transactions?: Transaction };
@@ -34,7 +35,8 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
   const { proposals } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
-  const { unreadCount: unreadMessages, markAsSeen } = useUnreadDisputeMessages(dispute.id);
+  const { unreadCount: unreadMessages, markAsSeen } = useUnreadDisputeMessages(dispute.id, dispute);
+  const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -266,6 +268,9 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               className="w-full relative"
               onClick={() => {
                 setShowMessaging(true);
+                // ✅ NOUVEAU: Utiliser le hook DB
+                markDisputeAsSeenDB(dispute.id);
+                // ✅ DEPRECATED: Fallback localStorage
                 markAsSeen();
               }}
             >
