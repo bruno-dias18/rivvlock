@@ -14,14 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    const { disputeId, action, adminNotes, refundPercentage = 100 } = await req.json(); // action: 'refund' or 'release', refundPercentage: 0-100
+    const { disputeId, action, adminNotes, refundPercentage = 100 } = await req.json();
     
-    // Validate refundPercentage
     if (action === 'refund' && (refundPercentage < 0 || refundPercentage > 100)) {
       throw new Error("refundPercentage must be between 0 and 100");
     }
-    
-    logger.log("Processing dispute:", disputeId, "Action:", action, "Refund %:", refundPercentage);
 
     // Create user client for authentication
     const authHeader = req.headers.get("Authorization");
@@ -96,11 +93,8 @@ serve(async (req) => {
       const sellerAmount = totalAmount - refundAmount - platformFee;
       
       if (paymentIntent.status === 'requires_capture') {
-        // Cancel authorization and create partial payment if needed
         await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
-        logger.log(`✅ Authorization cancelled - ${(refundAmount / 100).toFixed(2)} ${transaction.currency} returned to buyer`);
         
-        // If partial refund, we need to transfer the seller's share
         if (refundPercentage < 100 && sellerAmount > 0) {
           const { data: sellerAccount } = await adminClient
             .from('stripe_accounts')
@@ -116,11 +110,9 @@ serve(async (req) => {
               transfer_group: `txn_${transaction.id}`,
               metadata: { dispute_id: dispute.id, type: 'partial_refund_seller_share', refund_percentage: refundPercentage }
             });
-            logger.log(`💰 Partial refund: ${(sellerAmount / 100).toFixed(2)} ${transaction.currency} transferred to seller`);
           }
         }
       } else if (paymentIntent.status === 'succeeded') {
-        // Create refund for buyer
         await stripe.refunds.create({
           payment_intent: transaction.stripe_payment_intent_id,
           amount: refundAmount,
@@ -132,9 +124,7 @@ serve(async (req) => {
             refund_percentage: refundPercentage
           }
         });
-        logger.log(`✅ ${refundPercentage}% refund created - ${(refundAmount / 100).toFixed(2)} ${transaction.currency}`);
         
-        // If partial refund, transfer seller's remaining share
         if (refundPercentage < 100 && sellerAmount > 0) {
           const { data: sellerAccount } = await adminClient
             .from('stripe_accounts')
@@ -150,7 +140,6 @@ serve(async (req) => {
               transfer_group: `txn_${transaction.id}`,
               metadata: { dispute_id: dispute.id, type: 'partial_refund_seller_share', refund_percentage: refundPercentage }
             });
-            logger.log(`💰 Partial refund: ${(sellerAmount / 100).toFixed(2)} ${transaction.currency} transferred to seller`);
           }
         }
       } else {
@@ -161,8 +150,6 @@ serve(async (req) => {
       disputeStatus = 'resolved_refund';
 
     } else if (action === 'release') {
-      // Admin release: capture funds (if not already) then transfer seller share
-      // Find seller's connected account
       const { data: sellerAccount } = await adminClient
         .from('stripe_accounts')
         .select('stripe_account_id')
@@ -192,8 +179,6 @@ serve(async (req) => {
 
       newTransactionStatus = 'completed';
       disputeStatus = 'resolved_release';
-
-      logger.log(`💰 RELEASE: ${((transferAmount) / 100).toFixed(2)} ${transaction.currency} released to seller`);
     } else {
       throw new Error("Invalid action. Must be 'refund' or 'release'");
     }
@@ -252,12 +237,7 @@ serve(async (req) => {
       throw transactionUpdateError;
     }
 
-    // Mock admin notifications
-    logger.log(`📧 ADMIN EMAIL: Dispute ${disputeId} resolved with action: ${action}`);
-    logger.log(`📧 EMAIL: Dispute resolution completed for transaction ${transaction.title}`);
-    logger.log(`📱 SMS: Your dispute has been resolved. Action taken: ${action}`);
-
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
       action: action,
       dispute_status: disputeStatus,
