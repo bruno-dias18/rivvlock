@@ -367,7 +367,7 @@ export default function ProfilePage() {
               onClick={() => setIsDeleteDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4 mr-3" />
-              <span>{t('profile.deleteAccount')}</span>
+              <span>{t('profile.deleteAccount.deleteButton')}</span>
             </Button>
           </CardContent>
         </Card>
