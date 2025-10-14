@@ -47,23 +47,34 @@ src/
 ├── lib/
 │   └── __tests__/
 │       ├── constants.test.ts ✅
-│       └── copyUtils.test.ts ✅
+│       ├── copyUtils.test.ts ✅
+│       ├── validations.test.ts ✅ NEW
+│       └── securityCleaner.test.ts ✅ NEW
+├── hooks/
+│   └── __tests__/
+│       ├── useTransactions.test.tsx ✅ NEW
+│       └── useDisputeMessages.test.tsx ✅ NEW
 ├── types/
 │   └── __tests__/
 │       └── index.test.ts ✅
 └── test/
     ├── setup.ts ✅
+    ├── setup.integration.ts ✅ NEW
     └── utils/
         └── test-utils.tsx ✅
 ```
 
-### Tests créés (5 fichiers)
+### Tests créés (9 fichiers)
 
 1. **constants.test.ts** - Validation des constantes
 2. **copyUtils.test.ts** - Tests des fonctions de copie/partage
-3. **index.test.ts** (types) - Validation des types TypeScript
-4. **setup.ts** - Configuration globale des tests
-5. **test-utils.tsx** - Utilitaires de rendu avec providers
+3. **validations.test.ts** ✨ NEW - Tests validation prix, email, SIRET, AVS, VAT
+4. **securityCleaner.test.ts** ✨ NEW - Tests nettoyage données sensibles
+5. **useTransactions.test.tsx** ✨ NEW - Tests hook transactions
+6. **useDisputeMessages.test.tsx** ✨ NEW - Tests messaging disputes
+7. **index.test.ts** (types) - Validation des types TypeScript
+8. **setup.ts** - Configuration globale des tests
+9. **test-utils.tsx** - Utilitaires de rendu avec providers
 
 ### Exemple d'usage
 
@@ -84,7 +95,11 @@ describe('MyComponent', () => {
 - ✅ Constants: 100%
 - ✅ CopyUtils: 80%
 - ✅ Types: 100%
-- 🎯 **Objectif global: 70%+**
+- ✅ Validations: 90% ✨ NEW
+- ✅ SecurityCleaner: 85% ✨ NEW
+- ✅ Hooks (useTransactions): 60% ✨ NEW
+- ✅ Hooks (useDisputeMessages): 60% ✨ NEW
+- 🎯 **Objectif global: 70%+ (en bonne voie)**
 
 ---
 

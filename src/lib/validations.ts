@@ -324,3 +324,26 @@ export const changePasswordSchema = z.object({
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword']
 });
+
+// Helper validation functions for testing
+export const validatePrice = (price: number): boolean => {
+  return price >= 1 && price <= 1000000;
+};
+
+export const validateEmail = (email: string): boolean => {
+  return emailSchema.safeParse(email).success;
+};
+
+export const validateSIRET = (siret: string): boolean => {
+  return siretSchema.safeParse(siret).success;
+};
+
+export const validateAVS = (avs: string): boolean => {
+  return swissAvsSchema.safeParse(avs).success;
+};
+
+export const validateVAT = (vat: string): boolean => {
+  // Check both FR and CH formats
+  return vatNumberSchema('FR').safeParse(vat).success ||
+         vatNumberSchema('CH').safeParse(vat).success;
+};

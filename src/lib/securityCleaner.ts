@@ -27,3 +27,24 @@ export const maskSensitiveData = (obj: any): any => {
 export const sanitizeForLogs = (data: any): any => {
   return maskSensitiveData(data);
 };
+
+// Cleanup expired data helper
+export const cleanupExpiredData = <T extends { expires_at?: string }>(
+  items: T[]
+): T[] => {
+  const now = Date.now();
+  return items.filter(item => {
+    if (!item.expires_at) return false;
+    const expiresAt = new Date(item.expires_at).getTime();
+    return expiresAt < now;
+  });
+};
+
+// Schedule cleanup helper
+export const scheduleCleanup = (
+  cleanupFn: () => void,
+  intervalMs: number
+): (() => void) => {
+  const intervalId = setInterval(cleanupFn, intervalMs);
+  return () => clearInterval(intervalId);
+};
