@@ -16,11 +16,16 @@ export const useUnreadAdminMessages = () => {
         .select('dispute_id, last_seen_at')
         .eq('user_id', user.id);
 
-      // ✅ NOUVEAU: Récupérer les disputes de l'utilisateur
+      // ✅ NOUVEAU: Récupérer les disputes de l'utilisateur via une jointure
       const { data: userDisputes } = await supabase
         .from('disputes')
-        .select('id, status, transaction_id')
-        .or(`reporter_id.eq.${user.id},transaction_id.in.(select id from transactions where user_id.eq.${user.id} or buyer_id.eq.${user.id})`);
+        .select(`
+          id, 
+          status,
+          transaction_id,
+          transactions!inner(user_id, buyer_id)
+        `)
+        .or(`reporter_id.eq.${user.id},transactions.user_id.eq.${user.id},transactions.buyer_id.eq.${user.id}`);
 
       if (!userDisputes || userDisputes.length === 0) return 0;
 
