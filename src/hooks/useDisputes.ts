@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
 import type { Dispute } from '@/types';
+import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
 
 /**
  * Fetches and manages disputes for the current user
@@ -31,7 +32,7 @@ export const useDisputes = () => {
     queryKey: ['disputes', user?.id],
     queryFn: async () => {
       if (!user?.id) {
-        throw new Error('User not authenticated');
+        throw new Error(ErrorMessages.UNAUTHORIZED);
       }
 
       // Step 1: fetch disputes only (RLS restricts to reporter/seller/buyer)
@@ -41,7 +42,8 @@ export const useDisputes = () => {
         .order('created_at', { ascending: false });
 
       if (disputesError) {
-        throw disputesError;
+        logger.error('Error fetching disputes:', disputesError);
+        throw new Error(getUserFriendlyError(disputesError, { code: 'database' }));
       }
 
       const disputes = disputesData || [];

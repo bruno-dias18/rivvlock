@@ -21,6 +21,7 @@ import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { useProfile } from '@/hooks/useProfile';
+import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
 
 const transactionSchema = z.object({
   title: z.string().min(3, 'Le titre doit contenir au moins 3 caractères').max(100, 'Le titre ne peut pas dépasser 100 caractères'),
@@ -128,11 +129,13 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       });
 
       if (error) {
-        // Try to surface the server message if available
-        const serverMsg = (result as any)?.error || error.message;
-        throw new Error(serverMsg || 'Erreur lors de la création de la transaction');
+        throw new Error(getUserFriendlyError(error, { 
+          code: (result as any)?.error || error.code 
+        }));
       }
-      if ((result as any)?.error) throw new Error((result as any).error);
+      if ((result as any)?.error) {
+        throw new Error(ErrorMessages.TRANSACTION_CREATE_FAILED);
+      }
 
       // Show success and share link
       setTransactionTitle((result as any).transaction.title);
@@ -158,7 +161,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       toast.success('Transaction créée avec succès !');
     } catch (error: any) {
       logger.error('Error creating transaction:', error);
-      toast.error(error.message || 'Erreur lors de la création de la transaction');
+      toast.error(getUserFriendlyError(error));
     } finally {
       setIsLoading(false);
     }

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAutoSync } from './useAutoSync';
 import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
+import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
 
 export const useTransactions = () => {
   const { user } = useAuth();
@@ -18,7 +19,7 @@ export const useTransactions = () => {
       
       if (!user?.id) {
         logger.error('❌ User not authenticated in useTransactions');
-        throw new Error('User not authenticated');
+        throw new Error(ErrorMessages.UNAUTHORIZED);
       }
       
       const { data, error } = await supabase
@@ -29,7 +30,7 @@ export const useTransactions = () => {
       
       if (error) {
         logger.error('❌ Error fetching transactions:', error);
-        throw error;
+        throw new Error(getUserFriendlyError(error, { code: 'database' }));
       }
       
       logger.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
@@ -105,7 +106,7 @@ export const useTransactionCounts = () => {
       
       if (!user?.id) {
         logger.error('❌ User not authenticated in useTransactionCounts');
-        throw new Error('User not authenticated');
+        throw new Error(ErrorMessages.UNAUTHORIZED);
       }
       
       const { data, error } = await supabase
@@ -115,7 +116,7 @@ export const useTransactionCounts = () => {
       
       if (error) {
         logger.error('❌ Error fetching transaction counts:', error);
-        throw error;
+        throw new Error(getUserFriendlyError(error, { code: 'database' }));
       }
       
       const result = {
@@ -150,12 +151,12 @@ export const useSyncStripePayments = () => {
   
   const syncPayments = async () => {
     if (!user) {
-      throw new Error('User not authenticated');
+      throw new Error(ErrorMessages.UNAUTHORIZED);
     }
     
     const { data, error } = await supabase.functions.invoke('sync-stripe-payments');
     if (error) {
-      throw error;
+      throw new Error(getUserFriendlyError(error));
     }
     
     return data;
