@@ -19,6 +19,7 @@ import { DashboardLayout } from '@/components/DashboardLayout';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
+import { AdminProblematicTransactions } from '@/components/AdminProblematicTransactions';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -126,6 +127,9 @@ export default function AdminPage() {
           {t('admin.dashboard')} - Interface d'administration
         </p>
       </div>
+
+      {/* Problematic Transactions Alert */}
+      <AdminProblematicTransactions />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
