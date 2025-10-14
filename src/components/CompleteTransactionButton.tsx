@@ -22,7 +22,7 @@ export default function CompleteTransactionButton({
   transactionId,
   transactionStatus,
   isUserBuyer,
-  sellerHasStripeAccount = false,
+  sellerHasStripeAccount,
   onTransferComplete,
   transactionTitle = 'Transaction',
   transactionAmount = 0,
@@ -87,7 +87,7 @@ export default function CompleteTransactionButton({
     }
   };
 
-  const showWarning = !sellerHasStripeAccount;
+  const showWarning = sellerHasStripeAccount === false;
 
   return (
     <div className="space-y-3">

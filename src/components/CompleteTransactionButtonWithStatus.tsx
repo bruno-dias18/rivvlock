@@ -10,7 +10,7 @@ export function CompleteTransactionButtonWithStatus({
   transaction, 
   onTransferComplete 
 }: CompleteTransactionButtonWithStatusProps) {
-  const { data: sellerStatus } = useSellerStripeStatus(transaction.user_id);
+  const { data: sellerStatus, isLoading } = useSellerStripeStatus(transaction.user_id);
   
   return (
     <div className="space-y-2">
@@ -18,7 +18,7 @@ export function CompleteTransactionButtonWithStatus({
         transactionId={transaction.id}
         transactionStatus={transaction.status}
         isUserBuyer={true}
-        sellerHasStripeAccount={sellerStatus?.hasActiveAccount || false}
+        sellerHasStripeAccount={isLoading ? undefined : sellerStatus?.hasActiveAccount}
         onTransferComplete={onTransferComplete}
         transactionTitle={transaction.title}
         transactionAmount={transaction.price}
