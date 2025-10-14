@@ -5,43 +5,62 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useUnreadDisputesGlobal = () => {
   const { user } = useAuth();
 
-  const getLastSeen = () => localStorage.getItem('last_seen_disputes_global');
-  const markAllAsSeen = () => localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
-
   const { data: unreadCount = 0, refetch, isLoading } = useQuery({
     queryKey: ['unread-disputes-global', user?.id],
     queryFn: async () => {
       if (!user?.id) return 0;
+
+      // ✅ NOUVEAU: Récupérer tous les dispute_message_reads de l'utilisateur
+      const { data: readStatuses } = await supabase
+        .from('dispute_message_reads')
+        .select('dispute_id, last_seen_at')
+        .eq('user_id', user.id);
+
+      const lastSeenMap = new Map(
+        readStatuses?.map(rs => [rs.dispute_id, rs.last_seen_at]) || []
+      );
 
       // Get all disputes the user can see, excluding resolved ones
       const { data: disputes, error: disputesError } = await supabase
         .from('disputes')
         .select('id, status')
         .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
+      
       if (disputesError) throw disputesError;
       const ids = (disputes || []).map((d) => d.id);
       if (!ids.length) return 0;
 
-      const lastSeen = getLastSeen();
+      let totalUnread = 0;
 
-      let query = supabase
-        .from('dispute_messages')
-        .select('id', { count: 'exact', head: true })
-        .in('dispute_id', ids)
-        .neq('sender_id', user.id)
-        .or(`recipient_id.eq.${user.id},recipient_id.is.null`);
+      // Compter les messages non lus pour chaque dispute actif
+      for (const disputeId of ids) {
+        const lastSeen = lastSeenMap.get(disputeId);
 
-      if (lastSeen) {
-        query = query.gt('created_at', lastSeen);
+        let query = supabase
+          .from('dispute_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('dispute_id', disputeId)
+          .neq('sender_id', user.id)
+          .or(`recipient_id.eq.${user.id},recipient_id.is.null`);
+
+        if (lastSeen) {
+          query = query.gt('created_at', lastSeen);
+        }
+
+        const { count } = await query;
+        totalUnread += count || 0;
       }
 
-      const { count, error } = await query;
-      if (error) throw error;
-      return count || 0;
+      return totalUnread;
     },
     enabled: !!user?.id,
     refetchInterval: 30000,
   });
+
+  // ✅ DEPRECATED: markAllAsSeen conservé pour compatibilité
+  const markAllAsSeen = () => {
+    localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
+  };
 
   return { unreadCount, markAllAsSeen, refetch, isLoading };
 };
