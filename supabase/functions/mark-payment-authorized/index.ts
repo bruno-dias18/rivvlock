@@ -56,6 +56,12 @@ serve(async (req) => {
       throw new Error("Transaction not found");
     }
 
+    // CRITICAL: Verify that buyer_id is set before allowing payment
+    if (!transaction.buyer_id) {
+      logger.error('❌ [MARK-PAYMENT] Transaction has no buyer assigned');
+      throw new Error("Transaction must have a buyer assigned before payment can be authorized");
+    }
+
     // Verify user is authorized (buyer or seller)
     if (transaction.user_id !== userData.user.id && transaction.buyer_id !== userData.user.id) {
       throw new Error("Unauthorized access to transaction");
