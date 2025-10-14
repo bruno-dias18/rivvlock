@@ -70,27 +70,25 @@ serve(async (req) => {
       );
     }
 
-    // Validate token format (basic UUID check)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(token)) {
-      // Log invalid format attempt using secure function
-      try {
-        await adminClient.rpc('log_transaction_access', {
-          p_token: token,
-          p_transaction_id: null,
-          p_success: false,
-          p_ip_address: ipAddress,
-          p_user_agent: userAgent,
-          p_error_reason: 'invalid_token_format'
-        });
-      } catch (logError) {
-        logger.error('Failed to log invalid token attempt:', logError);
-      }
-      
-      return new Response(
-        JSON.stringify({ success: false, error: 'Format de token invalide', reason: 'invalid_token_format' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+    // Token parsing: support combined format "<txId>-<linkToken>" and single tokens
+    const uuidPart = '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+    const combinedRe = new RegExp(`^(${uuidPart})-(${uuidPart})$`, 'i');
+    const uuidRegex = new RegExp(`^${uuidPart}$`, 'i');
+
+    let parsedTransactionId: string | null = null;
+    let parsedLinkToken: string | null = null;
+
+    const combinedMatch = token.match(combinedRe);
+    if (combinedMatch) {
+      parsedTransactionId = combinedMatch[1];
+      parsedLinkToken = combinedMatch[2];
+      logger.log('🔎 [GET-TX-BY-TOKEN] Detected combined token format');
+    } else if (uuidRegex.test(token)) {
+      // Could be either the transaction id or a UUID-based link token
+      parsedLinkToken = token;
+    } else {
+      // Non-UUID token (secure random) — treat as link token
+      parsedLinkToken = token;
     }
 
     // Check for abuse patterns (brute-force detection)
@@ -137,26 +135,58 @@ serve(async (req) => {
 
     logger.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
-    // Try by shared_link_token using the secure view (only exposes non-sensitive data)
+    // Try using parsed parts
     let transaction: any = null;
     let transactionId: string | null = null;
 
-    // Try to find transaction by shared_link_token first (any status)
-    const { data: txByToken, error: tokenError } = await adminClient
-      .from('transactions')
-      .select('id')
-      .eq('shared_link_token', token)
-      .maybeSingle();
-
-    if (txByToken) {
-      transactionId = txByToken.id;
-      logger.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
-    } else {
-      // Fallback: try direct ID lookup
-      const { data: txById, error: idError } = await adminClient
+    // Combined format: strict match on id + token
+    if (parsedTransactionId && parsedLinkToken) {
+      const { data: byBoth } = await adminClient
         .from('transactions')
         .select('id')
-        .eq('id', token)
+        .eq('id', parsedTransactionId)
+        .eq('shared_link_token', parsedLinkToken)
+        .maybeSingle();
+
+      if (byBoth) {
+        transactionId = byBoth.id;
+        logger.log('✅ [GET-TX-BY-TOKEN] Found by id+token:', transactionId);
+      } else {
+        // Try reversed order (parts might be swapped)
+        const { data: byBothReversed } = await adminClient
+          .from('transactions')
+          .select('id')
+          .eq('id', parsedLinkToken)
+          .eq('shared_link_token', parsedTransactionId)
+          .maybeSingle();
+
+        if (byBothReversed) {
+          transactionId = byBothReversed.id;
+          logger.log('✅ [GET-TX-BY-TOKEN] Found by reversed id+token:', transactionId);
+        }
+      }
+    }
+
+    // Fallback: try by shared_link_token only
+    if (!transactionId && parsedLinkToken) {
+      const { data: txByToken } = await adminClient
+        .from('transactions')
+        .select('id')
+        .eq('shared_link_token', parsedLinkToken)
+        .maybeSingle();
+
+      if (txByToken) {
+        transactionId = txByToken.id;
+        logger.log('✅ [GET-TX-BY-TOKEN] Found by shared_link_token:', transactionId);
+      }
+    }
+
+    // Fallback: try by id only
+    if (!transactionId && parsedTransactionId) {
+      const { data: txById } = await adminClient
+        .from('transactions')
+        .select('id')
+        .eq('id', parsedTransactionId)
         .maybeSingle();
 
       if (txById) {
