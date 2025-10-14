@@ -264,23 +264,24 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
 
           {/* Action buttons for user */}
           {!hasUserValidated && (isSeller || isBuyer) && (
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
-                size="sm"
+                variant="success"
+                size="default"
                 onClick={() => handleValidation('accept')}
                 disabled={isValidating}
-                className="flex-1"
+                className="flex-1 py-3 sm:h-10 sm:py-2"
               >
                 <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 <span className="hidden sm:inline">{isValidating ? "Validation..." : "Accepter la proposition"}</span>
                 <span className="sm:hidden">{isValidating ? "Validation..." : "Accepter"}</span>
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant="destructive"
+                size="default"
                 onClick={() => handleValidation('reject')}
                 disabled={isValidating}
-                className="flex-1"
+                className="flex-1 py-3 sm:h-10 sm:py-2"
               >
                 <XCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 Refuser
