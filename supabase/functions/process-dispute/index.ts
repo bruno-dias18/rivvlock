@@ -90,7 +90,7 @@ serve(async (req) => {
     });
 
     // Retrieve current PaymentIntent status to choose safe action
-    const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+    let paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
 
     let result;
     let newTransactionStatus;
@@ -174,11 +174,23 @@ serve(async (req) => {
       }
 
       if (paymentIntent.status === 'requires_capture') {
-        await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
-        logStep("STRIPE_CAPTURE_OK");
+        paymentIntent = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
+        logStep("STRIPE_CAPTURE_OK", { paymentIntentId: paymentIntent.id });
       } else if (paymentIntent.status !== 'succeeded') {
         throw new Error(`PaymentIntent not capturable in status: ${paymentIntent.status}`);
       }
+
+      // Use the charge to fund the transfer, avoiding platform balance issues
+      let chargeId = paymentIntent.latest_charge as string | null;
+      if (!chargeId) {
+        const refreshed = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+        paymentIntent = refreshed;
+        chargeId = paymentIntent.latest_charge as string | null;
+      }
+      if (!chargeId) {
+        throw new Error("No charge ID found in payment intent");
+      }
+      logStep("CHARGE_ID_RETRIEVED", { chargeId });
 
       const transferAmount = totalAmount - platformFee;
       if (transferAmount > 0) {
@@ -186,10 +198,12 @@ serve(async (req) => {
           amount: transferAmount,
           currency,
           destination: sellerAccount.stripe_account_id,
+          source_transaction: chargeId,
           transfer_group: `txn_${transaction.id}`,
+          description: `Admin release for transaction ${transaction.id}`,
           metadata: { dispute_id: dispute.id, type: 'admin_release_transfer' }
         });
-        logStep("STRIPE_TRANSFER_OK", { amount: transferAmount, destination: sellerAccount.stripe_account_id });
+        logStep("STRIPE_TRANSFER_OK", { amount: transferAmount, destination: sellerAccount.stripe_account_id, chargeId });
       }
 
       newTransactionStatus = 'validated';
