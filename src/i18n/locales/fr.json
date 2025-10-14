@@ -120,6 +120,7 @@
     "createMyAccount": "Créer mon compte",
     "loginError": "Erreur de connexion. Vérifiez vos identifiants.",
     "registrationError": "Erreur lors de l'inscription. Veuillez réessayer.",
+    "emailAlreadyExists": "Cet email est déjà utilisé. Veuillez vous connecter ou utiliser un autre email.",
     "resetEmailError": "Erreur lors de l'envoi de l'email de réinitialisation.",
     "passwordUpdateError": "Erreur lors de la mise à jour du mot de passe.",
     "resetEmailSent": "Email de réinitialisation envoyé avec succès"

@@ -120,6 +120,7 @@
     "createMyAccount": "Mein Konto erstellen",
     "loginError": "Anmeldefehler. Bitte überprüfen Sie Ihre Anmeldedaten.",
     "registrationError": "Registrierungsfehler. Bitte versuchen Sie es erneut.",
+    "emailAlreadyExists": "Diese E-Mail wird bereits verwendet. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
     "resetEmailError": "Fehler beim Senden der Reset-E-Mail.",
     "passwordUpdateError": "Fehler beim Aktualisieren des Passworts.",
     "resetEmailSent": "Reset-E-Mail erfolgreich gesendet"

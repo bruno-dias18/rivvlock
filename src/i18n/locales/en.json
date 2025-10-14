@@ -120,6 +120,7 @@
     "createMyAccount": "Create my account",
     "loginError": "Login error. Please check your credentials.",
     "registrationError": "Registration error. Please try again.",
+    "emailAlreadyExists": "This email is already in use. Please login or use another email.",
     "resetEmailError": "Error sending reset email.",
     "passwordUpdateError": "Error updating password.",
     "resetEmailSent": "Reset email sent successfully"

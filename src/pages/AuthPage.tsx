@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { getPublicBaseUrl } from '@/lib/appUrl';
 import { logger } from '@/lib/logger';
+import { getUserFriendlyError } from '@/lib/errorMessages';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createRegistrationSchema, loginSchema, changePasswordSchema, passwordResetSchema } from '@/lib/validations';
@@ -213,10 +214,16 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       logger.error('Auth error:', err);
-      // SECURITY: Generic error messages to prevent information disclosure
-      if (isSignUp) {
-        setError(t('auth.registrationError'));
+      
+      // Check for specific email already exists error
+      if (isSignUp && err?.message === 'EMAIL_ALREADY_EXISTS') {
+        setError(t('auth.emailAlreadyExists'));
+      } else if (isSignUp) {
+        // Use friendly error message for registration
+        const friendlyError = getUserFriendlyError(err);
+        setError(friendlyError);
       } else {
+        // Login error - keep generic for security
         setError(t('auth.loginError'));
       }
     } finally {

@@ -124,6 +124,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logger.error('Registration error:', error);
       throw error;
     }
+
+    // Check if user was actually created (email might already exist)
+    if (data?.user && !data.user.identities?.length) {
+      logger.warn('Registration attempted with existing email:', email);
+      throw new Error('EMAIL_ALREADY_EXISTS');
+    }
+
+    logger.info('Registration successful for:', email);
   };
 
   const logout = async () => {
