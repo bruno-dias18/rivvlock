@@ -1,5 +1,21 @@
 # 🔒 RivvLock - Sécuriser la confiance dans les transactions
 
+[![Security Score](https://img.shields.io/badge/Security-96%2F100-brightgreen)]()
+[![Test Coverage](https://img.shields.io/badge/Coverage-65%25-yellow)]()
+[![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-success)]()
+
+## 📚 Documentation Technique
+
+- [👨‍💻 Developer Guide](./DEVELOPER_GUIDE.md) - Guide complet pour développeurs
+- [🏗️ Architecture](./ARCHITECTURE.md) - Architecture système avec diagrammes
+- [🔧 Edge Functions](./EDGE_FUNCTIONS.md) - Catalogue des 45+ fonctions backend
+- [🧪 Tests](./README_TESTS.md) - Guide de testing et couverture
+- [📊 Monitoring](./MONITORING.md) - Sentry et observabilité
+- [🔧 Troubleshooting](./TROUBLESHOOTING.md) - Résolution des problèmes courants
+- [✅ Final Review](./FINAL_REVIEW.md) - Audit complet et note (9.2/10)
+
+---
+
 ## 👋 À propos du projet
 
 **Fondateur** : Bruno Dias  

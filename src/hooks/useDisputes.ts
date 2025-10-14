@@ -2,7 +2,28 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
+import type { Dispute } from '@/types';
 
+/**
+ * Fetches and manages disputes for the current user
+ * 
+ * Returns disputes where the user is the reporter, seller, or buyer of the related transaction.
+ * Automatically enriches disputes with transaction data and latest proposal information.
+ * 
+ * @returns {UseQueryResult<Dispute[]>} Query result with disputes array
+ * 
+ * @example
+ * ```tsx
+ * const { data: disputes, isLoading, refetch } = useDisputes();
+ * 
+ * if (isLoading) return <SkeletonLayouts.DisputeCard />;
+ * if (!disputes?.length) return <EmptyStates.NoDisputes />;
+ * 
+ * return disputes.map(dispute => (
+ *   <DisputeCard key={dispute.id} dispute={dispute} />
+ * ));
+ * ```
+ */
 export const useDisputes = () => {
   const { user } = useAuth();
 
