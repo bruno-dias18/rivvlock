@@ -213,6 +213,11 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
       // Vérifier si la réponse contient une erreur
       if (error) throw error;
 
+      // Vérifier que la réponse indique un succès
+      if (!data?.success) {
+        throw new Error(data?.error || 'Échec du traitement du litige');
+      }
+
       toast.success(`Litige traité avec succès (${actionText})`);
       onRefetch?.();
     } catch (error) {
