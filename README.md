@@ -93,7 +93,7 @@ Une plateforme d'**escrow (séquestre de paiement)** simple et sécurisée qui p
 ### 🚧 En cours
 - Acquisition des premiers clients pilotes (B2B)
 - Candidature à l'incubation Fongit pour accompagnement
-- Recherche de financement seed (CHF 100'000 - 200'000)
+- Recherche de financement seed
 - Finalisation du business model et pricing
 
 ---
