@@ -16,6 +16,31 @@ export interface StripeAccountStatus {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * Manages Stripe Connect account for sellers
+ * 
+ * Handles Stripe account creation, onboarding, and status checking.
+ * Includes retry logic with exponential backoff for reliability.
+ * Sellers must complete Stripe onboarding to receive payments.
+ * 
+ * @returns Query result with Stripe account status and mutations for account management
+ * 
+ * @example
+ * ```tsx
+ * const { 
+ *   data: stripeStatus, 
+ *   isLoading,
+ *   createAccount,
+ *   checkStatus 
+ * } = useStripeAccount();
+ * 
+ * if (stripeStatus?.onboarding_required) {
+ *   return <Button onClick={() => window.open(stripeStatus.onboarding_url)}>
+ *     Complete Stripe Setup
+ *   </Button>;
+ * }
+ * ```
+ */
 export const useStripeAccount = () => {
   const { user } = useAuth();
   
@@ -26,7 +51,7 @@ export const useStripeAccount = () => {
         throw new Error('User not authenticated');
       }
       
-      let lastError: any = null;
+      let lastError: Error | null = null;
       
       // Retry logic with backoff
       for (let attempt = 1; attempt <= 3; attempt++) {

@@ -42,23 +42,34 @@ export const TRANSACTION_LIMITS = {
   MIN_AMOUNT: 1,
   MAX_AMOUNT: 1000000,
   MAX_RENEWALS: 3,
+  MIN_SERVICE_DATE_HOURS: 25,
 } as const;
 
 // Dispute Limits
 export const DISPUTE_LIMITS = {
   MAX_REASON_LENGTH: 1000,
   MAX_MESSAGE_LENGTH: 2000,
+  MAX_MESSAGES_PER_DISPUTE: 100,
+  AUTO_ESCALATION_DAYS: 7,
 } as const;
 
-// Platform Fees
+// Platform Fees (Stripe Connect)
 export const FEES = {
-  PLATFORM_FEE_RATE: 0.05, // 5%
+  PLATFORM_FEE_RATE: 0.029, // 2.9%
+  PLATFORM_FEE_FIXED: 0.25, // €0.25
 } as const;
 
 // URL Configuration
 export const URLS = {
   STRIPE_DASHBOARD: 'https://dashboard.stripe.com',
-  SUPPORT_EMAIL: 'support@rivvlock.com',
+  SUPPORT_EMAIL: 'contact@rivvlock.com',
+  APP_URL: 'https://app.rivvlock.com',
+} as const;
+
+// Supabase Configuration
+export const SUPABASE = {
+  PROJECT_ID: 'slthyxqruhfuyfmextwr',
+  BASE_URL: 'https://slthyxqruhfuyfmextwr.supabase.co',
 } as const;
 
 // Status Values
@@ -85,4 +96,27 @@ export const REFUND_STATUS = {
   NONE: 'none',
   PARTIAL: 'partial',
   FULL: 'full',
+} as const;
+
+// Currencies
+export const CURRENCIES = {
+  EUR: { symbol: '€', name: 'Euro', code: 'EUR' },
+  CHF: { symbol: 'CHF', name: 'Swiss Franc', code: 'CHF' },
+} as const;
+
+// Countries
+export const COUNTRIES = {
+  FR: { name: 'France', flag: '🇫🇷', identifier: 'SIRET' },
+  CH: { name: 'Switzerland', flag: '🇨🇭', identifier: 'AVS' },
+  DE: { name: 'Germany', flag: '🇩🇪', identifier: 'VAT' },
+  BE: { name: 'Belgium', flag: '🇧🇪', identifier: 'VAT' },
+  LU: { name: 'Luxembourg', flag: '🇱🇺', identifier: 'VAT' },
+} as const;
+
+// Feature Flags
+export const FEATURES = {
+  STRIPE_WEBHOOKS: false,
+  ADMIN_2FA: false,
+  CAPTCHA: false,
+  ANALYTICS_DASHBOARD: false,
 } as const;

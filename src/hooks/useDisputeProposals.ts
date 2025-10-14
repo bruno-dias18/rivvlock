@@ -2,6 +2,35 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+/**
+ * Manages dispute proposals (resolution offers)
+ * 
+ * Handles creation, acceptance, and rejection of proposals during dispute negotiation.
+ * Each dispute can have multiple proposals, but only one can be accepted.
+ * 
+ * @param disputeId - The ID of the dispute
+ * @returns Query result with proposals and mutations for proposal management
+ * 
+ * @example
+ * ```tsx
+ * const { 
+ *   data: proposals, 
+ *   createProposal,
+ *   acceptProposal,
+ *   rejectProposal 
+ * } = useDisputeProposals(disputeId);
+ * 
+ * // Create a partial refund proposal
+ * await createProposal.mutateAsync({
+ *   proposalType: 'partial_refund',
+ *   refundPercentage: 50,
+ *   message: 'I propose 50% refund'
+ * });
+ * 
+ * // Accept a proposal
+ * await acceptProposal.mutateAsync(proposalId);
+ * ```
+ */
 export const useDisputeProposals = (disputeId: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
