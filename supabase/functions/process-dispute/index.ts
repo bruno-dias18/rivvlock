@@ -184,11 +184,16 @@ serve(async (req) => {
     }
 
     // Update dispute status (using admin client)
+    const resolutionText = action === 'refund' 
+      ? `Décision administrative: ${refundPercentage === 100 ? 'full_refund' : 'partial_refund'} - ${refundPercentage}% refund`
+      : `Décision administrative: no_refund - 0% refund`;
+    
     const { error: disputeUpdateError } = await adminClient
       .from("disputes")
       .update({ 
         status: disputeStatus,
         resolved_at: new Date().toISOString(),
+        resolution: resolutionText,
         updated_at: new Date().toISOString()
       })
       .eq("id", disputeId);
