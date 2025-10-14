@@ -20,6 +20,7 @@ export { useUnreadDisputeMessages } from './useUnreadDisputeMessages';
 export { useUnreadDisputesGlobal } from './useUnreadDisputesGlobal';
 export { useDisputeRealtimeNotifications } from './useDisputeRealtimeNotifications';
 export { useEscalatedDisputeMessaging } from './useEscalatedDisputeMessaging';
+export { useDisputeMessageReads } from './useDisputeMessageReads';
 
 // Admin Hooks
 export { useAdminTransactions } from './useAdminTransactions';
