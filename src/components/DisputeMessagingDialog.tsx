@@ -92,7 +92,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     isRejecting 
   } = useDisputeProposals(disputeId);
   const { markAsSeen, refetch: refetchDisputeUnread } = useUnreadDisputeAdminMessages(disputeId);
-  const { markAsSeen: markGlobalAsSeen, refetch: refetchGlobalUnread } = useUnreadAdminMessages();
+  const { refetch: refetchGlobalUnread } = useUnreadAdminMessages();
   const { markAsSeen: markDisputeAsSeen, refetch: refetchDisputeMessages } = useUnreadDisputeMessages(disputeId);
   const { markAllAsSeen: markAllDisputesAsSeen, refetch: refetchGlobalDisputes } = useUnreadDisputesGlobal();
   const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
@@ -182,19 +182,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   // Auto-focus textarea when opened (including mobile) + mark messages as seen
   useEffect(() => {
     if (open) {
-      // ✅ NOUVEAU: Utiliser le hook DB pour marquer comme vu
+      // Mark dispute messages as seen in database
       markDisputeAsSeenDB(disputeId);
-      
-      // ✅ DEPRECATED: Garder localStorage comme fallback temporaire
-      const lastSeenKey = `last_seen_dispute_${disputeId}`;
-      localStorage.setItem(lastSeenKey, new Date().toISOString());
-      localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
-      
-      // Appeler les anciennes méthodes markAsSeen (qui utilisent encore localStorage)
-      markAsSeen();
-      markGlobalAsSeen();
-      markDisputeAsSeen();
-      markAllDisputesAsSeen();
       
       // Force immediate refresh of all unread counts
       setTimeout(() => {
@@ -214,7 +203,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         }, 300);
       }
     }
-  }, [open, disputeId, markDisputeAsSeenDB, markAsSeen, markGlobalAsSeen, markDisputeAsSeen, markAllDisputesAsSeen, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
+  }, [open, disputeId, markDisputeAsSeenDB, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
   // Skip this for escalated UI (handled by EscalatedDisputeMessaging itself)

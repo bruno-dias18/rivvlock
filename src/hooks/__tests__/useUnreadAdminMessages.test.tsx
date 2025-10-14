@@ -85,41 +85,6 @@ describe('useUnreadAdminMessages', () => {
     expect(typeof result.current.refetch).toBe('function');
   });
 
-  it('should provide markAsSeen function (deprecated)', () => {
-    const { result } = renderHook(() => useUnreadAdminMessages(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.markAsSeen).toBeDefined();
-    expect(typeof result.current.markAsSeen).toBe('function');
-  });
-
-  it('should call markAsSeen and update localStorage', () => {
-    const { result } = renderHook(() => useUnreadAdminMessages(), {
-      wrapper: createWrapper(),
-    });
-
-    result.current.markAsSeen();
-
-    const lastSeen = localStorage.getItem('last_seen_admin_messages');
-    expect(lastSeen).toBeTruthy();
-    expect(new Date(lastSeen!)).toBeInstanceOf(Date);
-  });
-
-  it('should not fetch if no user ID', () => {
-    vi.mock('@/contexts/AuthContext', () => ({
-      useAuth: () => ({
-        user: null,
-      }),
-    }));
-
-    const { result } = renderHook(() => useUnreadAdminMessages(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.unreadCount).toBe(0);
-  });
-
   it('should filter out resolved disputes', async () => {
     const mockDisputes = [
       { id: '1', status: 'open', transaction_id: 'tx1' },

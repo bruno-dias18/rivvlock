@@ -68,14 +68,8 @@ export const useUnreadAdminMessages = () => {
     refetchInterval: 30000,
   });
 
-  // ✅ DEPRECATED: markAsSeen conservé pour compatibilité
-  const markAsSeen = () => {
-    localStorage.setItem('last_seen_admin_messages', new Date().toISOString());
-  };
-
   return {
     unreadCount,
-    markAsSeen,
     refetch
   };
 };
