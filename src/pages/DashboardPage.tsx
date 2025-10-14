@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, MessageSquare } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
@@ -56,7 +57,8 @@ export default function DashboardPage() {
     {
       title: t('dashboard.pending'),
       description: t('dashboard.pendingDesc'),
-      count: countsLoading ? '...' : countsError ? '!' : String(counts?.pending || 0),
+      count: countsLoading ? null : countsError ? '!' : String(counts?.pending || 0),
+      isLoading: countsLoading,
       icon: Clock,
       category: 'pending' as const,
       badgeColor: 'bg-blue-500 text-white hover:bg-blue-600',
@@ -69,7 +71,8 @@ export default function DashboardPage() {
     {
       title: t('dashboard.blocked'),
       description: t('dashboard.blockedDesc'),
-      count: countsLoading ? '...' : countsError ? '!' : String(counts?.paid || 0),
+      count: countsLoading ? null : countsError ? '!' : String(counts?.paid || 0),
+      isLoading: countsLoading,
       icon: Lock,
       category: 'blocked' as const,
       badgeColor: 'bg-orange-500 text-white hover:bg-orange-600',
@@ -83,6 +86,7 @@ export default function DashboardPage() {
       title: t('transactions.disputed'),
       description: t('transactions.disputedDescription'),
       count: String(disputes?.length || 0),
+      isLoading: false,
       icon: AlertTriangle,
       category: 'disputed' as const,
       badgeColor: 'bg-red-500 text-white hover:bg-red-600',
@@ -95,7 +99,8 @@ export default function DashboardPage() {
     {
       title: t('dashboard.completed'),
       description: t('dashboard.completedDesc'),
-      count: countsLoading ? '...' : countsError ? '!' : String(counts?.validated || 0),
+      count: countsLoading ? null : countsError ? '!' : String(counts?.validated || 0),
+      isLoading: countsLoading,
       icon: CheckCircle2,
       category: 'completed' as const,
       badgeColor: 'bg-green-500 text-white hover:bg-green-600',
@@ -184,7 +189,11 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent className={isMobile ? "pt-1" : ""}>
                 <div className={`font-bold ${isMobile ? "text-xl" : "text-2xl"}`}>
-                  {status.count}
+                  {status.isLoading ? (
+                    <Skeleton className={`${isMobile ? "h-7 w-12" : "h-8 w-16"}`} />
+                  ) : (
+                    status.count
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {status.description}

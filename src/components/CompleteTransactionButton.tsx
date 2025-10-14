@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteTransactionConfirmDialog } from '@/components/CompleteTransactionConfirmDialog';
@@ -105,8 +105,17 @@ export default function CompleteTransactionButton({
         className="w-full"
         size="lg"
       >
-        <CheckCircle className="h-4 w-4 mr-2" />
-        Finaliser la transaction
+        {isProcessing ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Finalisation...
+          </>
+        ) : (
+          <>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Finaliser la transaction
+          </>
+        )}
       </Button>
 
       <CompleteTransactionConfirmDialog
