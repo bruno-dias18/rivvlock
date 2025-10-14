@@ -1,7 +1,7 @@
 import { useState, useRef, useLayoutEffect, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send, AlertCircle } from 'lucide-react';
@@ -18,16 +18,12 @@ interface EscalatedDisputeMessagingProps {
   disputeId: string;
   transactionId: string;
   status: string;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
 }
 
 export const EscalatedDisputeMessaging = ({ 
   disputeId, 
-  transactionId,
-  status,
-  open,
-  onOpenChange
+  transactionId, 
+  status
 }: EscalatedDisputeMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -66,75 +62,19 @@ export const EscalatedDisputeMessaging = ({
     }
   };
 
-  // Auto-scroll on open and new messages
+  // Auto-scroll on new messages
   useLayoutEffect(() => {
-    if (open && messages.length > 0) {
+    if (messages.length > 0) {
       setTimeout(() => ensureBottom(), 300);
     }
-  }, [open, messages.length]);
+  }, [messages.length]);
 
-  // Auto-focus textarea when opened
+  // Auto-focus textarea when component mounts
   useLayoutEffect(() => {
-    if (open) {
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 200);
-    }
-  }, [open]);
-
-  // Track keyboard inset changes
-  useEffect(() => {
-    previousKeyboardInsetRef.current = keyboardInset;
-  }, [keyboardInset]);
-
-  // Tap-outside closer for non-Safari browsers (same as TransactionMessaging)
-  useEffect(() => {
-    if (!open) return;
-    if (isSafariiOS) return; // Safari handled by keyboardInset logic
-
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const sendBtn = sendButtonRef.current;
-
-    const handler = (e: TouchEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      // Ignore taps inside the textarea or send button
-      if (textarea.contains(target) || (sendBtn && sendBtn.contains(target))) return;
-      // Close on tap outside
-      textarea.blur();
-      setTimeout(() => onOpenChange(false), 120);
-    };
-
-    const onFocus = () => {
-      document.addEventListener('touchstart', handler, true);
-    };
-    const onBlur = () => {
-      document.removeEventListener('touchstart', handler, true);
-    };
-
-    textarea.addEventListener('focus', onFocus);
-    textarea.addEventListener('blur', onBlur);
-
-    return () => {
-      document.removeEventListener('touchstart', handler, true);
-      textarea.removeEventListener('focus', onFocus);
-      textarea.removeEventListener('blur', onBlur);
-    };
-  }, [open, onOpenChange, isSafariiOS]);
-
-  // Auto-close on keyboard blur (Safari iOS only)
-  useEffect(() => {
-    const wasOpen = previousKeyboardInsetRef.current >= 40;
-    const isClosedNow = keyboardInset === 0;
-    
-    if (open && wasOpen && isSafariiOS && isClosedNow) {
-      setTimeout(() => onOpenChange(false), 150);
-    }
-    
-    previousKeyboardInsetRef.current = keyboardInset;
-  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 200);
+  }, []);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || newMessage.length > 500) return;
@@ -186,40 +126,24 @@ export const EscalatedDisputeMessaging = ({
     }
   };
 
-  const getDialogHeight = () => {
-    if (!isMobile) return '85vh';
-
-    // Use 100vh on iOS Safari, 100dvh elsewhere (same as TransactionMessaging)
-    const baseUnit = isSafariiOS ? '100vh' : '100dvh';
-
-    if (keyboardInset > 0) {
-      return `calc(${baseUnit} - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
-    }
-    return `calc(${baseUnit} - env(safe-area-inset-top, 0px))`;
-  };
-
   const isResolved = status === 'resolved' || status === 'resolved_refund' || status === 'resolved_release';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
-        style={{ height: getDialogHeight() }}
-      >
-        <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
-          <DialogTitle className="text-lg">
-            {t('Communication privée avec l\'administration')}
-          </DialogTitle>
-          <Alert className="mt-3">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              {isSeller 
-                ? t('Vous communiquez en privé avec l\'administration. L\'acheteur ne voit pas ces messages.')
-                : t('Vous communiquez en privé avec l\'administration. Le vendeur ne voit pas ces messages.')
-              }
-            </AlertDescription>
-          </Alert>
-        </DialogHeader>
+    <>
+      <DialogHeader className="px-6 pt-6 pb-4 border-b shrink-0">
+        <DialogTitle className="text-lg">
+          {t('Communication privée avec l\'administration')}
+        </DialogTitle>
+        <Alert className="mt-3">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            {isSeller 
+              ? t('Vous communiquez en privé avec l\'administration. L\'acheteur ne voit pas ces messages.')
+              : t('Vous communiquez en privé avec l\'administration. Le vendeur ne voit pas ces messages.')
+            }
+          </AlertDescription>
+        </Alert>
+      </DialogHeader>
 
         {/* Messages Area */}
         <div 
@@ -310,16 +234,15 @@ export const EscalatedDisputeMessaging = ({
           </div>
         )}
 
-        {isResolved && (
-          <div className="px-6 py-4 border-t bg-background shrink-0">
-            <Alert>
-              <AlertDescription>
-                {t('Ce litige est résolu. La messagerie est fermée.')}
-              </AlertDescription>
-            </Alert>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+      {isResolved && (
+        <div className="px-6 py-4 border-t bg-background shrink-0">
+          <Alert>
+            <AlertDescription>
+              {t('Ce litige est résolu. La messagerie est fermée.')}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+    </>
   );
 };

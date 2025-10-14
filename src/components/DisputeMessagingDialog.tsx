@@ -455,15 +455,11 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
           {/* Switch to escalated messaging if in escalated mode */}
           {isEscalatedUI ? (
             transactionIdForEscalated ? (
-              <div className="flex-1 overflow-auto">
-                <EscalatedDisputeMessaging 
-                  disputeId={disputeId} 
-                  transactionId={transactionIdForEscalated}
-                  status={status}
-                  open={true}
-                  onOpenChange={() => {}}
-                />
-              </div>
+              <EscalatedDisputeMessaging 
+                disputeId={disputeId} 
+                transactionId={transactionIdForEscalated}
+                status={status}
+              />
             ) : (
               <div className="flex-1 flex items-center justify-center p-4 text-sm text-muted-foreground">
                 Initialisation du canal privé avec l'administration...
