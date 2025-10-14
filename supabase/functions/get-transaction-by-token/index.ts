@@ -14,6 +14,20 @@ function maskToken(token: string): string {
   return `${token.substring(0, 4)}...${token.substring(token.length - 4)}`;
 }
 
+// Normalize tokens copied from various apps (removes zero-width chars, BOM, trims, decodes URI)
+function sanitizeToken(input: string): string {
+  if (!input) return '';
+  let t = input;
+  try {
+    // decode percent-encoded values if any
+    t = decodeURIComponent(t);
+  } catch (_) {
+    // ignore decoding errors, keep original
+  }
+  // remove zero-width and BOM characters, then trim spaces
+  t = t.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+  return t;
+}
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -62,6 +76,9 @@ serve(async (req) => {
         // ignore JSON parse errors
       }
     }
+
+    // Sanitize token before any processing (handles copy/paste artifacts)
+    token = sanitizeToken(token || '');
     
     if (!token) {
       return new Response(
