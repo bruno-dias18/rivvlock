@@ -213,6 +213,38 @@ serve(async (req) => {
     }
     logStep("Transaction updated to validated and funds marked as released");
 
+    // Generate invoice if it doesn't exist yet
+    const { data: existingInvoice } = await supabaseClient
+      .from('invoices')
+      .select('id')
+      .eq('transaction_id', transactionId)
+      .maybeSingle();
+
+    if (!existingInvoice) {
+      logStep("Generating invoice for validated transaction");
+      try {
+        const { data: invoiceData, error: invoiceError } = await supabaseClient.functions.invoke(
+          'generate-invoice-number',
+          {
+            body: {
+              transactionId: transactionId,
+              sellerId: transaction.user_id,
+              amount: transaction.price,
+              currency: transaction.currency
+            }
+          }
+        );
+
+        if (!invoiceError && invoiceData?.invoiceNumber) {
+          logStep("Invoice generated", { invoiceNumber: invoiceData.invoiceNumber });
+        } else {
+          logger.error("Failed to generate invoice:", invoiceError);
+        }
+      } catch (invoiceErr) {
+        logger.error("Error generating invoice:", invoiceErr);
+      }
+    }
+
     // Log the activity for seller
     await supabaseClient
       .from('activity_logs')

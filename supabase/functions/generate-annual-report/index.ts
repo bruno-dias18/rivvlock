@@ -63,6 +63,50 @@ serve(async (req) => {
       .select('transaction_id, resolution, dispute_proposals(refund_percentage, status, proposal_type)')
       .in('transaction_id', transactionIds);
     
+    // Fetch existing invoices
+    let { data: invoices } = await supabase
+      .from('invoices')
+      .select('invoice_number, transaction_id')
+      .in('transaction_id', transactionIds);
+    
+    // Generate missing invoices automatically
+    for (const transaction of txData) {
+      const existingInvoice = invoices?.find(inv => inv.transaction_id === transaction.id);
+      
+      if (!existingInvoice) {
+        logger.info(`Generating missing invoice for transaction ${transaction.id}`);
+        
+        try {
+          // Call the generate-invoice-number function
+          const { data: invoiceData, error: invoiceError } = await supabase.functions.invoke(
+            'generate-invoice-number',
+            {
+              body: {
+                transactionId: transaction.id,
+                sellerId: user.id,
+                amount: transaction.price,
+                currency: transaction.currency
+              }
+            }
+          );
+          
+          if (!invoiceError && invoiceData?.invoiceNumber) {
+            // Add to invoices array
+            if (!invoices) invoices = [];
+            invoices.push({
+              invoice_number: invoiceData.invoiceNumber,
+              transaction_id: transaction.id
+            });
+            logger.info(`Invoice ${invoiceData.invoiceNumber} generated for transaction ${transaction.id}`);
+          } else {
+            logger.error(`Failed to generate invoice for transaction ${transaction.id}:`, invoiceError);
+          }
+        } catch (err) {
+          logger.error(`Error generating invoice for transaction ${transaction.id}:`, err);
+        }
+      }
+    }
+    
     // Create map of refund percentages
     const refundMap = new Map();
     disputes?.forEach(dispute => {
@@ -87,11 +131,6 @@ serve(async (req) => {
       ...t,
       refund_percentage: refundMap.get(t.id) || 0
     }));
-
-    const { data: invoices } = await supabase
-      .from('invoices')
-      .select('invoice_number, transaction_id')
-      .in('transaction_id', transactionIds);
 
     // Récupérer le profil du vendeur pour les taux de TVA
     const { data: sellerProfile } = await supabase

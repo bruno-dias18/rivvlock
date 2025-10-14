@@ -242,6 +242,38 @@ serve(async (req) => {
 
         logStep("Transaction updated to validated");
 
+        // Generate invoice if it doesn't exist yet
+        const { data: existingInvoice } = await adminClient
+          .from('invoices')
+          .select('id')
+          .eq('transaction_id', transaction.id)
+          .maybeSingle();
+
+        if (!existingInvoice) {
+          logStep("Generating invoice for validated transaction");
+          try {
+            const { data: invoiceData, error: invoiceError } = await adminClient.functions.invoke(
+              'generate-invoice-number',
+              {
+                body: {
+                  transactionId: transaction.id,
+                  sellerId: transaction.user_id,
+                  amount: transaction.price,
+                  currency: transaction.currency
+                }
+              }
+            );
+
+            if (!invoiceError && invoiceData?.invoiceNumber) {
+              logStep("Invoice generated", { invoiceNumber: invoiceData.invoiceNumber });
+            } else {
+              logger.error("Failed to generate invoice:", invoiceError);
+            }
+          } catch (invoiceErr) {
+            logger.error("Error generating invoice:", invoiceErr);
+          }
+        }
+
         // Log activity for seller
         await adminClient
           .from('activity_logs')
