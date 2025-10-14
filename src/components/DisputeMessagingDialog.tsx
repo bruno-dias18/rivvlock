@@ -311,7 +311,6 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
         });
       });
       
-      toast.success('Message envoyé');
       onProposalSent?.();
       
       // Scroll after everything

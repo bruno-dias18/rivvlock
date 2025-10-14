@@ -99,8 +99,6 @@ export const AdminDisputeMessaging = ({
           message_preview: message.substring(0, 50),
         }
       });
-
-      toast.success("Message envoyé avec succès");
     } catch (error) {
       logger.error('Error sending message:', error);
       toast.error("Impossible d'envoyer le message");

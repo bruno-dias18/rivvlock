@@ -146,11 +146,6 @@ export const EscalatedDisputeMessaging = ({
         });
       });
       
-      // Show toast after focus to avoid interference
-      setTimeout(() => {
-        toast.success(t('Message envoyé à l\'administrateur'));
-      }, 50);
-      
       // Scroll after everything
       requestAnimationFrame(() => ensureBottom());
     } catch (error) {

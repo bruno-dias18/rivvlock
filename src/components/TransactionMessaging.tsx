@@ -144,11 +144,6 @@ export const TransactionMessaging = ({
         });
       });
       
-      // Show toast after focus to avoid interference
-      setTimeout(() => {
-        toast.success(t('messages.sent', 'Message envoyé'));
-      }, 50);
-      
       // Scroll after everything
       requestAnimationFrame(() => ensureBottom());
     } catch (error) {
