@@ -16,9 +16,9 @@ vi.mock('@/integrations/supabase/client', () => ({
     functions: {
       invoke: vi.fn().mockResolvedValue({
         data: {
-          hasStripeAccount: true,
-          chargesEnabled: true,
-          detailsSubmitted: true,
+          has_account: true,
+          charges_enabled: true,
+          details_submitted: true,
         },
         error: null,
       }),
@@ -48,7 +48,7 @@ describe('useStripeAccount', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toBeDefined();
-    expect(result.current.data?.has_active_account).toBe(true);
+    expect(result.current.data?.has_account).toBe(true);
   });
 
   it('should return account with charges enabled', async () => {
@@ -71,9 +71,9 @@ describe('useStripeAccount', () => {
     const { supabase } = await import('@/integrations/supabase/client');
     vi.mocked(supabase.functions.invoke).mockResolvedValueOnce({
       data: {
-        hasStripeAccount: false,
-        chargesEnabled: false,
-        detailsSubmitted: false,
+        has_account: false,
+        charges_enabled: false,
+        details_submitted: false,
       },
       error: null,
     });
@@ -82,7 +82,7 @@ describe('useStripeAccount', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data?.has_active_account).toBe(false);
+    expect(result.current.data?.has_account).toBe(false);
   });
 
   it('should handle errors gracefully', async () => {
