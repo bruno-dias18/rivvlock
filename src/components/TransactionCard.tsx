@@ -119,16 +119,26 @@ const TransactionCardComponent = ({
         )}
         
         <CardHeader className="pb-3">
-          <TransactionHeader 
-            title={transaction.title}
-            description={transaction.description}
-            userRole={userRole}
-          />
-          <div className={`${isMobile ? 'mt-3' : 'absolute top-6 right-6'}`}>
-            <TransactionPricing 
-              transaction={transaction}
-              userRole={userRole}
-            />
+          <div className={cn(
+            "flex gap-4",
+            isMobile ? "flex-col" : "flex-row justify-between items-start"
+          )}>
+            <div className="flex-1 min-w-0">
+              <TransactionHeader 
+                title={transaction.title}
+                description={transaction.description}
+                userRole={userRole}
+              />
+            </div>
+            <div className={cn(
+              "shrink-0",
+              isMobile && "mt-2"
+            )}>
+              <TransactionPricing 
+                transaction={transaction}
+                userRole={userRole}
+              />
+            </div>
           </div>
         </CardHeader>
         
