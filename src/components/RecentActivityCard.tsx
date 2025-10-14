@@ -198,7 +198,7 @@ export function RecentActivityCard() {
               <button 
                 key={activity.id} 
                 onClick={() => handleActivityClick(activity)}
-                className="flex items-start space-x-3 group w-full text-left p-2 -mx-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                className="flex items-start space-x-3 group w-full text-left p-2 -mx-2 rounded-lg hover:bg-accent/50 transition-all duration-200 hover:translate-x-1 cursor-pointer"
               >
                 <div className={`mt-0.5 ${iconColor}`}>
                   <IconComponent className="h-5 w-5" />
