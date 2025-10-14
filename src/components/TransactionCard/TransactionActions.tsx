@@ -122,7 +122,7 @@ export const TransactionActions = ({
           )}
           {hasMessages ? t('common.viewConversation', 'Voir la discussion') : t('common.contact', 'Contacter')}
           {unreadCount > 0 && (
-            <Badge className="ml-2 bg-primary-foreground text-primary animate-pulse">
+            <Badge className="ml-2 bg-primary-foreground text-primary">
               {unreadCount}
             </Badge>
           )}
