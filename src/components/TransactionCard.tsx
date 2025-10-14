@@ -108,7 +108,7 @@ const TransactionCardComponent = ({
       )}
 
       <Card key={transaction.id} className={cn(
-        "mb-4 relative",
+        "mb-4 relative transition-all duration-200 hover:shadow-md hover:scale-[1.01]",
         isServiceDatePassed() && "border-2 border-orange-400",
         hasNewActivity && "border-2 border-blue-500 dark:border-blue-400"
       )}>

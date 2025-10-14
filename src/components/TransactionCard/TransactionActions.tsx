@@ -51,7 +51,7 @@ export const TransactionActions = ({
           variant="outline"
           size={isMobile ? "default" : "sm"}
           onClick={() => onCopyLink(`${getPublicBaseUrl()}/join/${transaction.shared_link_token}`)}
-          className={isMobile ? "justify-center" : ""}
+          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
         >
           <Copy className="h-4 w-4 mr-2" />
           {isMobile ? t('common.copy') : t('common.copyLink')}
@@ -63,7 +63,7 @@ export const TransactionActions = ({
         <Button
           size={isMobile ? "default" : "sm"}
           onClick={() => onPayment(transaction)}
-          className={isMobile ? "justify-center" : ""}
+          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
           disabled={transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date()}
         >
           <CreditCard className="h-4 w-4 mr-2" />
@@ -80,7 +80,7 @@ export const TransactionActions = ({
           variant="outline"
           size={isMobile ? "default" : "sm"}
           onClick={() => setIsDateChangeDialogOpen(true)}
-          className={isMobile ? "justify-center" : ""}
+          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
         >
           <Edit3 className="h-4 w-4 mr-2" />
           {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
@@ -113,7 +113,7 @@ export const TransactionActions = ({
           variant={unreadCount > 0 ? "default" : "outline"}
           size={isMobile ? "default" : "sm"}
           onClick={() => setIsMessagingOpen(true)}
-          className={isMobile ? "justify-center" : ""}
+          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
         >
           {hasMessages ? (
             <MessageCircleMore className="h-4 w-4 mr-2" />
@@ -135,7 +135,7 @@ export const TransactionActions = ({
           variant="outline" 
           size={isMobile ? "default" : "sm"}
           onClick={() => onDownloadInvoice(transaction)}
-          className={isMobile ? "justify-center" : ""}
+          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
         >
           <Download className="h-4 w-4 mr-2" />
           {t('common.invoice')}
