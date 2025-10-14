@@ -210,9 +210,8 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
         }
       });
 
-      // Vérifier si la réponse contient une erreur dans le body
+      // Vérifier si la réponse contient une erreur
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
       toast.success(`Litige traité avec succès (${actionText})`);
       onRefetch?.();
