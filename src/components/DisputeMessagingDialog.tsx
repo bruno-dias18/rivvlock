@@ -213,7 +213,10 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
   }, [open, disputeId, markAsSeen, markGlobalAsSeen, markDisputeAsSeen, markAllDisputesAsSeen, refetchDisputeUnread, refetchGlobalUnread, refetchDisputeMessages, refetchGlobalDisputes]);
 
   // Close messaging when keyboard closes (Safari-only auto-close)
+  // Skip this for escalated UI (handled by EscalatedDisputeMessaging itself)
   useEffect(() => {
+    if (isEscalatedUI) return;
+
     let timeoutId: NodeJS.Timeout;
 
     const wasOpen = previousKeyboardInsetRef.current >= 40;
@@ -228,12 +231,14 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
     previousKeyboardInsetRef.current = keyboardInset;
 
     return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+  }, [keyboardInset, open, onOpenChange, isSafariiOS, isEscalatedUI]);
 
   // Tap-outside closer for non-Safari browsers (iOS Brave/Chrome/Firefox and Android)
+  // Skip this for escalated UI (handled by EscalatedDisputeMessaging itself)
   useEffect(() => {
     if (!open) return;
     if (isSafariiOS) return; // Safari already handled by keyboardInset logic
+    if (isEscalatedUI) return; // Escalated UI handles its own close logic
 
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -263,7 +268,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
       textarea.removeEventListener('focus', onFocus);
       textarea.removeEventListener('blur', onBlur);
     };
-  }, [open, onOpenChange, isSafariiOS]);
+  }, [open, onOpenChange, isSafariiOS, isEscalatedUI]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
@@ -459,6 +464,7 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                 disputeId={disputeId} 
                 transactionId={transactionIdForEscalated}
                 status={status}
+                onClose={() => onOpenChange(false)}
               />
             ) : (
               <div className="flex-1 flex items-center justify-center p-4 text-sm text-muted-foreground">

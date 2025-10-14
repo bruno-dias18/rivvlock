@@ -18,12 +18,14 @@ interface EscalatedDisputeMessagingProps {
   disputeId: string;
   transactionId: string;
   status: string;
+  onClose: () => void;
 }
 
 export const EscalatedDisputeMessaging = ({ 
   disputeId, 
   transactionId, 
-  status
+  status,
+  onClose
 }: EscalatedDisputeMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -75,6 +77,52 @@ export const EscalatedDisputeMessaging = ({
       textareaRef.current?.focus();
     }, 200);
   }, []);
+
+  // Auto-close on Safari keyboard dismiss
+  useEffect(() => {
+    const wasOpen = previousKeyboardInsetRef.current >= 40;
+    const isClosedNow = keyboardInset === 0;
+    
+    if (wasOpen && isSafariiOS && isClosedNow) {
+      setTimeout(() => onClose(), 150);
+    }
+    
+    previousKeyboardInsetRef.current = keyboardInset;
+  }, [keyboardInset, onClose, isSafariiOS]);
+
+  // Tap-outside closer for non-Safari browsers
+  useEffect(() => {
+    if (isSafariiOS) return;
+
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const sendBtn = sendButtonRef.current;
+
+    const handler = (e: TouchEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (textarea.contains(target) || (sendBtn && sendBtn.contains(target))) return;
+      textarea.blur();
+      setTimeout(() => onClose(), 120);
+    };
+
+    const onFocus = () => {
+      document.addEventListener('touchstart', handler, true);
+    };
+    const onBlur = () => {
+      document.removeEventListener('touchstart', handler, true);
+    };
+
+    textarea.addEventListener('focus', onFocus);
+    textarea.addEventListener('blur', onBlur);
+
+    return () => {
+      document.removeEventListener('touchstart', handler, true);
+      textarea.removeEventListener('focus', onFocus);
+      textarea.removeEventListener('blur', onBlur);
+    };
+  }, [onClose, isSafariiOS]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSending || newMessage.length > 500) return;
