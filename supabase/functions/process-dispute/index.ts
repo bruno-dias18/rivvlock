@@ -151,7 +151,6 @@ serve(async (req) => {
       .update({ 
         status: disputeStatus,
         resolved_at: new Date().toISOString(),
-        admin_notes: adminNotes,
         updated_at: new Date().toISOString()
       })
       .eq("id", disputeId);
@@ -159,6 +158,22 @@ serve(async (req) => {
     if (disputeUpdateError) {
       logger.error("Error updating dispute:", disputeUpdateError);
       throw disputeUpdateError;
+    }
+
+    // Save admin notes in separate table if provided
+    if (adminNotes) {
+      const { error: notesError } = await adminClient
+        .from("admin_dispute_notes")
+        .insert({
+          dispute_id: disputeId,
+          admin_user_id: user.id,
+          notes: adminNotes
+        });
+
+      if (notesError) {
+        logger.error("Error saving admin notes:", notesError);
+        // Don't throw - notes are not critical
+      }
     }
 
     // Update transaction status (using admin client)

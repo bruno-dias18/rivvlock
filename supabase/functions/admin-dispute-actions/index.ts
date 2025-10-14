@@ -132,8 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
           await supabase
             .from('disputes')
             .update({ 
-              status: 'negotiating',
-              admin_notes: notes || dispute.admin_notes
+              status: 'negotiating'
             })
             .eq('id', disputeId);
         }
@@ -142,15 +141,44 @@ const handler = async (req: Request): Promise<Response> => {
         break;
 
       case 'update_notes':
-        // Update admin notes
-        const { error: notesError } = await supabase
-          .from('disputes')
-          .update({ admin_notes: notes || '' })
-          .eq('id', disputeId);
+        // Update or create admin notes in separate table
+        if (notes) {
+          // Check if notes already exist
+          const { data: existingNotes } = await supabase
+            .from('admin_dispute_notes')
+            .select('id')
+            .eq('dispute_id', disputeId)
+            .maybeSingle();
 
-        if (notesError) {
-          logStep('Failed to update notes', { error: notesError });
-          throw notesError;
+          if (existingNotes) {
+            // Update existing notes
+            const { error: updateError } = await supabase
+              .from('admin_dispute_notes')
+              .update({ 
+                notes: notes,
+                updated_at: new Date().toISOString()
+              })
+              .eq('dispute_id', disputeId);
+
+            if (updateError) {
+              logStep('Failed to update notes', { error: updateError });
+              throw updateError;
+            }
+          } else {
+            // Create new notes
+            const { error: insertError } = await supabase
+              .from('admin_dispute_notes')
+              .insert({
+                dispute_id: disputeId,
+                admin_user_id: user.id,
+                notes: notes
+              });
+
+            if (insertError) {
+              logStep('Failed to create notes', { error: insertError });
+              throw insertError;
+            }
+          }
         }
 
         logStep('Admin notes updated successfully');
@@ -162,8 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
           .from('disputes')
           .update({ 
             status: 'escalated',
-            escalated_at: new Date().toISOString(),
-            admin_notes: notes || dispute.admin_notes
+            escalated_at: new Date().toISOString()
           })
           .eq('id', disputeId);
 
@@ -192,8 +219,7 @@ const handler = async (req: Request): Promise<Response> => {
         description: `Action: ${action}`,
         metadata: {
           dispute_id: disputeId,
-          action: action,
-          admin_notes: notes
+          action: action
         }
       });
 

@@ -26,8 +26,9 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const { user } = useAuth();
   const [showMessaging, setShowMessaging] = useState(false);
   const [isAddingNotes, setIsAddingNotes] = useState(false);
-  const [adminNotes, setAdminNotes] = useState(dispute.admin_notes || '');
+  const [adminNotes, setAdminNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadedNotes, setLoadedNotes] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOfficialProposal, setShowOfficialProposal] = useState(false);
 
@@ -35,6 +36,25 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
 
   // Ensure transaction data is available even if join is not returned by Supabase
   const [transaction, setTransaction] = useState<any>(dispute.transactions);
+
+  // Load admin notes from separate table
+  useEffect(() => {
+    const loadAdminNotes = async () => {
+      const { data } = await supabase
+        .from('admin_dispute_notes')
+        .select('notes')
+        .eq('dispute_id', dispute.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data?.notes) {
+        setLoadedNotes(data.notes);
+        setAdminNotes(data.notes);
+      }
+    };
+    loadAdminNotes();
+  }, [dispute.id]);
 
   useEffect(() => {
     const fetchTx = async () => {
@@ -247,9 +267,9 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             </div>
           </div>
           
-          {adminNotes && (
+          {loadedNotes && (
             <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg text-sm">
-              <strong>Notes admin:</strong> {adminNotes}
+              <strong>Notes admin:</strong> {loadedNotes}
             </div>
           )}
         </CardContent>
