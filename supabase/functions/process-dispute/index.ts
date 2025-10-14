@@ -177,7 +177,7 @@ serve(async (req) => {
         });
       }
 
-      newTransactionStatus = 'completed';
+      newTransactionStatus = 'validated';
       disputeStatus = 'resolved_release';
     } else {
       throw new Error("Invalid action. Must be 'refund' or 'release'");
