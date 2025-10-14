@@ -42,6 +42,18 @@ export const useDisputeMessages = (disputeId: string, options?: { scope?: 'parti
     mutationFn: async ({ message, messageType = 'text', recipientId = null }: { message: string; messageType?: string; recipientId?: string | null }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
+      // Check message limit (100 messages max per dispute to prevent spam/abuse)
+      const { count, error: countError } = await supabase
+        .from('dispute_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('dispute_id', disputeId);
+
+      if (countError) throw countError;
+      
+      if (count !== null && count >= 100) {
+        throw new Error('Limite de messages atteinte (100 max). Veuillez contacter le support.');
+      }
+
       const { data, error } = await supabase
         .from('dispute_messages')
         .insert({

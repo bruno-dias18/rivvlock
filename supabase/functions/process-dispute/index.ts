@@ -14,9 +14,14 @@ serve(async (req) => {
   }
 
   try {
-    const { disputeId, action, adminNotes } = await req.json(); // action: 'refund' or 'release'
+    const { disputeId, action, adminNotes, refundPercentage = 100 } = await req.json(); // action: 'refund' or 'release', refundPercentage: 0-100
     
-    logger.log("Processing dispute:", disputeId, "Action:", action);
+    // Validate refundPercentage
+    if (action === 'refund' && (refundPercentage < 0 || refundPercentage > 100)) {
+      throw new Error("refundPercentage must be between 0 and 100");
+    }
+    
+    logger.log("Processing dispute:", disputeId, "Action:", action, "Refund %:", refundPercentage);
 
     // Create user client for authentication
     const authHeader = req.headers.get("Authorization");
@@ -86,20 +91,68 @@ serve(async (req) => {
     const currency = String(transaction.currency).toLowerCase();
 
     if (action === 'refund') {
-      // Admin refund: 
-      // - If still authorized (requires_capture) -> cancel PI
-      // - If already captured (succeeded) -> create a full refund
+      // Admin refund with partial support
+      const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
+      const sellerAmount = totalAmount - refundAmount - platformFee;
+      
       if (paymentIntent.status === 'requires_capture') {
-        result = await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
-        logger.log(`✅ Authorization cancelled - ${(totalAmount / 100).toFixed(2)} ${transaction.currency} returned to buyer`);
+        // Cancel authorization and create partial payment if needed
+        await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+        logger.log(`✅ Authorization cancelled - ${(refundAmount / 100).toFixed(2)} ${transaction.currency} returned to buyer`);
+        
+        // If partial refund, we need to transfer the seller's share
+        if (refundPercentage < 100 && sellerAmount > 0) {
+          const { data: sellerAccount } = await adminClient
+            .from('stripe_accounts')
+            .select('stripe_account_id')
+            .eq('user_id', transaction.user_id)
+            .maybeSingle();
+
+          if (sellerAccount?.stripe_account_id) {
+            await stripe.transfers.create({
+              amount: sellerAmount,
+              currency,
+              destination: sellerAccount.stripe_account_id,
+              transfer_group: `txn_${transaction.id}`,
+              metadata: { dispute_id: dispute.id, type: 'partial_refund_seller_share', refund_percentage: refundPercentage }
+            });
+            logger.log(`💰 Partial refund: ${(sellerAmount / 100).toFixed(2)} ${transaction.currency} transferred to seller`);
+          }
+        }
       } else if (paymentIntent.status === 'succeeded') {
+        // Create refund for buyer
         await stripe.refunds.create({
           payment_intent: transaction.stripe_payment_intent_id,
-          amount: totalAmount,
+          amount: refundAmount,
           reason: 'requested_by_customer',
-          metadata: { dispute_id: dispute.id, admin_official: 'true', type: 'admin_full_refund' }
+          metadata: { 
+            dispute_id: dispute.id, 
+            admin_official: 'true', 
+            type: refundPercentage === 100 ? 'admin_full_refund' : 'admin_partial_refund',
+            refund_percentage: refundPercentage
+          }
         });
-        logger.log(`✅ Full refund created - ${(totalAmount / 100).toFixed(2)} ${transaction.currency}`);
+        logger.log(`✅ ${refundPercentage}% refund created - ${(refundAmount / 100).toFixed(2)} ${transaction.currency}`);
+        
+        // If partial refund, transfer seller's remaining share
+        if (refundPercentage < 100 && sellerAmount > 0) {
+          const { data: sellerAccount } = await adminClient
+            .from('stripe_accounts')
+            .select('stripe_account_id')
+            .eq('user_id', transaction.user_id)
+            .maybeSingle();
+
+          if (sellerAccount?.stripe_account_id) {
+            await stripe.transfers.create({
+              amount: sellerAmount,
+              currency,
+              destination: sellerAccount.stripe_account_id,
+              transfer_group: `txn_${transaction.id}`,
+              metadata: { dispute_id: dispute.id, type: 'partial_refund_seller_share', refund_percentage: refundPercentage }
+            });
+            logger.log(`💰 Partial refund: ${(sellerAmount / 100).toFixed(2)} ${transaction.currency} transferred to seller`);
+          }
+        }
       } else {
         throw new Error(`PaymentIntent not refundable in status: ${paymentIntent.status}`);
       }
@@ -183,9 +236,10 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
 
-    // Add refund status for full refund
+    // Add refund status based on percentage
     if (action === 'refund') {
-      transactionUpdate.refund_status = 'full';
+      transactionUpdate.refund_status = refundPercentage === 100 ? 'full' : 'partial';
+      transactionUpdate.refund_amount = Math.round((transaction.price * refundPercentage) / 100);
     }
 
     const { error: transactionUpdateError } = await adminClient
