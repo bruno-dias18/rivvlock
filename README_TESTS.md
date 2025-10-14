@@ -1,5 +1,7 @@
 # 🧪 Tests & Monitoring - RivvLock
 
+> **📊 Monitoring détaillé**: Voir [MONITORING.md](./MONITORING.md) pour la configuration Sentry et l'observabilité complète.
+
 ## Tests Unitaires (Vitest)
 
 ### Installation déjà faite ✅

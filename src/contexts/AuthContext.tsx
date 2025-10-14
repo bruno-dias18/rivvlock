@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { setUser as setSentryUser } from '@/lib/sentry';
 
 interface AuthContextType {
   user: User | null;
@@ -33,6 +34,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           logger.info('Auth state changed:', event);
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Update Sentry user context for error tracking
+          if (session?.user) {
+            setSentryUser({ id: session.user.id, email: session.user.email });
+          } else {
+            setSentryUser(null);
+          }
           
           // Always mark loading as false on auth state change
           setLoading(false);
@@ -135,6 +143,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // ALWAYS clear local state and storage, even if API fails
       logger.info('Clearing local session and storage');
+      
+      // Clear Sentry user context on logout
+      setSentryUser(null);
       
       // Clear Supabase storage keys
       localStorage.removeItem('supabase.auth.token');

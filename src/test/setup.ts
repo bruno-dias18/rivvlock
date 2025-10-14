@@ -2,6 +2,14 @@ import '@testing-library/jest-dom';
 import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
+// Mock Sentry before any imports
+vi.mock('@/lib/sentry', () => ({
+  initSentry: vi.fn(),
+  captureException: vi.fn(),
+  setUser: vi.fn(),
+  addBreadcrumb: vi.fn(),
+}));
+
 // Cleanup after each test
 afterEach(() => {
   cleanup();
