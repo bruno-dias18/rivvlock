@@ -183,11 +183,12 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         <Shield className="h-6 w-6 text-purple-600 flex-shrink-0 mt-0.5" />
         <div className="flex-1 space-y-3">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h4 className="font-semibold text-purple-900 dark:text-purple-100">
-                🔔 Proposition officielle de l'administration
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h4 className="font-semibold text-purple-900 dark:text-purple-100 min-w-0">
+                <span className="hidden sm:inline">🔔 Proposition officielle de l'administration</span>
+                <span className="sm:hidden">🔔 Proposition officielle</span>
               </h4>
-              <Badge className="bg-purple-600 text-white">En attente</Badge>
+              <Badge className="bg-purple-600 text-white flex-shrink-0">En attente</Badge>
             </div>
             <p className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-2">
               {proposalText}
@@ -229,12 +230,12 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
           </div>
 
           {/* Validation status */}
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
             <div className="flex items-center gap-1">
               {proposal.seller_validated ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
               ) : (
-                <Clock className="h-4 w-4 text-orange-600" />
+                <Clock className="h-4 w-4 text-orange-600 flex-shrink-0" />
               )}
               <span className={proposal.seller_validated ? "text-green-600 font-medium" : "text-muted-foreground"}>
                 Vendeur {proposal.seller_validated ? "a validé" : "en attente"}
@@ -242,9 +243,9 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
             </div>
             <div className="flex items-center gap-1">
               {proposal.buyer_validated ? (
-                <CheckCircle className="h-4 w-4 text-green-600" />
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
               ) : (
-                <Clock className="h-4 w-4 text-orange-600" />
+                <Clock className="h-4 w-4 text-orange-600 flex-shrink-0" />
               )}
               <span className={proposal.buyer_validated ? "text-green-600 font-medium" : "text-muted-foreground"}>
                 Acheteur {proposal.buyer_validated ? "a validé" : "en attente"}
@@ -263,15 +264,16 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
 
           {/* Action buttons for user */}
           {!hasUserValidated && (isSeller || isBuyer) && (
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
               <Button
                 size="sm"
                 onClick={() => handleValidation('accept')}
                 disabled={isValidating}
                 className="flex-1"
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
-                {isValidating ? "Validation..." : "Accepter la proposition"}
+                <CheckCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="hidden sm:inline">{isValidating ? "Validation..." : "Accepter la proposition"}</span>
+                <span className="sm:hidden">{isValidating ? "Validation..." : "Accepter"}</span>
               </Button>
               <Button
                 variant="outline"
@@ -280,7 +282,7 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
                 disabled={isValidating}
                 className="flex-1"
               >
-                <XCircle className="h-4 w-4 mr-2" />
+                <XCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 Refuser
               </Button>
             </div>
