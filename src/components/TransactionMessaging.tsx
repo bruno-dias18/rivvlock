@@ -80,24 +80,10 @@ export const TransactionMessaging = ({
     }
   }, [open, messages.length, markAsRead]);
 
-  // Close messaging when keyboard closes (with delay for browser compatibility)
+  // Track keyboard inset changes
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    // Safari-only auto-close when keyboard fully retracts
-    const wasOpen = previousKeyboardInsetRef.current >= 40;
-    const isClosedNow = keyboardInset === 0;
-    
-    if (open && wasOpen && isSafariiOS && isClosedNow) {
-      timeoutId = setTimeout(() => {
-        onOpenChange(false);
-      }, 150);
-    }
-
     previousKeyboardInsetRef.current = keyboardInset;
-
-    return () => clearTimeout(timeoutId);
-  }, [keyboardInset, open, onOpenChange, isSafariiOS]);
+  }, [keyboardInset]);
 
   // Tap-outside closer for non-Safari browsers (iOS Brave/Chrome/Firefox and Android)
   useEffect(() => {
@@ -273,16 +259,6 @@ export const TransactionMessaging = ({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               onFocus={() => setTimeout(ensureBottom, 100)}
-              onBlur={() => {
-                // Backup detection: if keyboard was open and textarea loses focus, close messaging
-                if (keyboardInset > 0 || previousKeyboardInsetRef.current > 0) {
-                  setTimeout(() => {
-                    if (document.activeElement !== textareaRef.current) {
-                      onOpenChange(false);
-                    }
-                  }, 200);
-                }
-              }}
               placeholder={t('transaction.messaging.placeholder', 'Écrivez votre message...')}
               className="flex-1 h-14 resize-none"
               rows={2}

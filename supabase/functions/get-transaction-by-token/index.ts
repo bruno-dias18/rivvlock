@@ -141,12 +141,11 @@ serve(async (req) => {
     let transaction: any = null;
     let transactionId: string | null = null;
 
-    // Try to find transaction by shared_link_token first
+    // Try to find transaction by shared_link_token first (any status)
     const { data: txByToken, error: tokenError } = await adminClient
       .from('transactions')
       .select('id')
       .eq('shared_link_token', token)
-      .eq('status', 'pending')
       .maybeSingle();
 
     if (txByToken) {
