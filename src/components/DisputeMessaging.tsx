@@ -89,6 +89,8 @@ export const DisputeMessaging: React.FC<DisputeMessagingProps> = ({
         disputeId={disputeId} 
         transactionId={transactionId}
         status={status}
+        open={true}
+        onOpenChange={() => {}}
       />
     );
   }

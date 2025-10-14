@@ -460,6 +460,8 @@ export const DisputeMessagingDialog: React.FC<DisputeMessagingDialogProps> = ({
                   disputeId={disputeId} 
                   transactionId={transactionIdForEscalated}
                   status={status}
+                  open={true}
+                  onOpenChange={() => {}}
                 />
               </div>
             ) : (
