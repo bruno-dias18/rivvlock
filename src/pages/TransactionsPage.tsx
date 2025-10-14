@@ -17,6 +17,7 @@ import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
 import { VirtualTransactionList } from '@/components/VirtualTransactionList';
 import { DisputeCard } from '@/components/DisputeCard';
+import { SkeletonLayouts } from '@/components/ui/skeleton';
 import { useDisputes } from '@/hooks/useDisputes';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { supabase } from '@/integrations/supabase/client';
@@ -709,9 +710,10 @@ export default function TransactionsPage() {
             </CardHeader>
             <CardContent>
               {isLoading && (
-                <div className="text-center py-8">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  <p className="mt-2 text-sm text-muted-foreground">{t('transactions.loading')}</p>
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <SkeletonLayouts.TransactionCard key={i} />
+                  ))}
                 </div>
               )}
 

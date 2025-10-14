@@ -23,7 +23,7 @@ export const useRealtimeActivityRefresh = () => {
       const now = Date.now();
       const lastInvalidation = lastInvalidationRef.current[key] || 0;
 
-      if (now - lastInvalidation > 1000) {
+      if (now - lastInvalidation > 2000) {
         lastInvalidationRef.current[key] = now;
         queryClient.invalidateQueries({ queryKey });
         logger.debug('Realtime: Invalidated cache', { queryKey });
