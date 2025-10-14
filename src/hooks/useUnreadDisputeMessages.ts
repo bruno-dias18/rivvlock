@@ -1,26 +1,30 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Dispute } from '@/types';
 
-export const useUnreadDisputeMessages = (disputeId: string) => {
+export const useUnreadDisputeMessages = (disputeId: string, dispute?: Dispute) => {
   const { user } = useAuth();
-
-  const getLastSeenTimestamp = (): string | null => {
-    if (!disputeId) return null;
-    return localStorage.getItem(`last_seen_dispute_${disputeId}`);
-  };
-
-  const markAsSeen = () => {
-    if (!disputeId) return;
-    localStorage.setItem(`last_seen_dispute_${disputeId}`, new Date().toISOString());
-  };
 
   const { data: unreadCount = 0, refetch } = useQuery({
     queryKey: ['unread-dispute-messages', disputeId, user?.id],
     queryFn: async () => {
       if (!user?.id || !disputeId) return 0;
 
-      const lastSeen = getLastSeenTimestamp();
+      // ✅ NOUVEAU: Si le dispute est résolu, retourner 0
+      if (dispute?.status && ['resolved_refund', 'resolved_release', 'resolved'].includes(dispute.status)) {
+        return 0;
+      }
+
+      // ✅ NOUVEAU: Récupérer last_seen_at depuis la DB au lieu de localStorage
+      const { data: readStatus } = await supabase
+        .from('dispute_message_reads')
+        .select('last_seen_at')
+        .eq('user_id', user.id)
+        .eq('dispute_id', disputeId)
+        .maybeSingle();
+
+      const lastSeen = readStatus?.last_seen_at;
 
       // Tous les messages où je suis destinataire OU broadcast (recipient_id null)
       let query = supabase
@@ -40,6 +44,14 @@ export const useUnreadDisputeMessages = (disputeId: string) => {
     enabled: !!user?.id && !!disputeId,
     refetchInterval: 30000,
   });
+
+  // ✅ DEPRECATED: markAsSeen conservé pour compatibilité mais recommandé d'utiliser useDisputeMessageReads
+  const markAsSeen = () => {
+    // Fallback localStorage pour compatibilité (sera supprimé après migration)
+    if (disputeId) {
+      localStorage.setItem(`last_seen_dispute_${disputeId}`, new Date().toISOString());
+    }
+  };
 
   return { unreadCount, markAsSeen, refetch };
 };
