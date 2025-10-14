@@ -62,7 +62,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.process-dispute]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-notifications]
 verify_jwt = false

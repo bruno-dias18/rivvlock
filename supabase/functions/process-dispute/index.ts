@@ -8,6 +8,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Production-safe logging for critical operations
+// Uses console.log directly (bypasses _shared/logger) to ensure visibility in production logs
+const logStep = (step: string, details?: any) => {
+  const timestamp = new Date().toISOString();
+  const detailsStr = details ? ` | ${JSON.stringify(details)}` : '';
+  console.log(`[PROCESS-DISPUTE ${timestamp}] ${step}${detailsStr}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,6 +23,7 @@ serve(async (req) => {
 
   try {
     const { disputeId, action, adminNotes, refundPercentage = 100 } = await req.json();
+    logStep("START", { disputeId, action });
     
     if (action === 'refund' && (refundPercentage < 0 || refundPercentage > 100)) {
       throw new Error("refundPercentage must be between 0 and 100");
@@ -27,6 +36,7 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    logStep("AUTH_HEADER_OK");
 
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -39,12 +49,14 @@ serve(async (req) => {
     if (userError || !user) {
       throw new Error("User not authenticated");
     }
+    logStep("USER_AUTHENTICATED", { userId: user.id });
 
     // Verify user is admin
     const { data: isAdmin, error: adminCheckError } = await userClient.rpc('is_admin', { check_user_id: user.id });
     if (adminCheckError || !isAdmin) {
       throw new Error("Unauthorized: Admin access required");
     }
+    logStep("ADMIN_VERIFIED");
 
     // Create admin client for database operations
     const adminClient = createClient(
@@ -68,6 +80,7 @@ serve(async (req) => {
     }
 
     const transaction = dispute.transactions;
+    logStep("DISPUTE_LOADED", { disputeId, transactionId: transaction.id, piId: transaction.stripe_payment_intent_id });
     if (!transaction.stripe_payment_intent_id) {
       throw new Error("No payment intent found for this transaction");
     }
@@ -162,6 +175,7 @@ serve(async (req) => {
 
       if (paymentIntent.status === 'requires_capture') {
         await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
+        logStep("STRIPE_CAPTURE_OK");
       } else if (paymentIntent.status !== 'succeeded') {
         throw new Error(`PaymentIntent not capturable in status: ${paymentIntent.status}`);
       }
@@ -175,6 +189,7 @@ serve(async (req) => {
           transfer_group: `txn_${transaction.id}`,
           metadata: { dispute_id: dispute.id, type: 'admin_release_transfer' }
         });
+        logStep("STRIPE_TRANSFER_OK", { amount: transferAmount, destination: sellerAccount.stripe_account_id });
       }
 
       newTransactionStatus = 'validated';
@@ -202,6 +217,7 @@ serve(async (req) => {
       logger.error("Error updating dispute:", disputeUpdateError);
       throw disputeUpdateError;
     }
+    logStep("DISPUTE_UPDATE_OK", { newStatus: disputeStatus });
 
     // Save admin notes in separate table if provided
     if (adminNotes) {
@@ -223,6 +239,7 @@ serve(async (req) => {
     const transactionUpdate: any = {
       status: newTransactionStatus,
       funds_released: action === 'release',
+      funds_released_at: action === 'release' ? new Date().toISOString() : null,
       updated_at: new Date().toISOString()
     };
 
@@ -241,7 +258,9 @@ serve(async (req) => {
       logger.error("Error updating transaction:", transactionUpdateError);
       throw transactionUpdateError;
     }
+    logStep("TRANSACTION_UPDATE_OK", { newStatus: newTransactionStatus });
 
+    logStep("SUCCESS", { action, disputeStatus, transactionStatus: newTransactionStatus });
     return new Response(JSON.stringify({
       success: true,
       action: action,
@@ -255,7 +274,12 @@ serve(async (req) => {
   } catch (error) {
     logger.error("Error processing dispute:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    logStep("ERROR", { error: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: "Check Edge Function logs for full trace"
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
