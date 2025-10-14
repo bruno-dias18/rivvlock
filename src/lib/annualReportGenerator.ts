@@ -305,13 +305,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 7, 'F');
   
   doc.text(cols.date, margin + 2, yPosition);
-  doc.text(cols.invoice, margin + 28, yPosition);
-  doc.text(cols.client, margin + 60, yPosition);
-  doc.text(cols.amountHT, margin + 100, yPosition, { align: 'right' });
-  doc.text(cols.vat, margin + 120, yPosition, { align: 'right' });
-  doc.text(cols.amountTTC, margin + 143, yPosition, { align: 'right' });
-  doc.text(cols.fees, margin + 162, yPosition, { align: 'right' });
-  doc.text(cols.net, margin + 180, yPosition, { align: 'right' });
+  doc.text(cols.invoice, margin + 26, yPosition);
+  doc.text(cols.client, margin + 70, yPosition);
+  doc.text(cols.amountHT, margin + 110, yPosition, { align: 'right' });
+  doc.text(cols.vat, margin + 130, yPosition, { align: 'right' });
+  doc.text(cols.amountTTC, margin + 153, yPosition, { align: 'right' });
+  doc.text(cols.fees, margin + 172, yPosition, { align: 'right' });
+  doc.text(cols.net, margin + 190, yPosition, { align: 'right' });
   
   yPosition += 5;
   
@@ -353,13 +353,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     }
     
     doc.text(date, margin + 2, yPosition);
-    doc.text(invoiceNum.substring(0, 12), margin + 28, yPosition);
-    doc.text(client.substring(0, 15), margin + 60, yPosition);
-    doc.text(amountHT.toFixed(2), margin + 100, yPosition, { align: 'right' });
-    doc.text(vatAmount.toFixed(2), margin + 120, yPosition, { align: 'right' });
-    doc.text(amountTTC.toFixed(2), margin + 143, yPosition, { align: 'right' });
-    doc.text(fee.toFixed(2), margin + 162, yPosition, { align: 'right' });
-    doc.text(net.toFixed(2), margin + 180, yPosition, { align: 'right' });
+    doc.text(invoiceNum, margin + 26, yPosition);
+    doc.text(client.substring(0, 20), margin + 70, yPosition);
+    doc.text(amountHT.toFixed(2), margin + 110, yPosition, { align: 'right' });
+    doc.text(vatAmount.toFixed(2), margin + 130, yPosition, { align: 'right' });
+    doc.text(amountTTC.toFixed(2), margin + 153, yPosition, { align: 'right' });
+    doc.text(fee.toFixed(2), margin + 172, yPosition, { align: 'right' });
+    doc.text(net.toFixed(2), margin + 190, yPosition, { align: 'right' });
     
     yPosition += 6;
   });
