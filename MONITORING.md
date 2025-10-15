@@ -5,14 +5,22 @@ RivvLock uses **Sentry** for production error tracking and performance monitorin
 
 ## Sentry Configuration
 
-### Setup
-1. Create a Sentry account: https://sentry.io
-2. Create a React project
-3. Copy your DSN
-4. Add to `.env`:
-   ```bash
-   VITE_SENTRY_DSN=https://your-dsn@sentry.io/your-project
-   ```
+### ✅ Active Configuration
+**Project**: RivvLock Production  
+**Region**: 🇪🇺 Germany (GDPR compliant)  
+**Dashboard**: https://rivvlcok.sentry.io/projects/rivvlock-production  
+
+Your Sentry DSN is already configured in `.env`:
+```bash
+VITE_SENTRY_DSN="https://840f4dc88bccc56a3c1a8ef02d7ec2f1@o4510193827184640.ingest.de.sentry.io/4510193842585680"
+```
+
+### Quick Links
+- 📊 [Performance Dashboard](https://rivvlcok.sentry.io/performance/)
+- 🐛 [Issues Dashboard](https://rivvlcok.sentry.io/issues/)
+- 🎬 [Session Replays](https://rivvlcok.sentry.io/replays/)
+- ⚙️ [Project Settings](https://rivvlcok.sentry.io/settings/projects/rivvlock-production/)
+- 🔔 [Alerts Configuration](https://rivvlcok.sentry.io/alerts/rules/)
 
 ### Features Enabled
 - **Error Tracking**: Automatic capture of unhandled errors
@@ -211,9 +219,43 @@ beforeSend(event) {
 - Adjust sample rates based on traffic
 - Use Sentry quotas to set hard limits
 
+## Next Steps After Deployment
+
+### 1. Verify Sentry Integration (2 min)
+After your next deployment:
+1. Visit your production app
+2. Trigger a test error: navigate to `/test-404`
+3. Check [Sentry Issues](https://rivvlcok.sentry.io/issues/) (~30 seconds delay)
+4. You should see the 404 error appear
+
+### 2. Configure Alerts (5 min)
+Recommended alerts to set up in [Alerts Dashboard](https://rivvlcok.sentry.io/alerts/rules/):
+
+**Critical Alert - High Error Rate:**
+- When: Error rate > 1%
+- Action: Email immediately
+- Why: Indicates a critical production issue
+
+**Performance Alert - Slow Response:**
+- When: P95 response time > 2 seconds
+- Action: Email daily digest
+- Why: User experience degradation
+
+**New Issue Alert:**
+- When: New error type appears
+- Action: Email within 1 hour
+- Why: Catch regressions quickly
+
+### 3. Monitor Key Metrics
+Check these dashboards weekly:
+- **Performance**: Track P50/P95 response times
+- **Errors**: Review error frequency and patterns
+- **Replays**: Watch user sessions that encountered errors
+
 ## Links
 
-- [Sentry Dashboard](https://sentry.io)
-- [Sentry React Docs](https://docs.sentry.io/platforms/javascript/guides/react/)
-- [Session Replay Guide](https://docs.sentry.io/product/session-replay/)
-- [Performance Monitoring](https://docs.sentry.io/product/performance/)
+- 🏠 [Your Sentry Dashboard](https://rivvlcok.sentry.io/)
+- 📊 [RivvLock Project](https://rivvlcok.sentry.io/projects/rivvlock-production/)
+- 📚 [Sentry React Docs](https://docs.sentry.io/platforms/javascript/guides/react/)
+- 🎬 [Session Replay Guide](https://docs.sentry.io/product/session-replay/)
+- ⚡ [Performance Monitoring](https://docs.sentry.io/product/performance/)
