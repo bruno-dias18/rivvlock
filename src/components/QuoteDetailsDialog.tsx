@@ -5,9 +5,10 @@ import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Mail, MessageSquare } from 'lucide-react';
+import { Mail, MessageSquare, Check } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface Props {
   quote: Quote | null;
@@ -28,8 +29,9 @@ const statusConfig = {
 };
 
 export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging, onEdit, userRole }: Props) => {
-  const { resendEmail } = useQuotes();
+  const { resendEmail, acceptQuote } = useQuotes();
   const [isResending, setIsResending] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   if (!quote) return null;
 
@@ -49,6 +51,18 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
       console.error('Error resending email:', error);
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleAcceptQuote = async () => {
+    try {
+      setIsAccepting(true);
+      await acceptQuote(quote.id);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error accepting quote:', error);
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -224,6 +238,18 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
           {/* Client Actions */}
           {userRole === 'client' && (
             <div className="flex gap-2">
+              {quote.status === 'pending' && new Date(quote.valid_until) > new Date() && (
+                <Button 
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleAcceptQuote}
+                  disabled={isAccepting}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {isAccepting ? 'Acceptation...' : 'Accepter le devis'}
+                </Button>
+              )}
+              
               {onOpenMessaging && (
                 <Button 
                   variant="outline" 

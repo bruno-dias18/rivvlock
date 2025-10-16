@@ -109,6 +109,26 @@ export const useQuotes = () => {
     }
   });
 
+  const acceptQuote = useMutation({
+    mutationFn: async (quoteId: string) => {
+      const { data, error } = await supabase.functions.invoke('accept-quote', {
+        body: { quoteId }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Devis accepté avec succès !');
+    },
+    onError: (error) => {
+      console.error('Error accepting quote:', error);
+      toast.error('Erreur lors de l\'acceptation du devis');
+    }
+  });
+
   return {
     quotes,
     sentQuotes,
@@ -117,6 +137,7 @@ export const useQuotes = () => {
     error,
     archiveQuote: archiveQuote.mutateAsync,
     resendEmail: resendEmail.mutateAsync,
-    updateQuote: updateQuote.mutateAsync
+    updateQuote: updateQuote.mutateAsync,
+    acceptQuote: acceptQuote.mutateAsync
   };
 };
