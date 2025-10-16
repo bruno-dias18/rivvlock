@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
 import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -64,12 +64,12 @@ export const QuotesPage = () => {
 
   return (
     <DashboardLayoutWithSidebar>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Mes Devis</h1>
-          <Button onClick={() => setCreateDialogOpen(true)}>
+      <div className={isMobile ? "space-y-4 pb-20" : "space-y-6"}>
+        <div className={`flex justify-between items-center ${isMobile ? 'gap-2' : ''}`}>
+          <h1 className={isMobile ? "text-2xl font-bold" : "text-3xl font-bold"}>Mes Devis</h1>
+          <Button onClick={() => setCreateDialogOpen(true)} size={isMobile ? "sm" : "default"}>
             <Plus className="h-4 w-4 mr-2" />
-            Créer un devis
+            {isMobile ? "Créer" : "Créer un devis"}
           </Button>
         </div>
 
@@ -89,11 +89,14 @@ export const QuotesPage = () => {
               </SelectContent>
             </Select>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {isLoading ? (
-                <p>Chargement...</p>
+                <p className="text-center py-4">Chargement...</p>
               ) : filteredQuotes.length === 0 ? (
-                <p className="text-muted-foreground">Aucun devis dans cette catégorie</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Aucun devis dans cette catégorie</p>
+                </div>
               ) : (
                 filteredQuotes.map(quote => (
                   <QuoteCard
