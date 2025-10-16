@@ -123,6 +123,11 @@ export const QuoteViewPage = () => {
       return;
     }
 
+    if (!quoteId || !token) {
+      toast.error('Informations du devis manquantes');
+      return;
+    }
+
     // Vérifier l'email AVANT d'accepter
     if (user && quoteData?.client_email && user.email !== quoteData.client_email) {
       setEmailMismatchInfo({
@@ -136,7 +141,7 @@ export const QuoteViewPage = () => {
     try {
       // First attach the quote to the user if not already done
       try {
-        await attachQuote({ quoteId: quoteId!, token: token! });
+        await attachQuote({ quoteId, token });
       } catch (err: any) {
         // Check for email mismatch - block acceptance
         if (err.error === 'email_mismatch' || err.message?.includes('email_mismatch')) {
@@ -149,19 +154,24 @@ export const QuoteViewPage = () => {
         // For other errors, continue (might be "already attached")
       }
       
+      console.log('[QuoteViewPage] Accepting quote:', { quoteId, token });
+      
       const { data, error } = await supabase.functions.invoke('accept-quote', {
         body: { quoteId, token }
       });
 
+      console.log('[QuoteViewPage] Accept quote response:', { data, error });
+
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success('Devis accepté avec succès ! Redirection vers la transaction...');
       setTimeout(() => {
         navigate('/transactions');
       }, 1500);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error accepting quote:', err);
-      toast.error('Erreur lors de l\'acceptation du devis');
+      toast.error(err.message || 'Erreur lors de l\'acceptation du devis');
     } finally {
       setIsAccepting(false);
     }

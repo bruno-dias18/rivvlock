@@ -34,11 +34,17 @@ serve(async (req) => {
       console.log('[accept-quote] Authenticated user ID:', authenticatedUserId);
     }
 
-    const { quoteId, token } = await req.json();
+    const body = await req.json();
+    console.log('[accept-quote] Received body:', body);
+    
+    const { quoteId, token } = body;
 
     if (!quoteId || !token) {
+      console.error('[accept-quote] Missing parameters:', { quoteId, token });
       throw new Error('Missing quoteId or token');
     }
+    
+    console.log('[accept-quote] Processing quote:', quoteId);
 
     // Récupérer le devis
     const { data: quote, error: quoteError } = await supabaseAdmin
