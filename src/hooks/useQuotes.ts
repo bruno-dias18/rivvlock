@@ -50,10 +50,29 @@ export const useQuotes = () => {
     }
   });
 
+  const resendEmail = useMutation({
+    mutationFn: async (quoteId: string) => {
+      const { data, error } = await supabase.functions.invoke('resend-quote-email', {
+        body: { quote_id: quoteId }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Email renvoyé avec succès à ${data.client_email}`);
+    },
+    onError: (error) => {
+      console.error('Error resending quote email:', error);
+      toast.error('Erreur lors de l\'envoi de l\'email');
+    }
+  });
+
   return {
     quotes,
     isLoading,
     error,
-    archiveQuote: archiveQuote.mutateAsync
+    archiveQuote: archiveQuote.mutateAsync,
+    resendEmail: resendEmail.mutateAsync
   };
 };

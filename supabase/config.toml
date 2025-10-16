@@ -172,6 +172,12 @@ verify_jwt = false
 [functions.send-payment-reminders]
 verify_jwt = false
 
+[functions.create-quote]
+verify_jwt = true
+
+[functions.resend-quote-email]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

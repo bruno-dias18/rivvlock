@@ -5,7 +5,9 @@ import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
+import { Mail } from 'lucide-react';
+import { useQuotes } from '@/hooks/useQuotes';
+import { useState } from 'react';
 
 interface Props {
   quote: Quote | null;
@@ -23,6 +25,9 @@ const statusConfig = {
 };
 
 export const QuoteDetailsDialog = ({ quote, open, onOpenChange }: Props) => {
+  const { resendEmail } = useQuotes();
+  const [isResending, setIsResending] = useState(false);
+
   if (!quote) return null;
 
   const statusInfo = statusConfig[quote.status];
@@ -31,6 +36,17 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange }: Props) => {
 
   const copyLink = () => {
     navigator.clipboard.writeText(quoteLink);
+  };
+
+  const handleResendEmail = async () => {
+    try {
+      setIsResending(true);
+      await resendEmail(quote.id);
+    } catch (error) {
+      console.error('Error resending email:', error);
+    } finally {
+      setIsResending(false);
+    }
   };
 
   return (
@@ -153,10 +169,13 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange }: Props) => {
               <Button variant="outline" onClick={copyLink}>
                 Copier
               </Button>
-              <Button variant="outline" size="icon" asChild>
-                <a href={quoteLink} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
+              <Button 
+                variant="default" 
+                onClick={handleResendEmail}
+                disabled={isResending}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {isResending ? 'Envoi...' : 'Renvoyer le mail'}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
