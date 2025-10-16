@@ -15,7 +15,7 @@ import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotificatio
 import { useAdminAnalytics, type AnalyticsPeriod } from '@/hooks/useAdminAnalytics';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
@@ -119,7 +119,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">{t('navigation.admin')}</h1>
@@ -513,6 +513,6 @@ export default function AdminPage() {
         </div>
       </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useActivityHistory } from '@/hooks/useActivityHistory';
@@ -131,7 +131,7 @@ export default function ActivityHistoryPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
         {/* Header */}
         <div className={`${isMobile ? 'space-y-4' : 'flex items-center justify-between'}`}>
@@ -236,6 +236,6 @@ export default function ActivityHistoryPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

@@ -226,6 +226,7 @@
   "navigation": {
     "home": "Startseite",
     "transactions": "Transaktionen",
+    "quotes": "Angebote",
     "reports": "Berichte",
     "profile": "Profil",
     "admin": "Admin"

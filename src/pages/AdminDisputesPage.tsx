@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { AdminDisputeCard } from '@/components/AdminDisputeCard';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
@@ -46,7 +46,7 @@ export default function AdminDisputesPage() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
@@ -276,6 +276,6 @@ export default function AdminDisputesPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

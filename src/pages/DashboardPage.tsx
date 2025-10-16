@@ -16,7 +16,7 @@ import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useTranslation } from 'react-i18next';
@@ -140,7 +140,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <DashboardLayout onSyncPayments={handleSyncPayments}>
+    <DashboardLayoutWithSidebar onSyncPayments={handleSyncPayments}>
       <div className={isMobile ? "space-y-4" : "space-y-6"}>
         <div className="flex justify-between items-center">
           <h1 className={`font-bold text-foreground ${isMobile ? "text-2xl" : "text-3xl"}`}>
@@ -247,6 +247,6 @@ export default function DashboardPage() {
         open={isNewTransactionOpen}
         onOpenChange={setIsNewTransactionOpen}
       />
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

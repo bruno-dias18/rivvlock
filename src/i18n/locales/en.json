@@ -227,6 +227,7 @@
   "navigation": {
     "home": "Home",
     "transactions": "Transactions",
+    "quotes": "Quotes",
     "reports": "Reports",
     "profile": "Profile",
     "admin": "Admin"

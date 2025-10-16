@@ -152,18 +152,6 @@ All colors MUST be HSL. Color palette: #F7F7F7 (background), #007BFF (primary bl
     box-shadow: 0 4px 12px -2px rgba(40, 167, 69, 0.15);
   }
 
-  /* PWA Styles */
-  .bottom-tab-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background: hsl(var(--card));
-    border-top: 1px solid hsl(var(--border));
-    backdrop-filter: blur(20px);
-  }
-
   /* Animations */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-in-out;
@@ -181,5 +169,24 @@ All colors MUST be HSL. Color palette: #F7F7F7 (background), #007BFF (primary bl
   @keyframes scaleIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
+  }
+
+  /* PWA bottom tab bar styling */
+  .bottom-tab-bar {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+  }
+
+  /* Sidebar responsive breakpoints */
+  @media (min-width: 768px) {
+    .bottom-tab-bar {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    /* Force sidebar to be hidden on mobile */
+    [data-sidebar="sidebar"][data-mobile="false"] {
+      display: none;
+    }
   }
 }

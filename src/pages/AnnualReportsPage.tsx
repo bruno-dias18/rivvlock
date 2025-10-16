@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -127,7 +127,7 @@ export default function AnnualReportsPage() {
   };
   
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{t('reports.title')}</h1>
@@ -251,6 +251,6 @@ export default function AnnualReportsPage() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

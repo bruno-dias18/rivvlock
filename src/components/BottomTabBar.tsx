@@ -1,7 +1,6 @@
-import { useLocation } from 'react-router-dom';
+import { Home, CreditCard, FileText, FileSignature, User, Users } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Users, FileText } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +15,11 @@ const navigationItems = [
     title: 'navigation.transactions', 
     url: '/dashboard/transactions',
     icon: CreditCard,
+  },
+  {
+    title: 'navigation.quotes',
+    url: '/dashboard/quotes',
+    icon: FileSignature,
   },
   {
     title: 'navigation.reports',

@@ -80,11 +80,17 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">R</span>
-          </div>
+          <img 
+            src="/assets/rivvlock-logo-icon.png" 
+            alt="RIVVLOCK Icon" 
+            className="h-8 w-8 object-contain"
+          />
           {state === 'expanded' && (
-            <span className="font-bold text-foreground">RIVVLOCK</span>
+            <img 
+              src="/assets/rivvlock-logo-text.png" 
+              alt="RIVVLOCK" 
+              className="h-4 w-auto object-contain"
+            />
           )}
         </div>
       </SidebarHeader>

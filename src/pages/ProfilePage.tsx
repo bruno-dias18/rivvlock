@@ -14,7 +14,7 @@ import { Edit, Trash2, FileText, Mail, ExternalLink, Download } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
@@ -104,7 +104,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
@@ -427,6 +427,6 @@ export default function ProfilePage() {
         onOpenChange={setIsDeleteDialogOpen}
       />
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

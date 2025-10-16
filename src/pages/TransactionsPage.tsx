@@ -33,7 +33,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
 import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
 import { shareOrCopy } from '@/lib/copyUtils';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { SortButtons } from '@/components/SortButtons';
 import { logger } from '@/lib/logger';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
@@ -529,7 +529,7 @@ export default function TransactionsPage() {
 
 
   return (
-    <DashboardLayout onSyncPayments={handleSyncPayments}>
+    <DashboardLayoutWithSidebar onSyncPayments={handleSyncPayments}>
       <div className="space-y-6">
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>{t('transactions.title')}</h1>
@@ -995,6 +995,6 @@ export default function TransactionsPage() {
         onDisputeCreated={() => refetch()}
       />
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 }

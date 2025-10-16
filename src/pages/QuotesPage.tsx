@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import { useTranslation } from 'react-i18next';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -23,7 +24,7 @@ const QuotesPage = () => {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayoutWithSidebar>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Mes Devis</h1>
@@ -69,7 +70,7 @@ const QuotesPage = () => {
           }}
         />
       </div>
-    </DashboardLayout>
+    </DashboardLayoutWithSidebar>
   );
 };
 
