@@ -27,9 +27,9 @@ export const useRealtimeActivityRefresh = () => {
         lastInvalidationRef.current[key] = now;
         // ✅ Étape 1: Refetch pour mettre à jour le cache (même queries inactives)
         queryClient.refetchQueries({ queryKey, type: 'all' });
-        // ✅ Étape 2: Invalidate pour forcer le re-render des composants actifs
-        queryClient.invalidateQueries({ queryKey });
-        logger.debug('Realtime: Refetched + invalidated cache', { queryKey });
+        // ✅ Étape 2: Reset pour forcer IMMÉDIATEMENT le re-render (ignore staleTime)
+        queryClient.resetQueries({ queryKey });
+        logger.debug('Realtime: Refetched + reset cache', { queryKey });
       }
     };
 
