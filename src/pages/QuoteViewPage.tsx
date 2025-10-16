@@ -5,22 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ArrowLeft, MessageSquare, Check } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Check, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
 import { toast } from 'sonner';
 import { useAttachQuote } from '@/hooks/useAttachQuote';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 interface QuoteItem {
   description: string;
@@ -103,6 +96,15 @@ export const QuoteViewPage = () => {
         setError(data?.error || 'Erreur lors de la récupération du devis');
       } else if (data.quote) {
         setQuoteData(data.quote);
+        
+        // Vérifier si l'utilisateur est connecté avec le bon email
+        if (user && data.quote.client_email && user.email !== data.quote.client_email) {
+          console.log('[QuoteViewPage] Email mismatch detected on page load');
+          setEmailMismatchInfo({
+            clientEmail: data.quote.client_email,
+            message: `Ce devis a été envoyé à ${data.quote.client_email}. Veuillez vous connecter avec cette adresse.`
+          });
+        }
       } else {
         setError('Données du devis manquantes');
       }
@@ -119,6 +121,15 @@ export const QuoteViewPage = () => {
       toast.error('Vous devez être connecté pour accepter un devis');
       navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
       return;
+    }
+
+    // Vérifier l'email AVANT d'accepter
+    if (user && quoteData?.client_email && user.email !== quoteData.client_email) {
+      setEmailMismatchInfo({
+        clientEmail: quoteData.client_email,
+        message: `Ce devis a été envoyé à ${quoteData.client_email}. Veuillez vous connecter avec cette adresse.`
+      });
+      return; // Bloquer l'acceptation
     }
 
     setIsAccepting(true);
@@ -162,13 +173,22 @@ export const QuoteViewPage = () => {
       navigate(`/auth?redirect=/quote/${quoteId}/${token}&openMessage=true`);
       return;
     }
+
+    // Vérifier l'email AVANT d'ouvrir le Dialog
+    if (user && quoteData?.client_email && user.email !== quoteData.client_email) {
+      setEmailMismatchInfo({
+        clientEmail: quoteData.client_email,
+        message: `Ce devis a été envoyé à ${quoteData.client_email}. Veuillez vous connecter avec cette adresse.`
+      });
+      return; // Bloquer l'ouverture
+    }
     
     // Try to attach the quote first if not already done
     if (token) {
       try {
         await attachQuote({ quoteId: quoteId!, token });
       } catch (err: any) {
-        // Check for email mismatch - block messaging
+        // Check for email mismatch - block messaging (fallback)
         if (err.error === 'email_mismatch' || err.message?.includes('email_mismatch')) {
           setEmailMismatchInfo({
             clientEmail: err.client_email || quoteData?.client_email || '',
@@ -218,48 +238,44 @@ export const QuoteViewPage = () => {
 
   const statusInfo = statusConfig[quoteData.status] || statusConfig.pending;
   const isExpired = quoteData.status === 'expired' || new Date(quoteData.valid_until) < new Date();
+  const isEmailMismatch = !!emailMismatchInfo;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Email Mismatch Alert Dialog */}
-      {emailMismatchInfo && (
-        <AlertDialog open={!!emailMismatchInfo} onOpenChange={() => setEmailMismatchInfo(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>⚠️ Adresse email différente</AlertDialogTitle>
-              <AlertDialogDescription className="space-y-3">
-                <p>Ce devis a été envoyé à :</p>
-                <p className="font-semibold text-foreground">{emailMismatchInfo.clientEmail}</p>
-                <p>Vous êtes actuellement connecté avec :</p>
-                <p className="font-semibold text-foreground">{user?.email}</p>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Pour accepter ou discuter de ce devis, veuillez vous déconnecter et vous reconnecter avec l'adresse email destinataire.
-                </p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-              <AlertDialogAction
-                onClick={() => {
-                  setEmailMismatchInfo(null);
-                  supabase.auth.signOut();
-                  navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
-                }}
-                className="w-full sm:w-auto"
-              >
-                Se déconnecter et reconnecter
-              </AlertDialogAction>
-              <AlertDialogAction
-                onClick={() => setEmailMismatchInfo(null)}
-                className="w-full sm:w-auto bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              >
-                Fermer
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
+    <TooltipProvider>
+      <div className="min-h-screen bg-background">
+        {/* Email Mismatch Warning Banner */}
+        {emailMismatchInfo && (
+          <div className="bg-warning/10 border-b border-warning">
+            <div className="container mx-auto p-4 max-w-4xl">
+              <Alert variant="destructive" className="border-warning bg-warning/20">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                <AlertTitle className="text-foreground">⚠️ Attention : Adresse email différente</AlertTitle>
+                <AlertDescription className="space-y-3 text-foreground/90">
+                  <div className="space-y-2">
+                    <p>Ce devis a été envoyé à : <strong>{emailMismatchInfo.clientEmail}</strong></p>
+                    <p>Vous êtes connecté avec : <strong>{user?.email}</strong></p>
+                  </div>
+                  <p className="text-sm">
+                    Pour accepter ou discuter de ce devis, veuillez vous reconnecter avec l'adresse email destinataire.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      supabase.auth.signOut();
+                      navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
+                    }}
+                    variant="default"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Se reconnecter avec le bon compte
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          </div>
+        )}
 
-      <div className="container mx-auto p-6 max-w-4xl">
+        <div className="container mx-auto p-6 max-w-4xl">
         <Button
           variant="ghost"
           onClick={() => navigate('/')}
@@ -380,24 +396,48 @@ export const QuoteViewPage = () => {
               <>
                 <Separator />
                 <div className="flex gap-3 flex-col sm:flex-row">
-                  <Button 
-                    className="flex-1"
-                    size="lg"
-                    onClick={handleAcceptQuote}
-                    disabled={isAccepting}
-                  >
-                    <Check className="mr-2 h-4 w-4" />
-                    {isAccepting ? 'Acceptation...' : 'Accepter le devis'}
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    className="flex-1"
-                    size="lg"
-                    onClick={handleOpenMessaging}
-                  >
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Poser une question
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex-1">
+                        <Button 
+                          className="w-full"
+                          size="lg"
+                          onClick={handleAcceptQuote}
+                          disabled={isAccepting || isEmailMismatch}
+                        >
+                          <Check className="mr-2 h-4 w-4" />
+                          {isAccepting ? 'Acceptation...' : 'Accepter le devis'}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {isEmailMismatch && (
+                      <TooltipContent>
+                        <p>Connectez-vous avec {emailMismatchInfo.clientEmail} pour accepter ce devis</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex-1">
+                        <Button 
+                          variant="outline"
+                          className="w-full"
+                          size="lg"
+                          onClick={handleOpenMessaging}
+                          disabled={isEmailMismatch}
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Poser une question
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {isEmailMismatch && (
+                      <TooltipContent>
+                        <p>Connectez-vous avec {emailMismatchInfo.clientEmail} pour discuter de ce devis</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
                 </div>
               </>
             )}
@@ -415,7 +455,8 @@ export const QuoteViewPage = () => {
           />
         )}
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 };
 
