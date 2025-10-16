@@ -2,13 +2,13 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, MessageSquare } from 'lucide-react';
+import { Send, MessageSquare, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@/components/ui/dialog';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { logger } from '@/lib/logger';
@@ -132,13 +132,23 @@ export const UnifiedMessaging = ({
         className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
         style={{ height: getDialogHeight() }}
       >
-        <DialogHeader className="sticky top-0 z-10 bg-background p-4 border-b shrink-0">
+        <DialogHeader className="sticky top-0 z-20 bg-background p-4 border-b shrink-0 relative">
           <DialogTitle>
             {title || (otherParticipantName 
               ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
               : t('conversation.title', 'Messagerie')
             )}
           </DialogTitle>
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2"
+              aria-label={t('common.close', 'Fermer')}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </DialogClose>
         </DialogHeader>
 
         <div 
