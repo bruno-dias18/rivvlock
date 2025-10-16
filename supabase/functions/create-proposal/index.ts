@@ -122,7 +122,7 @@ serve(async (req) => {
         dispute_id: disputeId,
         sender_id: user.id,
         message: proposalText + (message ? `\n${message}` : ''),
-        message_type: 'proposal',
+        message_type: 'system',
       });
 
     // Log activity for all other participants

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -149,25 +149,33 @@ export const UnifiedMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
-  const isProposalMessage = (message: string) => {
-    return message.includes('Proposition') || 
-           message.includes('proposition') || 
-           message.includes('Remboursement') ||
-           message.includes('remboursement');
-  };
-
-  const extractProposalId = async (messageText: string, messageCreatedAt: string) => {
-    if (!disputeId) return null;
+  // Map messages to their corresponding proposals using useMemo
+  const messageToProposal = useMemo(() => {
+    if (!disputeId || !proposals || proposals.length === 0) return new Map();
     
-    const proposal = proposals?.find(p => {
-      const proposalTime = new Date(p.created_at).getTime();
-      const messageTime = new Date(messageCreatedAt).getTime();
-      const timeDiff = Math.abs(proposalTime - messageTime);
-      return timeDiff < 5000; // 5 seconds tolerance
+    const map = new Map();
+    messages.forEach(message => {
+      // Check if it's a proposal message (system message with "Proposition officielle")
+      const isProposalMsg = message.message_type === 'system' && 
+        message.message.includes('Proposition officielle');
+      
+      if (isProposalMsg) {
+        // Find matching proposal by timestamp (within 10 seconds tolerance)
+        const messageTime = new Date(message.created_at).getTime();
+        const matchingProposal = proposals.find(p => {
+          const proposalTime = new Date(p.created_at).getTime();
+          const timeDiff = Math.abs(proposalTime - messageTime);
+          return timeDiff < 10000; // 10 seconds tolerance
+        });
+        
+        if (matchingProposal) {
+          map.set(message.id, matchingProposal);
+        }
+      }
     });
     
-    return proposal || null;
-  };
+    return map;
+  }, [disputeId, proposals, messages]);
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
@@ -245,14 +253,8 @@ export const UnifiedMessaging = ({
           ) : (
             <div className="space-y-4">
               {messages.map((message) => {
-                const isProposal = message.message_type === 'system' && isProposalMessage(message.message);
-                const [proposalData, setProposalData] = useState<any>(null);
-
-                useEffect(() => {
-                  if (isProposal && disputeId) {
-                    extractProposalId(message.message, message.created_at).then(setProposalData);
-                  }
-                }, [isProposal, message.message, message.created_at]);
+                const proposalData = messageToProposal.get(message.id);
+                const isProposal = !!proposalData;
 
                 return (
                   <div
