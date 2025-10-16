@@ -29,7 +29,7 @@ export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutPro
           <img 
             src="/assets/rivvlock-logo-text.png" 
             alt="RIVVLOCK" 
-            className="h-6 w-auto object-contain"
+            className="h-4 w-auto object-contain"
           />
         </div>
         
