@@ -12,6 +12,8 @@ import { Quote, QuoteStatus } from '@/types/quotes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { Badge } from '@/components/ui/badge';
+import { useUnreadQuoteTabCounts } from '@/hooks/useUnreadQuoteTabCounts';
 
 export const QuotesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +25,7 @@ export const QuotesPage = () => {
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
   const { sentQuotes, receivedQuotes, isLoading, archiveQuote } = useQuotes();
   const isMobile = useIsMobile();
+  const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(sentQuotes, receivedQuotes);
 
   // Handle openMessage query parameter
   useEffect(() => {
@@ -68,11 +71,21 @@ export const QuotesPage = () => {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="sent" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
-              Envoyés ({sentQuotes.length})
+              <span className="flex items-center gap-2">
+                Envoyés ({sentQuotes.length})
+                {sentUnread > 0 && (
+                  <Badge variant="destructive" className="h-5 px-1 text-[10px] leading-none">{sentUnread > 9 ? '9+' : sentUnread}</Badge>
+                )}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="received" className="flex items-center gap-2">
               <Inbox className="h-4 w-4" />
-              Reçus ({receivedQuotes.length})
+              <span className="flex items-center gap-2">
+                Reçus ({receivedQuotes.length})
+                {receivedUnread > 0 && (
+                  <Badge className="h-5 px-1 text-[10px] leading-none bg-purple-500 hover:bg-purple-600">{receivedUnread > 9 ? '9+' : receivedUnread}</Badge>
+                )}
+              </span>
             </TabsTrigger>
           </TabsList>
 

@@ -57,6 +57,7 @@ export { useInstallPrompt } from './useInstallPrompt';
 export { useQuotes } from './useQuotes';
 export { useQuoteMessages } from './useQuoteMessages';
 export { useUnreadQuoteMessages, useUnreadQuotesCount } from './useUnreadQuoteMessages';
+export { useUnreadQuoteTabCounts } from './useUnreadQuoteTabCounts';
 export { useAttachQuote } from './useAttachQuote';
 
 // Unified Conversation Hooks

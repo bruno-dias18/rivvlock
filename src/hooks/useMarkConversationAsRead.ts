@@ -19,6 +19,8 @@ export const useMarkConversationAsRead = () => {
     // Invalider les queries de comptage pour mettre à jour les badges
     queryClient.invalidateQueries({ queryKey: ['unread-conversation-messages', conversationId] });
     queryClient.invalidateQueries({ queryKey: ['unread-quotes-global'] });
+    queryClient.invalidateQueries({ queryKey: ['unread-quote-tabs'] });
+    queryClient.invalidateQueries({ queryKey: ['unread-transactions-global'] });
   }, [queryClient]);
 
   const getLastSeen = useCallback((conversationId: string): string | null => {
