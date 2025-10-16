@@ -5,7 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
-import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
 import { Badge } from '@/components/ui/badge';
 
 import {
