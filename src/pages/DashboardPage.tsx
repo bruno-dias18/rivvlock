@@ -219,12 +219,12 @@ export default function DashboardPage() {
                   className={`w-full justify-start h-auto ${isMobile ? "p-3" : "p-4"}`}
                   onClick={action.onClick}
                 >
-                  <action.icon className={`mr-3 ${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />
-                  <div className="text-left">
+                  <action.icon className={`mr-3 flex-shrink-0 ${isMobile ? "h-4 w-4" : "h-5 w-5"}`} />
+                  <div className="text-left flex-1 min-w-0">
                     <div className={`font-medium ${isMobile ? "text-sm" : ""}`}>
                       {action.label}
                     </div>
-                    <div className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"}`}>
+                    <div className={`text-muted-foreground ${isMobile ? "text-xs" : "text-sm"} truncate`}>
                       {action.description}
                     </div>
                   </div>
