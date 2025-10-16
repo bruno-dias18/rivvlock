@@ -96,6 +96,32 @@ serve(async (req) => {
 
     if (quoteError) throw quoteError;
 
+    // Create a conversation for this quote (unified messaging)
+    try {
+      const { data: conversation, error: convError } = await supabaseAdmin
+        .from('conversations')
+        .insert({
+          seller_id: userData.user.id,
+          buyer_id: null,
+          quote_id: quote.id,
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error('[create-quote] Error creating conversation:', convError);
+      } else if (conversation) {
+        // Link conversation back to quote
+        await supabaseAdmin
+          .from('quotes')
+          .update({ conversation_id: conversation.id })
+          .eq('id', quote.id);
+      }
+    } catch (convErr) {
+      console.error('[create-quote] Conversation creation error:', convErr);
+    }
+
     // Log activité
     await supabaseAdmin.from('activity_logs').insert({
       user_id: userData.user.id,

@@ -107,14 +107,64 @@ serve(async (req) => {
       })
       .eq('id', quoteId);
 
-    // Si pas de date, envoyer message automatique
-    if (!hasServiceDate) {
-      await supabaseAdmin.from('transaction_messages').insert({
-        transaction_id: transaction.id,
-        sender_id: quote.seller_id,
-        message: `📅 Merci d'avoir accepté le devis ! Le vendeur va vous proposer une date de prestation sous 48h.`,
-        message_type: 'text'
-      });
+    // Lier/Créer la conversation unifiée
+    try {
+      const { data: quoteConv } = await supabaseAdmin
+        .from('quotes')
+        .select('conversation_id')
+        .eq('id', quoteId)
+        .single();
+
+      let conversationId = quoteConv?.conversation_id as string | null;
+
+      if (!conversationId) {
+        // Créer la conversation si elle n'existe pas (compatibilité rétro)
+        const { data: conversation, error: convError } = await supabaseAdmin
+          .from('conversations')
+          .insert({
+            seller_id: quote.seller_id,
+            buyer_id: authenticatedUserId || null,
+            quote_id: quoteId,
+            transaction_id: transaction.id,
+            status: 'active'
+          })
+          .select()
+          .single();
+        if (!convError && conversation) {
+          conversationId = conversation.id;
+          await supabaseAdmin.from('quotes').update({ conversation_id: conversation.id }).eq('id', quoteId);
+        }
+      } else {
+        // Mettre à jour la conversation existante
+        await supabaseAdmin
+          .from('conversations')
+          .update({
+            buyer_id: authenticatedUserId || null,
+            transaction_id: transaction.id,
+          })
+          .eq('id', conversationId);
+      }
+
+      // Lier la transaction à la conversation
+      if (conversationId) {
+        await supabaseAdmin
+          .from('transactions')
+          .update({ conversation_id: conversationId })
+          .eq('id', transaction.id);
+
+        // Si pas de date, envoyer message automatique dans la conversation unifiée
+        if (!hasServiceDate) {
+          await supabaseAdmin.from('messages').insert({
+            conversation_id: conversationId,
+            sender_id: quote.seller_id,
+            message: '📅 Merci d\'avoir accepté le devis ! Le vendeur va vous proposer une date de prestation sous 48h.',
+            message_type: 'text'
+          });
+        }
+      }
+    } catch (convLinkErr) {
+      console.error('[accept-quote] Conversation link error:', convLinkErr);
+      // Ne pas faire échouer l'acceptation si la conversation échoue
     }
 
     // Log activité

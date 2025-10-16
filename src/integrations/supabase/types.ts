@@ -136,6 +136,64 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          buyer_id: string | null
+          created_at: string
+          dispute_id: string | null
+          id: string
+          quote_id: string | null
+          seller_id: string
+          status: string
+          transaction_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id?: string | null
+          created_at?: string
+          dispute_id?: string | null
+          id?: string
+          quote_id?: string | null
+          seller_id: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string | null
+          created_at?: string
+          dispute_id?: string | null
+          id?: string
+          quote_id?: string | null
+          seller_id?: string
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_dispute_id_fkey"
+            columns: ["dispute_id"]
+            isOneToOne: false
+            referencedRelation: "disputes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dispute_message_reads: {
         Row: {
           created_at: string
@@ -276,6 +334,7 @@ export type Database = {
           archived_by_buyer: boolean
           archived_by_seller: boolean
           buyer_archived_at: string | null
+          conversation_id: string | null
           created_at: string
           dispute_deadline: string | null
           dispute_type: string
@@ -294,6 +353,7 @@ export type Database = {
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           dispute_deadline?: string | null
           dispute_type?: string
@@ -312,6 +372,7 @@ export type Database = {
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null
+          conversation_id?: string | null
           created_at?: string
           dispute_deadline?: string | null
           dispute_type?: string
@@ -327,6 +388,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "disputes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "disputes_transaction_id_fkey"
             columns: ["transaction_id"]
@@ -427,6 +495,44 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "transaction_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          message_type: string
+          metadata: Json | null
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string
+          metadata?: Json | null
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -643,6 +749,7 @@ export type Database = {
           client_email: string
           client_name: string | null
           client_user_id: string | null
+          conversation_id: string | null
           converted_transaction_id: string | null
           created_at: string
           currency: string
@@ -668,6 +775,7 @@ export type Database = {
           client_email: string
           client_name?: string | null
           client_user_id?: string | null
+          conversation_id?: string | null
           converted_transaction_id?: string | null
           created_at?: string
           currency: string
@@ -693,6 +801,7 @@ export type Database = {
           client_email?: string
           client_name?: string | null
           client_user_id?: string | null
+          conversation_id?: string | null
           converted_transaction_id?: string | null
           created_at?: string
           currency?: string
@@ -715,6 +824,13 @@ export type Database = {
           valid_until?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "quotes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quotes_converted_transaction_id_fkey"
             columns: ["converted_transaction_id"]
@@ -957,6 +1073,7 @@ export type Database = {
           buyer_id: string | null
           buyer_validated: boolean | null
           client_email: string | null
+          conversation_id: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           date_change_count: number | null
@@ -997,6 +1114,7 @@ export type Database = {
           buyer_id?: string | null
           buyer_validated?: boolean | null
           client_email?: string | null
+          conversation_id?: string | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           date_change_count?: number | null
@@ -1037,6 +1155,7 @@ export type Database = {
           buyer_id?: string | null
           buyer_validated?: boolean | null
           client_email?: string | null
+          conversation_id?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           date_change_count?: number | null
@@ -1072,7 +1191,15 @@ export type Database = {
           user_id?: string
           validation_deadline?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "transactions_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

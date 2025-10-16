@@ -102,7 +102,41 @@ serve(async (req) => {
     }
     logStep("Dispute created", { disputeId: dispute.id });
 
-    // Insert initial dispute message
+    // Link conversation (unified messaging) from transaction if exists
+    try {
+      const { data: tx } = await supabaseClient
+        .from('transactions')
+        .select('conversation_id, user_id, buyer_id, title')
+        .eq('id', transactionId)
+        .single();
+
+      if (tx?.conversation_id) {
+        await supabaseClient
+          .from('conversations')
+          .update({ dispute_id: dispute.id })
+          .eq('id', tx.conversation_id);
+
+        await supabaseClient
+          .from('disputes')
+          .update({ conversation_id: tx.conversation_id })
+          .eq('id', dispute.id);
+
+        // Insert initial message in unified conversation as well (non-escalated channel)
+        await supabaseClient
+          .from('messages')
+          .insert({
+            conversation_id: tx.conversation_id,
+            sender_id: user.id,
+            message: reason,
+            message_type: 'text'
+          });
+        logStep('Initial unified message created');
+      }
+    } catch (convErr) {
+      logStep('Error linking conversation', convErr);
+    }
+
+    // Insert initial dispute message (kept for escalated/admin channel logic)
     const { error: messageError } = await supabaseClient
       .from('dispute_messages')
       .insert({

@@ -1,34 +1,34 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuoteMessages } from '@/hooks/useQuoteMessages';
+import { useConversation } from '@/hooks/useConversation';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS, de } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { logger } from '@/lib/logger';
-import { UnifiedMessaging } from '@/components/UnifiedMessaging';
-import { supabase } from '@/integrations/supabase/client';
 
-interface QuoteMessagingProps {
-  quoteId: string;
-  token?: string;
+interface UnifiedMessagingProps {
+  conversationId: string | null | undefined;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  clientName?: string;
+  otherParticipantName?: string;
+  title?: string;
 }
 
-export const QuoteMessaging = ({ 
-  quoteId,
-  token,
+export const UnifiedMessaging = ({ 
+  conversationId,
   open, 
   onOpenChange,
-  clientName 
-}: QuoteMessagingProps) => {
+  otherParticipantName,
+  title
+}: UnifiedMessagingProps) => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
@@ -38,15 +38,13 @@ export const QuoteMessaging = ({
   const isSafariiOS = isIOS && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
   
   const [newMessage, setNewMessage] = useState('');
-  const [senderName, setSenderName] = useState('');
-  const [senderEmail, setSenderEmail] = useState('');
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendButtonRef = useRef<HTMLButtonElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
 
-  const { messages, isLoading, sendMessage, isSendingMessage } = useQuoteMessages(quoteId, token);
+  const { messages, isLoading, sendMessage, isSendingMessage } = useConversation(conversationId);
 
   const ensureBottom = () => {
     if (bottomRef.current) {
@@ -69,24 +67,14 @@ export const QuoteMessaging = ({
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
 
-    // Pour les utilisateurs non authentifiés, demander nom et email
-    if (!user && (!senderName || !senderEmail)) {
-      toast.error('Veuillez renseigner votre nom et email');
-      return;
-    }
-
     const now = Date.now();
     if (now - lastMessageTimeRef.current < 2000) {
-      toast.error('Veuillez attendre un peu avant d\'envoyer un autre message');
+      toast.error(t('errors.tooFast', 'Veuillez attendre un peu avant d\'envoyer un autre message'));
       return;
     }
 
     try {
-      await sendMessage({
-        message: newMessage.trim(),
-        senderEmail: user?.email || senderEmail,
-        senderName: user ? `${user.email}` : senderName
-      });
+      await sendMessage({ message: newMessage.trim() });
       setNewMessage('');
       lastMessageTimeRef.current = now;
       
@@ -99,7 +87,7 @@ export const QuoteMessaging = ({
       requestAnimationFrame(() => ensureBottom());
     } catch (error) {
       logger.error('Error sending message:', error);
-      toast.error('Erreur lors de l\'envoi du message');
+      toast.error(t('errors.sendMessage', 'Erreur lors de l\'envoi du message'));
     }
   };
 
@@ -110,15 +98,23 @@ export const QuoteMessaging = ({
     }
   };
 
-  const formatMessageTime = (date: string) => {
-    return format(new Date(date), 'Pp', { locale: fr });
+  const getDateLocale = () => {
+    switch (i18n.language) {
+      case 'fr': return fr;
+      case 'de': return de;
+      default: return enUS;
+    }
   };
 
-  const getSenderName = (message: any) => {
-    if (user && message.sender_id === user?.id) {
-      return 'Vous';
+  const formatMessageTime = (date: string) => {
+    return format(new Date(date), 'Pp', { locale: getDateLocale() });
+  };
+
+  const getSenderName = (senderId: string) => {
+    if (senderId === user?.id) {
+      return t('common.you', 'Vous');
     }
-    return message.sender_name || 'Participant';
+    return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
   const getDialogHeight = () => {
@@ -138,10 +134,10 @@ export const QuoteMessaging = ({
       >
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle>
-            {clientName 
-              ? `Conversation avec ${clientName}`
-              : 'Messagerie devis'
-            }
+            {title || (otherParticipantName 
+              ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
+              : t('conversation.title', 'Messagerie')
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -151,61 +147,40 @@ export const QuoteMessaging = ({
         >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">Chargement...</div>
+              <div className="text-muted-foreground">{t('common.loading', 'Chargement...')}</div>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
-              <p>Aucun message pour le moment</p>
+              <p>{t('conversation.noMessages', 'Aucun message pour le moment')}</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => {
-                const isOwnMessage = user ? message.sender_id === user?.id : message.sender_email === senderEmail;
-                return (
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                >
                   <div
-                    key={message.id}
-                    className={`flex w-full ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                    className={`max-w-[75%] rounded-lg p-3 ${
+                      message.sender_id === user?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-background border'
+                    }`}
                   >
-                    <div
-                      className={`max-w-[75%] rounded-lg p-3 ${
-                        isOwnMessage
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background border'
-                      }`}
-                    >
-                      <div className="text-xs opacity-70 mb-1">
-                        {getSenderName(message)} • {formatMessageTime(message.created_at)}
-                      </div>
-                      <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
+                    <div className="text-xs opacity-70 mb-1">
+                      {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
                     </div>
+                    <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
         <div className="border-t p-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
-          {!user && (
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                placeholder="Votre nom"
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm border rounded-md"
-              />
-              <input
-                type="email"
-                placeholder="Votre email"
-                value={senderEmail}
-                onChange={(e) => setSenderEmail(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm border rounded-md"
-              />
-            </div>
-          )}
           <div className="flex gap-2 items-end">
             <Textarea
               ref={textareaRef}
@@ -213,7 +188,7 @@ export const QuoteMessaging = ({
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               onFocus={() => setTimeout(ensureBottom, 100)}
-              placeholder="Écrivez votre message..."
+              placeholder={t('conversation.placeholder', 'Écrivez votre message...')}
               className="flex-1 h-14 resize-none"
               rows={2}
               maxLength={500}

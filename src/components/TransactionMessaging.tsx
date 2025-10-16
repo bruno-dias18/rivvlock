@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { logger } from '@/lib/logger';
+import { UnifiedMessaging } from '@/components/UnifiedMessaging';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TransactionMessagingProps {
   transactionId: string;
