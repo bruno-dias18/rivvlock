@@ -64,10 +64,8 @@ export const TransactionMessaging = ({
         }
       } catch (error) {
         console.error('Error ensuring conversation:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ouvrir la messagerie. Vérifiez qu'un acheteur est assigné.",
-          variant: "destructive"
+        toast.error(error, {
+          context: "Impossible d'ouvrir la messagerie. Vérifiez qu'un acheteur est assigné."
         });
         onOpenChange(false);
       } finally {
@@ -76,7 +74,7 @@ export const TransactionMessaging = ({
     };
 
     ensureConversation();
-  }, [open, conversationId, isEnsuringConversation, isLoadingConversation, transactionId, onOpenChange]);
+  }, [open, conversationId, isEnsuringConversation, isLoadingConversation, transactionId, onOpenChange, toast]);
 
   // Show loading dialog while ensuring conversation
   if (open && (isLoadingConversation || isEnsuringConversation)) {
