@@ -259,8 +259,8 @@ export const QuoteViewPage = () => {
                     Pour accepter ou discuter de ce devis, veuillez vous reconnecter avec l'adresse email destinataire.
                   </p>
                   <Button
-                    onClick={() => {
-                      supabase.auth.signOut();
+                    onClick={async () => {
+                      await supabase.auth.signOut();
                       navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
                     }}
                     variant="default"
