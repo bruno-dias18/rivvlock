@@ -44,48 +44,41 @@ export const DisputeContent = ({
             
             <CollapsibleContent>
               <div className="px-3 pb-3">
-                {isMobile ? (
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Montant:</span>
-                      <span className="font-medium">
-                        {transaction.price} {transaction.currency?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Statut:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {transaction.status}
-                      </Badge>
-                    </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Montant:</span>
+                    <span className="font-medium">
+                      {transaction.price} {transaction.currency?.toUpperCase()}
+                    </span>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Montant:</span>
-                      <span className="ml-2 font-medium">
-                        {transaction.price} {transaction.currency?.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Date du service:</span>
-                      <span className="ml-2">
-                        {transaction.service_date 
-                          ? format(new Date(transaction.service_date), 'dd/MM/yyyy', { locale: fr })
-                          : 'Non définie'
-                        }
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Vendeur:</span>
-                      <span className="ml-2">{transaction.seller_display_name || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Acheteur:</span>
-                      <span className="ml-2">{transaction.buyer_display_name || 'N/A'}</span>
-                    </div>
+                  {!isMobile && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Date du service:</span>
+                        <span>
+                          {transaction.service_date 
+                            ? format(new Date(transaction.service_date), 'dd/MM/yyyy', { locale: fr })
+                            : 'Non définie'
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Vendeur:</span>
+                        <span>{transaction.seller_display_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Acheteur:</span>
+                        <span>{transaction.buyer_display_name || 'N/A'}</span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Statut:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {transaction.status}
+                    </Badge>
                   </div>
-                )}
+                </div>
               </div>
             </CollapsibleContent>
           </div>

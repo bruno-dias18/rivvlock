@@ -182,7 +182,7 @@ export default function AdminPage() {
           {/* Badge de notification pour les escalades */}
           {disputeStats && disputeStats.escalated > 0 && (
             <div className="absolute -top-2 -right-2 z-10">
-              <Badge className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg animate-pulse">
+              <Badge className="bg-red-600 text-white px-2 py-1 text-xs font-bold shadow-lg">
                 {disputeStats.escalated} escaladé{disputeStats.escalated > 1 ? 's' : ''}
               </Badge>
             </div>

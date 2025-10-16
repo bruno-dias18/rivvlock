@@ -295,7 +295,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               {unreadMessages > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="ml-2 animate-pulse"
+                  className="ml-2"
                 >
                   {unreadMessages} nouveau{unreadMessages > 1 ? 'x' : ''}
                 </Badge>

@@ -32,7 +32,7 @@ export const DisputeHeader = ({
           {unreadMessages > 0 && (
             <Badge 
               variant="destructive" 
-              className="ml-2 animate-pulse text-xs"
+              className="ml-2 text-xs"
             >
               {unreadMessages}
             </Badge>
