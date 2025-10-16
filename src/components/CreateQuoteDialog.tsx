@@ -16,6 +16,9 @@ import { Currency } from '@/types';
 import { QuoteItem } from '@/types/quotes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+// Platform fee rate (RivvLock + Stripe)
+const PLATFORM_FEE_RATE = 0.05; // 5%
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -75,6 +78,14 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
   const taxAmount = subtotal * (taxRate / 100);
   const totalAmount = subtotal + taxAmount;
+
+  // Calculate platform fees and net amount
+  const platformFee = totalAmount * PLATFORM_FEE_RATE;
+  const netAmountSeller = totalAmount - platformFee;
+
+  // Reverse calculation: to receive exactly totalAmount net
+  const reverseTotal = totalAmount / (1 - PLATFORM_FEE_RATE);
+  const reverseFee = reverseTotal - totalAmount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,19 +283,95 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
             </div>
 
             {/* Totals */}
-            <div className="space-y-2 pt-4 border-t">
-              <div className="flex justify-between">
-                <span>Sous-total</span>
-                <span className="font-medium">{subtotal.toFixed(2)} {currency.toUpperCase()}</span>
+            <div className="space-y-3 pt-4 border-t">
+              {/* Standard calculation */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Sous-total HT</span>
+                  <span className="font-medium">{subtotal.toFixed(2)} {currency.toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>TVA ({taxRate}%)</span>
+                  <span>{taxAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>Total TTC</span>
+                  <span>{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>TVA ({taxRate}%)</span>
-                <span>{taxAmount.toFixed(2)} {currency.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span>{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
-              </div>
+
+              {/* Seller fees display - only if amount > 0 */}
+              {totalAmount > 0 && (
+                <div className="rounded-lg bg-muted/50 p-4 border space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Total facturé au client :</span>
+                    <span className="font-medium">{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Frais plateforme (5%) :</span>
+                    <span className="text-destructive font-medium">-{platformFee.toFixed(2)} {currency.toUpperCase()}</span>
+                  </div>
+                  <div className="flex items-center justify-between font-semibold text-primary border-t pt-2 mt-2">
+                    <span className="flex items-center gap-1">
+                      <span>💰</span>
+                      <span>Vous recevrez :</span>
+                    </span>
+                    <span className="text-lg">{netAmountSeller.toFixed(2)} {currency.toUpperCase()}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Option: pass fees to client */}
+              {totalAmount > 0 && (
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-200 dark:border-blue-800 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-base">💡</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
+                        Répercuter les frais sur le client ?
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Pour toucher exactement <strong>{totalAmount.toFixed(2)} {currency.toUpperCase()}</strong> net
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5 bg-white dark:bg-slate-900 p-3 rounded border border-blue-100 dark:border-blue-900">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-blue-700 dark:text-blue-300">Montant à facturer :</span>
+                      <span className="font-bold text-blue-900 dark:text-blue-100 text-base">
+                        {reverseTotal.toFixed(2)} {currency.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
+                      <span>Frais payés par le client :</span>
+                      <span className="font-medium">+{reverseFee.toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Adjust all prices proportionally
+                      const ratio = reverseTotal / totalAmount;
+                      const adjustedItems = items.map(item => ({
+                        ...item,
+                        unit_price: parseFloat((item.unit_price * ratio).toFixed(2)),
+                        total: parseFloat((item.total * ratio).toFixed(2))
+                      }));
+                      setItems(adjustedItems);
+                      toast.success('Prix ajustés pour inclure les frais', {
+                        description: `Les frais de plateforme seront payés par le client (+${reverseFee.toFixed(2)} ${currency.toUpperCase()})`
+                      });
+                    }}
+                    className="w-full border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-900/50"
+                  >
+                    → Appliquer ces montants
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
