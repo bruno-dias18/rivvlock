@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Copy, CreditCard, Edit3, Download, MessageCircle, MessageCircleMore } from 'lucide-react';
+import { Copy, CreditCard, Edit3, Download, MessageCircle, MessageCircleMore, Eye } from 'lucide-react';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -18,6 +18,7 @@ interface TransactionActionsProps {
   onPayment: (transaction: Transaction) => void;
   setIsDateChangeDialogOpen: (open: boolean) => void;
   setIsMessagingOpen: (open: boolean) => void;
+  setIsDetailsOpen: (open: boolean) => void;
   onDownloadInvoice: (transaction: Transaction) => void;
   onRefetch: () => void;
   onOpenDispute: (transaction: Transaction) => void;
@@ -35,6 +36,7 @@ export const TransactionActions = ({
   onPayment,
   setIsDateChangeDialogOpen,
   setIsMessagingOpen,
+  setIsDetailsOpen,
   onDownloadInvoice,
   onRefetch,
   onOpenDispute,
@@ -45,6 +47,17 @@ export const TransactionActions = ({
 
   return (
     <div className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+      {/* View details button - always visible */}
+      <Button
+        variant="outline"
+        size={isMobile ? "default" : "sm"}
+        onClick={() => setIsDetailsOpen(true)}
+        className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
+      >
+        <Eye className="h-4 w-4 mr-2" />
+        {t('common.view', 'Voir')}
+      </Button>
+
       {/* Seller copy link */}
       {userRole === 'seller' && transaction.status === 'pending' && (
         <Button

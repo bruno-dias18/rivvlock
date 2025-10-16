@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ExpiredPaymentNotification } from '@/components/ExpiredPaymentNotification';
+import { DateChangeAcceptedNotification } from '@/components/DateChangeAcceptedNotification';
 import { useTranslation } from 'react-i18next';
 import type { Transaction, ValidationStatus } from '@/types';
 
@@ -34,6 +35,11 @@ export const TransactionTimeline = ({
 
   return (
     <div className="space-y-2 text-sm text-muted-foreground mb-4">
+      {/* Date Change Accepted Notification for Seller */}
+      {userRole === 'seller' && transaction.date_change_status === 'approved' && (
+        <DateChangeAcceptedNotification transaction={transaction} />
+      )}
+      
       <div>{userRole === 'seller' ? t('roles.client') : t('roles.seller')}: {displayName}</div>
       <div>{t('transactions.createdOn')}: {new Date(transaction.created_at).toLocaleDateString(locale)}</div>
       

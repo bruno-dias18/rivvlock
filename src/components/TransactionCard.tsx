@@ -6,8 +6,8 @@ import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
-import { DateChangeAcceptedNotification } from '@/components/DateChangeAcceptedNotification';
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
+import { TransactionDetailsDialog } from '@/components/TransactionDetailsDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
@@ -52,6 +52,7 @@ const TransactionCardComponent = ({
   const [isDateChangeDialogOpen, setIsDateChangeDialogOpen] = useState(false);
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const { unreadCount } = useUnreadConversationMessages(transaction.conversation_id);
   const hasMessages = useHasTransactionMessages(transaction.id);
@@ -105,13 +106,6 @@ const TransactionCardComponent = ({
       {userRole === 'buyer' && transaction.date_change_status === 'pending_approval' && (
         <div className="mb-4">
           <DateChangeApprovalCard transaction={transaction} onResponse={onRefetch} />
-        </div>
-      )}
-
-      {/* Date Change Accepted Notification for Seller */}
-      {userRole === 'seller' && transaction.date_change_status === 'approved' && (
-        <div className="mb-4">
-          <DateChangeAcceptedNotification transaction={transaction} />
         </div>
       )}
 
@@ -175,6 +169,7 @@ const TransactionCardComponent = ({
               onPayment={onPayment}
               setIsDateChangeDialogOpen={setIsDateChangeDialogOpen}
               setIsMessagingOpen={setIsMessagingOpen}
+              setIsDetailsOpen={setIsDetailsOpen}
               onDownloadInvoice={onDownloadInvoice}
               onRefetch={onRefetch}
               onOpenDispute={onOpenDispute}
@@ -209,6 +204,13 @@ const TransactionCardComponent = ({
         open={isMessagingOpen}
         onOpenChange={setIsMessagingOpen}
         otherParticipantName={displayName}
+      />
+
+      <TransactionDetailsDialog
+        transaction={transaction}
+        userRole={userRole}
+        open={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
       />
     </>
   );
