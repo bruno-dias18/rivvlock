@@ -125,7 +125,12 @@ export const useRealtimeActivityRefresh = () => {
           
           logger.debug('Realtime: New message', payload);
 
-          // ✅ Refetch type 'all' pour unread-conversation-messages (même si inactif)
+          // ✅ Refetch type 'all' pour unread-conversation-messages (même si inactif) - inclure user.id dans la clé
+          queryClient.refetchQueries({ 
+            queryKey: ['unread-conversation-messages', message.conversation_id, user.id],
+            type: 'all' 
+          });
+          // Compatibilité: ancienne clé sans user.id
           queryClient.refetchQueries({ 
             queryKey: ['unread-conversation-messages', message.conversation_id],
             type: 'all' 
