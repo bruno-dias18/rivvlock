@@ -60,7 +60,7 @@ export const UnifiedMessaging = ({
 
   useEffect(() => {
     if (open && textareaRef.current) {
-      textareaRef.current.focus();
+      textareaRef.current.focus({ preventScroll: true });
     }
   }, [open]);
 
@@ -129,8 +129,16 @@ export const UnifiedMessaging = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
-        style={{ height: getDialogHeight() }}
+        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 inset-x-2 top-0 bottom-0 translate-x-0 translate-y-0 sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:translate-x-[-50%] sm:translate-y-[-50%]"
+        style={{
+          ...(isMobile ? {
+            bottom: `calc(${keyboardInset}px + env(safe-area-inset-bottom, 0px))`,
+            overscrollBehavior: 'contain',
+            contain: 'layout paint size'
+          } : {
+            height: '85vh'
+          })
+        }}
       >
         <DialogHeader className="sticky top-0 z-20 bg-background p-4 border-b shrink-0 relative">
           <DialogTitle>
