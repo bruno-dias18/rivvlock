@@ -465,15 +465,7 @@ export type Database = {
           read_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_reads_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "transaction_messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       messages: {
         Row: {
@@ -911,44 +903,6 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: []
-      }
-      transaction_messages: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          message_type: string | null
-          metadata: Json | null
-          sender_id: string
-          transaction_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          message_type?: string | null
-          metadata?: Json | null
-          sender_id: string
-          transaction_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          message_type?: string | null
-          metadata?: Json | null
-          sender_id?: string
-          transaction_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "transaction_messages_transaction_id_fkey"
-            columns: ["transaction_id"]
-            isOneToOne: false
-            referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       transactions: {
         Row: {
