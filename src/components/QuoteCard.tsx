@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Archive, Eye, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useUnreadQuoteMessages } from '@/hooks/useUnreadQuoteMessages';
 
 interface Props {
   quote: Quote;
@@ -24,6 +25,7 @@ const statusConfig = {
 };
 
 export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller }: Props) => {
+  const { unreadCount } = useUnreadQuoteMessages(quote.id);
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
 
@@ -34,7 +36,14 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2 mb-2 flex-wrap">
               <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
-              <h3 className="font-semibold text-base sm:text-lg flex-1 min-w-0 break-words">{quote.title}</h3>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <h3 className="font-semibold text-base sm:text-lg break-words">{quote.title}</h3>
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="h-5 min-w-[20px] flex items-center justify-center px-1.5 text-xs">
+                    {unreadCount}
+                  </Badge>
+                )}
+              </div>
               <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
             </div>
 
