@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
+import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +15,8 @@ import { useIsMobile } from '@/lib/mobileUtils';
 const QuotesPage = () => {
   const { quotes, isLoading, archiveQuote } = useQuotes();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [selectedTab, setSelectedTab] = useState<QuoteStatus | 'all'>('all');
   const isMobile = useIsMobile();
 
@@ -22,8 +25,8 @@ const QuotesPage = () => {
     : quotes.filter(q => q.status === selectedTab);
 
   const handleViewQuote = (quote: Quote) => {
-    // TODO: Ouvrir dialog de détails
-    console.log('View quote:', quote);
+    setSelectedQuote(quote);
+    setDetailsDialogOpen(true);
   };
 
   const filterOptions = [
@@ -116,6 +119,12 @@ const QuotesPage = () => {
           onSuccess={() => {
             // Quotes will auto-refresh via React Query
           }}
+        />
+
+        <QuoteDetailsDialog
+          quote={selectedQuote}
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
         />
       </div>
     </DashboardLayoutWithSidebar>
