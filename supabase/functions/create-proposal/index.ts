@@ -127,6 +127,25 @@ serve(async (req) => {
         message_type: 'system',
       });
 
+    // Also write to unified conversations/messages if a conversation exists
+    if (dispute.conversation_id) {
+      await supabaseClient
+        .from('messages')
+        .insert({
+          conversation_id: dispute.conversation_id,
+          sender_id: user.id,
+          message: proposalText + (message ? `\n${message}` : ''),
+          message_type: 'system',
+          metadata: {
+            proposal_id: proposal.id,
+            proposal_type: proposalType,
+            refund_percentage: refundPercentage,
+            dispute_id: disputeId,
+            transaction_id: transaction.id,
+          },
+        });
+    }
+
     // Log activity for all other participants
     const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
     

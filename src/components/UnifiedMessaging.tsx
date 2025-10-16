@@ -151,29 +151,37 @@ export const UnifiedMessaging = ({
 
   // Map messages to their corresponding proposals using useMemo
   const messageToProposal = useMemo(() => {
-    if (!disputeId || !proposals || proposals.length === 0) return new Map();
-    
-    const map = new Map();
-    messages.forEach(message => {
-      // Check if it's a proposal message (system message with "Proposition officielle")
-      const isProposalMsg = message.message_type === 'system' && 
-        message.message.includes('Proposition officielle');
-      
-      if (isProposalMsg) {
-        // Find matching proposal by timestamp (within 10 seconds tolerance)
-        const messageTime = new Date(message.created_at).getTime();
-        const matchingProposal = proposals.find(p => {
-          const proposalTime = new Date(p.created_at).getTime();
-          const timeDiff = Math.abs(proposalTime - messageTime);
-          return timeDiff < 10000; // 10 seconds tolerance
-        });
-        
-        if (matchingProposal) {
-          map.set(message.id, matchingProposal);
+    const map = new Map<string, any>();
+    if (!disputeId || !proposals || proposals.length === 0 || messages.length === 0) return map;
+
+    messages.forEach((message) => {
+      // 1) Prefer explicit metadata link
+      const proposalId = (message.metadata as any)?.proposal_id;
+      if (proposalId) {
+        const found = proposals.find((p: any) => p.id === proposalId);
+        if (found) {
+          map.set(message.id, found);
+          return;
         }
       }
+
+      // 2) Fallback: match on known system text within a tolerance window
+      const isSystemProposalText = message.message_type === 'system' &&
+        message.message.includes('Proposition officielle');
+      if (!isSystemProposalText) return;
+
+      const messageTime = new Date(message.created_at).getTime();
+      const matchingProposal = proposals.find((p: any) => {
+        const proposalTime = new Date(p.created_at).getTime();
+        const timeDiff = Math.abs(proposalTime - messageTime);
+        return timeDiff < 10000; // 10s tolerance
+      });
+
+      if (matchingProposal) {
+        map.set(message.id, matchingProposal);
+      }
     });
-    
+
     return map;
   }, [disputeId, proposals, messages]);
 
