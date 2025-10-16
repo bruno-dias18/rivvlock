@@ -224,27 +224,29 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                 required
               />
             </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Détails du projet..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="currency">Devise</Label>
-              <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="eur">EUR (€)</SelectItem>
-                  <SelectItem value="chf">CHF (Fr.)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Détails du projet..."
+                  rows={3}
+                />
+              </div>
+              <div className="md:w-40">
+                <Label htmlFor="currency">Devise</Label>
+                <Select value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="eur">EUR (€)</SelectItem>
+                    <SelectItem value="chf">CHF (Fr.)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -269,8 +271,8 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
               </div>
 
               {items.map((item, index) => (
-                <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
-                  <div className="md:col-span-5">
+                <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-center">
+                  <div>
                     <Label className="md:hidden text-xs">Description</Label>
                     <Input
                       placeholder="Description"
@@ -280,33 +282,33 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2 md:contents">
-                    <div className="md:col-span-2">
+                    <div>
                       <Label className="md:hidden text-xs">Qté</Label>
-                  <Input
-                    type="number"
-                    placeholder="Qté"
-                    min="1"
-                    step="1"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                    onFocus={(e) => e.target.select()}
-                    required
-                  />
+                      <Input
+                        type="number"
+                        placeholder="Qté"
+                        min="1"
+                        step="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        required
+                      />
                     </div>
-                    <div className="md:col-span-2">
+                    <div>
                       <Label className="md:hidden text-xs">Prix</Label>
-                  <Input
-                    type="number"
-                    placeholder="Prix"
-                    min="0"
-                    step="0.01"
-                    value={item.unit_price}
-                    onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                    onFocus={(e) => e.target.select()}
-                    required
-                  />
+                      <Input
+                        type="number"
+                        placeholder="Prix"
+                        min="0"
+                        step="0.01"
+                        value={item.unit_price}
+                        onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => e.target.select()}
+                        required
+                      />
                     </div>
-                    <div className="md:col-span-2">
+                    <div>
                       <Label className="md:hidden text-xs">Total</Label>
                       <Input
                         type="number"
@@ -316,7 +318,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       />
                     </div>
                   </div>
-                  <div className="md:col-span-1 flex justify-end md:justify-center">
+                  <div className="flex justify-end md:justify-center">
                     <Button
                       type="button"
                       variant="ghost"
