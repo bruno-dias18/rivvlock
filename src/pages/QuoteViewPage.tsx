@@ -12,6 +12,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
 import { toast } from 'sonner';
 import { useAttachQuote } from '@/hooks/useAttachQuote';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface QuoteItem {
   description: string;
@@ -59,6 +68,10 @@ export const QuoteViewPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [messagingOpen, setMessagingOpen] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+  const [emailMismatchInfo, setEmailMismatchInfo] = useState<{
+    clientEmail: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!quoteId || !token) {
@@ -103,15 +116,26 @@ export const QuoteViewPage = () => {
 
   const handleAcceptQuote = async () => {
     if (!user) {
+      toast.error('Vous devez être connecté pour accepter un devis');
       navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
       return;
     }
 
     setIsAccepting(true);
     try {
-      // Attach quote before accepting
-      if (token) {
-        await attachQuote({ quoteId: quoteId!, token });
+      // First attach the quote to the user if not already done
+      try {
+        await attachQuote({ quoteId: quoteId!, token: token! });
+      } catch (err: any) {
+        // Check for email mismatch - block acceptance
+        if (err.error === 'email_mismatch' || err.message?.includes('email_mismatch')) {
+          setEmailMismatchInfo({
+            clientEmail: err.client_email || quoteData?.client_email || '',
+            message: err.message
+          });
+          return; // Stop here, don't proceed with acceptance
+        }
+        // For other errors, continue (might be "already attached")
       }
       
       const { data, error } = await supabase.functions.invoke('accept-quote', {
@@ -134,17 +158,26 @@ export const QuoteViewPage = () => {
 
   const handleOpenMessaging = async () => {
     if (!user) {
+      toast.error('Vous devez être connecté pour envoyer un message');
       navigate(`/auth?redirect=/quote/${quoteId}/${token}&openMessage=true`);
       return;
     }
     
-    // Attach quote before opening messaging
+    // Try to attach the quote first if not already done
     if (token) {
       try {
         await attachQuote({ quoteId: quoteId!, token });
-      } catch (err) {
+      } catch (err: any) {
+        // Check for email mismatch - block messaging
+        if (err.error === 'email_mismatch' || err.message?.includes('email_mismatch')) {
+          setEmailMismatchInfo({
+            clientEmail: err.client_email || quoteData?.client_email || '',
+            message: err.message
+          });
+          return; // Stop here, don't open messaging
+        }
+        // Continue for other errors (might already be attached or user is seller)
         console.error('Error attaching quote:', err);
-        // Continue anyway
       }
     }
     
@@ -188,6 +221,44 @@ export const QuoteViewPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Email Mismatch Alert Dialog */}
+      {emailMismatchInfo && (
+        <AlertDialog open={!!emailMismatchInfo} onOpenChange={() => setEmailMismatchInfo(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>⚠️ Adresse email différente</AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>Ce devis a été envoyé à :</p>
+                <p className="font-semibold text-foreground">{emailMismatchInfo.clientEmail}</p>
+                <p>Vous êtes actuellement connecté avec :</p>
+                <p className="font-semibold text-foreground">{user?.email}</p>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Pour accepter ou discuter de ce devis, veuillez vous déconnecter et vous reconnecter avec l'adresse email destinataire.
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogAction
+                onClick={() => {
+                  setEmailMismatchInfo(null);
+                  supabase.auth.signOut();
+                  navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
+                }}
+                className="w-full sm:w-auto"
+              >
+                Se déconnecter et reconnecter
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => setEmailMismatchInfo(null)}
+                className="w-full sm:w-auto bg-secondary text-secondary-foreground hover:bg-secondary/80"
+              >
+                Fermer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       <div className="container mx-auto p-6 max-w-4xl">
         <Button
           variant="ghost"

@@ -32,6 +32,12 @@ export const useAttachQuote = () => {
     onError: (error: any) => {
       console.error('Error attaching quote:', error);
       
+      // Special case: email mismatch (UI will handle this with AlertDialog)
+      if (error.message?.includes('email_mismatch') || error.error === 'email_mismatch') {
+        // Don't show toast, let the parent component handle the alert
+        return;
+      }
+      
       // Don't show error toast if already attached
       if (!error.message?.includes('déjà rattaché')) {
         toast.error(error.message || 'Erreur lors du rattachement');
