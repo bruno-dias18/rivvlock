@@ -16,12 +16,24 @@ export const useDisputeRealtimeNotifications = () => {
       .channel(`disputes-realtime-${user.id}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'dispute_messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         async (payload) => {
           const msg: any = payload.new;
           if (!msg) return;
           // Ignore own messages
           if (msg.sender_id === user.id) return;
+
+          // Check if this message belongs to a dispute conversation
+          if (!msg.conversation_id) return;
+
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('dispute_id, transaction_id')
+            .eq('id', msg.conversation_id)
+            .maybeSingle();
+
+          // Only process if it's a dispute conversation
+          if (!conversation?.dispute_id) return;
 
           // Only notify for relevant dispute events
           const type = msg.message_type as string | undefined;
@@ -41,18 +53,12 @@ export const useDisputeRealtimeNotifications = () => {
           if (title) {
             try {
               // Try to fetch the transaction title for richer context
-              const { data: dispute } = await supabase
-                .from('disputes')
-                .select('transaction_id')
-                .eq('id', msg.dispute_id)
-                .single();
-
               let txTitle: string | undefined;
-              if (dispute?.transaction_id) {
+              if (conversation.transaction_id) {
                 const { data: tx } = await supabase
                   .from('transactions')
                   .select('title')
-                  .eq('id', dispute.transaction_id)
+                  .eq('id', conversation.transaction_id)
                   .single();
                 txTitle = tx?.title as string | undefined;
               }
@@ -64,7 +70,8 @@ export const useDisputeRealtimeNotifications = () => {
 
               // Refresh cached counts and message lists
               queryClient.invalidateQueries({ queryKey: ['new-items-notifications', user.id] });
-              queryClient.invalidateQueries({ queryKey: ['dispute-messages'] });
+              queryClient.invalidateQueries({ queryKey: ['unread-conversation-messages'] });
+              queryClient.invalidateQueries({ queryKey: ['unread-disputes-global'] });
             } catch {
               toast(title, { description, duration: 5000 });
             }
