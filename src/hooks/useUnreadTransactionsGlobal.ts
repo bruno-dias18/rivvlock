@@ -57,10 +57,9 @@ export const useUnreadTransactionsGlobal = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    staleTime: 10_000, // ✅ Plus agressif: 10s au lieu de 30s
+    staleTime: 10_000,
     gcTime: 5 * 60_000,
-    refetchOnMount: 'always', // ✅ Force refetch à chaque remount
-    refetchInterval: 15_000, // ✅ Fallback polling toutes les 15s
+    refetchOnMount: true, // ✅ Use global config
   });
 
   // Realtime subscription pour tous les messages

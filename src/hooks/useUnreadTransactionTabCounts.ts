@@ -76,10 +76,9 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       };
     },
     enabled: !!user?.id,
-    staleTime: 10_000, // ✅ Déjà optimisé à 10s
+    staleTime: 10_000,
     gcTime: 5 * 60_000,
-    refetchOnMount: 'always', // ✅ Force refetch à chaque remount
-    refetchInterval: 15_000, // ✅ Fallback polling toutes les 15s
+    refetchOnMount: true, // ✅ Use global config
   });
 
   useEffect(() => {

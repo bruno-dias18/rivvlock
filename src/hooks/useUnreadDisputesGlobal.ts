@@ -55,8 +55,9 @@ export const useUnreadDisputesGlobal = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 10_000,
     gcTime: 5 * 60_000,
+    refetchOnMount: true, // ✅ Use global config
   });
 
   // Realtime subscription
