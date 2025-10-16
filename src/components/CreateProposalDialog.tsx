@@ -36,7 +36,6 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
       };
 
       await onCreateProposal(proposalData);
-      toast.success('Proposition envoyée avec succès');
       onOpenChange(false);
       
       // Reset form
