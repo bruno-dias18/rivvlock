@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface QuoteLike { id: string; conversation_id: string | null; }
+interface QuoteLike { id: string; conversation_id: string | null; status: string; }
 
 export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes: QuoteLike[]) => {
   const { user } = useAuth();
@@ -18,7 +18,9 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
       if (!user?.id) return { sentUnread: 0, receivedUnread: 0 };
 
       const computeForList = async (list: QuoteLike[]) => {
-        const conversationIds = list.map(q => q.conversation_id).filter(Boolean) as string[];
+        // Exclure les devis acceptés (notifications gérées par la transaction)
+        const activeQuotes = list.filter(q => q.status !== 'accepted');
+        const conversationIds = activeQuotes.map(q => q.conversation_id).filter(Boolean) as string[];
         if (conversationIds.length === 0) return 0;
 
         let total = 0;

@@ -105,7 +105,8 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller,
               <Eye className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Voir</span>
             </Button>
-            {onOpenMessaging && (
+            {/* Masquer la messagerie pour les devis acceptés (conversation dans la transaction) */}
+            {onOpenMessaging && quote.status !== 'accepted' && (
               <div className="relative flex-1 sm:flex-initial">
                 <Button
                   size="sm"

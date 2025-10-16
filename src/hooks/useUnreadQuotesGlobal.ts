@@ -15,11 +15,13 @@ export const useUnreadQuotesGlobal = () => {
       if (!user?.id) return 0;
 
       // Récupérer tous les devis de l'utilisateur (vendeur OU client)
+      // Exclure les devis acceptés (notifications gérées par la transaction)
       const { data: quotes, error: quotesError } = await supabase
         .from('quotes')
         .select('conversation_id')
         .or(`seller_id.eq.${user.id},client_user_id.eq.${user.id}`)
-        .not('conversation_id', 'is', null);
+        .not('conversation_id', 'is', null)
+        .neq('status', 'accepted');
 
       if (quotesError || !quotes || quotes.length === 0) return 0;
 

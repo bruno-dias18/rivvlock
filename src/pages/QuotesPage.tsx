@@ -29,7 +29,10 @@ export const QuotesPage = () => {
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
   const { sentQuotes, receivedQuotes, isLoading, archiveQuote, markAsViewed } = useQuotes();
   const isMobile = useIsMobile();
-  const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(sentQuotes, receivedQuotes);
+  const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(
+    sentQuotes.map(q => ({ id: q.id, conversation_id: q.conversation_id, status: q.status })),
+    receivedQuotes.map(q => ({ id: q.id, conversation_id: q.conversation_id, status: q.status }))
+  );
 
   // Handle openMessage query parameter
   useEffect(() => {
