@@ -2,11 +2,12 @@ import { Quote } from '@/types/quotes';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Archive, Eye, MessageSquare } from 'lucide-react';
+import { FileText, Archive, Eye, MessageCircle, MessageCircleMore } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   quote: Quote;
@@ -27,9 +28,11 @@ const statusConfig = {
 };
 
 export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller, onMarkAsViewed }: Props) => {
+  const { t } = useTranslation();
   const { unreadCount } = useUnreadConversationMessages(quote.conversation_id);
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
+  const hasMessages = quote.conversation_id && unreadCount >= 0;
   
   // Show "modified" indicator only if quote was updated after the client last viewed it
   const hasBeenModified = !isSeller && (
@@ -107,25 +110,29 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller,
             </Button>
             {/* Masquer la messagerie pour les devis acceptés (conversation dans la transaction) */}
             {onOpenMessaging && quote.status !== 'accepted' && (
-              <div className="relative flex-1 sm:flex-initial">
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenMessaging(quote.id, quote.client_name || undefined);
-                  }}
-                  className="w-full"
-                >
-                  <MessageSquare className="h-4 w-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Messagerie</span>
-                </Button>
-                {unreadCount > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold border-2 border-background">
-                    {unreadCount}
-                  </div>
+              <Button
+                size="sm"
+                variant={unreadCount > 0 ? "default" : "outline"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenMessaging(quote.id, quote.client_name || undefined);
+                }}
+                className="flex-1 sm:flex-initial transition-all duration-200 hover:scale-105 active:scale-95"
+              >
+                {hasMessages ? (
+                  <MessageCircleMore className="h-4 w-4 sm:mr-2" />
+                ) : (
+                  <MessageCircle className="h-4 w-4 sm:mr-2" />
                 )}
-              </div>
+                <span className="hidden sm:inline">
+                  {hasMessages ? t('common.viewConversation', 'Voir la discussion') : t('common.contact', 'Contacter')}
+                </span>
+                {unreadCount > 0 && (
+                  <Badge className="ml-2 bg-primary-foreground text-primary">
+                    {unreadCount}
+                  </Badge>
+                )}
+              </Button>
             )}
             {canArchive && quote.status !== 'archived' && (
               <Button
