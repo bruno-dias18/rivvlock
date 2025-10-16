@@ -392,7 +392,7 @@ export const QuoteViewPage = () => {
             </div>
 
             {/* Action buttons */}
-            {quoteData.status === 'pending' && !isExpired && (
+            {['pending', 'negotiating'].includes(quoteData.status) && !isExpired && (
               <>
                 <Separator />
                 <div className="flex gap-3 flex-col sm:flex-row">

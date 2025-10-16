@@ -252,7 +252,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
           {/* Client Actions */}
           {userRole === 'client' && (
             <div className="flex gap-2">
-              {quote.status === 'pending' && new Date(quote.valid_until) > new Date() && (
+              {['pending', 'negotiating'].includes(quote.status) && new Date(quote.valid_until) > new Date() && (
                 <Button 
                   variant="default"
                   className="flex-1"

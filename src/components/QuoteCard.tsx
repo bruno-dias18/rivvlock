@@ -78,12 +78,15 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
           <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
             <Button
               size="sm"
-              variant={hasBeenModified && !isSeller ? "default" : "outline"}
+              variant="outline"
               onClick={(e) => {
                 e.stopPropagation();
                 onView(quote);
               }}
-              className="flex-1 sm:flex-initial"
+              className={cn(
+                "flex-1 sm:flex-initial",
+                hasBeenModified && !isSeller && "border-blue-500 border-2 text-blue-600 hover:bg-blue-50"
+              )}
             >
               <Eye className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Voir</span>
