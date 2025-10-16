@@ -235,27 +235,29 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                   <div className="grid grid-cols-3 gap-2 md:contents">
                     <div className="md:col-span-2">
                       <Label className="md:hidden text-xs">Qté</Label>
-                      <Input
-                        type="number"
-                        placeholder="Qté"
-                        min="1"
-                        step="1"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                        required
-                      />
+                  <Input
+                    type="number"
+                    placeholder="Qté"
+                    min="1"
+                    step="1"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
+                    required
+                  />
                     </div>
                     <div className="md:col-span-2">
                       <Label className="md:hidden text-xs">Prix</Label>
-                      <Input
-                        type="number"
-                        placeholder="Prix"
-                        min="0"
-                        step="0.01"
-                        value={item.unit_price}
-                        onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                        required
-                      />
+                  <Input
+                    type="number"
+                    placeholder="Prix"
+                    min="0"
+                    step="0.01"
+                    value={item.unit_price}
+                    onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                    onFocus={(e) => e.target.select()}
+                    required
+                  />
                     </div>
                     <div className="md:col-span-2">
                       <Label className="md:hidden text-xs">Total</Label>
