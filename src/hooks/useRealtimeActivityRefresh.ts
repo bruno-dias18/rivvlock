@@ -17,22 +17,22 @@ export const useRealtimeActivityRefresh = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fonction helper pour invalider avec throttling (max 1x par seconde par query)
-    const throttledInvalidate = (queryKey: string[]) => {
+    // Fonction helper pour refetch avec throttling (max 1x toutes les 2 secondes par query)
+    const throttledRefetch = (queryKey: string[]) => {
       const key = queryKey.join('-');
       const now = Date.now();
-      const lastInvalidation = lastInvalidationRef.current[key] || 0;
+      const lastRefetch = lastInvalidationRef.current[key] || 0;
 
-      if (now - lastInvalidation > 2000) {
+      if (now - lastRefetch > 2000) {
         lastInvalidationRef.current[key] = now;
-        queryClient.invalidateQueries({ queryKey });
-        logger.debug('Realtime: Invalidated cache', { queryKey });
+        queryClient.refetchQueries({ queryKey });
+        logger.debug('Realtime: Refetched cache', { queryKey });
       }
     };
 
-    // Fonction helper pour invalider plusieurs caches avec debouncing
+    // Fonction helper pour refetch plusieurs caches avec throttling
     const invalidateMultiple = (queryKeys: string[][]) => {
-      queryKeys.forEach(key => throttledInvalidate(key));
+      queryKeys.forEach(key => throttledRefetch(key));
     };
 
     const channel = supabase
