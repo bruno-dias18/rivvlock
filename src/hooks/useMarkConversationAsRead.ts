@@ -16,7 +16,10 @@ export const useMarkConversationAsRead = () => {
     
     localStorage.setItem(key, now);
 
-    // Force refetch immédiat au lieu de juste invalider
+    // ✅ Mise à jour optimiste immédiate du badge à 0
+    queryClient.setQueryData(['unread-conversation-messages', conversationId], 0);
+
+    // Force refetch pour confirmation serveur
     await Promise.all([
       queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId] }),
       queryClient.refetchQueries({ queryKey: ['unread-quotes-global'] }),

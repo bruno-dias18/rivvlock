@@ -124,6 +124,18 @@ export const useRealtimeActivityRefresh = () => {
           if (message.sender_id === user.id) return;
           
           logger.debug('Realtime: New message', payload);
+
+          // ✅ Mise à jour optimiste immédiate du badge "Discussion"
+          const lastSeenKey = `conversation_seen_${message.conversation_id}`;
+          const lastSeen = localStorage.getItem(lastSeenKey);
+          if (!lastSeen || message.created_at > lastSeen) {
+            queryClient.setQueryData<number>(
+              ['unread-conversation-messages', message.conversation_id],
+              (prev) => Math.max(0, (typeof prev === 'number' ? prev : 0) + 1)
+            );
+          }
+
+          // Refetch pour confirmation serveur (throttle 3s)
           invalidateMultiple([
             ['conversation-messages', message.conversation_id],
             ['unread-conversation-messages', message.conversation_id],
