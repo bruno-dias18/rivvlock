@@ -15,11 +15,11 @@ export const useUnreadQuotesGlobal = () => {
     queryFn: async (): Promise<number> => {
       if (!user?.id) return 0;
 
-      // Récupérer tous les devis de l'utilisateur (en tant que seller)
+      // Récupérer tous les devis de l'utilisateur (vendeur OU client)
       const { data: quotes, error: quotesError } = await supabase
         .from('quotes')
         .select('conversation_id')
-        .eq('seller_id', user.id)
+        .or(`seller_id.eq.${user.id},client_user_id.eq.${user.id}`)
         .not('conversation_id', 'is', null);
 
       if (quotesError || !quotes || quotes.length === 0) return 0;
