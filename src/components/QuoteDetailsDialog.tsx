@@ -71,7 +71,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
   const handleAcceptQuote = async () => {
     try {
       setIsAccepting(true);
-      await acceptQuote(quote.id);
+      await acceptQuote({ quoteId: quote.id, token: quote.secure_token });
       onOpenChange(false);
     } catch (error) {
       console.error('Error accepting quote:', error);

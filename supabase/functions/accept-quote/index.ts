@@ -20,6 +20,7 @@ serve(async (req) => {
     // Get authenticated user if exists
     const authHeader = req.headers.get('Authorization');
     let authenticatedUserId: string | null = null;
+    let authenticatedUser: any = null;
 
     if (authHeader) {
       const supabaseAuth = createClient(
@@ -30,6 +31,7 @@ serve(async (req) => {
       
       const { data: { user } } = await supabaseAuth.auth.getUser();
       authenticatedUserId = user?.id || null;
+      authenticatedUser = user;
       
       console.log('[accept-quote] Authenticated user ID:', authenticatedUserId);
     }
@@ -39,25 +41,63 @@ serve(async (req) => {
     
     const { quoteId, token } = body;
 
-    if (!quoteId || !token) {
-      console.error('[accept-quote] Missing parameters:', { quoteId, token });
-      throw new Error('Missing quoteId or token');
-    }
-    
-    console.log('[accept-quote] Processing quote:', quoteId);
-
-    // Récupérer le devis
-    const { data: quote, error: quoteError } = await supabaseAdmin
-      .from('quotes')
-      .select('*')
-      .eq('id', quoteId)
-      .eq('secure_token', token)
-      .single();
-
-    if (quoteError || !quote) {
-      throw new Error('Quote not found or invalid token');
+    if (!quoteId) {
+      throw new Error('Missing quoteId');
     }
 
+    let quote;
+
+    // Path 1: Validation par token (public link OU in-app avec token)
+    if (token) {
+      console.log('[accept-quote] Validating with token');
+      const { data, error } = await supabaseAdmin
+        .from('quotes')
+        .select('*')
+        .eq('id', quoteId)
+        .eq('secure_token', token)
+        .single();
+      
+      if (error || !data) {
+        throw new Error('Quote not found or invalid token');
+      }
+      quote = data;
+    }
+    // Path 2: Validation par authentification (in-app seulement, fallback si pas de token)
+    else if (authenticatedUserId) {
+      console.log('[accept-quote] Validating with auth (no token provided)');
+      const { data, error } = await supabaseAdmin
+        .from('quotes')
+        .select('*')
+        .eq('id', quoteId)
+        .single();
+      
+      if (error || !data) {
+        throw new Error('Quote not found');
+      }
+      
+      // Vérifications de sécurité strictes
+      if (data.seller_id === authenticatedUserId) {
+        throw new Error('Seller cannot accept their own quote');
+      }
+      
+      if (data.client_user_id && data.client_user_id !== authenticatedUserId) {
+        throw new Error('This quote is assigned to another user');
+      }
+      
+      if (!data.client_user_id && data.client_email) {
+        // Vérifier l'email via l'auth
+        if (authenticatedUser?.email !== data.client_email) {
+          throw new Error('Email mismatch: this quote was sent to a different email');
+        }
+      }
+      
+      quote = data;
+    } else {
+      throw new Error('Authentication required: please provide a token or log in');
+    }
+
+
+    // Vérifier le statut du devis
     if (quote.status !== 'pending' && quote.status !== 'negotiating') {
       throw new Error('Quote is not in a valid state to be accepted');
     }

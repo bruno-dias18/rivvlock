@@ -110,12 +110,13 @@ export const useQuotes = () => {
   });
 
   const acceptQuote = useMutation({
-    mutationFn: async (quoteId: string) => {
+    mutationFn: async ({ quoteId, token }: { quoteId: string; token?: string }) => {
       const { data, error } = await supabase.functions.invoke('accept-quote', {
-        body: { quoteId }
+        body: { quoteId, token }
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {
@@ -123,9 +124,9 @@ export const useQuotes = () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Devis accepté avec succès !');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Error accepting quote:', error);
-      toast.error('Erreur lors de l\'acceptation du devis');
+      toast.error(error.message || 'Erreur lors de l\'acceptation du devis');
     }
   });
 
