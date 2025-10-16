@@ -22,9 +22,10 @@ export const useQuotes = () => {
 
       if (error) throw error;
       
-      // Parse items from JSON
+      // Parse items from JSON and ensure all fields are present
       return (data || []).map(q => ({
         ...q,
+        client_user_id: q.client_user_id || null,
         items: (q.items as any) || []
       })) as Quote[];
     },

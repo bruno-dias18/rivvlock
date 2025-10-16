@@ -642,6 +642,7 @@ export type Database = {
         Row: {
           client_email: string
           client_name: string | null
+          client_user_id: string | null
           converted_transaction_id: string | null
           created_at: string
           currency: string
@@ -666,6 +667,7 @@ export type Database = {
         Insert: {
           client_email: string
           client_name?: string | null
+          client_user_id?: string | null
           converted_transaction_id?: string | null
           created_at?: string
           currency: string
@@ -690,6 +692,7 @@ export type Database = {
         Update: {
           client_email?: string
           client_name?: string | null
+          client_user_id?: string | null
           converted_transaction_id?: string | null
           created_at?: string
           currency?: string
