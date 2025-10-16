@@ -758,6 +758,7 @@ export type Database = {
           buyer_display_name: string | null
           buyer_id: string | null
           buyer_validated: boolean | null
+          client_email: string | null
           created_at: string
           currency: Database["public"]["Enums"]["currency_code"]
           date_change_count: number | null
@@ -768,6 +769,7 @@ export type Database = {
           funds_released: boolean | null
           funds_released_at: string | null
           id: string
+          last_reminder_sent_at: string | null
           payment_blocked_at: string | null
           payment_deadline: string | null
           payment_method: string | null
@@ -794,6 +796,7 @@ export type Database = {
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
+          client_email?: string | null
           created_at?: string
           currency: Database["public"]["Enums"]["currency_code"]
           date_change_count?: number | null
@@ -804,6 +807,7 @@ export type Database = {
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string
+          last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
@@ -830,6 +834,7 @@ export type Database = {
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
+          client_email?: string | null
           created_at?: string
           currency?: Database["public"]["Enums"]["currency_code"]
           date_change_count?: number | null
@@ -840,6 +845,7 @@ export type Database = {
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string
+          last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
           payment_method?: string | null
