@@ -37,6 +37,7 @@ export const useConversation = (conversationId: string | null | undefined) => {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
+    refetchInterval: 10_000, // Fallback polling every 10s if Realtime fails
   });
 
   const sendMessage = useMutation({
@@ -66,6 +67,8 @@ export const useConversation = (conversationId: string | null | undefined) => {
   useEffect(() => {
     if (!conversationId) return;
 
+    console.log('[Realtime] Subscribing to conversation:', conversationId);
+
     const channel = supabase
       .channel(`conversation-${conversationId}`)
       .on(
@@ -75,17 +78,33 @@ export const useConversation = (conversationId: string | null | undefined) => {
           const row = payload.new as UnifiedMessage | undefined;
           if (!row || row.conversation_id !== conversationId) return;
 
+          console.log('[Realtime] New message received:', row.id);
+
           const now = Date.now();
-          if (now - lastInvalidationRef.current > 1000) {
+          if (now - lastInvalidationRef.current > 500) {
             lastInvalidationRef.current = now;
-            queryClient.invalidateQueries({ queryKey: ['conversation-messages', conversationId] });
+            
+            // Optimistic update instead of invalidation
+            queryClient.setQueryData<UnifiedMessage[]>(
+              ['conversation-messages', conversationId],
+              (old = []) => {
+                const exists = old.some(msg => msg.id === row.id);
+                if (exists) return old;
+                return [...old, row];
+              }
+            );
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[Realtime] Subscription status:', status);
+      });
 
     return () => {
-      try { supabase.removeChannel(channel); } catch {}
+      try { 
+        console.log('[Realtime] Unsubscribing from conversation:', conversationId);
+        supabase.removeChannel(channel); 
+      } catch {}
     };
   }, [conversationId, queryClient]);
 
