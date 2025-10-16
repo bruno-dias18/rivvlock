@@ -40,21 +40,26 @@ export const useUnreadQuotesGlobal = () => {
 
       if (error || !allMessages) return 0;
 
+      // Capturer nowIso une seule fois pour éviter les variations temporelles
+      const nowIso = new Date().toISOString();
+
+      // Fetch conversation_reads pour tous les conversationIds en 1 requête
+      const { data: reads } = await supabase
+        .from('conversation_reads')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id)
+        .in('conversation_id', conversationIds);
+
+      // Construire Map(conversationId → last_read_at)
+      const lastReadMap = new Map(reads?.map(r => [r.conversation_id, r.last_read_at]) ?? []);
+
       // Compter les messages non lus par conversation
       let totalUnread = 0;
       for (const conversationId of conversationIds) {
-        const lastSeenKey = `conversation_seen_${conversationId}`;
-        const lastSeen = localStorage.getItem(lastSeenKey);
-
-        const unreadInConv = allMessages.filter(msg => {
-          if (msg.conversation_id !== conversationId) return false;
-          if (!lastSeen) return true;
-          // 🔧 Comparaison numérique robuste
-          const msgTime = new Date(msg.created_at).getTime();
-          const lastSeenTime = new Date(lastSeen).getTime();
-          return !Number.isNaN(msgTime) && !Number.isNaN(lastSeenTime) && msgTime > lastSeenTime;
-        });
-
+        const lastReadAt = lastReadMap.get(conversationId) ?? nowIso;
+        const unreadInConv = allMessages.filter(msg => 
+          msg.conversation_id === conversationId && msg.created_at > lastReadAt
+        );
         totalUnread += unreadInConv.length;
       }
 

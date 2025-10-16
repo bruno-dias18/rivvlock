@@ -43,6 +43,19 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
         const conversationIds = list.map(t => t.conversation_id).filter(Boolean) as string[];
         if (conversationIds.length === 0) return 0;
 
+        // Capturer nowIso une seule fois
+        const nowIso = new Date().toISOString();
+
+        // Fetch conversation_reads pour tous les conversationIds en 1 requête
+        const { data: reads } = await supabase
+          .from('conversation_reads')
+          .select('conversation_id, last_read_at')
+          .eq('user_id', user.id)
+          .in('conversation_id', conversationIds);
+
+        // Construire Map(conversationId → last_read_at)
+        const lastReadMap = new Map(reads?.map(r => [r.conversation_id, r.last_read_at]) ?? []);
+
         // Fetch all messages at once
         const { data: allMessages } = await supabase
           .from('messages')
@@ -55,18 +68,10 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
         // Count unread messages per conversation in memory
         let total = 0;
         for (const conversationId of conversationIds) {
-          const lastSeenKey = `conversation_seen_${conversationId}`;
-          const lastSeen = localStorage.getItem(lastSeenKey);
-
-          const unreadInConv = allMessages.filter(msg => {
-            if (msg.conversation_id !== conversationId) return false;
-            if (!lastSeen) return true;
-            // 🔧 Comparaison numérique robuste
-            const msgTime = new Date(msg.created_at).getTime();
-            const lastSeenTime = new Date(lastSeen).getTime();
-            return !Number.isNaN(msgTime) && !Number.isNaN(lastSeenTime) && msgTime > lastSeenTime;
-          });
-
+          const lastReadAt = lastReadMap.get(conversationId) ?? nowIso;
+          const unreadInConv = allMessages.filter(msg => 
+            msg.conversation_id === conversationId && msg.created_at > lastReadAt
+          );
           total += unreadInConv.length;
         }
         return total;
