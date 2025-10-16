@@ -106,8 +106,8 @@ export const useStripeAccount = () => {
         return false;
       }
       
-      // Poll every 60 seconds for pending accounts only
-      return 60000;
+      // Poll every 3 minutes for pending accounts (conservative optimization: Stripe onboarding takes 2-5 min minimum)
+      return 180000;
     },
     staleTime: 30000,
   });

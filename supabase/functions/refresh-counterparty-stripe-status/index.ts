@@ -79,7 +79,7 @@ serve(async (req) => {
     // Fetch seller stripe account row
     const { data: sa, error: saErr } = await supabaseAdmin
       .from("stripe_accounts")
-      .select("id, stripe_account_id, account_status, charges_enabled, payouts_enabled, onboarding_completed")
+      .select("id, stripe_account_id, account_status, charges_enabled, payouts_enabled, onboarding_completed, last_status_check")
       .eq("user_id", seller_id)
       .maybeSingle();
 
@@ -92,6 +92,33 @@ serve(async (req) => {
           charges_enabled: false,
           payouts_enabled: false,
           onboarding_completed: false,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Cache intelligent: Si compte actif ET vérifié < 2 min → retourner cache DB (optimisation conservatrice)
+    const lastCheck = sa.last_status_check ? new Date(sa.last_status_check) : null;
+    const now = new Date();
+    const minutesSinceCheck = lastCheck 
+      ? (now.getTime() - lastCheck.getTime()) / 60000 
+      : 999;
+
+    if (minutesSinceCheck < 2 && 
+        sa.account_status === 'active' && 
+        sa.charges_enabled && 
+        sa.payouts_enabled && 
+        sa.onboarding_completed) {
+      logStep("Using cached status (checked < 2min ago, account active)", { 
+        last_check: lastCheck,
+        minutes_since: minutesSinceCheck.toFixed(1)
+      });
+      return new Response(
+        JSON.stringify({
+          hasActiveAccount: true,
+          charges_enabled: true,
+          payouts_enabled: true,
+          onboarding_completed: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
