@@ -99,12 +99,12 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
                   <div className="text-xs text-muted-foreground space-y-1">
                     <div className="flex justify-between">
                       <span>💰 Acheteur reçoit (net):</span>
-                      <span className="font-medium">{(transactionAmount * percentage / 100 * 0.95).toFixed(2)} {currency.toUpperCase()}</span>
+                      <span className="font-medium">{((transactionAmount - transactionAmount * 0.05) * percentage / 100).toFixed(2)} {currency.toUpperCase()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>💵 Vendeur reçoit (net):</span>
                       <span className="font-medium">
-                        {(transactionAmount * (100 - percentage) / 100 * 0.95).toFixed(2)} {currency.toUpperCase()}
+                        {((transactionAmount - transactionAmount * 0.05) * (100 - percentage) / 100).toFixed(2)} {currency.toUpperCase()}
                       </span>
                     </div>
                     <div className="flex justify-between text-orange-600 dark:text-orange-400">

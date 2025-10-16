@@ -201,13 +201,13 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">💰 Remboursement acheteur (net):</span>
                     <span className="font-medium text-purple-700 dark:text-purple-300">
-                      {(transaction.price * proposal.refund_percentage / 100 * 0.95).toFixed(2)} {transaction.currency?.toUpperCase()}
+                      {((transaction.price - transaction.price * 0.05) * proposal.refund_percentage / 100).toFixed(2)} {transaction.currency?.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">💵 Paiement vendeur (net):</span>
                     <span className="font-medium text-purple-700 dark:text-purple-300">
-                      {(transaction.price * (100 - proposal.refund_percentage) / 100 * 0.95).toFixed(2)} {transaction.currency?.toUpperCase()}
+                      {((transaction.price - transaction.price * 0.05) * (100 - proposal.refund_percentage) / 100).toFixed(2)} {transaction.currency?.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex justify-between pt-1 border-t border-purple-200 dark:border-purple-700">

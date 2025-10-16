@@ -75,11 +75,10 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
       sellerReceived = 0;
     } else if (proposalType === 'partial_refund') {
       const platformFee = totalAmount * 0.05;
-      const buyerShare = refundPercentage / 100;
-      const sellerShare = (100 - refundPercentage) / 100;
+      const netAmount = totalAmount - platformFee;
       
-      buyerRefund = (totalAmount * buyerShare) - (platformFee * buyerShare);
-      sellerReceived = (totalAmount * sellerShare) - (platformFee * sellerShare);
+      buyerRefund = netAmount * (refundPercentage / 100);
+      sellerReceived = netAmount * ((100 - refundPercentage) / 100);
     } else {
       const platformFee = totalAmount * 0.05;
       buyerRefund = 0;
