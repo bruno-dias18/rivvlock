@@ -754,6 +754,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          discount_percentage: number | null
           fee_ratio_client: number | null
           id: string
           items: Json
@@ -780,6 +781,7 @@ export type Database = {
           created_at?: string
           currency: string
           description?: string | null
+          discount_percentage?: number | null
           fee_ratio_client?: number | null
           id?: string
           items?: Json
@@ -806,6 +808,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          discount_percentage?: number | null
           fee_ratio_client?: number | null
           id?: string
           items?: Json
