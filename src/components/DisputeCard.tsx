@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { DisputeMessagingDialog } from './DisputeMessagingDialog';
+import { UnifiedMessaging } from './UnifiedMessaging';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { logger } from '@/lib/logger';
-import { useUnreadDisputeMessages } from '@/hooks/useUnreadDisputeMessages';
+import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 import { DisputeHeader } from './DisputeCard/DisputeHeader';
 import { DisputeContent } from './DisputeCard/DisputeContent';
 import { DisputeResolution } from './DisputeCard/DisputeResolution';
@@ -35,7 +35,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
   const { proposals } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
-  const { unreadCount: unreadMessages, markAsSeen } = useUnreadDisputeMessages(dispute.id, dispute);
+  const { unreadCount: unreadMessages, refetch: refetchUnread } = useUnreadConversationMessages(dispute.conversation_id);
   const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
 
   const transaction = dispute.transactions;
@@ -261,17 +261,15 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         )}
 
         {/* Discussion Button */}
-        {!dispute.status.startsWith('resolved') && (
+        {!dispute.status.startsWith('resolved') && dispute.conversation_id && (
           <div>
             <Button
               variant={unreadMessages > 0 ? "default" : "outline"}
               className="w-full relative"
               onClick={() => {
                 setShowMessaging(true);
-                // ✅ NOUVEAU: Utiliser le hook DB
                 markDisputeAsSeenDB(dispute.id);
-                // ✅ DEPRECATED: Fallback localStorage
-                markAsSeen();
+                refetchUnread();
               }}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -298,18 +296,14 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         />
       </CardContent>
 
-      <DisputeMessagingDialog
-        disputeId={dispute.id}
-        disputeDeadline={dispute.dispute_deadline}
-        status={dispute.status}
-        transactionAmount={transaction.price}
-        currency={transaction.currency}
-        open={showMessaging}
-        onOpenChange={setShowMessaging}
-        onProposalSent={() => {
-          onRefetch?.();
-        }}
-      />
+      {dispute.conversation_id && (
+        <UnifiedMessaging
+          conversationId={dispute.conversation_id}
+          open={showMessaging}
+          onOpenChange={setShowMessaging}
+          title="Discussion du litige"
+        />
+      )}
     </Card>
   );
 };

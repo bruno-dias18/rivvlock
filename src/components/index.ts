@@ -23,11 +23,10 @@ export { ShareLinkDialog } from './ShareLinkDialog';
 
 // Dispute Components
 export { DisputeCard } from './DisputeCard';
-export { DisputeMessaging } from './DisputeMessaging';
-export { DisputeMessagingDialog } from './DisputeMessagingDialog';
 export { CreateDisputeDialog } from './CreateDisputeDialog';
 export { CreateProposalDialog } from './CreateProposalDialog';
 export { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
+export { UnifiedMessaging } from './UnifiedMessaging';
 
 // Admin Components
 export { AdminAnalyticsCharts } from './AdminAnalyticsCharts';

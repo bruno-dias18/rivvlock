@@ -4,10 +4,9 @@ import { DisputeCard } from '../DisputeCard';
 import type { Dispute } from '@/types';
 
 // Mock hooks
-vi.mock('@/hooks/useUnreadDisputeMessages', () => ({
-  useUnreadDisputeMessages: () => ({
+vi.mock('@/hooks/useUnreadConversationMessages', () => ({
+  useUnreadConversationMessages: () => ({
     unreadCount: 0,
-    markAsSeen: vi.fn(),
     refetch: vi.fn(),
   }),
 }));
@@ -40,6 +39,7 @@ const mockDispute: Dispute = {
   status: 'open',
   dispute_type: 'quality_issue',
   reason: 'Test dispute reason',
+  conversation_id: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   archived_by_buyer: false,

@@ -12,9 +12,7 @@ export { useAnnualTransactions } from './useAnnualTransactions';
 
 // Dispute Hooks
 export { useDisputes } from './useDisputes';
-export { useDisputeMessages } from './useDisputeMessages';
 export { useDisputeProposals } from './useDisputeProposals';
-export { useUnreadDisputeMessages } from './useUnreadDisputeMessages';
 export { useUnreadDisputesGlobal } from './useUnreadDisputesGlobal';
 export { useDisputeRealtimeNotifications } from './useDisputeRealtimeNotifications';
 export { useEscalatedDisputeMessaging } from './useEscalatedDisputeMessaging';
