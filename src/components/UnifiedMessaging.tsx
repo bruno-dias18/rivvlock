@@ -169,7 +169,7 @@ export const UnifiedMessaging = ({
 
         <div 
           ref={messagesContainerRef}
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20 flex flex-col justify-end"
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
         >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">

@@ -5,6 +5,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
+import { useUnreadTransactionsGlobal } from '@/hooks/useUnreadTransactionsGlobal';
 import { Badge } from '@/components/ui/badge';
 
 const navigationItems = [
@@ -42,6 +43,7 @@ export function BottomTabBar() {
   const { unreadCount } = useUnreadAdminMessages();
   const { unreadCount: disputesUnread } = useUnreadDisputesGlobal();
   const { unreadCount: quotesUnread } = useUnreadQuotesGlobal();
+  const { unreadCount: transactionsUnread } = useUnreadTransactionsGlobal();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -76,12 +78,12 @@ export function BottomTabBar() {
             >
               <div className="relative">
                 <item.icon className={`h-5 w-5 mb-1 ${isItemActive ? 'text-primary' : ''}`} />
-                {item.url === '/dashboard/transactions' && (unreadCount > 0 || disputesUnread > 0) && (
+                {item.url === '/dashboard/transactions' && (transactionsUnread > 0 || disputesUnread > 0) && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
                   >
-                    {(unreadCount + disputesUnread) > 9 ? '9+' : (unreadCount + disputesUnread)}
+                    {(transactionsUnread + disputesUnread) > 9 ? '9+' : (transactionsUnread + disputesUnread)}
                   </Badge>
                 )}
                 {item.url === '/dashboard/quotes' && quotesUnread > 0 && (

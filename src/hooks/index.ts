@@ -64,3 +64,4 @@ export { useConversation } from './useConversation';
 export { useUnreadConversationMessages } from './useUnreadConversationMessages';
 export { useMarkConversationAsRead } from './useMarkConversationAsRead';
 export { useUnreadQuotesGlobal } from './useUnreadQuotesGlobal';
+export { useUnreadTransactionsGlobal } from './useUnreadTransactionsGlobal';
