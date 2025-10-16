@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2, Info } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Info, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +38,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
   const [showFeeDetails, setShowFeeDetails] = useState(false);
   const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
   const [discountPercentage, setDiscountPercentage] = useState(quote.discount_percentage ?? 0);
+  const [isFeeDistributionOpen, setIsFeeDistributionOpen] = useState(false);
 
   const [clientEmail] = useState(quote.client_email);
   const [clientName] = useState(quote.client_name || '');
@@ -371,95 +374,148 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
               )}
 
               {totalAmount > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="fee-distribution-edit" className="text-sm font-medium">
-                      Répartition des frais de plateforme (5%)
-                    </Label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowFeeDetails(!showFeeDetails)}
-                    >
-                      <Info className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {showFeeDetails && (
-                    <Alert className="text-xs">
-                      <AlertDescription>
-                        Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
-                        le support client et la médiation.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Client paie</span>
-                      <Badge variant="secondary" className="font-mono">
-                        {feeRatio}%
-                      </Badge>
-                    </div>
-
-                    <Slider
-                      id="fee-distribution-edit"
-                      value={[feeRatio]}
-                      onValueChange={([value]) => {
-                        setFeeRatio(value);
-                        setAutoDistributionApplied(false);
-                      }}
-                      min={0}
-                      max={100}
-                      step={10}
-                      className="w-full"
-                    />
-
-                    <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Frais à charge du client</p>
-                        <p className="font-semibold text-base">
-                          {clientFees.toFixed(2)} {currency.toUpperCase()}
-                        </p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-muted-foreground">Frais à votre charge</p>
-                        <p className="font-semibold text-base">
-                          {sellerFees.toFixed(2)} {currency.toUpperCase()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-3 p-4 rounded-lg bg-muted/30 border">
-                      <p className="text-sm text-muted-foreground">
-                        {autoDistributionApplied 
-                          ? "✓ Les frais ont été répartis automatiquement sur toutes les lignes"
-                          : "Choisissez comment gérer les frais :"}
-                      </p>
-                      
-                      <Button
-                        type="button"
-                        variant={autoDistributionApplied ? "outline" : "default"}
-                        size="sm"
-                        onClick={applyAutoDistribution}
-                        disabled={feeRatio === 0}
-                        className="w-full"
-                      >
-                        {autoDistributionApplied ? "Réappliquer" : "Répartir automatiquement"}
-                      </Button>
-
-                      {!autoDistributionApplied && (
-                        <div className="flex justify-between font-bold text-lg border-t pt-3">
-                          <span>Prix final pour le client:</span>
-                          <span className="text-primary">{finalPrice.toFixed(2)} {currency.toUpperCase()}</span>
+                <>
+                  <Collapsible 
+                    open={isFeeDistributionOpen} 
+                    onOpenChange={setIsFeeDistributionOpen}
+                    className="space-y-2"
+                  >
+                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center justify-between cursor-pointer hover:bg-slate-100 p-2 rounded transition-colors">
+                          <div className="flex items-center gap-2">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Frais RivvLock</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {feeRatio}% client / {100 - feeRatio}% vous
+                            </Badge>
+                            {isFeeDistributionOpen ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
                         </div>
-                      )}
+                      </CollapsibleTrigger>
                     </div>
-                  </div>
-                </div>
+
+                    <CollapsibleContent className="space-y-4 pt-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="fee-distribution-edit" className="text-sm font-medium">
+                          Répartition des frais de plateforme (5%)
+                        </Label>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowFeeDetails(!showFeeDetails)}
+                        >
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {showFeeDetails && (
+                        <Alert className="text-xs">
+                          <AlertDescription>
+                            Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
+                            le support client et la médiation.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Client paie</span>
+                          <Badge variant="secondary" className="font-mono">
+                            {feeRatio}%
+                          </Badge>
+                        </div>
+
+                        <Slider
+                          id="fee-distribution-edit"
+                          value={[feeRatio]}
+                          onValueChange={([value]) => {
+                            setFeeRatio(value);
+                            setAutoDistributionApplied(false);
+                          }}
+                          min={0}
+                          max={100}
+                          step={10}
+                          className="w-full"
+                        />
+
+                        <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Frais à charge du client</p>
+                            <p className="font-semibold text-base">
+                              {clientFees.toFixed(2)} {currency.toUpperCase()}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-muted-foreground">Frais à votre charge</p>
+                            <p className="font-semibold text-base">
+                              {sellerFees.toFixed(2)} {currency.toUpperCase()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-3 p-4 rounded-lg bg-muted/30 border">
+                          <p className="text-sm text-muted-foreground">
+                            {autoDistributionApplied 
+                              ? "✓ Les frais ont été répartis automatiquement sur toutes les lignes"
+                              : "Choisissez comment gérer les frais :"}
+                          </p>
+                          
+                          <Button
+                            type="button"
+                            variant={autoDistributionApplied ? "outline" : "default"}
+                            size="sm"
+                            onClick={applyAutoDistribution}
+                            disabled={feeRatio === 0}
+                            className="w-full"
+                          >
+                            {autoDistributionApplied ? "Réappliquer" : "Répartir automatiquement"}
+                          </Button>
+
+                          {!autoDistributionApplied && (
+                            <div className="flex justify-between font-bold text-lg border-t pt-3">
+                              <span>Prix final pour le client:</span>
+                              <span className="text-primary">{finalPrice.toFixed(2)} {currency.toUpperCase()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  <Card className="bg-green-50 border-green-300 border-2">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-green-800 flex items-center gap-2">
+                            <Wallet className="h-5 w-5" />
+                            Vous allez recevoir
+                          </p>
+                          <p className="text-xs text-green-600">
+                            Montant net après frais RivvLock
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-bold text-green-700">
+                            {(totalAmount - sellerFees).toFixed(2)}
+                          </p>
+                          <p className="text-sm font-medium text-green-600">
+                            {currency.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
           </div>
