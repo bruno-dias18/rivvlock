@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook pour compter les messages non lus d'une conversation
@@ -31,7 +32,11 @@ export function useUnreadConversationMessages(conversationId: string | null | un
 
       const { count, error } = await query;
 
-      if (error) return 0;
+      if (error) {
+        logger.error('UnreadConv count error', { conversationId, error: String(error) });
+        return 0;
+      }
+      logger.debug('UnreadConv', { conversationId, lastSeen, count });
       return count || 0;
     },
     enabled: !!conversationId && !!user?.id,
