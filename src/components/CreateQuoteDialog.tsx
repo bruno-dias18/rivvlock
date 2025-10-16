@@ -34,6 +34,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   const [feeRatio, setFeeRatio] = useState(0); // 0-100
   const [showFeeDetails, setShowFeeDetails] = useState(false);
+  const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
 
   const getDefaultCurrency = (): Currency => {
     if (profile?.country === 'CH') return 'chf';
@@ -91,6 +92,27 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const sellerFees = totalFees * (1 - feeRatio / 100);
   const finalPrice = totalAmount + clientFees;
 
+  const applyAutoDistribution = () => {
+    if (feeRatio === 0 || totalAmount === 0) {
+      toast.info('Aucune répartition à appliquer (frais client à 0%)');
+      return;
+    }
+
+    // Calculer le ratio d'augmentation à appliquer
+    const ratio = finalPrice / totalAmount;
+
+    // Appliquer le ratio sur tous les prix unitaires
+    const adjustedItems = items.map(item => ({
+      ...item,
+      unit_price: item.unit_price * ratio,
+      total: item.quantity * (item.unit_price * ratio)
+    }));
+
+    setItems(adjustedItems);
+    setAutoDistributionApplied(true);
+    toast.success('Frais répartis automatiquement sur toutes les lignes');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -103,6 +125,16 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
       toast.error('Toutes les lignes doivent être complètes');
       return;
     }
+
+    // Recalculer avec les valeurs actuelles des lignes (possiblement ajustées)
+    const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const currentTaxAmount = currentSubtotal * (taxRate / 100);
+    const currentTotalAmount = currentSubtotal + currentTaxAmount;
+    
+    // Si auto-distribution appliquée, le total TTC des lignes inclut déjà les frais
+    const submittedTotalAmount = autoDistributionApplied 
+      ? currentTotalAmount 
+      : finalPrice;
 
     setIsLoading(true);
     try {
@@ -117,7 +149,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
           service_date: serviceDate?.toISOString() || null,
           service_end_date: serviceEndDate?.toISOString() || null,
           valid_until: validUntil.toISOString(),
-          total_amount: finalPrice, // Prix final incluant les frais client
+          total_amount: submittedTotalAmount,
           fee_ratio_client: feeRatio
         }
       });
@@ -345,7 +377,10 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                     <Slider
                       id="fee-distribution-quote"
                       value={[feeRatio]}
-                      onValueChange={([value]) => setFeeRatio(value)}
+                      onValueChange={([value]) => {
+                        setFeeRatio(value);
+                        setAutoDistributionApplied(false);
+                      }}
                       min={0}
                       max={100}
                       step={10}
@@ -365,6 +400,51 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                           {sellerFees.toFixed(2)} {currency.toUpperCase()}
                         </p>
                       </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Bouton de répartition automatique */}
+                    <div className="space-y-3 p-4 rounded-lg bg-muted/30 border">
+                      <p className="text-sm text-muted-foreground">
+                        {autoDistributionApplied 
+                          ? "✓ Les frais ont été répartis automatiquement sur toutes les lignes"
+                          : "Choisissez comment gérer les frais :"}
+                      </p>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={autoDistributionApplied ? "outline" : "default"}
+                          size="sm"
+                          onClick={applyAutoDistribution}
+                          disabled={feeRatio === 0}
+                          className="flex-1"
+                        >
+                          {autoDistributionApplied ? "Réappliquer" : "Répartir automatiquement"}
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => {
+                            if (autoDistributionApplied) {
+                              toast.info('Vous pouvez maintenant ajuster manuellement les lignes');
+                            }
+                          }}
+                        >
+                          Ajuster manuellement
+                        </Button>
+                      </div>
+                      
+                      {!autoDistributionApplied && feeRatio > 0 && (
+                        <p className="text-xs text-muted-foreground italic">
+                          💡 Avec "Répartir automatiquement", les prix seront ajustés proportionnellement. 
+                          Avec "Ajuster manuellement", modifiez vous-même les lignes ci-dessus.
+                        </p>
+                      )}
                     </div>
 
                     <Separator />
