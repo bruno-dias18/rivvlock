@@ -35,9 +35,8 @@ export function useUnreadConversationMessages(conversationId: string | null | un
       return count || 0;
     },
     enabled: !!conversationId && !!user?.id,
-    staleTime: 5_000, // 5s au lieu de 30s pour réactivité
+    staleTime: 0, // ✅ 0s pour refetch immédiat après invalidation Realtime
     gcTime: 5 * 60_000,
-    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   return { unreadCount, refetch };
