@@ -74,7 +74,7 @@ export const TransactionActions = ({
         </Button>
       )}
 
-      {/* Seller modify date */}
+      {/* Seller propose/modify date */}
       {userRole === 'seller' && transaction.status !== 'validated' && (
         <Button
           variant="outline"
@@ -83,7 +83,10 @@ export const TransactionActions = ({
           className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
         >
           <Edit3 className="h-4 w-4 mr-2" />
-          {isMobile ? t('common.modifyDate') : t('common.modifyDate')}
+          {transaction.service_date 
+            ? (isMobile ? t('common.modifyDate') : t('common.modifyDate'))
+            : (isMobile ? t('common.proposeDate', 'Proposer date') : t('common.proposeDate', 'Proposer une date'))
+          }
         </Button>
       )}
       
