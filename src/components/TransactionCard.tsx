@@ -9,7 +9,7 @@ import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
-import { useUnreadTransactionMessages } from '@/hooks/useUnreadTransactionMessages';
+import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 import { useHasTransactionMessages } from '@/hooks/useHasTransactionMessages';
 import { TransactionHeader } from './TransactionCard/TransactionHeader';
 import { TransactionPricing } from './TransactionCard/TransactionPricing';
@@ -52,7 +52,7 @@ const TransactionCardComponent = ({
   const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
   const [isMessagingOpen, setIsMessagingOpen] = useState(false);
   const { t, i18n } = useTranslation();
-  const { unreadCount } = useUnreadTransactionMessages(transaction.id);
+  const { unreadCount } = useUnreadConversationMessages(transaction.conversation_id);
   const hasMessages = useHasTransactionMessages(transaction.id);
   
   const getLocale = () => {

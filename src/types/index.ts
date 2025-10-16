@@ -87,6 +87,7 @@ export interface Transaction {
   requested_service_date: string | null;
   date_change_message: string | null;
   renewal_count: number;
+  conversation_id: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields

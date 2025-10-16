@@ -10,10 +10,11 @@ import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransact
 import { useDisputes } from '@/hooks/useDisputes';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
-import { useUnreadMessagesByStatus } from '@/hooks/useUnreadTransactionMessages';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
-import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
+import { useTransactions } from '@/hooks/useTransactions';
+import { useUnreadTransactionTabCounts } from '@/hooks/useUnreadTransactionTabCounts';
 import { useQuotes } from '@/hooks/useQuotes';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
@@ -37,7 +38,8 @@ export default function DashboardPage() {
   const { syncPayments } = useSyncStripePayments();
   const { data: disputes } = useDisputes();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
-  const { messageCounts } = useUnreadMessagesByStatus();
+  const { data: allTransactions } = useTransactions();
+  const messageCounts = useUnreadTransactionTabCounts(allTransactions || []);
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
   const { unreadCount: unreadQuoteMessages } = useUnreadQuotesGlobal();

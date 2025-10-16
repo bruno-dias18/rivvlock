@@ -11,16 +11,29 @@ export const useHasTransactionMessages = (transactionId: string | undefined) => 
     queryFn: async () => {
       if (!transactionId) return false;
 
+      // First, get the conversation_id from the transaction
+      const { data: transaction, error: txError } = await supabase
+        .from('transactions')
+        .select('conversation_id')
+        .eq('id', transactionId)
+        .single();
+
+      if (txError || !transaction?.conversation_id) {
+        logger.error('Error fetching transaction conversation:', txError);
+        return false;
+      }
+
+      // Then check if there are any messages in this conversation
       const { data, error } = await supabase
-        .from('transaction_messages')
+        .from('messages')
         .select('id')
-        .eq('transaction_id', transactionId)
+        .eq('conversation_id', transaction.conversation_id)
         .limit(1)
         .single();
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 is "no rows returned" which means no messages exist
-        logger.error('Error checking transaction messages:', error);
+        logger.error('Error checking messages:', error);
         return false;
       }
 

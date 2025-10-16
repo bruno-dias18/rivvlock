@@ -109,25 +109,27 @@ export const useRealtimeActivityRefresh = () => {
           ]);
         }
       )
-      // 4. Nouveaux messages sur les transactions
+      // 4. Nouveaux messages sur conversations (transactions et quotes)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'transaction_messages',
+          table: 'messages',
         },
         (payload) => {
           const message = payload.new as any;
           // Ignorer ses propres messages
           if (message.sender_id === user.id) return;
           
-          logger.debug('Realtime: New transaction message', payload);
+          logger.debug('Realtime: New message', payload);
           invalidateMultiple([
-            ['transaction-messages', message.transaction_id],
-            ['unread-transaction-messages', message.transaction_id],
-            ['unread-transactions-count', user.id],
-            ['unread-messages-by-status'],
+            ['conversation-messages', message.conversation_id],
+            ['unread-conversation-messages', message.conversation_id],
+            ['unread-transactions-global', user.id],
+            ['unread-quotes-global', user.id],
+            ['unread-transaction-tabs', user.id],
+            ['unread-quote-tabs', user.id],
           ]);
         }
       )
