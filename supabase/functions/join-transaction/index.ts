@@ -140,6 +140,29 @@ serve(async (req) => {
       );
     }
 
+    // Create conversation if it doesn't exist
+    let conversationId = transaction.conversation_id;
+    
+    if (!conversationId) {
+      const { data: newConversation, error: convError } = await adminClient
+        .from('conversations')
+        .insert({
+          seller_id: transaction.user_id,
+          buyer_id: userData.user.id,
+          transaction_id: transaction.id,
+          status: 'active'
+        })
+        .select('id')
+        .single();
+
+      if (convError) {
+        logger.error('❌ [JOIN-TRANSACTION] Conversation creation error:', convError);
+      } else if (newConversation) {
+        conversationId = newConversation.id;
+        logger.log('✅ [JOIN-TRANSACTION] Conversation created:', conversationId);
+      }
+    }
+
     // Assign user as buyer (using admin client to bypass RLS)
     const { error: updateError } = await adminClient
       .from('transactions')
@@ -147,6 +170,7 @@ serve(async (req) => {
         buyer_id: userData.user.id,
         buyer_display_name: buyerDisplayName,
         payment_deadline: paymentDeadline.toISOString(),
+        conversation_id: conversationId,
         updated_at: new Date().toISOString()
       })
       .eq('id', transaction_id);
