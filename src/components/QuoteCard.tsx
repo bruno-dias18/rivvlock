@@ -38,11 +38,6 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
               <FileText className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-0.5" />
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <h3 className="font-semibold text-base sm:text-lg break-words">{quote.title}</h3>
-                {unreadCount > 0 && (
-                  <Badge variant="destructive" className="h-5 min-w-[20px] flex items-center justify-center px-1.5 text-xs">
-                    {unreadCount}
-                  </Badge>
-                )}
               </div>
               <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
             </div>
@@ -84,18 +79,25 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
               <span className="hidden sm:inline">Voir</span>
             </Button>
             {onOpenMessaging && (
-              <Button
-                size="sm"
-                variant="default"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenMessaging(quote.id, quote.client_name || undefined);
-                }}
-                className="flex-1 sm:flex-initial"
-              >
-                <MessageSquare className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">Messagerie</span>
-              </Button>
+              <div className="relative flex-1 sm:flex-initial">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenMessaging(quote.id, quote.client_name || undefined);
+                  }}
+                  className="w-full"
+                >
+                  <MessageSquare className="h-4 w-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Messagerie</span>
+                </Button>
+                {unreadCount > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold border-2 border-background">
+                    {unreadCount}
+                  </div>
+                )}
+              </div>
             )}
             {canArchive && quote.status !== 'archived' && (
               <Button

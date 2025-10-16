@@ -132,7 +132,7 @@ export const UnifiedMessaging = ({
         className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 top-1 sm:top-1/2 translate-y-0 sm:translate-y-[-50%]"
         style={{ height: getDialogHeight() }}
       >
-        <DialogHeader className="p-4 border-b shrink-0">
+        <DialogHeader className="sticky top-0 z-10 bg-background p-4 border-b shrink-0">
           <DialogTitle>
             {title || (otherParticipantName 
               ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
@@ -210,6 +210,16 @@ export const UnifiedMessaging = ({
           <div className="text-xs text-muted-foreground mt-1 text-right">
             {newMessage.length}/500
           </div>
+          {isMobile && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)}
+              className="w-full mt-2"
+            >
+              {t('conversation.close', 'Fermer la conversation')}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
