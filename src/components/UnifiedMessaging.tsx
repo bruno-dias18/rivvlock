@@ -117,31 +117,30 @@ export const UnifiedMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
-  const getDialogHeight = () => {
-    if (!isMobile) return '85vh';
-    const baseUnit = isSafariiOS ? '100vh' : '100dvh';
-    if (keyboardInset > 0) {
-      return `calc(${baseUnit} - ${keyboardInset}px - env(safe-area-inset-top, 0px))`;
-    }
-    return `calc(${baseUnit} - env(safe-area-inset-top, 0px))`;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 inset-x-2 top-0 bottom-0 translate-x-0 translate-y-0 sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:translate-x-[-50%] sm:translate-y-[-50%] [&>button]:hidden"
+        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 
+          top-0 left-2 right-2
+          translate-x-0 translate-y-0
+          sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:right-auto
+          sm:translate-x-[-50%] sm:translate-y-[-50%]
+          [&>button]:hidden"
         style={{
           ...(isMobile ? {
-            bottom: `calc(${keyboardInset}px + env(safe-area-inset-bottom, 0px))`,
+            height: `calc(100dvh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
+            maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
+            top: 'env(safe-area-inset-top, 0px)',
             overscrollBehavior: 'contain',
-            contain: 'layout paint size'
           } : {
-            height: '85vh'
+            height: '85vh',
+            maxHeight: '85vh'
           })
         }}
       >
-        <DialogHeader className="sticky top-0 z-20 bg-background p-4 border-b shrink-0 relative">
-          <DialogTitle>
+        <DialogHeader className="bg-background p-4 border-b shrink-0 relative">
+          <DialogTitle className="pr-10">
             {title || (otherParticipantName 
               ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
               : t('conversation.title', 'Messagerie')
@@ -198,7 +197,9 @@ export const UnifiedMessaging = ({
           <div ref={bottomRef} />
         </div>
 
-        <div className="border-t p-3 shrink-0" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8px)' }}>
+        <div className="border-t p-3 shrink-0 bg-background" 
+          style={isMobile ? { paddingBottom: '12px' } : undefined}
+        >
           <div className="flex gap-2 items-end">
             <Textarea
               ref={textareaRef}
@@ -228,16 +229,6 @@ export const UnifiedMessaging = ({
           <div className="text-xs text-muted-foreground mt-1 text-right">
             {newMessage.length}/500
           </div>
-          {isMobile && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => onOpenChange(false)}
-              className="w-full mt-2"
-            >
-              {t('conversation.close', 'Fermer la conversation')}
-            </Button>
-          )}
         </div>
       </DialogContent>
     </Dialog>
