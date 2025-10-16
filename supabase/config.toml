@@ -21,13 +21,14 @@ max_client_conn = 100
 
 [realtime]
 enabled = true
-ip_version = "ipv4"
+ip_version = "ipv6"
 port = 54323
+log_level = "info"
 
 [studio]
 enabled = true
 port = 54324
-api_url = "http://127.0.0.1:54321"
+api_url = "http://127.0.0.1"
 
 [inbucket]
 enabled = true
@@ -42,65 +43,152 @@ file_size_limit = "50MiB"
 
 [auth]
 enabled = true
-port = 54329
 site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = ["https://localhost:3000"]
 jwt_expiry = 3600
 enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
 enable_confirmations = false
 
-[functions.get-transaction-by-token]
+[edge_runtime]
+enabled = true
+port = 54329
+policy = "per_worker"
+inspector_port = 54330
+
+[functions.accept-proposal]
+verify_jwt = true
+
+[functions.accept-quote]
+verify_jwt = true
+
+[functions.admin-delete-transaction]
+verify_jwt = true
+
+[functions.admin-dispute-actions]
+verify_jwt = true
+
+[functions.admin-get-transaction]
+verify_jwt = true
+
+[functions.check-stripe-account-status]
+verify_jwt = true
+
+[functions.clean-old-users]
 verify_jwt = false
 
-[functions.mark-payment-authorized]
+[functions.confirm-transaction-date]
+verify_jwt = true
+
+[functions.create-admin-proposal]
+verify_jwt = true
+
+[functions.create-dispute]
+verify_jwt = true
+
+[functions.create-payment-checkout]
 verify_jwt = true
 
 [functions.create-payment-intent]
 verify_jwt = true
 
-[functions.join-transaction]
+[functions.create-proposal]
 verify_jwt = true
 
-[functions.process-dispute]
+[functions.create-quote]
 verify_jwt = true
-
-[functions.send-notifications]
-verify_jwt = false
 
 [functions.create-stripe-account]
 verify_jwt = true
 
-[functions.sync-stripe-payments]
+[functions.create-stripe-customer]
 verify_jwt = true
 
-[functions.clean-old-users]
+[functions.create-transaction]
 verify_jwt = true
 
-[functions.fix-blocked-transaction]
-verify_jwt = true
-
-[functions.process-validation-deadline]
-verify_jwt = false
-
-[functions.process-validation-deadline.cron]
-schedule = "*/10 * * * *"
-
-[functions.send-validation-reminders]
+[functions.delete-expired-transaction]
 verify_jwt = false
 
 [functions.delete-user-account]
 verify_jwt = true
 
-[functions.release-funds]
+[functions.export-user-data]
 verify_jwt = true
+
+[functions.fix-blocked-transaction]
+verify_jwt = false
+
+[functions.fix-reactivated-transactions]
+verify_jwt = false
+
+[functions.fix-resolved-disputes]
+verify_jwt = false
+
+[functions.gdpr-data-retention-cleanup]
+verify_jwt = false
+
+[functions.generate-annual-report]
+verify_jwt = true
+
+[functions.generate-invoice-number]
+verify_jwt = true
+
+[functions.get-invoice-data]
+verify_jwt = true
+
+[functions.get-quote-by-token]
+verify_jwt = false
+
+[functions.get-transaction-by-token]
+verify_jwt = false
+
+[functions.get-user-emails]
+verify_jwt = true
+
+[functions.join-transaction]
+verify_jwt = true
+
+[functions.mark-messages-read]
+verify_jwt = true
+
+[functions.mark-payment-authorized]
+verify_jwt = true
+
+[functions.process-automatic-transfer]
+verify_jwt = false
+
+[functions.process-dispute]
+verify_jwt = true
+
+[functions.process-dispute-deadlines]
+verify_jwt = false
 
 [functions.process-expired-payment-deadlines]
 verify_jwt = false
 
-[functions.create-dispute]
+[functions.process-validation-deadline]
+verify_jwt = false
+
+[functions.refresh-counterparty-stripe-status]
+verify_jwt = true
+
+[functions.reject-proposal]
+verify_jwt = true
+
+[functions.release-funds]
+verify_jwt = true
+
+[functions.renew-expired-transaction]
 verify_jwt = true
 
 [functions.request-date-change]
+verify_jwt = true
+
+[functions.resend-quote-email]
 verify_jwt = true
 
 [functions.respond-to-date-change]
@@ -109,73 +197,31 @@ verify_jwt = true
 [functions.respond-to-dispute]
 verify_jwt = true
 
-[functions.process-dispute-deadlines]
+[functions.send-email]
 verify_jwt = false
 
-[functions.validate-stripe-accounts]
-verify_jwt = true
-
-[functions.process-automatic-transfer]
-verify_jwt = true
-
-[functions.check-stripe-account-status]
-verify_jwt = true
-
-[functions.sync-stripe-customers]
-verify_jwt = true
-
-[functions.create-payment-checkout]
-verify_jwt = true
-
-[functions.create-transaction]
-verify_jwt = true
-
-[functions.get-user-emails]
-verify_jwt = true
-
-[functions.update-stripe-account-info]
-verify_jwt = true
-
-[functions.create-proposal]
-verify_jwt = true
-
-[functions.accept-proposal]
-verify_jwt = true
-
-[functions.reject-proposal]
-verify_jwt = true
-
-[functions.create-admin-proposal]
-verify_jwt = true
-
-[functions.validate-admin-proposal]
-verify_jwt = true
-
-[functions.renew-expired-transaction]
-verify_jwt = true
-
-[functions.send-transaction-message]
-verify_jwt = true
-
-[functions.mark-messages-read]
-verify_jwt = true
-
-[functions.delete-expired-transaction]
-verify_jwt = true
-
-[functions.admin-get-transaction]
-verify_jwt = true
-
-[functions.send-email]
+[functions.send-notifications]
 verify_jwt = false
 
 [functions.send-payment-reminders]
 verify_jwt = false
 
-[functions.create-quote]
+[functions.send-validation-reminders]
+verify_jwt = false
+
+[functions.sync-stripe-customers]
+verify_jwt = false
+
+[functions.sync-stripe-payments]
+verify_jwt = false
+
+[functions.update-stripe-account-info]
 verify_jwt = true
 
-[functions.resend-quote-email]
+[functions.validate-admin-proposal]
+verify_jwt = true
+
+[functions.validate-stripe-accounts]
 verify_jwt = true
 
 [edge_runtime]

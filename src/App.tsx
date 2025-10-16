@@ -28,6 +28,7 @@ const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
+const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 
 // Lazy load components
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute").then(m => ({ default: m.ProtectedRoute })));
@@ -70,6 +71,7 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
+               React.createElement(Route, { path: "/quote/:quoteId/:token", element: React.createElement(QuoteViewPage) }),
                React.createElement(Route, { 
                  path: "/payment-success", 
                  element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage)))
