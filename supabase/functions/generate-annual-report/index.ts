@@ -46,9 +46,10 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .eq('status', 'validated')
       .neq('refund_status', 'full')
-      .gte('updated_at', startDate)
-      .lte('updated_at', endDate)
-      .order('updated_at', { ascending: false });
+      .not('funds_released_at', 'is', null)
+      .gte('funds_released_at', startDate)
+      .lte('funds_released_at', endDate)
+      .order('funds_released_at', { ascending: false });
 
     if (txError) throw txError;
     if (!txData || txData.length === 0) {
