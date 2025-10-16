@@ -136,6 +136,22 @@ export const useRealtimeActivityRefresh = () => {
             type: 'all' 
           });
 
+          // ✅ Nouveau: refetch aussi la clé basée sur la transaction
+          (async () => {
+            const { data: conv } = await supabase
+              .from('conversations')
+              .select('transaction_id')
+              .eq('id', message.conversation_id)
+              .maybeSingle();
+            if (conv?.transaction_id) {
+              logger.debug('Realtime: Refetch unread-by-transaction', { transactionId: conv.transaction_id });
+              queryClient.refetchQueries({
+                queryKey: ['unread-by-transaction', conv.transaction_id, user.id],
+                type: 'all'
+              });
+            }
+          })();
+
           // Refetch pour tous les compteurs globaux
           invalidateMultiple([
             ['conversation-messages', message.conversation_id],

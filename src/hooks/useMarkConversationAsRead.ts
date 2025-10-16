@@ -41,10 +41,22 @@ export const useMarkConversationAsRead = () => {
       queryClient.setQueryData(['unread-conversation-messages', conversationId, user.id], 0);
       queryClient.setQueryData(['unread-conversation-messages', conversationId], 0); // compat
 
+      // 👉 Récupérer la transaction liée à cette conversation pour mettre à jour le compteur basé transaction
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('transaction_id')
+        .eq('id', conversationId)
+        .maybeSingle();
+      if (conv?.transaction_id) {
+        // Optimistic update pour la nouvelle clé
+        queryClient.setQueryData(['unread-by-transaction', conv.transaction_id, user.id], 0);
+      }
+
       // Refetch all related queries with exact keys
       await Promise.all([
         queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId, user.id], type: 'all' }),
         queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId], type: 'all' }),
+        conv?.transaction_id ? queryClient.refetchQueries({ queryKey: ['unread-by-transaction', conv.transaction_id, user.id], type: 'all' }) : Promise.resolve(),
         queryClient.refetchQueries({ queryKey: ['unread-quotes-global'], type: 'all' }),
         queryClient.refetchQueries({ queryKey: ['unread-quote-tabs'], type: 'all' }),
         queryClient.refetchQueries({ queryKey: ['unread-transactions-global'], type: 'all' }),
