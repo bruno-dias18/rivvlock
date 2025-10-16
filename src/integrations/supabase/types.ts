@@ -112,6 +112,27 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_reads: {
+        Row: {
+          conversation_id: string
+          last_read_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          last_read_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          last_read_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           buyer_id: string | null

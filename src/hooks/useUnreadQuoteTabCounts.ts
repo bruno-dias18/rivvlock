@@ -23,20 +23,34 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
         const conversationIds = activeQuotes.map(q => q.conversation_id).filter(Boolean) as string[];
         if (conversationIds.length === 0) return 0;
 
+        // Capturer nowIso une seule fois
+        const nowIso = new Date().toISOString();
+
+        // Fetch conversation_reads pour tous les conversationIds en 1 requête
+        const { data: reads } = await supabase
+          .from('conversation_reads')
+          .select('conversation_id, last_read_at')
+          .eq('user_id', user.id)
+          .in('conversation_id', conversationIds);
+
+        // Construire Map(conversationId → last_read_at)
+        const lastReadMap = new Map(reads?.map(r => [r.conversation_id, r.last_read_at]) ?? []);
+
+        // Fetch tous les messages en 1 requête
+        const { data: allMessages } = await supabase
+          .from('messages')
+          .select('conversation_id, id, created_at')
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', user.id);
+
+        // Compter les messages non lus
         let total = 0;
         for (const conversationId of conversationIds) {
-          const lastSeenKey = `conversation_seen_${conversationId}`;
-          const lastSeen = localStorage.getItem(lastSeenKey);
-
-          let query = supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', conversationId)
-            .neq('sender_id', user.id);
-
-          if (lastSeen) query = query.gt('created_at', lastSeen);
-          const { count } = await query;
-          total += count || 0;
+          const lastReadAt = lastReadMap.get(conversationId) ?? nowIso;
+          const unreadInConv = allMessages?.filter(msg => 
+            msg.conversation_id === conversationId && msg.created_at > lastReadAt
+          ) ?? [];
+          total += unreadInConv.length;
         }
         return total;
       };
