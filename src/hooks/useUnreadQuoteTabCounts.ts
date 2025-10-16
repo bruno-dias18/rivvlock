@@ -48,7 +48,7 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
       return { sentUnread, receivedUnread };
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 10_000,
     gcTime: 5 * 60_000,
   });
 

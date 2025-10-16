@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 export const useMarkConversationAsRead = () => {
   const queryClient = useQueryClient();
 
-  const markAsRead = useCallback((conversationId: string) => {
+  const markAsRead = useCallback(async (conversationId: string) => {
     if (!conversationId) return;
 
     const key = `conversation_seen_${conversationId}`;
@@ -16,11 +16,14 @@ export const useMarkConversationAsRead = () => {
     
     localStorage.setItem(key, now);
 
-    // Invalider les queries de comptage pour mettre à jour les badges
-    queryClient.invalidateQueries({ queryKey: ['unread-conversation-messages', conversationId] });
-    queryClient.invalidateQueries({ queryKey: ['unread-quotes-global'] });
-    queryClient.invalidateQueries({ queryKey: ['unread-quote-tabs'] });
-    queryClient.invalidateQueries({ queryKey: ['unread-transactions-global'] });
+    // Force refetch immédiat au lieu de juste invalider
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId] }),
+      queryClient.refetchQueries({ queryKey: ['unread-quotes-global'] }),
+      queryClient.refetchQueries({ queryKey: ['unread-quote-tabs'] }),
+      queryClient.refetchQueries({ queryKey: ['unread-transactions-global'] }),
+      queryClient.refetchQueries({ queryKey: ['unread-transaction-tabs'] }),
+    ]);
   }, [queryClient]);
 
   const getLastSeen = useCallback((conversationId: string): string | null => {

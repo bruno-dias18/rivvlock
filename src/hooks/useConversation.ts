@@ -80,20 +80,15 @@ export const useConversation = (conversationId: string | null | undefined) => {
 
           console.log('[Realtime] New message received:', row.id);
 
-          const now = Date.now();
-          if (now - lastInvalidationRef.current > 500) {
-            lastInvalidationRef.current = now;
-            
-            // Optimistic update instead of invalidation
-            queryClient.setQueryData<UnifiedMessage[]>(
-              ['conversation-messages', conversationId],
-              (old = []) => {
-                const exists = old.some(msg => msg.id === row.id);
-                if (exists) return old;
-                return [...old, row];
-              }
-            );
-          }
+          // Optimistic update immédiat sans throttling
+          queryClient.setQueryData<UnifiedMessage[]>(
+            ['conversation-messages', conversationId],
+            (old = []) => {
+              const exists = old.some(msg => msg.id === row.id);
+              if (exists) return old;
+              return [...old, row];
+            }
+          );
         }
       )
       .subscribe((status) => {

@@ -76,7 +76,7 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       };
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 10_000,
     gcTime: 5 * 60_000,
   });
 

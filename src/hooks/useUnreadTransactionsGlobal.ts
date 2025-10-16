@@ -30,25 +30,28 @@ export const useUnreadTransactionsGlobal = () => {
 
       if (conversationIds.length === 0) return 0;
 
-      let totalUnread = 0;
+      // Requête groupée optimisée au lieu de N requêtes
+      const { data: allMessages, error } = await supabase
+        .from('messages')
+        .select('conversation_id, id, created_at')
+        .in('conversation_id', conversationIds)
+        .neq('sender_id', user.id);
 
-      // Pour chaque conversation, compter les messages non lus
+      if (error || !allMessages) return 0;
+
+      // Compter les messages non lus par conversation
+      let totalUnread = 0;
       for (const conversationId of conversationIds) {
         const lastSeenKey = `conversation_seen_${conversationId}`;
         const lastSeen = localStorage.getItem(lastSeenKey);
 
-        let query = supabase
-          .from('messages')
-          .select('id', { count: 'exact', head: true })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user.id);
+        const unreadInConv = allMessages.filter(msg => {
+          if (msg.conversation_id !== conversationId) return false;
+          if (!lastSeen) return true;
+          return msg.created_at > lastSeen;
+        });
 
-        if (lastSeen) {
-          query = query.gt('created_at', lastSeen);
-        }
-
-        const { count } = await query;
-        totalUnread += count || 0;
+        totalUnread += unreadInConv.length;
       }
 
       return totalUnread;

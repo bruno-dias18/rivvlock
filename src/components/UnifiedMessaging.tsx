@@ -55,6 +55,16 @@ export const UnifiedMessaging = ({
     }
   }, [open, conversationId, markAsRead]);
 
+  // Auto-marquer comme lu quand de nouveaux messages arrivent et la dialog est ouverte
+  useEffect(() => {
+    if (open && conversationId && messages.length > 0) {
+      const timer = setTimeout(() => {
+        markAsRead(conversationId);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [open, conversationId, messages.length, markAsRead]);
+
   const ensureBottom = () => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
