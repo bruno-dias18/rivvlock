@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook pour marquer une conversation comme lue
@@ -12,9 +13,22 @@ export const useMarkConversationAsRead = () => {
     if (!conversationId) return;
 
     const key = `conversation_seen_${conversationId}`;
-    const now = new Date().toISOString();
-    
-    localStorage.setItem(key, now);
+    // Utiliser le timestamp du dernier message côté serveur pour éviter les décalages d'horloge
+    const { data: latest } = await supabase
+      .from('messages')
+      .select('created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const lastSeenValue = latest?.created_at ?? null;
+    if (lastSeenValue) {
+      localStorage.setItem(key, lastSeenValue);
+    } else {
+      // Ne rien stocker si aucune conversation n'a encore de messages
+      localStorage.removeItem(key);
+    }
 
     // ✅ Mise à jour optimiste immédiate du badge à 0
     queryClient.setQueryData(['unread-conversation-messages', conversationId], 0);

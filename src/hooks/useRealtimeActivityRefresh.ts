@@ -146,6 +146,7 @@ export const useRealtimeActivityRefresh = () => {
           invalidateMultiple([
             ['conversation-messages', message.conversation_id],
             ['unread-conversation-messages', message.conversation_id],
+            ['unread-conversation-messages'],
             ['unread-transactions-global', user.id],
             ['unread-quotes-global', user.id],
             ['unread-transaction-tabs', user.id],
