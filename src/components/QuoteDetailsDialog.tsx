@@ -5,7 +5,7 @@ import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Mail } from 'lucide-react';
+import { Mail, MessageSquare } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useState } from 'react';
 
@@ -13,6 +13,7 @@ interface Props {
   quote: Quote | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOpenMessaging?: (quoteId: string, clientName?: string) => void;
 }
 
 const statusConfig = {
@@ -24,7 +25,7 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteDetailsDialog = ({ quote, open, onOpenChange }: Props) => {
+export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging }: Props) => {
   const { resendEmail } = useQuotes();
   const [isResending, setIsResending] = useState(false);
 
@@ -182,6 +183,23 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange }: Props) => {
               Ce lien permet au client de consulter le devis et d'y répondre
             </p>
           </div>
+
+          {/* Messaging Button */}
+          {onOpenMessaging && (
+            <div>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => {
+                  onOpenMessaging(quote.id, quote.client_name || undefined);
+                  onOpenChange(false);
+                }}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Ouvrir la messagerie
+              </Button>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -29,6 +29,11 @@ const QuotesPage = () => {
     setDetailsDialogOpen(true);
   };
 
+  const handleOpenMessaging = (quoteId: string, clientName?: string) => {
+    setMessagingQuoteId(quoteId);
+    setMessagingClientName(clientName);
+  };
+
   const filterOptions = [
     { value: 'all', label: 'Tous' },
     { value: 'pending', label: 'En attente' },
@@ -121,11 +126,12 @@ const QuotesPage = () => {
           }}
         />
 
-        <QuoteDetailsDialog
-          quote={selectedQuote}
-          open={detailsDialogOpen}
-          onOpenChange={setDetailsDialogOpen}
-        />
+      <QuoteDetailsDialog 
+        quote={selectedQuote}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+        onOpenMessaging={handleOpenMessaging}
+      />
       </div>
     </DashboardLayoutWithSidebar>
   );
