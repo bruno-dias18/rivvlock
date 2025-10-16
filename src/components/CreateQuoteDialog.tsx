@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,16 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const { data: profile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
 
+  const getDefaultCurrency = (): Currency => {
+    if (profile?.country === 'CH') return 'chf';
+    return 'eur'; // Default pour FR et fallback
+  };
+
   const [clientEmail, setClientEmail] = useState('');
   const [clientName, setClientName] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [currency, setCurrency] = useState<Currency>('eur');
+  const [currency, setCurrency] = useState<Currency>(getDefaultCurrency());
   const [serviceDate, setServiceDate] = useState<Date>();
   const [serviceEndDate, setServiceEndDate] = useState<Date>();
   const [validUntil, setValidUntil] = useState<Date>(
@@ -40,6 +45,12 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const [items, setItems] = useState<QuoteItem[]>([
     { description: '', quantity: 1, unit_price: 0, total: 0 }
   ]);
+
+  useEffect(() => {
+    if (profile?.country) {
+      setCurrency(getDefaultCurrency());
+    }
+  }, [profile?.country]);
 
   const addItem = () => {
     setItems([...items, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
