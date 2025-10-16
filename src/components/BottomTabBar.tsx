@@ -3,6 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
 import { Badge } from '@/components/ui/badge';
 
 const navigationItems = [
@@ -38,6 +40,8 @@ export function BottomTabBar() {
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
   const { unreadCount } = useUnreadAdminMessages();
+  const { unreadCount: disputesUnread } = useUnreadDisputesGlobal();
+  const { unreadCount: quotesUnread } = useUnreadQuotesGlobal();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -72,7 +76,22 @@ export function BottomTabBar() {
             >
               <div className="relative">
                 <item.icon className={`h-5 w-5 mb-1 ${isItemActive ? 'text-primary' : ''}`} />
-                {item.url === '/dashboard/transactions' && unreadCount > 0 && (
+                {item.url === '/dashboard/transactions' && (unreadCount > 0 || disputesUnread > 0) && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
+                  >
+                    {(unreadCount + disputesUnread) > 9 ? '9+' : (unreadCount + disputesUnread)}
+                  </Badge>
+                )}
+                {item.url === '/dashboard/quotes' && quotesUnread > 0 && (
+                  <Badge 
+                    className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold bg-purple-500 hover:bg-purple-600"
+                  >
+                    {quotesUnread > 9 ? '9+' : quotesUnread}
+                  </Badge>
+                )}
+                {item.url === '/dashboard/admin' && unreadCount > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
