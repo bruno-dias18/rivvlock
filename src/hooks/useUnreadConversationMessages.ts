@@ -14,12 +14,23 @@ export function useUnreadConversationMessages(conversationId: string | null | un
     queryFn: async (): Promise<number> => {
       if (!conversationId || !user?.id) return 0;
 
-      // Count messages not sent by user
-      const { count, error } = await supabase
+      // Récupérer le timestamp de dernière lecture depuis localStorage
+      const lastSeenKey = `conversation_seen_${conversationId}`;
+      const lastSeen = localStorage.getItem(lastSeenKey);
+
+      // Construire la requête
+      let query = supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user.id);
+
+      // Si on a un lastSeen, ne compter que les messages après cette date
+      if (lastSeen) {
+        query = query.gt('created_at', lastSeen);
+      }
+
+      const { count, error } = await query;
 
       if (error) return 0;
       return count || 0;

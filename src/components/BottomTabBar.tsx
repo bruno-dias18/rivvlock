@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
-import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
 import { Badge } from '@/components/ui/badge';
 
 const navigationItems = [

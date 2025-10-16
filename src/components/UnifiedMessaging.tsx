@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send, MessageSquare, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
+import { useMarkConversationAsRead } from '@/hooks/useMarkConversationAsRead';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
@@ -32,6 +33,7 @@ export const UnifiedMessaging = ({
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const keyboardInset = useKeyboardInsets();
+  const { markAsRead } = useMarkConversationAsRead();
   
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
@@ -45,6 +47,13 @@ export const UnifiedMessaging = ({
   const lastMessageTimeRef = useRef<number>(0);
 
   const { messages, isLoading, sendMessage, isSendingMessage } = useConversation(conversationId);
+
+  // Marquer la conversation comme lue à l'ouverture
+  useEffect(() => {
+    if (open && conversationId) {
+      markAsRead(conversationId);
+    }
+  }, [open, conversationId, markAsRead]);
 
   const ensureBottom = () => {
     if (bottomRef.current) {

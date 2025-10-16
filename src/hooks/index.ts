@@ -56,9 +56,11 @@ export { useInstallPrompt } from './useInstallPrompt';
 // Quote Hooks
 export { useQuotes } from './useQuotes';
 export { useQuoteMessages } from './useQuoteMessages';
-export { useUnreadQuoteMessages, useUnreadQuotesCount, useUnreadQuotesGlobal } from './useUnreadQuoteMessages';
+export { useUnreadQuoteMessages, useUnreadQuotesCount } from './useUnreadQuoteMessages';
 export { useAttachQuote } from './useAttachQuote';
 
 // Unified Conversation Hooks
 export { useConversation } from './useConversation';
 export { useUnreadConversationMessages } from './useUnreadConversationMessages';
+export { useMarkConversationAsRead } from './useMarkConversationAsRead';
+export { useUnreadQuotesGlobal } from './useUnreadQuotesGlobal';
