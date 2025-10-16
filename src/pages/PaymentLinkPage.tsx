@@ -185,6 +185,7 @@ export default function PaymentLinkPage() {
               src="/assets/rivvlock-logo.jpeg" 
               alt="RIVVLOCK Logo" 
               className="mx-auto h-16 w-auto object-contain mb-6"
+              loading="lazy"
             />
           </div>
 
@@ -274,6 +275,7 @@ export default function PaymentLinkPage() {
               src="/assets/rivvlock-logo.jpeg" 
               alt="RIVVLOCK Logo" 
               className="mx-auto h-16 w-auto object-contain mb-6"
+              loading="lazy"
             />
           </div>
 

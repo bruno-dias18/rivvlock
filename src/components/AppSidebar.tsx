@@ -86,12 +86,14 @@ export function AppSidebar() {
             src="/assets/rivvlock-logo-icon.png" 
             alt="RIVVLOCK Icon" 
             className="h-8 w-8 object-contain"
+            loading="lazy"
           />
           {state === 'expanded' && (
             <img 
               src="/assets/rivvlock-logo-text.png" 
               alt="RIVVLOCK" 
               className="h-4 w-auto object-contain"
+              loading="lazy"
             />
           )}
         </div>

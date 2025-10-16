@@ -18,6 +18,7 @@ export default function RegistrationSuccessPage() {
             src="/assets/rivvlock-logo.jpeg" 
             alt="RIVVLOCK Logo" 
             className="mx-auto h-24 w-auto object-contain"
+            loading="lazy"
           />
         </div>
 
