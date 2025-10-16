@@ -68,6 +68,26 @@ serve(async (req) => {
     // If already attached to this user
     if (quote.client_user_id === user.id) {
       console.log('[attach-quote] Quote already attached to this user');
+      
+      // Make sure conversation is also updated
+      const { data: quoteWithConv } = await supabaseClient
+        .from('quotes')
+        .select('conversation_id')
+        .eq('id', quoteId)
+        .single();
+
+      if (quoteWithConv?.conversation_id) {
+        const { error: convError } = await supabaseClient
+          .from('conversations')
+          .update({ buyer_id: user.id })
+          .eq('id', quoteWithConv.conversation_id)
+          .is('buyer_id', null);
+
+        if (!convError) {
+          console.log(`[attach-quote] Updated conversation ${quoteWithConv.conversation_id} with buyer ${user.id}`);
+        }
+      }
+      
       return new Response(
         JSON.stringify({ success: true, message: 'Devis déjà rattaché à votre compte' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -94,6 +114,28 @@ serve(async (req) => {
     }
 
     console.log(`[attach-quote] Successfully attached quote ${quoteId} to user ${user.id}`);
+
+    // Update conversation buyer_id if conversation exists
+    const { data: quoteWithConv } = await supabaseClient
+      .from('quotes')
+      .select('conversation_id')
+      .eq('id', quoteId)
+      .single();
+
+    if (quoteWithConv?.conversation_id) {
+      const { error: convError } = await supabaseClient
+        .from('conversations')
+        .update({ buyer_id: user.id })
+        .eq('id', quoteWithConv.conversation_id)
+        .is('buyer_id', null);
+
+      if (convError) {
+        console.error('[attach-quote] Error updating conversation:', convError);
+        // Don't throw, quote is already attached
+      } else {
+        console.log(`[attach-quote] Updated conversation ${quoteWithConv.conversation_id} with buyer ${user.id}`);
+      }
+    }
 
     // Log activity
     await supabaseClient.from('activity_logs').insert({
