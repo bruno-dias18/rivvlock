@@ -20,7 +20,7 @@ export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutPro
     <div className="flex flex-col min-h-screen w-full overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
           <img 
             src="/assets/rivvlock-logo-icon.png" 
             alt="RIVVLOCK Icon" 
