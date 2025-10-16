@@ -50,9 +50,10 @@ export const useUnreadDisputesGlobal = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    staleTime: 10_000,
+    staleTime: 5_000, // 5s pour réactivité immédiate
     gcTime: 5 * 60_000,
     refetchOnMount: true,
+    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   const markAllAsSeen = () => {

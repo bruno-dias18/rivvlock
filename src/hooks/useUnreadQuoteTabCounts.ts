@@ -49,9 +49,10 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
       return { sentUnread, receivedUnread };
     },
     enabled: !!user?.id,
-    staleTime: 10_000,
+    staleTime: 5_000, // 5s pour réactivité immédiate
     gcTime: 5 * 60_000,
-    refetchOnMount: true, // ✅ Use global config
+    refetchOnMount: true,
+    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   return { sentUnread: data?.sentUnread ?? 0, receivedUnread: data?.receivedUnread ?? 0, refetch, isLoading };

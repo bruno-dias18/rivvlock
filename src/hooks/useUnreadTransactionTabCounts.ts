@@ -84,9 +84,10 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       };
     },
     enabled: !!user?.id,
-    staleTime: 30_000, // Increased to 30s - aligned with other hooks
+    staleTime: 5_000, // 5s pour réactivité immédiate des badges
     gcTime: 5 * 60_000,
-    refetchOnWindowFocus: false, // Rely on Realtime subscriptions
+    refetchOnWindowFocus: false,
+    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   return {

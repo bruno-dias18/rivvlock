@@ -124,7 +124,8 @@ export const useNewItemsNotifications = () => {
       return counts;
     },
     enabled: !!user?.id,
-    refetchInterval: false, // Disabled: realtime updates handle this
+    staleTime: 5_000, // 5s pour réactivité immédiate
+    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   const getTransactionsWithNewActivity = async (category: CategoryKey): Promise<Set<string>> => {
