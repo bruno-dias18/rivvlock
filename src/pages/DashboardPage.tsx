@@ -67,7 +67,7 @@ export default function DashboardPage() {
       category: 'quotes' as const,
       badgeColor: 'bg-purple-500 text-white hover:bg-purple-600',
       onClick: () => {
-        navigate('/quotes');
+        navigate('/dashboard/quotes');
       },
     },
     {

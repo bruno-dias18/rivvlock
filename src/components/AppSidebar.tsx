@@ -5,6 +5,7 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
 import { Badge } from '@/components/ui/badge';
 
 import {
@@ -68,6 +69,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const { isAdmin } = useIsAdmin();
   const { unreadCount: disputesUnread } = useUnreadDisputesGlobal();
+  const { unreadCount: quotesUnread } = useUnreadQuotesGlobal();
 
   const isActive = (path: string) => {
     if (path === '/dashboard') {
@@ -112,6 +114,13 @@ export function AppSidebar() {
                           className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
                         >
                           {disputesUnread > 9 ? '9+' : disputesUnread}
+                        </Badge>
+                      )}
+                      {item.url === '/dashboard/quotes' && quotesUnread > 0 && (
+                        <Badge 
+                          className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold bg-purple-500 hover:bg-purple-600"
+                        >
+                          {quotesUnread > 9 ? '9+' : quotesUnread}
                         </Badge>
                       )}
                     </NavLink>
