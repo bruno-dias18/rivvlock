@@ -178,7 +178,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto px-4 sm:px-6">
         <DialogHeader>
           <DialogTitle>Créer un devis</DialogTitle>
         </DialogHeader>
@@ -260,16 +260,16 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
             <div className="space-y-3">
               {/* En-têtes des colonnes (desktop uniquement) */}
-              <div className="hidden md:grid md:grid-cols-12 gap-2 pb-2 text-sm font-medium text-muted-foreground">
-                <div className="md:col-span-5">Description</div>
-                <div className="md:col-span-2">Quantité</div>
-                <div className="md:col-span-2">Prix unitaire</div>
-                <div className="md:col-span-2">Total</div>
-                <div className="md:col-span-1"></div>
+              <div className="hidden md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 pb-2 text-sm font-medium text-muted-foreground">
+                <div>Description</div>
+                <div>Quantité</div>
+                <div>Prix unitaire</div>
+                <div>Total</div>
+                <div></div>
               </div>
 
               {items.map((item, index) => (
-                <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-12 gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
+                <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-[2fr_1fr_1fr_1fr_auto] gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
                   <div className="md:col-span-5">
                     <Label className="md:hidden text-xs">Description</Label>
                     <Input
