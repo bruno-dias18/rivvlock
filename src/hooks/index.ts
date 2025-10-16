@@ -52,3 +52,7 @@ export { useAutoSync } from './useAutoSync';
 
 // PWA & Install
 export { useInstallPrompt } from './useInstallPrompt';
+
+// Quote Hooks
+export { useQuotes } from './useQuotes';
+export { useQuoteMessages } from './useQuoteMessages';

@@ -1,0 +1,119 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    const { quoteId, token } = await req.json();
+
+    if (!quoteId || !token) {
+      throw new Error('Missing quoteId or token');
+    }
+
+    // Récupérer le devis
+    const { data: quote, error: quoteError } = await supabaseAdmin
+      .from('quotes')
+      .select('*')
+      .eq('id', quoteId)
+      .eq('secure_token', token)
+      .single();
+
+    if (quoteError || !quote) {
+      throw new Error('Quote not found or invalid token');
+    }
+
+    if (quote.status !== 'pending' && quote.status !== 'negotiating') {
+      throw new Error('Quote is not in a valid state to be accepted');
+    }
+
+    // Vérifier si le devis a une date de service
+    const hasServiceDate = quote.service_date && quote.service_date !== null;
+
+    // Déterminer le statut de la transaction
+    const transactionStatus = hasServiceDate ? 'pending' : 'pending_date_confirmation';
+
+    // Calculer le payment_deadline si date fixe
+    const paymentDeadline = hasServiceDate
+      ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    // Créer la transaction
+    const { data: transaction, error: transactionError } = await supabaseAdmin
+      .from('transactions')
+      .insert({
+        user_id: quote.seller_id,
+        buyer_id: null,
+        client_email: quote.client_email,
+        title: quote.title,
+        description: quote.description,
+        price: quote.total_amount,
+        currency: quote.currency,
+        service_date: quote.service_date,
+        service_end_date: quote.service_end_date,
+        status: transactionStatus,
+        payment_deadline: paymentDeadline,
+        seller_display_name: quote.client_name,
+      })
+      .select()
+      .single();
+
+    if (transactionError) throw transactionError;
+
+    // Mettre à jour le devis
+    await supabaseAdmin
+      .from('quotes')
+      .update({
+        status: 'accepted',
+        converted_transaction_id: transaction.id
+      })
+      .eq('id', quoteId);
+
+    // Si pas de date, envoyer message automatique
+    if (!hasServiceDate) {
+      await supabaseAdmin.from('transaction_messages').insert({
+        transaction_id: transaction.id,
+        sender_id: quote.seller_id,
+        message: `📅 Merci d'avoir accepté le devis ! Le vendeur va vous proposer une date de prestation sous 48h.`,
+        message_type: 'text'
+      });
+    }
+
+    // Log activité
+    await supabaseAdmin.from('activity_logs').insert({
+      user_id: quote.seller_id,
+      activity_type: 'quote_accepted',
+      title: 'Devis accepté',
+      description: `Le devis "${quote.title}" a été accepté`,
+      metadata: { quote_id: quoteId, transaction_id: transaction.id }
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        transaction,
+        payment_link: `${req.headers.get('origin')}/payment-link/${transaction.shared_link_token}`
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error) {
+    console.error('accept-quote error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

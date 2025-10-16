@@ -64,7 +64,7 @@ describe('Type definitions', () => {
   describe('Enum types', () => {
     it('should have correct TransactionStatus values', () => {
       expectTypeOf<TransactionStatus>().toEqualTypeOf<
-        'pending' | 'paid' | 'validated' | 'disputed' | 'expired'
+        'pending' | 'pending_date_confirmation' | 'paid' | 'validated' | 'disputed' | 'expired'
       >();
     });
 

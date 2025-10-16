@@ -5,7 +5,18 @@
 
 // ============= Enums & Literals =============
 
-export type TransactionStatus = 'pending' | 'paid' | 'validated' | 'disputed' | 'expired';
+export type TransactionStatus = 
+  | 'pending' 
+  | 'pending_date_confirmation'
+  | 'paid' 
+  | 'validated' 
+  | 'disputed' 
+  | 'expired';
+
+// Helper function pour détecter statuts "pending"
+export const isTransactionPending = (status: TransactionStatus): boolean => {
+  return status === 'pending' || status === 'pending_date_confirmation';
+};
 export type DisputeStatus = 'open' | 'negotiating' | 'responded' | 'escalated' | 'resolved' | 'resolved_refund' | 'resolved_release';
 export type RefundStatus = 'none' | 'partial' | 'full';
 export type UserType = 'individual' | 'company';
@@ -115,6 +126,11 @@ export interface TransactionMessage {
   transaction_id: string;
   sender_id: string;
   message: string;
+  message_type?: 'text' | 'date_proposal' | 'date_confirmed';
+  metadata?: {
+    proposed_service_date?: string;
+    proposed_service_end_date?: string;
+  };
   created_at: string;
   // Joined fields
   sender_name?: string;

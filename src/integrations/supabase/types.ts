@@ -539,6 +539,192 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          message_type: string
+          metadata: Json | null
+          quote_id: string
+          sender_email: string
+          sender_id: string | null
+          sender_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string
+          metadata?: Json | null
+          quote_id: string
+          sender_email: string
+          sender_id?: string | null
+          sender_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string
+          metadata?: Json | null
+          quote_id?: string
+          sender_email?: string
+          sender_id?: string | null
+          sender_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_messages_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quote_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      quote_revisions: {
+        Row: {
+          change_reason: string | null
+          changed_by: string
+          created_at: string
+          id: string
+          items: Json
+          quote_id: string
+          revision_number: number
+          total_amount: number
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_by: string
+          created_at?: string
+          id?: string
+          items: Json
+          quote_id: string
+          revision_number: number
+          total_amount: number
+        }
+        Update: {
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+          id?: string
+          items?: Json
+          quote_id?: string
+          revision_number?: number
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_revisions_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "quote_revisions_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          client_email: string
+          client_name: string | null
+          converted_transaction_id: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          items: Json
+          secure_token: string
+          seller_id: string
+          service_date: string | null
+          service_end_date: string | null
+          status: string
+          subtotal: number
+          tax_amount: number | null
+          tax_rate: number | null
+          title: string
+          token_expires_at: string
+          total_amount: number
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          client_email: string
+          client_name?: string | null
+          converted_transaction_id?: string | null
+          created_at?: string
+          currency: string
+          description?: string | null
+          id?: string
+          items?: Json
+          secure_token?: string
+          seller_id: string
+          service_date?: string | null
+          service_end_date?: string | null
+          status?: string
+          subtotal: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          title: string
+          token_expires_at?: string
+          total_amount: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string | null
+          converted_transaction_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          items?: Json
+          secure_token?: string
+          seller_id?: string
+          service_date?: string | null
+          service_end_date?: string | null
+          status?: string
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          title?: string
+          token_expires_at?: string
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_converted_transaction_id_fkey"
+            columns: ["converted_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       security_audit_log: {
         Row: {
           created_at: string | null
@@ -726,6 +912,8 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          message_type: string | null
+          metadata: Json | null
           sender_id: string
           transaction_id: string
         }
@@ -733,6 +921,8 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
+          message_type?: string | null
+          metadata?: Json | null
           sender_id: string
           transaction_id: string
         }
@@ -740,6 +930,8 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
+          message_type?: string | null
+          metadata?: Json | null
           sender_id?: string
           transaction_id?: string
         }
