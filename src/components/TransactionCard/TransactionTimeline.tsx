@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar, Clock, Banknote } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +21,7 @@ interface TransactionTimelineProps {
   onRefetch: () => void;
 }
 
-export const TransactionTimeline = ({
+const TransactionTimelineComponent = ({
   transaction,
   userRole,
   displayName,
@@ -153,3 +154,5 @@ export const TransactionTimeline = ({
     </div>
   );
 };
+
+export const TransactionTimeline = memo(TransactionTimelineComponent);

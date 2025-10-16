@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CardDescription, CardTitle } from '@/components/ui/card';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +10,7 @@ interface TransactionHeaderProps {
   userRole: 'seller' | 'buyer' | null;
 }
 
-export const TransactionHeader = ({ title, description, userRole }: TransactionHeaderProps) => {
+const TransactionHeaderComponent = ({ title, description, userRole }: TransactionHeaderProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
 
@@ -29,3 +30,5 @@ export const TransactionHeader = ({ title, description, userRole }: TransactionH
     </div>
   );
 };
+
+export const TransactionHeader = memo(TransactionHeaderComponent);

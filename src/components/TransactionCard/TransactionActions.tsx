@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Copy, CreditCard, Edit3, Download, MessageCircle, MessageCircleMore, Eye } from 'lucide-react';
@@ -25,7 +26,7 @@ interface TransactionActionsProps {
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
-export const TransactionActions = ({
+const TransactionActionsComponent = ({
   transaction,
   userRole,
   validationStatus,
@@ -162,3 +163,5 @@ export const TransactionActions = ({
     </div>
   );
 };
+
+export const TransactionActions = memo(TransactionActionsComponent);

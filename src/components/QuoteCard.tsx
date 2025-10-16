@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Quote } from '@/types/quotes';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller, onMarkAsViewed }: Props) => {
+const QuoteCardComponent = ({ quote, onView, onArchive, onOpenMessaging, isSeller, onMarkAsViewed }: Props) => {
   const { t } = useTranslation();
   const { unreadCount } = useUnreadConversationMessages(quote.conversation_id);
   const statusInfo = statusConfig[quote.status];
@@ -154,3 +155,5 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller,
     </Card>
   );
 };
+
+export const QuoteCard = memo(QuoteCardComponent);

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '@/lib/mobileUtils';
@@ -8,7 +9,7 @@ interface TransactionPricingProps {
   userRole: 'seller' | 'buyer' | null;
 }
 
-export const TransactionPricing = ({ transaction, userRole }: TransactionPricingProps) => {
+const TransactionPricingComponent = ({ transaction, userRole }: TransactionPricingProps) => {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
 
@@ -78,3 +79,5 @@ export const TransactionPricing = ({ transaction, userRole }: TransactionPricing
     </div>
   );
 };
+
+export const TransactionPricing = memo(TransactionPricingComponent);
