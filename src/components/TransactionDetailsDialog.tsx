@@ -89,10 +89,10 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
 
           <Separator />
 
-          {/* Items */}
-          {transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0 ? (
-            <div>
-              <h3 className="font-semibold mb-3">Détails de la prestation</h3>
+          {/* Items - Always show if available */}
+          <div>
+            <h3 className="font-semibold mb-3">Détails de la prestation</h3>
+            {transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0 ? (
               <div className="space-y-2">
                 {transactionData.items.map((item: any, idx: number) => (
                   <div key={idx} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg">
@@ -106,31 +106,25 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                {t('transactions.service', 'Prestation')}
-              </h3>
+            ) : (
               <div className="p-3 bg-muted/30 rounded-lg">
                 <p className="font-medium">{transaction.title}</p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           <Separator />
 
-          {/* Totals */}
+          {/* Totals - Always show if items exist */}
           <div className="space-y-2">
-            {transactionData.subtotal && transactionData.items && transactionData.items.length > 0 && (
+            {transactionData.items && transactionData.items.length > 0 && transactionData.subtotal && (
               <div className="flex justify-between text-sm">
                 <span>Sous-total:</span>
                 <span>{transactionData.subtotal.toFixed(2)} {transaction.currency.toUpperCase()}</span>
               </div>
             )}
             
-            {transactionData.discount_percentage && transactionData.discount_percentage > 0 && (
+            {transactionData.discount_percentage && transactionData.discount_percentage > 0 && transactionData.subtotal && (
               <>
                 <div className="flex justify-between text-sm text-blue-600">
                   <span>Rabais ({transactionData.discount_percentage}%):</span>
@@ -143,14 +137,14 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
               </>
             )}
             
-            {transactionData.tax_rate > 0 && transactionData.tax_amount && (
+            {transactionData.tax_rate && transactionData.tax_rate > 0 && transactionData.tax_amount && (
               <div className="flex justify-between text-sm">
                 <span>TVA ({transactionData.tax_rate}%):</span>
                 <span>{transactionData.tax_amount.toFixed(2)} {transaction.currency.toUpperCase()}</span>
               </div>
             )}
 
-            {transactionData.fee_ratio_client > 0 && (
+            {transactionData.fee_ratio_client && transactionData.fee_ratio_client > 0 && (
               <div className="flex justify-between text-sm text-orange-600">
                 <span>Frais de sécurisation ({transactionData.fee_ratio_client}%):</span>
                 <span>
