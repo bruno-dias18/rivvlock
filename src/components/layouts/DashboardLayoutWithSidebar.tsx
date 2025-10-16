@@ -86,7 +86,7 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
           </header>
 
           {/* Main Content - padding-bottom for mobile tab bar */}
-          <main className={`flex-1 p-6 ${isMobile ? 'pb-20' : ''}`}>
+          <main className={`flex-1 p-6 ${isMobile ? 'pb-20' : ''} overflow-x-hidden`}>
             {children}
           </main>
 

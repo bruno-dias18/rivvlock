@@ -24,7 +24,7 @@ export const DisputeHeader = ({
   getStatusText
 }: DisputeHeaderProps) => {
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
       <div className="flex-1 min-w-0">
         <CardTitle className="text-sm md:text-lg flex items-center gap-2 flex-wrap">
           <MessageSquare className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
@@ -58,9 +58,11 @@ export const DisputeHeader = ({
           </div>
         )}
       </div>
-      <Badge className={`${getStatusColor(status)} flex-shrink-0 text-xs whitespace-nowrap`}>
-        {getStatusText(status)}
-      </Badge>
+      <div className="md:self-auto self-start max-w-full">
+        <Badge className={`${getStatusColor(status)} text-xs md:text-sm break-words` }>
+          {getStatusText(status)}
+        </Badge>
+      </div>
     </div>
   );
 };

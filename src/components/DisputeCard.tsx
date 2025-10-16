@@ -223,7 +223,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   };
 
   return (
-    <Card className="border-red-200 dark:border-red-800">
+    <Card className="border-red-200 dark:border-red-800 overflow-hidden">
       <CardHeader>
         <DisputeHeader
           disputeId={dispute.id}
