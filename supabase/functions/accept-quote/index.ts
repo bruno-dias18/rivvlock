@@ -111,14 +111,8 @@ serve(async (req) => {
         .eq('id', quoteId);
     }
 
-    // Vérifier si le devis a une date de service
-    const hasServiceDate = quote.service_date && quote.service_date !== null;
-
-    // Déterminer le statut de la transaction
-    const transactionStatus = hasServiceDate ? 'pending' : 'pending_date_confirmation';
-
-    // Calculer le payment_deadline si date fixe
-    const paymentDeadline = hasServiceDate
+    // Calculer le payment_deadline
+    const paymentDeadline = quote.service_date
       ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
       : null;
 
@@ -135,7 +129,7 @@ serve(async (req) => {
         currency: quote.currency.toUpperCase(),
         service_date: quote.service_date,
         service_end_date: quote.service_end_date,
-        status: transactionStatus,
+        status: 'pending',
         payment_deadline: paymentDeadline,
         seller_display_name: quote.client_name,
       })
@@ -199,7 +193,7 @@ serve(async (req) => {
           .eq('id', transaction.id);
 
         // Si pas de date, envoyer message automatique dans la conversation unifiée
-        if (!hasServiceDate) {
+        if (!quote.service_date) {
           await supabaseAdmin.from('messages').insert({
             conversation_id: conversationId,
             sender_id: quote.seller_id,
