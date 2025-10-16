@@ -259,6 +259,15 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
             </div>
 
             <div className="space-y-3">
+              {/* En-têtes des colonnes (desktop uniquement) */}
+              <div className="hidden md:grid md:grid-cols-12 gap-2 pb-2 text-sm font-medium text-muted-foreground">
+                <div className="md:col-span-5">Description</div>
+                <div className="md:col-span-2">Quantité</div>
+                <div className="md:col-span-2">Prix unitaire</div>
+                <div className="md:col-span-2">Total</div>
+                <div className="md:col-span-1"></div>
+              </div>
+
               {items.map((item, index) => (
                 <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-12 gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
                   <div className="md:col-span-5">
