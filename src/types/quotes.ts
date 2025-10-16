@@ -37,6 +37,7 @@ export interface Quote {
   token_expires_at: string;
   converted_transaction_id: string | null;
   conversation_id: string | null;
+  fee_ratio_client: number | null;
   created_at: string;
   updated_at: string;
 }

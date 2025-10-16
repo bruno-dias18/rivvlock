@@ -4,6 +4,7 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Send, Inbox } from 'lucide-react';
 import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
+import { EditQuoteDialog } from '@/components/EditQuoteDialog';
 import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
@@ -14,10 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useIsMobile } from '@/lib/mobileUtils';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadQuoteTabCounts } from '@/hooks/useUnreadQuoteTabCounts';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const QuotesPage = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [selectedTab, setSelectedTab] = useState<string>('sent');
@@ -46,6 +50,11 @@ export const QuotesPage = () => {
   const handleViewQuote = (quote: Quote) => {
     setSelectedQuote(quote);
     setDetailsDialogOpen(true);
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setEditDialogOpen(true);
   };
 
   const handleOpenMessaging = (quoteId: string, clientName?: string) => {
@@ -145,11 +154,24 @@ export const QuotesPage = () => {
           }}
         />
 
+        {selectedQuote && (
+          <EditQuoteDialog
+            quote={selectedQuote}
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            onSuccess={() => {
+              // Quotes will auto-refresh via React Query
+            }}
+          />
+        )}
+
         <QuoteDetailsDialog 
           quote={selectedQuote}
           open={detailsDialogOpen}
           onOpenChange={setDetailsDialogOpen}
           onOpenMessaging={handleOpenMessaging}
+          onEdit={handleEditQuote}
+          userRole={selectedQuote?.seller_id === user?.id ? 'seller' : 'client'}
         />
 
         {/* Quote Messaging Dialog */}

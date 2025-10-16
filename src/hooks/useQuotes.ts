@@ -74,6 +74,41 @@ export const useQuotes = () => {
     }
   });
 
+  const updateQuote = useMutation({
+    mutationFn: async (params: {
+      quoteId: string;
+      data: {
+        title: string;
+        description: string | null;
+        items: any[];
+        currency: string;
+        service_date: string | null;
+        service_end_date: string | null;
+        valid_until: string;
+        total_amount: number;
+        fee_ratio_client: number;
+      }
+    }) => {
+      const { data, error } = await supabase.functions.invoke('update-quote', {
+        body: {
+          quote_id: params.quoteId,
+          ...params.data
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      toast.success('Devis modifié avec succès');
+    },
+    onError: (error) => {
+      console.error('Error updating quote:', error);
+      toast.error('Erreur lors de la modification du devis');
+    }
+  });
+
   return {
     quotes,
     sentQuotes,
@@ -81,6 +116,7 @@ export const useQuotes = () => {
     isLoading,
     error,
     archiveQuote: archiveQuote.mutateAsync,
-    resendEmail: resendEmail.mutateAsync
+    resendEmail: resendEmail.mutateAsync,
+    updateQuote: updateQuote.mutateAsync
   };
 };

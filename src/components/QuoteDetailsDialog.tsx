@@ -14,6 +14,8 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenMessaging?: (quoteId: string, clientName?: string) => void;
+  onEdit?: (quote: Quote) => void;
+  userRole: 'seller' | 'client';
 }
 
 const statusConfig = {
@@ -25,7 +27,7 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging }: Props) => {
+export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging, onEdit, userRole }: Props) => {
   const { resendEmail } = useQuotes();
   const [isResending, setIsResending] = useState(false);
 
@@ -157,48 +159,84 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging 
 
           <Separator />
 
-          {/* Share Link */}
-          <div>
-            <h3 className="font-semibold mb-2">Lien client</h3>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                readOnly
-                value={quoteLink}
-                className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted break-all"
-              />
-              <Button variant="outline" onClick={copyLink} className="shrink-0">
-                Copier
-              </Button>
-              <Button 
-                variant="default" 
-                onClick={handleResendEmail}
-                disabled={isResending}
-                className="shrink-0"
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                {isResending ? 'Envoi...' : 'Renvoyer'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Ce lien permet au client de consulter le devis et d'y répondre
-            </p>
-          </div>
+          {/* Seller Actions */}
+          {userRole === 'seller' && (
+            <>
+              {/* Share Link */}
+              <div>
+                <h3 className="font-semibold mb-2">Lien client</h3>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={quoteLink}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted break-all"
+                  />
+                  <Button variant="outline" onClick={copyLink} className="shrink-0">
+                    Copier
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    onClick={handleResendEmail}
+                    disabled={isResending}
+                    className="shrink-0"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    {isResending ? 'Envoi...' : 'Renvoyer'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ce lien permet au client de consulter le devis et d'y répondre
+                </p>
+              </div>
 
-          {/* Messaging Button */}
-          {onOpenMessaging && (
-            <div>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => {
-                  onOpenMessaging(quote.id, quote.client_name || undefined);
-                  onOpenChange(false);
-                }}
-              >
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Ouvrir la messagerie
-              </Button>
+              {/* Modify Button */}
+              {onEdit && (
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => {
+                      onEdit(quote);
+                      onOpenChange(false);
+                    }}
+                  >
+                    Modifier le devis
+                  </Button>
+                  {onOpenMessaging && (
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        onOpenMessaging(quote.id, quote.client_name || undefined);
+                        onOpenChange(false);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Messagerie
+                    </Button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Client Actions */}
+          {userRole === 'client' && (
+            <div className="flex gap-2">
+              {onOpenMessaging && (
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    onOpenMessaging(quote.id, quote.client_name || undefined);
+                    onOpenChange(false);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messagerie
+                </Button>
+              )}
             </div>
           )}
         </div>
