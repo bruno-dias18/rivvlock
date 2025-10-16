@@ -1094,6 +1094,7 @@ export type Database = {
           proposed_service_date: string | null
           proposed_service_end_date: string | null
           refund_status: string
+          reminder_checkpoints: Json | null
           renewal_count: number
           seller_display_name: string | null
           seller_validated: boolean | null
@@ -1135,6 +1136,7 @@ export type Database = {
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
           refund_status?: string
+          reminder_checkpoints?: Json | null
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null
@@ -1176,6 +1178,7 @@ export type Database = {
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
           refund_status?: string
+          reminder_checkpoints?: Json | null
           renewal_count?: number
           seller_display_name?: string | null
           seller_validated?: boolean | null

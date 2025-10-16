@@ -15,7 +15,7 @@ import {
 import * as React from 'npm:react@18.3.1';
 
 interface PaymentReminderProps {
-  urgencyLevel: '72h' | '24h' | '12h' | '2h';
+  urgencyLevel: '72h' | '48h' | '24h' | '12h';
   transactionTitle: string;
   amount: number;
   currency: string;
@@ -32,6 +32,12 @@ const getUrgencyConfig = (level: string) => {
       color: '#007BFF',
       bgColor: '#eff6ff',
     },
+    '48h': {
+      emoji: '⏰',
+      title: 'Rappel : Plus que 48h',
+      color: '#2563eb',
+      bgColor: '#dbeafe',
+    },
     '24h': {
       emoji: '🚨',
       title: 'IMPORTANT : Plus que 24h',
@@ -39,16 +45,10 @@ const getUrgencyConfig = (level: string) => {
       bgColor: '#fff7ed',
     },
     '12h': {
-      emoji: '🚨',
+      emoji: '⚠️',
       title: 'URGENT : Dernières 12h',
       color: '#dc2626',
       bgColor: '#fef2f2',
-    },
-    '2h': {
-      emoji: '⚠️',
-      title: 'DERNIÈRE CHANCE : Expiration dans 2h',
-      color: '#991b1b',
-      bgColor: '#fee2e2',
     },
   };
   return configs[level] || configs['72h'];
@@ -99,10 +99,10 @@ export const PaymentReminderEmail = ({
 
           <Section style={{ ...timeBox, borderColor: config.color }}>
             <Text style={{ ...timeText, color: config.color }}>
-              ⏳ <strong>Temps restant : {hoursRemaining}h</strong>
+              ⏳ <strong>Temps restant avant la date de service : {hoursRemaining}h</strong>
             </Text>
             <Text style={{ ...timeDeadline, color: config.color }}>
-              Expiration : {paymentDeadline}
+              Date de service : {paymentDeadline}
             </Text>
           </Section>
 

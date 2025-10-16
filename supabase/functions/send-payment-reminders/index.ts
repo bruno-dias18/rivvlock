@@ -27,15 +27,15 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Get all pending transactions with client_email that haven't expired yet
+    // Get all pending transactions with client_email and valid service_date
     const { data: pendingTransactions, error: fetchError } = await supabaseAdmin
       .from('transactions')
       .select('*')
       .eq('status', 'pending')
       .not('client_email', 'is', null)
-      .not('payment_deadline', 'is', null)
-      .gt('payment_deadline', new Date().toISOString())
-      .order('payment_deadline', { ascending: true });
+      .not('service_date', 'is', null)
+      .gt('service_date', new Date().toISOString())
+      .order('service_date', { ascending: true });
 
     if (fetchError) {
       throw new Error(`Failed to fetch transactions: ${fetchError.message}`);
@@ -50,47 +50,42 @@ serve(async (req) => {
     if (pendingTransactions && pendingTransactions.length > 0) {
       for (const transaction of pendingTransactions) {
         try {
-          const hoursUntilDeadline = differenceInHours(
-            new Date(transaction.payment_deadline),
+          const hoursUntilService = differenceInHours(
+            new Date(transaction.service_date),
             new Date()
           );
 
-          // Determine reminder urgency level
-          let urgencyLevel: '72h' | '24h' | '12h' | '2h' | null = null;
-          
-          if (hoursUntilDeadline <= 2 && hoursUntilDeadline > 0) {
-            urgencyLevel = '2h';
-          } else if (hoursUntilDeadline <= 12 && hoursUntilDeadline > 2) {
-            urgencyLevel = '12h';
-          } else if (hoursUntilDeadline <= 24 && hoursUntilDeadline > 12) {
-            urgencyLevel = '24h';
-          } else if (hoursUntilDeadline <= 72 && hoursUntilDeadline > 24) {
-            urgencyLevel = '72h';
+          // Define reminder windows with 6h margin for cron tolerance
+          const reminderWindows: Record<string, { min: number; max: number }> = {
+            '72h': { min: 72, max: 78 },  // 72h-78h before service
+            '48h': { min: 48, max: 54 },  // 48h-54h before service
+            '24h': { min: 24, max: 30 },  // 24h-30h before service
+            '12h': { min: 12, max: 18 }   // 12h-18h before service
+          };
+
+          // Get existing checkpoints
+          const checkpoints = (transaction.reminder_checkpoints as Record<string, boolean>) || {};
+
+          // Determine which reminder to send
+          let urgencyLevel: '72h' | '48h' | '24h' | '12h' | null = null;
+
+          for (const [level, window] of Object.entries(reminderWindows)) {
+            if (!checkpoints[level] && hoursUntilService >= window.min && hoursUntilService < window.max) {
+              urgencyLevel = level as '72h' | '48h' | '24h' | '12h';
+              break;
+            }
           }
 
-          // Skip if not in a reminder window
+          // Skip if not in any reminder window or already sent
           if (!urgencyLevel) {
             skipped++;
             continue;
           }
 
-          // Check if we already sent a reminder recently (< 6 hours ago)
-          if (transaction.last_reminder_sent_at) {
-            const hoursSinceLastReminder = differenceInHours(
-              new Date(),
-              new Date(transaction.last_reminder_sent_at)
-            );
-            
-            if (hoursSinceLastReminder < 6) {
-              skipped++;
-              continue; // Too soon, skip
-            }
-          }
-
           logStep('Sending reminder', {
             transactionId: transaction.id,
             urgencyLevel,
-            hoursRemaining: Math.floor(hoursUntilDeadline)
+            hoursRemaining: Math.floor(hoursUntilService)
           });
 
           // Send reminder email
@@ -103,8 +98,8 @@ serve(async (req) => {
                 transactionTitle: transaction.title,
                 amount: transaction.price,
                 currency: transaction.currency,
-                hoursRemaining: Math.floor(hoursUntilDeadline),
-                paymentDeadline: new Date(transaction.payment_deadline).toLocaleString('fr-FR', {
+                hoursRemaining: Math.floor(hoursUntilService),
+                paymentDeadline: new Date(transaction.service_date).toLocaleString('fr-FR', {
                   dateStyle: 'long',
                   timeStyle: 'short'
                 }),
@@ -119,13 +114,18 @@ serve(async (req) => {
             continue;
           }
 
-          // Update last_reminder_sent_at
+          // Update checkpoints to mark this reminder as sent
+          checkpoints[urgencyLevel] = true;
           await supabaseAdmin
             .from('transactions')
-            .update({ last_reminder_sent_at: new Date().toISOString() })
+            .update({ reminder_checkpoints: checkpoints })
             .eq('id', transaction.id);
 
-          logStep('Reminder sent successfully', { transactionId: transaction.id, urgencyLevel });
+          logStep('Reminder sent successfully', { 
+            transactionId: transaction.id, 
+            urgencyLevel,
+            hoursUntilService: Math.floor(hoursUntilService)
+          });
           sent++;
 
         } catch (transactionError: any) {
