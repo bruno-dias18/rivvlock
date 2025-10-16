@@ -21,6 +21,16 @@ export interface InvoiceData {
   viewerRole?: 'seller' | 'buyer';
   refundStatus?: 'none' | 'partial' | 'full';
   refundPercentage?: number;
+  items?: Array<{
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>;
+  subtotal?: number;
+  discount_percentage?: number;
+  tax_rate?: number;
+  tax_amount?: number;
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
@@ -421,37 +431,69 @@ export const generateInvoicePDF = async (
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   
-  doc.text(t?.('invoice.designation') || 'Désignation', margin + 2, yPosition + 5.5);
-  doc.text(earlySellerHasVat ? (t?.('invoice.priceHT') || 'Prix HT') : (t?.('invoice.price') || 'Prix'), margin + 100, yPosition + 5.5);
-  doc.text(t?.('invoice.quantity') || 'Qté', margin + 130, yPosition + 5.5);
-  doc.text(t?.('invoice.totalHT') || 'Total HT', margin + 150, yPosition + 5.5);
+  const colDesignation = margin + 2;
+  const colPriceHT = margin + 100;
+  const colQty = margin + 140;
+  const colTotalHT = margin + 160;
+  
+  doc.text(t?.('invoice.designation') || 'Désignation', colDesignation, yPosition + 5.5);
+  doc.text(earlySellerHasVat ? (t?.('invoice.priceHT') || 'Prix HT') : (t?.('invoice.price') || 'Prix'), colPriceHT, yPosition + 5.5);
+  doc.text(t?.('invoice.quantity') || 'Qté', colQty, yPosition + 5.5);
+  doc.text(earlySellerHasVat ? (t?.('invoice.totalHT') || 'Total HT') : (t?.('invoice.total') || 'Total'), colTotalHT, yPosition + 5.5);
   
   yPosition += 8;
   
-  // Ligne de contenu
-  const contentHeight = invoiceData.description ? 16 : 10;
-  doc.rect(margin, yPosition, pageWidth - 2 * margin, contentHeight);
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  
-  // Description sur deux lignes si nécessaire
-  doc.text(invoiceData.title, margin + 2, yPosition + 6);
-  if (invoiceData.description) {
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text(invoiceData.description.substring(0, 40) + '...', margin + 2, yPosition + 12);
+  // Si items existent, les afficher tous
+  if (invoiceData.items && invoiceData.items.length > 0) {
+    invoiceData.items.forEach((item, index) => {
+      const contentHeight = 10;
+      doc.rect(margin, yPosition, pageWidth - 2 * margin, contentHeight);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      
+      // Description
+      const descLines = doc.splitTextToSize(item.description, 90);
+      doc.text(descLines, colDesignation, yPosition + 6);
+      
+      // Prix unitaire HT
+      doc.text(`${item.unit_price.toFixed(2)} ${currency}`, colPriceHT, yPosition + 6);
+      
+      // Quantité
+      doc.text(`${item.quantity}`, colQty, yPosition + 6, { align: 'center' });
+      
+      // Total HT
+      doc.text(`${item.total.toFixed(2)} ${currency}`, colTotalHT, yPosition + 6);
+      
+      yPosition += contentHeight;
+    });
+  } else {
+    // Fallback: ligne unique avec title/description
+    const contentHeight = invoiceData.description ? 16 : 10;
+    doc.rect(margin, yPosition, pageWidth - 2 * margin, contentHeight);
+    
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.setTextColor(0, 0, 0);
+    
+    doc.text(invoiceData.title, colDesignation, yPosition + 6);
+    if (invoiceData.description) {
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(invoiceData.description.substring(0, 40) + '...', colDesignation, yPosition + 12);
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+    }
+    
+    const rowUnitAmount = baseAmountRow;
+    doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, colPriceHT, yPosition + 6);
+    doc.text('1', colQty, yPosition + 6, { align: 'center' });
+    doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, colTotalHT, yPosition + 6);
+    
+    yPosition += contentHeight;
   }
   
-  // Valeurs
-  const rowUnitAmount = baseAmountRow;
-  doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, margin + 100, yPosition + 6);
-  doc.text('1', margin + 135, yPosition + 6);
-  doc.text(`${rowUnitAmount.toFixed(2)} ${currency}`, margin + 150, yPosition + 6);
-  
-  yPosition += contentHeight + 15;
+  yPosition += 15;
   
   // Ne plus afficher de ligne de remboursement séparée
   // Le montant dans le tableau est déjà le montant final (après remboursement)
@@ -480,10 +522,26 @@ export const generateInvoicePDF = async (
     vatAmount = effectiveTTC - baseAmount;
   }
   
-  // Total HT
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
+  
+  // 1. Subtotal (si disponible et différent du baseAmount)
+  if (invoiceData.subtotal && invoiceData.items && invoiceData.items.length > 0) {
+    doc.text(`${t?.('invoice.subtotal') || 'Sous-total'}:`, labelX, yPosition, { align: 'left' });
+    doc.text(`${invoiceData.subtotal.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 8;
+  }
+  
+  // 2. Rabais (si applicable)
+  if (invoiceData.discount_percentage && invoiceData.discount_percentage > 0) {
+    const discountAmount = (invoiceData.subtotal || baseAmount) * (invoiceData.discount_percentage / 100);
+    doc.text(`${t?.('invoice.discount') || 'Rabais'} (${invoiceData.discount_percentage}%):`, labelX, yPosition, { align: 'left' });
+    doc.text(`-${discountAmount.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
+    yPosition += 8;
+  }
+  
+  // 3. Total HT (après rabais)
   doc.text(`${t?.('invoice.totalHT') || 'Total HT'}:`, labelX, yPosition, { align: 'left' });
   doc.text(`${baseAmount.toFixed(2)} ${currency}`, valueX, yPosition, { align: 'right' });
   

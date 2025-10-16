@@ -488,6 +488,24 @@ export default function TransactionsPage() {
             : (`${buyerProfileFinal.first_name || ''} ${buyerProfileFinal.last_name || ''}`.trim() || 'Client'))
         : transaction.buyer_display_name || 'Client anonyme';
 
+      // Récupérer les détails du devis si disponible
+      let quoteData: any = null;
+      try {
+        const { data } = await supabase
+          .from('quotes')
+          .select('items, subtotal, tax_rate, tax_amount, discount_percentage')
+          .eq('converted_transaction_id', transaction.id)
+          .maybeSingle();
+        
+        if (data) {
+          quoteData = data;
+        }
+      } catch (error) {
+        logger.warn('Could not fetch quote data for invoice:', error);
+      }
+
+      const transactionData = transaction as any;
+      
       const invoiceData = {
         transactionId: transaction.id,
         title: transaction.title,
@@ -504,6 +522,12 @@ export default function TransactionsPage() {
         buyerEmail,
         refundStatus: transaction.refund_status || 'none',
         refundPercentage: transaction.refund_percentage || null,
+        // Nouveaux champs pour items et détails
+        items: transactionData.items || quoteData?.items,
+        subtotal: quoteData?.subtotal,
+        discount_percentage: quoteData?.discount_percentage,
+        tax_rate: quoteData?.tax_rate,
+        tax_amount: quoteData?.tax_amount,
       };
 
       generateInvoicePDF({
