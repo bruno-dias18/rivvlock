@@ -50,5 +50,8 @@ export const useProfile = () => {
       return profileData;
     },
     enabled: !!user?.id,
+    staleTime: 5 * 60_000, // 5 minutes - profile rarely changes
+    gcTime: 15 * 60_000, // 15 minutes
+    refetchOnWindowFocus: false, // No need to refetch on every focus
   });
 };

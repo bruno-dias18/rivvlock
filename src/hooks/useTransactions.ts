@@ -15,10 +15,8 @@ export const useTransactions = () => {
   const queryResult = useQuery({
     queryKey: ['transactions', user?.id],
     queryFn: async () => {
-      logger.log('📊 Fetching transactions for user:', user?.email);
-      
       if (!user?.id) {
-        logger.error('❌ User not authenticated in useTransactions');
+        logger.error('User not authenticated in useTransactions');
         throw new Error(ErrorMessages.UNAUTHORIZED);
       }
       
@@ -29,12 +27,9 @@ export const useTransactions = () => {
         .order('created_at', { ascending: false });
       
       if (error) {
-        logger.error('❌ Error fetching transactions:', error);
+        logger.error('Error fetching transactions:', error);
         throw new Error(getUserFriendlyError(error, { code: 'database' }));
       }
-      
-      logger.log('✅ Transactions fetched:', data?.length || 0, 'transactions');
-      logger.debug('📋 Transaction details:', data?.map(t => ({ id: t.id, status: t.status, title: t.title, payment_deadline: t.payment_deadline })));
       
       // Enrichir avec refund_percentage depuis les propositions acceptées si disponible
       if (data && data.length > 0) {
@@ -102,10 +97,8 @@ export const useTransactionCounts = () => {
   const queryResult = useQuery({
     queryKey: ['transaction-counts', user?.id],
     queryFn: async () => {
-      logger.log('🔢 Fetching transaction counts for user:', user?.email);
-      
       if (!user?.id) {
-        logger.error('❌ User not authenticated in useTransactionCounts');
+        logger.error('User not authenticated in useTransactionCounts');
         throw new Error(ErrorMessages.UNAUTHORIZED);
       }
       
@@ -115,7 +108,7 @@ export const useTransactionCounts = () => {
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
       
       if (error) {
-        logger.error('❌ Error fetching transaction counts:', error);
+        logger.error('Error fetching transaction counts:', error);
         throw new Error(getUserFriendlyError(error, { code: 'database' }));
       }
       
@@ -131,14 +124,11 @@ export const useTransactionCounts = () => {
         }
       });
       
-      logger.log('✅ Transaction counts calculated:', result);
-      logger.debug('📊 Raw transaction statuses:', data?.map(t => t.status));
-      
       return result;
     },
     enabled: !!user?.id,
-    staleTime: 10000, // Cache for 10 seconds
-    refetchInterval: 30000, // Auto-refresh every 30 seconds (less aggressive)
+    staleTime: 30000, // Cache for 30 seconds - aligned with useTransactions
+    // Remove auto-polling - Realtime subscriptions handle updates
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });

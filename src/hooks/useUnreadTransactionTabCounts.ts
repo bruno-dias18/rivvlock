@@ -38,24 +38,33 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       const disputedIds = new Set((disputedTransactionIds || []).map(d => d.transaction_id));
       const disputed = transactions.filter(t => disputedIds.has(t.id));
 
+      // Optimized: Single grouped query instead of N queries
       const computeForList = async (list: TransactionLike[]) => {
         const conversationIds = list.map(t => t.conversation_id).filter(Boolean) as string[];
         if (conversationIds.length === 0) return 0;
 
+        // Fetch all messages at once
+        const { data: allMessages } = await supabase
+          .from('messages')
+          .select('conversation_id, id, created_at')
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', user.id);
+
+        if (!allMessages) return 0;
+
+        // Count unread messages per conversation in memory
         let total = 0;
         for (const conversationId of conversationIds) {
           const lastSeenKey = `conversation_seen_${conversationId}`;
           const lastSeen = localStorage.getItem(lastSeenKey);
 
-          let query = supabase
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', conversationId)
-            .neq('sender_id', user.id);
+          const unreadInConv = allMessages.filter(msg => {
+            if (msg.conversation_id !== conversationId) return false;
+            if (!lastSeen) return true;
+            return msg.created_at > lastSeen;
+          });
 
-          if (lastSeen) query = query.gt('created_at', lastSeen);
-          const { count } = await query;
-          total += count || 0;
+          total += unreadInConv.length;
         }
         return total;
       };
@@ -75,9 +84,9 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       };
     },
     enabled: !!user?.id,
-    staleTime: 10_000,
+    staleTime: 30_000, // Increased to 30s - aligned with other hooks
     gcTime: 5 * 60_000,
-    refetchOnMount: true, // ✅ Use global config
+    refetchOnWindowFocus: false, // Rely on Realtime subscriptions
   });
 
   return {
