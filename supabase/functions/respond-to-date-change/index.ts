@@ -69,7 +69,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     let updateData: any = {
-      date_change_status: approved ? 'approved' : 'rejected'
+      date_change_status: approved ? 'none' : 'rejected',
+      proposed_service_date: null,
+      proposed_service_end_date: null,
+      date_change_message: null
     };
 
     // If approved, update the service_date to the proposed date
@@ -81,14 +84,20 @@ const handler = async (req: Request): Promise<Response> => {
         updateData.service_end_date = transaction.proposed_service_end_date;
       }
       
-      // If transaction was expired, reactivate it with new payment deadline
-      if (transaction.status === 'expired') {
-        updateData.status = 'pending';
-        // Set new payment deadline to 22:00 tomorrow to give enough time
+      // ALWAYS create a payment_deadline if transaction is pending or expired
+      if (transaction.status === 'expired' || transaction.status === 'pending') {
+        if (transaction.status === 'expired') {
+          updateData.status = 'pending';
+        }
+        
+        // Set new payment deadline to 22:00 tomorrow
         const newDeadline = new Date();
-        newDeadline.setDate(newDeadline.getDate() + 1); // Tomorrow
-        newDeadline.setHours(22, 0, 0, 0); // 22:00 sharp
+        newDeadline.setDate(newDeadline.getDate() + 1);
+        newDeadline.setHours(22, 0, 0, 0);
         updateData.payment_deadline = newDeadline.toISOString();
+        
+        // Reset reminder checkpoints
+        updateData.reminder_checkpoints = {};
       }
     }
 
@@ -126,6 +135,28 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (logError) {
       logger.error('Error logging activity:', logError);
+    }
+
+    // Also log activity for the seller
+    const { error: sellerLogError } = await supabase
+      .from('activity_logs')
+      .insert({
+        user_id: transaction.user_id,
+        activity_type: 'date_change_response',
+        title: approved ? 'Date de service acceptée' : 'Date de service refusée',
+        description: approved 
+          ? `L'acheteur a accepté la date proposée: ${new Date(transaction.proposed_service_date).toLocaleString('fr-FR')}`
+          : `L'acheteur a refusé la date proposée`,
+        metadata: {
+          transaction_id: transactionId,
+          proposed_service_date: transaction.proposed_service_date,
+          approved,
+          buyer_id: user.id
+        }
+      });
+
+    if (sellerLogError) {
+      logger.error('Error logging seller activity:', sellerLogError);
     }
 
     logger.log(`[RESPOND-DATE-CHANGE] Date change ${approved ? 'approved' : 'rejected'} successfully`);

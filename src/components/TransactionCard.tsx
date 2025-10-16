@@ -6,6 +6,7 @@ import { useValidationStatus } from '@/hooks/useValidationStatus';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { DateChangeRequestDialog } from '@/components/DateChangeRequestDialog';
 import { DateChangeApprovalCard } from '@/components/DateChangeApprovalCard';
+import { DateChangeAcceptedNotification } from '@/components/DateChangeAcceptedNotification';
 import { RenewTransactionDialog } from '@/components/RenewTransactionDialog';
 import { TransactionMessaging } from '@/components/TransactionMessaging';
 import { useTranslation } from 'react-i18next';
@@ -104,6 +105,13 @@ const TransactionCardComponent = ({
       {userRole === 'buyer' && transaction.date_change_status === 'pending_approval' && (
         <div className="mb-4">
           <DateChangeApprovalCard transaction={transaction} onResponse={onRefetch} />
+        </div>
+      )}
+
+      {/* Date Change Accepted Notification for Seller */}
+      {userRole === 'seller' && transaction.date_change_status === 'approved' && (
+        <div className="mb-4">
+          <DateChangeAcceptedNotification transaction={transaction} />
         </div>
       )}
 
