@@ -7,12 +7,15 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
 import { QuoteCard } from '@/components/QuoteCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Quote, QuoteStatus } from '@/types/quotes';
+import { useIsMobile } from '@/lib/mobileUtils';
 
 const QuotesPage = () => {
   const { quotes, isLoading, archiveQuote } = useQuotes();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState<QuoteStatus | 'all'>('all');
+  const isMobile = useIsMobile();
 
   const filteredQuotes = selectedTab === 'all' 
     ? quotes 
@@ -22,6 +25,15 @@ const QuotesPage = () => {
     // TODO: Ouvrir dialog de détails
     console.log('View quote:', quote);
   };
+
+  const filterOptions = [
+    { value: 'all', label: 'Tous' },
+    { value: 'pending', label: 'En attente' },
+    { value: 'negotiating', label: 'En négociation' },
+    { value: 'accepted', label: 'Acceptés' },
+    { value: 'refused', label: 'Refusés' },
+    { value: 'archived', label: 'Archivés' },
+  ];
 
   return (
     <DashboardLayoutWithSidebar>
@@ -34,33 +46,69 @@ const QuotesPage = () => {
           </Button>
         </div>
 
-        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as QuoteStatus | 'all')}>
-          <TabsList>
-            <TabsTrigger value="all">Tous</TabsTrigger>
-            <TabsTrigger value="pending">En attente</TabsTrigger>
-            <TabsTrigger value="negotiating">En négociation</TabsTrigger>
-            <TabsTrigger value="accepted">Acceptés</TabsTrigger>
-            <TabsTrigger value="refused">Refusés</TabsTrigger>
-            <TabsTrigger value="archived">Archivés</TabsTrigger>
-          </TabsList>
+        {/* Mobile: Select dropdown */}
+        {isMobile ? (
+          <div className="space-y-4">
+            <Select value={selectedTab} onValueChange={(v) => setSelectedTab(v as QuoteStatus | 'all')}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filtrer les devis" />
+              </SelectTrigger>
+              <SelectContent>
+                {filterOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <TabsContent value={selectedTab} className="space-y-4">
-            {isLoading ? (
-              <p>Chargement...</p>
-            ) : filteredQuotes.length === 0 ? (
-              <p className="text-muted-foreground">Aucun devis dans cette catégorie</p>
-            ) : (
-              filteredQuotes.map(quote => (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  onView={handleViewQuote}
-                  onArchive={archiveQuote}
-                />
-              ))
-            )}
-          </TabsContent>
-        </Tabs>
+            <div className="space-y-4">
+              {isLoading ? (
+                <p>Chargement...</p>
+              ) : filteredQuotes.length === 0 ? (
+                <p className="text-muted-foreground">Aucun devis dans cette catégorie</p>
+              ) : (
+                filteredQuotes.map(quote => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onView={handleViewQuote}
+                    onArchive={archiveQuote}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Desktop: Tabs */
+          <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as QuoteStatus | 'all')}>
+            <TabsList>
+              <TabsTrigger value="all">Tous</TabsTrigger>
+              <TabsTrigger value="pending">En attente</TabsTrigger>
+              <TabsTrigger value="negotiating">En négociation</TabsTrigger>
+              <TabsTrigger value="accepted">Acceptés</TabsTrigger>
+              <TabsTrigger value="refused">Refusés</TabsTrigger>
+              <TabsTrigger value="archived">Archivés</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value={selectedTab} className="space-y-4">
+              {isLoading ? (
+                <p>Chargement...</p>
+              ) : filteredQuotes.length === 0 ? (
+                <p className="text-muted-foreground">Aucun devis dans cette catégorie</p>
+              ) : (
+                filteredQuotes.map(quote => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onView={handleViewQuote}
+                    onArchive={archiveQuote}
+                  />
+                ))
+              )}
+            </TabsContent>
+          </Tabs>
+        )}
 
         <CreateQuoteDialog
           open={createDialogOpen}
