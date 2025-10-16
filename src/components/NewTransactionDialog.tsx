@@ -39,6 +39,10 @@ const transactionSchema = z.object({
     message: "Le service doit être prévu au minimum 25 heures à l'avance",
   }),
   serviceEndDate: z.date().optional(),
+  clientEmail: z.string()
+    .email('Email invalide')
+    .optional()
+    .or(z.literal('')),
 }).refine((data) => {
   // If serviceEndDate is provided, it must be >= serviceDate
   if (data.serviceEndDate && data.serviceDate) {
@@ -127,7 +131,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           currency: data.currency,
           paymentDeadlineHours: parseInt(data.paymentDeadlineHours),
           serviceDate: data.serviceDate.toISOString(),
-          serviceEndDate: data.serviceEndDate?.toISOString()
+          serviceEndDate: data.serviceEndDate?.toISOString(),
+          clientEmail: data.clientEmail || null
         }
       });
 
@@ -426,6 +431,33 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                   </FormControl>
                   <FormDescription>
                     Pour les services de plusieurs jours. La validation sera possible 48h après cette date.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="clientEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>📧 Email du client (optionnel)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email"
+                      placeholder="client@exemple.com"
+                      inputMode="email"
+                      enterKeyHint="done"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Si vous renseignez l'email, nous enverrons automatiquement :
+                    <ul className="mt-1 ml-4 list-disc text-xs">
+                      <li>L'invitation au paiement immédiatement</li>
+                      <li>Des relances automatiques si non-payé</li>
+                    </ul>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

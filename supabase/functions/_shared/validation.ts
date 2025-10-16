@@ -45,6 +45,12 @@ export const createTransactionSchema = z.object({
       if (!date) return true;
       return !isNaN(new Date(date).getTime());
     }, { message: "Date de fin invalide" }),
+  
+  clientEmail: z.string()
+    .email({ message: "Email invalide" })
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
 });
 
 // Validation pour join-transaction

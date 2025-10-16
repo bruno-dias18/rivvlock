@@ -166,6 +166,12 @@ verify_jwt = true
 [functions.admin-get-transaction]
 verify_jwt = true
 
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-payment-reminders]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083

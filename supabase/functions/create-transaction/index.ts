@@ -63,7 +63,7 @@ serve(async (req) => {
     
     // Validation des données d'entrée
     const validatedData = validate(createTransactionSchema, requestBody);
-    const { title, description, price, currency, serviceDate, serviceEndDate, paymentDeadlineHours } = validatedData;
+    const { title, description, price, currency, serviceDate, serviceEndDate, paymentDeadlineHours, clientEmail } = validatedData;
 
     // Validation supplémentaire des montants (sécurité)
     if (price < 1 || price > 1000000) {
@@ -117,7 +117,8 @@ serve(async (req) => {
       shared_link_expires_at: sharedLinkExpiresAt.toISOString(),
       payment_deadline: paymentDeadline.toISOString(),
       seller_display_name: sellerDisplayName,
-      status: 'pending'
+      status: 'pending',
+      client_email: clientEmail || null
     };
 
     // Add service_end_date if provided
@@ -137,6 +138,43 @@ serve(async (req) => {
     }
 
     logStep('Transaction created successfully', { transactionId: transaction.id, token: sharedLinkToken });
+
+    // Send email if clientEmail provided
+    if (clientEmail) {
+      try {
+        logStep('Sending transaction creation email', { to: clientEmail });
+        
+        const emailResult = await supabaseAdmin.functions.invoke('send-email', {
+          body: {
+            type: 'transaction_created',
+            to: clientEmail,
+            data: {
+              sellerName: sellerDisplayName,
+              transactionTitle: transaction.title,
+              amount: transaction.price,
+              currency: transaction.currency,
+              serviceDate: new Date(serviceDate).toLocaleString('fr-FR', {
+                dateStyle: 'long',
+                timeStyle: 'short'
+              }),
+              paymentDeadline: paymentDeadline.toLocaleString('fr-FR', {
+                dateStyle: 'long',
+                timeStyle: 'short'
+              }),
+              shareLink: `https://app.rivvlock.com/join/${sharedLinkToken}`
+            }
+          }
+        });
+        
+        if (emailResult.error) {
+          logStep('Email sending failed (non-blocking)', emailResult.error);
+        } else {
+          logStep('Email sent successfully', { to: clientEmail });
+        }
+      } catch (emailError) {
+        logStep('Email error (non-blocking)', emailError);
+      }
+    }
 
     // Log activity for transaction creation
     try {
