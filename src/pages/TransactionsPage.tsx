@@ -523,7 +523,7 @@ export default function TransactionsPage() {
         refundStatus: transaction.refund_status || 'none',
         refundPercentage: transaction.refund_percentage || null,
         // Nouveaux champs pour items et détails
-        items: transactionData.items || quoteData?.items,
+        items: transactionData.items?.length > 0 ? transactionData.items : quoteData?.items,
         subtotal: quoteData?.subtotal,
         discount_percentage: quoteData?.discount_percentage,
         tax_rate: quoteData?.tax_rate,
