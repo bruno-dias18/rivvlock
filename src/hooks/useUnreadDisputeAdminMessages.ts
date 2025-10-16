@@ -41,7 +41,7 @@ export const useUnreadDisputeAdminMessages = (disputeId: string, dispute?: Dispu
       return count || 0;
     },
     enabled: !!user?.id && !!disputeId,
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Réduit à 60s
   });
 
   // ✅ DEPRECATED: markAsSeen conservé pour compatibilité

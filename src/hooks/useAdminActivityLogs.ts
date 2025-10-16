@@ -21,6 +21,6 @@ export const useAdminActivityLogs = (limit = 20) => {
 
       return data as ActivityLog[];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000, // Réduit à 60s au lieu de 15s
   });
 };

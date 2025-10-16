@@ -40,7 +40,7 @@ export const useAdminDisputeNotifications = () => {
       return count || 0;
     },
     enabled: !!user?.id && !!isAdmin,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Réduit à 60s
   });
 
   // Afficher une notification toast quand de nouveaux litiges sont escaladés

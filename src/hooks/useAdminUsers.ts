@@ -29,6 +29,6 @@ export const useAdminUsers = (limit = 10) => {
 
       return data as AdminUser[];
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Réduit à 60s
   });
 };

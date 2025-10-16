@@ -114,6 +114,6 @@ export const useAdminStats = () => {
         conversionTrend,
       };
     },
-    refetchInterval: 30000, // Rafraîchir toutes les 30 secondes
+    refetchInterval: 60000, // Réduit à 60s
   });
 };

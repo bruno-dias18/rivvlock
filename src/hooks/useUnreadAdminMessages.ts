@@ -65,7 +65,7 @@ export const useUnreadAdminMessages = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Réduit à 60s
   });
 
   return {

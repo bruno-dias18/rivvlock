@@ -37,7 +37,7 @@ export const useConversation = (conversationId: string | null | undefined) => {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
-    refetchInterval: 10_000, // Fallback polling every 10s if Realtime fails
+    refetchInterval: 30_000, // Réduit à 30s au lieu de 10s
   });
 
   const sendMessage = useMutation({
