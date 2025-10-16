@@ -5,13 +5,13 @@ import { logger } from './logger';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30000, // 30 seconds - optimized caching with realtime updates
-      gcTime: 900000, // 15 minutes - keep data longer in cache
+      staleTime: 60000, // 1 minute - longer cache for instant navigation
+      gcTime: 1800000, // 30 minutes - keep data much longer in cache
       retry: 2, // Retry failed requests twice
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
       refetchOnWindowFocus: false, // Don't refetch on window focus
       refetchOnReconnect: true, // Refetch on reconnect
-      refetchOnMount: false, // ✅ Don't refetch on mount (rely on staleTime instead for performance)
+      refetchOnMount: false, // ✅ Don't refetch on mount (rely on staleTime + realtime invalidation)
     },
     mutations: {
       retry: 1, // Retry mutations once

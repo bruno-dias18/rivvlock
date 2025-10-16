@@ -17,19 +17,17 @@ export const useRealtimeActivityRefresh = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fonction helper pour refetch avec throttling (max 1x toutes les 2 secondes par query)
+    // Fonction helper pour refetch avec throttling (max 1x toutes les 5 secondes par query)
     const throttledRefetch = (queryKey: string[]) => {
       const key = queryKey.join('-');
       const now = Date.now();
       const lastRefetch = lastInvalidationRef.current[key] || 0;
 
-      if (now - lastRefetch > 2000) {
+      if (now - lastRefetch > 5000) {
         lastInvalidationRef.current[key] = now;
-        // ✅ Étape 1: Refetch pour mettre à jour le cache (même queries inactives)
-        queryClient.refetchQueries({ queryKey, type: 'all' });
-        // ✅ Étape 2: Reset pour forcer IMMÉDIATEMENT le re-render (ignore staleTime)
-        queryClient.resetQueries({ queryKey });
-        logger.debug('Realtime: Refetched + reset cache', { queryKey });
+        // ✅ Invalidate en arrière-plan (garde les données anciennes, pas de loading)
+        queryClient.invalidateQueries({ queryKey, refetchType: 'active' });
+        logger.debug('Realtime: Invalidated cache (background refetch)', { queryKey });
       }
     };
 

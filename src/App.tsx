@@ -30,12 +30,12 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 
-// Lazy load components
-const ProtectedRoute = lazy(() => import("./components/ProtectedRoute").then(m => ({ default: m.ProtectedRoute })));
-const AdminRoute = lazy(() => import("./components/AdminRoute").then(m => ({ default: m.AdminRoute })));
-const GlobalErrorBoundary = lazy(() => import("./components/GlobalErrorBoundary").then(m => ({ default: m.GlobalErrorBoundary })));
-const ScrollToTop = lazy(() => import("./components/ScrollToTop").then(m => ({ default: m.ScrollToTop })));
-const RealtimeActivitySync = lazy(() => import("./components/RealtimeActivitySync").then(m => ({ default: m.RealtimeActivitySync })));
+// Eager-loaded critical components (avoid loading screens)
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
+import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
+import { ScrollToTop } from "./components/ScrollToTop";
+import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
 
 const App: React.FC = () => {
   return React.createElement(
@@ -47,18 +47,18 @@ const App: React.FC = () => {
       React.createElement(
         AuthProvider,
         null,
-        React.createElement(Suspense, { fallback: null }, React.createElement(RealtimeActivitySync)),
+        React.createElement(RealtimeActivitySync),
         React.createElement(Toaster, { position: "top-right" }),
         React.createElement(
           Suspense,
-          { fallback: React.createElement("div", { className: "flex items-center justify-center min-h-screen" }, "Loading...") },
+          { fallback: null },
           React.createElement(
             GlobalErrorBoundary,
             null,
             React.createElement(
               BrowserRouter,
               null,
-              React.createElement(Suspense, { fallback: null }, React.createElement(ScrollToTop)),
+              React.createElement(ScrollToTop),
             React.createElement(
               Routes,
               null,
@@ -74,7 +74,7 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/quote/:quoteId/:token", element: React.createElement(QuoteViewPage) }),
                React.createElement(Route, { 
                  path: "/payment-success", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage))
                }),
                // Legacy redirects to preserve old links
                React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
@@ -83,35 +83,35 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
                React.createElement(Route, { 
                  path: "/dashboard", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(DashboardPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/transactions", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/quotes", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(QuotesPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(QuotesPage))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/profile", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(ProfilePage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(ProfilePage))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/reports", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/admin", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage))))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage)))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/admin/disputes", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage))))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 
-                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(ActivityHistoryPage)))
+                 element: React.createElement(ProtectedRoute, null, React.createElement(ActivityHistoryPage))
                }),
               React.createElement(Route, { path: "*", element: React.createElement(NotFound) })
             )
