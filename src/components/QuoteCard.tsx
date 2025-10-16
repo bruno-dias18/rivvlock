@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { FileText, Archive, Eye, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useUnreadQuoteMessages } from '@/hooks/useUnreadQuoteMessages';
+import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 
 interface Props {
   quote: Quote;
@@ -25,7 +25,7 @@ const statusConfig = {
 };
 
 export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller }: Props) => {
-  const { unreadCount } = useUnreadQuoteMessages(quote.id);
+  const { unreadCount } = useUnreadConversationMessages(quote.conversation_id);
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
 

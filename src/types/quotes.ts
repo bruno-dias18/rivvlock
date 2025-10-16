@@ -36,6 +36,7 @@ export interface Quote {
   secure_token: string;
   token_expires_at: string;
   converted_transaction_id: string | null;
+  conversation_id: string | null;
   created_at: string;
   updated_at: string;
 }
