@@ -58,3 +58,7 @@ export { useQuotes } from './useQuotes';
 export { useQuoteMessages } from './useQuoteMessages';
 export { useUnreadQuoteMessages, useUnreadQuotesCount, useUnreadQuotesGlobal } from './useUnreadQuoteMessages';
 export { useAttachQuote } from './useAttachQuote';
+
+// Unified Conversation Hooks
+export { useConversation } from './useConversation';
+export { useUnreadConversationMessages } from './useUnreadConversationMessages';
