@@ -3,7 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Info } from 'lucide-react';
+import { CalendarIcon, Info, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +73,17 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [feeRatio, setFeeRatio] = useState(0); // 0-100
   const [showFeeDetails, setShowFeeDetails] = useState(false);
   
+  // Detailed mode states
+  const [detailedMode, setDetailedMode] = useState(false);
+  const [items, setItems] = useState<Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>>([]);
+  const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
+  
   const { data: profile } = useProfile();
   
   // Determine default currency based on seller's country
@@ -126,25 +137,135 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     });
   };
 
+  // Detailed mode functions
+  const addItem = () => {
+    setItems([...items, {
+      id: crypto.randomUUID(),
+      description: '',
+      quantity: 1,
+      unit_price: 0,
+      total: 0
+    }]);
+  };
+
+  const removeItem = (index: number) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index: number, field: keyof typeof items[0], value: any) => {
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: value };
+
+    if (field === 'quantity' || field === 'unit_price') {
+      newItems[index].total = newItems[index].quantity * newItems[index].unit_price;
+    }
+
+    setItems(newItems);
+  };
+
+  const switchToDetailedMode = () => {
+    const currentPrice = form.getValues('price');
+    const currentTitle = form.getValues('title');
+    
+    if (currentPrice > 0) {
+      setItems([{
+        id: crypto.randomUUID(),
+        description: currentTitle || 'Prestation',
+        quantity: 1,
+        unit_price: currentPrice,
+        total: currentPrice
+      }]);
+    } else {
+      setItems([{
+        id: crypto.randomUUID(),
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total: 0
+      }]);
+    }
+    setDetailedMode(true);
+    setAutoDistributionApplied(false);
+  };
+
+  const switchToSimpleMode = () => {
+    const total = items.reduce((sum, item) => sum + item.total, 0);
+    form.setValue('price', total);
+    setItems([]);
+    setDetailedMode(false);
+    setAutoDistributionApplied(false);
+  };
+
+  const applyAutoDistribution = () => {
+    if (feeRatio === 0 || items.length === 0) {
+      toast.info('Aucune répartition à appliquer (frais client à 0%)');
+      return;
+    }
+
+    const currentTotal = items.reduce((sum, item) => sum + item.total, 0);
+    const totalFees = currentTotal * 0.05263;
+    const clientFees = totalFees * (feeRatio / 100);
+    const finalPrice = currentTotal + clientFees;
+    const ratio = finalPrice / currentTotal;
+
+    const adjustedItems = items.map(item => ({
+      ...item,
+      unit_price: item.unit_price * ratio,
+      total: item.quantity * (item.unit_price * ratio)
+    }));
+
+    setItems(adjustedItems);
+    setAutoDistributionApplied(true);
+    toast.success('Frais répartis automatiquement sur toutes les lignes');
+  };
+
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
-      // Calculer les frais client
-      const totalFees = data.price * 0.05263;
-      const clientFees = totalFees * (feeRatio / 100);
-      const finalPrice = data.price + clientFees;
+      let finalPrice: number;
+      let itemsToSend: any[] = [];
+
+      if (detailedMode && items.length > 0) {
+        // Validate all items are complete
+        if (items.some(item => !item.description || item.quantity <= 0 || item.unit_price <= 0)) {
+          toast.error('Toutes les lignes doivent être complètes');
+          setIsLoading(false);
+          return;
+        }
+
+        // Mode détaillé : calculer à partir des lignes
+        const currentTotal = items.reduce((sum, item) => sum + item.total, 0);
+        
+        if (autoDistributionApplied) {
+          // Les frais sont déjà dans les lignes
+          finalPrice = currentTotal;
+        } else {
+          // Calculer les frais client
+          const totalFees = currentTotal * 0.05263;
+          const clientFees = totalFees * (feeRatio / 100);
+          finalPrice = currentTotal + clientFees;
+        }
+        
+        itemsToSend = items.map(({ id, ...rest }) => rest);
+      } else {
+        // Mode simple : utiliser le prix du formulaire
+        const totalFees = data.price * 0.05263;
+        const clientFees = totalFees * (feeRatio / 100);
+        finalPrice = data.price + clientFees;
+      }
 
       const { data: result, error } = await supabase.functions.invoke('create-transaction', {
         body: {
           title: data.title,
           description: data.description,
-          price: finalPrice, // Prix final incluant les frais client
+          price: finalPrice,
           currency: data.currency,
           paymentDeadlineHours: parseInt(data.paymentDeadlineHours),
           serviceDate: data.serviceDate.toISOString(),
           serviceEndDate: data.serviceEndDate?.toISOString(),
           clientEmail: data.clientEmail || null,
-          fee_ratio_client: feeRatio
+          fee_ratio_client: feeRatio,
+          items: itemsToSend.length > 0 ? itemsToSend : null
         }
       });
 
@@ -165,17 +286,21 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       await logActivity({
         type: 'transaction_created',
         title: `Transaction "${(result as any).transaction.title}" créée`,
-        description: `Nouvelle transaction d'escrow créée pour ${data.price} ${data.currency}`,
+        description: `Nouvelle transaction d'escrow créée pour ${detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : data.price} ${data.currency}`,
         metadata: {
           transaction_id: (result as any).transaction.id,
-          amount: data.price,
+          amount: finalPrice,
           currency: data.currency,
-          service_date: data.serviceDate.toISOString()
+          service_date: data.serviceDate.toISOString(),
+          detailed_mode: detailedMode
         }
       });
       
       onOpenChange(false);
       form.reset();
+      setDetailedMode(false);
+      setItems([]);
+      setAutoDistributionApplied(false);
       setShowShareDialog(true);
       
       toast.success('Transaction créée avec succès !');
@@ -189,6 +314,9 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
   const handleCancel = () => {
     form.reset();
+    setDetailedMode(false);
+    setItems([]);
+    setAutoDistributionApplied(false);
     onOpenChange(false);
   };
 
@@ -240,61 +368,201 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prix</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        inputMode="decimal"
-                        enterKeyHint="next"
-                        {...field}
-                        onFocus={(e) => {
-                          if (e.target.value === '0') {
-                            e.target.value = '';
-                            field.onChange('');
-                          }
-                        }}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Mode simple / détaillé */}
+            {!detailedMode ? (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prix</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            inputMode="decimal"
+                            enterKeyHint="next"
+                            {...field}
+                            onFocus={(e) => {
+                              if (e.target.value === '0') {
+                                e.target.value = '';
+                                field.onChange('');
+                              }
+                            }}
+                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Devise</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une devise" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="EUR">EUR</SelectItem>
-                        <SelectItem value="CHF">CHF</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Devise</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner une devise" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="CHF">CHF</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={switchToDetailedMode}
+                  className="w-full"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter des lignes détaillées
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">Lignes détaillées</Label>
+                    <FormField
+                      control={form.control}
+                      name="currency"
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="CHF">CHF</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+
+                  {/* En-têtes des colonnes (desktop uniquement) */}
+                  <div className="hidden md:grid md:grid-cols-12 gap-2 pb-2 text-sm font-medium text-muted-foreground">
+                    <div className="md:col-span-5">Description</div>
+                    <div className="md:col-span-2">Quantité</div>
+                    <div className="md:col-span-2">Prix unitaire</div>
+                    <div className="md:col-span-2">Total</div>
+                    <div className="md:col-span-1"></div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {items.map((item, index) => (
+                      <div key={item.id} className="space-y-2 md:space-y-0 md:grid md:grid-cols-12 gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
+                        <div className="md:col-span-5">
+                          <Label className="md:hidden text-xs">Description</Label>
+                          <Input
+                            placeholder="Description de la prestation"
+                            value={item.description}
+                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                            className="mt-1 md:mt-0"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <Label className="md:hidden text-xs">Quantité</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="1"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 1)}
+                            className="mt-1 md:mt-0"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <Label className="md:hidden text-xs">Prix unitaire</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={item.unit_price}
+                            onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                            className="mt-1 md:mt-0"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <Label className="md:hidden text-xs">Total</Label>
+                          <div className="mt-1 md:mt-0 font-medium text-right md:text-left py-2">
+                            {item.total.toFixed(2)}
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-1 flex justify-end md:justify-start">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(index)}
+                            disabled={items.length === 1}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addItem}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter une ligne
+                  </Button>
+
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Sous-total</span>
+                      <span className="font-medium">
+                        {items.reduce((sum, item) => sum + item.total, 0).toFixed(2)} {watchedCurrency}
+                      </span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={switchToSimpleMode}
+                    className="w-full"
+                  >
+                    ← Revenir au mode simple
+                  </Button>
+                </div>
+              </>
+            )}
 
             {/* Fee distribution slider */}
-            {watchedPrice > 0 && (
+            {((detailedMode && items.reduce((sum, item) => sum + item.total, 0) > 0) || (!detailedMode && watchedPrice > 0)) && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="fee-distribution" className="text-sm font-medium">
@@ -338,17 +606,29 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                     className="w-full"
                   />
 
+                  {detailedMode && feeRatio > 0 && !autoDistributionApplied && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={applyAutoDistribution}
+                      className="w-full"
+                    >
+                      Répartir automatiquement les frais sur les lignes
+                    </Button>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Frais à charge du client</p>
                       <p className="font-semibold text-base">
-                        {((watchedPrice * 0.05263) * (feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                        {(((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263) * (feeRatio / 100)).toFixed(2)} {watchedCurrency}
                       </p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-xs text-muted-foreground">Frais à votre charge</p>
                       <p className="font-semibold text-base">
-                        {((watchedPrice * 0.05263) * (1 - feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                        {(((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263) * (1 - feeRatio / 100)).toFixed(2)} {watchedCurrency}
                       </p>
                     </div>
                   </div>
@@ -359,13 +639,13 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Prix final pour le client</span>
                       <span className="font-medium">
-                        {(watchedPrice + (watchedPrice * 0.05263 * feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                        {((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) + ((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263 * feeRatio / 100)).toFixed(2)} {watchedCurrency}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-2">
                       <span className="font-medium">Vous recevrez</span>
                       <span className="font-bold text-lg text-green-600">
-                        {(watchedPrice - (watchedPrice * 0.05263 * (1 - feeRatio / 100))).toFixed(2)} {watchedCurrency}
+                        {((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) - ((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263 * (1 - feeRatio / 100))).toFixed(2)} {watchedCurrency}
                       </span>
                     </div>
                   </div>

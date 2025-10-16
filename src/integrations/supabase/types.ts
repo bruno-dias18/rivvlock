@@ -965,6 +965,7 @@ export type Database = {
           funds_released: boolean | null
           funds_released_at: string | null
           id: string
+          items: Json | null
           last_reminder_sent_at: string | null
           payment_blocked_at: string | null
           payment_deadline: string | null
@@ -1004,6 +1005,7 @@ export type Database = {
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string
+          items?: Json | null
           last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
@@ -1043,6 +1045,7 @@ export type Database = {
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string
+          items?: Json | null
           last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null

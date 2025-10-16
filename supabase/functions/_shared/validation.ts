@@ -57,6 +57,14 @@ export const createTransactionSchema = z.object({
     .max(100, { message: "Le ratio ne peut pas dépasser 100" })
     .optional()
     .default(0),
+  
+  // Optional items array for detailed mode
+  items: z.array(z.object({
+    description: z.string().min(1, { message: "Description requise" }),
+    quantity: z.number().positive({ message: "Quantité doit être positive" }),
+    unit_price: z.number().positive({ message: "Prix unitaire doit être positif" }),
+    total: z.number().positive({ message: "Total doit être positif" })
+  })).optional().nullable(),
 });
 
 // Validation pour join-transaction
