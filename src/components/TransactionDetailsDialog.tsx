@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Transaction } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TransactionDetailsDialogProps {
   transaction: Transaction;
@@ -45,31 +46,62 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
     }
   };
 
+  const [quoteDetails, setQuoteDetails] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('items, subtotal, tax_rate, tax_amount, discount_percentage, fee_ratio_client')
+        .eq('converted_transaction_id', transaction.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setQuoteDetails(data);
+      } else {
+        setQuoteDetails(null);
+      }
+    })();
+  }, [open, transaction.id]);
+
   const displayName = userRole === 'seller' 
     ? transaction.buyer_display_name || t('transactions.anonymousClient')
     : transaction.seller_display_name || t('common.seller');
 
   const transactionData = transaction as any;
 
-  // Calculate values even if not stored in DB
+  // Prefer transaction items; fallback to linked quote items; else create virtual
   const hasDetailedItems = transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0;
+  const hasQuoteItems = !hasDetailedItems && quoteDetails?.items && Array.isArray(quoteDetails.items) && quoteDetails.items.length > 0;
   
-  // If no items, create a virtual item from the transaction
-  const displayItems = hasDetailedItems 
-    ? transactionData.items 
-    : [{
-        description: transaction.title,
-        quantity: 1,
-        unit_price: transaction.price / (1 + (transactionData.fee_ratio_client || 0) / 100),
-        total: transaction.price / (1 + (transactionData.fee_ratio_client || 0) / 100)
-      }];
+  const displayItems = hasDetailedItems
+    ? transactionData.items
+    : hasQuoteItems
+      ? quoteDetails.items
+      : [{
+          description: transaction.title,
+          quantity: 1,
+          unit_price: transaction.price / (1 + ((transactionData.fee_ratio_client || quoteDetails?.fee_ratio_client || 0) / 100)),
+          total: transaction.price / (1 + ((transactionData.fee_ratio_client || quoteDetails?.fee_ratio_client || 0) / 100))
+        }];
   
   // Calculate subtotal from items
   const calculatedSubtotal = displayItems.reduce((sum: number, item: any) => sum + (item.total || 0), 0);
-  const discountPercentage = transactionData.discount_percentage || 0;
-  const subtotalAfterDiscount = calculatedSubtotal * (1 - discountPercentage / 100);
-  const clientFeeRatio = transactionData.fee_ratio_client || 0;
+  const discountPercentage = (hasQuoteItems && (quoteDetails?.discount_percentage ?? null) !== null)
+    ? quoteDetails!.discount_percentage
+    : (transactionData.discount_percentage || 0);
+  const subtotalAfterDiscount = calculatedSubtotal * (1 - (discountPercentage || 0) / 100);
+  const clientFeeRatio = (hasQuoteItems && (quoteDetails?.fee_ratio_client ?? null) !== null)
+    ? quoteDetails!.fee_ratio_client
+    : (transactionData.fee_ratio_client || 0);
   const clientFees = clientFeeRatio > 0 ? (transaction.price * clientFeeRatio) / (100 + clientFeeRatio) : 0;
+  const taxRate = (hasQuoteItems && (quoteDetails?.tax_rate ?? null) !== null)
+    ? quoteDetails!.tax_rate
+    : transactionData.tax_rate;
+  const taxAmount = (hasQuoteItems && (quoteDetails?.tax_amount ?? null) !== null)
+    ? quoteDetails!.tax_amount
+    : transactionData.tax_amount;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,10 +186,10 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
               </div>
             )}
             
-            {transactionData.tax_rate && transactionData.tax_rate > 0 && transactionData.tax_amount && (
+            {taxRate && taxRate > 0 && taxAmount && (
               <div className="flex justify-between text-sm">
-                <span>TVA ({transactionData.tax_rate}%):</span>
-                <span>{transactionData.tax_amount.toFixed(2)} {transaction.currency.toUpperCase()}</span>
+                <span>TVA ({taxRate}%):</span>
+                <span>{taxAmount.toFixed(2)} {transaction.currency.toUpperCase()}</span>
               </div>
             )}
 
