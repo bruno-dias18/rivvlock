@@ -64,9 +64,7 @@ export const TransactionMessaging = ({
         }
       } catch (error) {
         console.error('Error ensuring conversation:', error);
-        toast.error(error, {
-          context: "Impossible d'ouvrir la messagerie. Vérifiez qu'un acheteur est assigné."
-        });
+        toast.error(error);
         onOpenChange(false);
       } finally {
         setIsEnsuringConversation(false);
