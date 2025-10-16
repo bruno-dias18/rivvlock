@@ -61,7 +61,10 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
           const unreadInConv = allMessages.filter(msg => {
             if (msg.conversation_id !== conversationId) return false;
             if (!lastSeen) return true;
-            return msg.created_at > lastSeen;
+            // 🔧 Comparaison numérique robuste
+            const msgTime = new Date(msg.created_at).getTime();
+            const lastSeenTime = new Date(lastSeen).getTime();
+            return !Number.isNaN(msgTime) && !Number.isNaN(lastSeenTime) && msgTime > lastSeenTime;
           });
 
           total += unreadInConv.length;

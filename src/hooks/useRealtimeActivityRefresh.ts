@@ -128,11 +128,18 @@ export const useRealtimeActivityRefresh = () => {
           // ✅ Mise à jour optimiste immédiate du badge "Discussion"
           const lastSeenKey = `conversation_seen_${message.conversation_id}`;
           const lastSeen = localStorage.getItem(lastSeenKey);
-          if (!lastSeen || message.created_at > lastSeen) {
+          
+          // 🔧 Comparaison numérique robuste au lieu de chaînes
+          const createdAt = new Date(message.created_at).getTime();
+          const lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : 0;
+          const shouldBump = !lastSeen || (!Number.isNaN(createdAt) && createdAt > lastSeenMs);
+          
+          if (shouldBump) {
             queryClient.setQueryData<number>(
               ['unread-conversation-messages', message.conversation_id],
               (prev) => Math.max(0, (typeof prev === 'number' ? prev : 0) + 1)
             );
+            logger.debug('🔔 Badge bump:', { conversationId: message.conversation_id, createdAt, lastSeenMs });
           }
 
           // Refetch pour confirmation serveur (throttle 3s)

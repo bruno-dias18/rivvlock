@@ -17,10 +17,10 @@ export function useUnreadConversationMessages(conversationId: string | null | un
       const lastSeenKey = `conversation_seen_${conversationId}`;
       const lastSeen = localStorage.getItem(lastSeenKey);
 
-      // Construire la requête
+      // Construire la requête (optimisé: select id uniquement)
       let query = supabase
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user.id);
 
