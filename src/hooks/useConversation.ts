@@ -67,8 +67,6 @@ export const useConversation = (conversationId: string | null | undefined) => {
   useEffect(() => {
     if (!conversationId) return;
 
-    console.log('[Realtime] Subscribing to conversation:', conversationId);
-
     const channel = supabase
       .channel(`conversation-${conversationId}`)
       .on(
@@ -77,8 +75,6 @@ export const useConversation = (conversationId: string | null | undefined) => {
         (payload) => {
           const row = payload.new as UnifiedMessage | undefined;
           if (!row || row.conversation_id !== conversationId) return;
-
-          console.log('[Realtime] New message received:', row.id);
 
           // Optimistic update immédiat sans throttling
           queryClient.setQueryData<UnifiedMessage[]>(
@@ -91,13 +87,10 @@ export const useConversation = (conversationId: string | null | undefined) => {
           );
         }
       )
-      .subscribe((status) => {
-        console.log('[Realtime] Subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
       try { 
-        console.log('[Realtime] Unsubscribing from conversation:', conversationId);
         supabase.removeChannel(channel); 
       } catch {}
     };
