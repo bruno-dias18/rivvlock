@@ -51,8 +51,7 @@ export const UnifiedMessaging = ({
   const sendButtonRef = useRef<HTMLButtonElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
-  const atBottomRef = useRef(true);
- 
+
   const { messages, isLoading, sendMessage, isSendingMessage } = useConversation(conversationId);
   
   const { 
@@ -78,12 +77,12 @@ export const UnifiedMessaging = ({
     }
   }, [open, conversationId, queryClient]);
 
-  // Auto mark as read only if user is viewing bottom and tab is visible
+  // Auto-marquer comme lu quand de nouveaux messages arrivent et la dialog est ouverte
   useEffect(() => {
-    if (open && conversationId && messages.length > 0 && document.visibilityState === 'visible' && atBottomRef.current) {
+    if (open && conversationId && messages.length > 0) {
       const timer = setTimeout(() => {
         markAsRead(conversationId);
-      }, 300);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [open, conversationId, messages.length, markAsRead]);
@@ -93,19 +92,6 @@ export const UnifiedMessaging = ({
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   };
-
-  // Track if user is at bottom to decide auto-read
-  useEffect(() => {
-    const el = messagesContainerRef.current;
-    if (!el) return;
-    const onScroll = () => {
-      const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
-      atBottomRef.current = atBottom;
-    };
-    onScroll();
-    el.addEventListener('scroll', onScroll);
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
 
   useLayoutEffect(() => {
     if (open && messages.length > 0) {

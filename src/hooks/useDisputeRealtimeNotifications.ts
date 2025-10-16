@@ -70,7 +70,7 @@ export const useDisputeRealtimeNotifications = () => {
 
               // Refresh cached counts and message lists
               queryClient.invalidateQueries({ queryKey: ['new-items-notifications', user.id] });
-              queryClient.refetchQueries({ queryKey: ['unread-conversation-messages'], type: 'all' });
+              queryClient.invalidateQueries({ queryKey: ['unread-conversation-messages'] });
               queryClient.invalidateQueries({ queryKey: ['unread-disputes-global'] });
             } catch {
               toast(title, { description, duration: 5000 });

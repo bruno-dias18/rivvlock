@@ -26,34 +26,25 @@ export const useUnreadDisputesGlobal = () => {
 
       if (!conversationIds.length) return 0;
 
-      // Capturer nowIso une seule fois pour éviter les variations temporelles
-      const nowIso = new Date().toISOString();
-
-      // Fetch conversation_reads pour tous les conversationIds en 1 requête
-      const { data: reads } = await supabase
-        .from('conversation_reads')
-        .select('conversation_id, last_read_at')
-        .eq('user_id', user.id)
-        .in('conversation_id', conversationIds);
-
-      // Construire Map(conversationId → last_read_at)
-      const lastReadMap = new Map(reads?.map(r => [r.conversation_id, r.last_read_at]) ?? []);
-
-      // Fetch tous les messages en 1 requête
-      const { data: allMessages } = await supabase
-        .from('messages')
-        .select('conversation_id, id, created_at')
-        .in('conversation_id', conversationIds)
-        .neq('sender_id', user.id);
-
-      // Compter les messages non lus par conversation
       let totalUnread = 0;
+
+      // Count unread messages for each dispute conversation
       for (const conversationId of conversationIds) {
-        const lastReadAt = lastReadMap.get(conversationId) ?? nowIso;
-        const unreadInConv = allMessages?.filter(msg => 
-          msg.conversation_id === conversationId && msg.created_at > lastReadAt
-        ) ?? [];
-        totalUnread += unreadInConv.length;
+        const lastSeenKey = `conversation_seen_${conversationId}`;
+        const lastSeen = localStorage.getItem(lastSeenKey);
+
+        let query = supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user.id);
+
+        if (lastSeen) {
+          query = query.gt('created_at', lastSeen);
+        }
+
+        const { count } = await query;
+        totalUnread += count || 0;
       }
 
       return totalUnread;

@@ -124,42 +124,13 @@ export const useRealtimeActivityRefresh = () => {
           if (message.sender_id === user.id) return;
           
           logger.debug('Realtime: New message', payload);
-
-          // ✅ Refetch type 'all' pour unread-conversation-messages (même si inactif) - inclure user.id dans la clé
-          queryClient.refetchQueries({ 
-            queryKey: ['unread-conversation-messages', message.conversation_id, user.id],
-            type: 'all' 
-          });
-          // Compatibilité: ancienne clé sans user.id
-          queryClient.refetchQueries({ 
-            queryKey: ['unread-conversation-messages', message.conversation_id],
-            type: 'all' 
-          });
-
-          // ✅ Nouveau: refetch aussi la clé basée sur la transaction
-          (async () => {
-            const { data: conv } = await supabase
-              .from('conversations')
-              .select('transaction_id')
-              .eq('id', message.conversation_id)
-              .maybeSingle();
-            if (conv?.transaction_id) {
-              logger.debug('Realtime: Refetch unread-by-transaction', { transactionId: conv.transaction_id });
-              queryClient.refetchQueries({
-                queryKey: ['unread-by-transaction', conv.transaction_id, user.id],
-                type: 'all'
-              });
-            }
-          })();
-
-          // Refetch pour tous les compteurs globaux
           invalidateMultiple([
             ['conversation-messages', message.conversation_id],
+            ['unread-conversation-messages', message.conversation_id],
             ['unread-transactions-global', user.id],
             ['unread-quotes-global', user.id],
             ['unread-transaction-tabs', user.id],
             ['unread-quote-tabs', user.id],
-            ['unread-disputes-global', user.id],
           ]);
         }
       )
