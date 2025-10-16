@@ -78,7 +78,7 @@ export const PaymentReminderEmail = ({
               width="200"
               style={logoImage}
             />
-            <Text style={tagline}>Paiements sécurisés pour services</Text>
+            <Text style={tagline}>Tiers de confiance pour transactions sécurisées</Text>
           </Section>
 
           <Section style={{ ...urgentBanner, backgroundColor: config.bgColor }}>
@@ -148,7 +148,7 @@ export const PaymentReminderEmail = ({
             <Link href="https://app.rivvlock.com" style={footerLink}>
               RivvLock
             </Link>
-            {' '}- Paiements sécurisés pour services
+            {' '}- Tiers de confiance pour transactions sécurisées
           </Text>
 
           <Text style={footerSmall}>

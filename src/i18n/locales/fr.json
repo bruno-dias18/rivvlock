@@ -79,7 +79,7 @@
   },
   "auth": {
     "welcome": "Bienvenue sur RIVVLOCK",
-    "subtitle": "Transactions escrow sécurisées",
+    "subtitle": "Tiers de confiance pour transactions sécurisées",
     "selectCountry": "Sélectionnez votre pays",
     "selectUserType": "Type de profil",
     "terms": "J'accepte les CGU",
