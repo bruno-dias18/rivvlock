@@ -24,7 +24,7 @@ export const QuotesPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [selectedTab, setSelectedTab] = useState<string>('sent');
+  const activeTab = searchParams.get('tab') || 'sent';
   const [messagingQuoteId, setMessagingQuoteId] = useState<string | null>(null);
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
   const { sentQuotes, receivedQuotes, isLoading, archiveQuote, markAsViewed } = useQuotes();
@@ -65,7 +65,7 @@ export const QuotesPage = () => {
     setMessagingClientName(clientName);
   };
 
-  const currentQuotes = selectedTab === 'sent' ? sentQuotes : receivedQuotes;
+  const currentQuotes = activeTab === 'sent' ? sentQuotes : receivedQuotes;
 
   return (
     <DashboardLayoutWithSidebar>
@@ -79,7 +79,7 @@ export const QuotesPage = () => {
         </div>
 
         {/* Tabs for Sent / Received */}
-        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v)} className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setSearchParams({ tab: v }, { replace: true })} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="sent" className="flex items-center gap-2">
               <Send className="h-4 w-4" />
