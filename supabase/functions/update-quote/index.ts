@@ -40,7 +40,8 @@ serve(async (req) => {
       service_end_date,
       valid_until,
       total_amount,
-      fee_ratio_client
+      fee_ratio_client,
+      discount_percentage
     } = await req.json();
 
     // Verify user is the seller of this quote
@@ -108,6 +109,7 @@ serve(async (req) => {
         tax_amount: taxAmount,
         total_amount,
         fee_ratio_client,
+        discount_percentage: discount_percentage || 0,
         status: 'negotiating',
         updated_at: new Date().toISOString()
       })

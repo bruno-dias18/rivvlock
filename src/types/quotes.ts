@@ -38,6 +38,7 @@ export interface Quote {
   converted_transaction_id: string | null;
   conversation_id: string | null;
   fee_ratio_client: number | null;
+  discount_percentage: number | null;
   created_at: string;
   updated_at: string;
 }

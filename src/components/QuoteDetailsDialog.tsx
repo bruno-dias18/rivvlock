@@ -124,6 +124,20 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
               <span>Sous-total:</span>
               <span>{quote.subtotal.toFixed(2)} {quote.currency.toUpperCase()}</span>
             </div>
+            
+            {quote.discount_percentage && quote.discount_percentage > 0 && (
+              <>
+                <div className="flex justify-between text-sm text-blue-600">
+                  <span>Rabais ({quote.discount_percentage}%):</span>
+                  <span>-{(quote.subtotal * (quote.discount_percentage / 100)).toFixed(2)} {quote.currency.toUpperCase()}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium">
+                  <span>Sous-total après rabais:</span>
+                  <span>{(quote.subtotal * (1 - quote.discount_percentage / 100)).toFixed(2)} {quote.currency.toUpperCase()}</span>
+                </div>
+              </>
+            )}
+            
             {quote.tax_rate && quote.tax_amount && (
               <div className="flex justify-between text-sm">
                 <span>TVA ({quote.tax_rate}%):</span>

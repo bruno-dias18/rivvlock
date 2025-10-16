@@ -35,6 +35,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
   const [feeRatio, setFeeRatio] = useState(quote.fee_ratio_client ?? 0);
   const [showFeeDetails, setShowFeeDetails] = useState(false);
   const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
+  const [discountPercentage, setDiscountPercentage] = useState(quote.discount_percentage ?? 0);
 
   const [clientEmail] = useState(quote.client_email);
   const [clientName] = useState(quote.client_name || '');
@@ -71,9 +72,11 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const discountAmount = subtotal * (discountPercentage / 100);
+  const subtotalAfterDiscount = subtotal - discountAmount;
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
-  const taxAmount = subtotal * (taxRate / 100);
-  const totalAmount = subtotal + taxAmount;
+  const taxAmount = subtotalAfterDiscount * (taxRate / 100);
+  const totalAmount = subtotalAfterDiscount + taxAmount;
 
   const totalFees = totalAmount * PLATFORM_FEE_RATE;
   const clientFees = totalFees * (feeRatio / 100);
@@ -132,7 +135,8 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
           service_end_date: serviceEndDate?.toISOString() || null,
           valid_until: validUntil.toISOString(),
           total_amount: submittedTotalAmount,
-          fee_ratio_client: feeRatio
+          fee_ratio_client: feeRatio,
+          discount_percentage: discountPercentage
         }
       });
 
@@ -298,6 +302,21 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
                   <span>Sous-total HT</span>
                   <span className="font-medium">{subtotal.toFixed(2)} {currency.toUpperCase()}</span>
                 </div>
+
+                {/* Discount Section */}
+                {discountPercentage > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-blue-600">
+                      <span>Rabais ({discountPercentage}%)</span>
+                      <span>-{discountAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-medium">
+                      <span>Sous-total après rabais</span>
+                      <span>{subtotalAfterDiscount.toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
+                  </>
+                )}
+
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>TVA ({taxRate}%)</span>
                   <span>{taxAmount.toFixed(2)} {currency.toUpperCase()}</span>
@@ -307,6 +326,49 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
                   <span>{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
                 </div>
               </div>
+
+              {/* Discount Slider */}
+              {totalAmount > 0 && (
+                <div className="space-y-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Rabais</Label>
+                    {discountPercentage > 0 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDiscountPercentage(0)}
+                        className="text-xs"
+                      >
+                        Réinitialiser
+                      </Button>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Pourcentage</span>
+                    <Badge variant="secondary" className="font-mono">
+                      {discountPercentage}%
+                    </Badge>
+                  </div>
+                  
+                  <Slider
+                    value={[discountPercentage]}
+                    onValueChange={([value]) => setDiscountPercentage(value)}
+                    min={0}
+                    max={50}
+                    step={5}
+                    className="w-full"
+                  />
+                  
+                  {discountPercentage > 0 && (
+                    <div className="flex justify-between text-sm font-medium text-blue-700">
+                      <span>Montant du rabais</span>
+                      <span>-{discountAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {totalAmount > 0 && (
                 <div className="space-y-4">
