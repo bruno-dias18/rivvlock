@@ -10,6 +10,7 @@ import {
   Text,
   Hr,
   Button,
+  Img,
 } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 
@@ -38,7 +39,12 @@ export const TransactionCreatedEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={logo}>🔒 RivvLock</Heading>
+          <Img 
+            src="https://app.rivvlock.com/assets/rivvlock-logo-email.png"
+            alt="RIVVLOCK"
+            width="200"
+            style={logoImage}
+          />
           <Text style={tagline}>Paiements sécurisés pour services</Text>
         </Section>
 
@@ -49,7 +55,7 @@ export const TransactionCreatedEmail = ({
         </Text>
         
         <Text style={text}>
-          <strong>{sellerName}</strong> vous a créé une transaction sécurisée sur RivvLock.
+          <strong>{sellerName}</strong> vous invite à effectuer le règlement via une transaction sécurisée sur RivvLock.
         </Text>
 
         <Section style={detailsBox}>
@@ -115,7 +121,7 @@ export default TransactionCreatedEmail;
 
 // Styles
 const main = {
-  backgroundColor: '#f6f9fc',
+  backgroundColor: '#F7F7F7',
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
 };
 
@@ -130,19 +136,17 @@ const container = {
 const header = {
   padding: '32px 20px 20px',
   textAlign: 'center' as const,
-  backgroundColor: '#9b87f5',
+  backgroundColor: '#ffffff',
+  borderBottom: '3px solid #007BFF',
 };
 
-const logo = {
-  color: '#ffffff',
-  fontSize: '32px',
-  fontWeight: 'bold',
-  margin: '0 0 8px',
-  textAlign: 'center' as const,
+const logoImage = {
+  margin: '0 auto 16px',
+  display: 'block',
 };
 
 const tagline = {
-  color: '#ffffff',
+  color: '#484848',
   fontSize: '14px',
   margin: '0',
   textAlign: 'center' as const,
@@ -201,7 +205,7 @@ const ctaSection = {
 };
 
 const button = {
-  backgroundColor: '#9b87f5',
+  backgroundColor: '#007BFF',
   borderRadius: '8px',
   color: '#ffffff',
   fontSize: '16px',
@@ -213,14 +217,14 @@ const button = {
 };
 
 const linkText = {
-  color: '#9b87f5',
+  color: '#007BFF',
   fontSize: '14px',
   margin: '8px 20px',
   wordBreak: 'break-all' as const,
 };
 
 const link = {
-  color: '#9b87f5',
+  color: '#007BFF',
   textDecoration: 'underline',
 };
 
@@ -255,7 +259,7 @@ const footer = {
 };
 
 const footerLink = {
-  color: '#9b87f5',
+  color: '#007BFF',
   textDecoration: 'underline',
 };
 

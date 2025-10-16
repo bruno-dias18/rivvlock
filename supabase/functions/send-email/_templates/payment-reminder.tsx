@@ -10,6 +10,7 @@ import {
   Text,
   Hr,
   Button,
+  Img,
 } from 'npm:@react-email/components@0.0.22';
 import * as React from 'npm:react@18.3.1';
 
@@ -28,7 +29,7 @@ const getUrgencyConfig = (level: string) => {
     '72h': {
       emoji: '⏰',
       title: 'Rappel : Votre paiement',
-      color: '#1e40af',
+      color: '#007BFF',
       bgColor: '#eff6ff',
     },
     '24h': {
@@ -71,7 +72,12 @@ export const PaymentReminderEmail = ({
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Heading style={logo}>🔒 RivvLock</Heading>
+            <Img 
+              src="https://app.rivvlock.com/assets/rivvlock-logo-email.png"
+              alt="RIVVLOCK"
+              width="200"
+              style={logoImage}
+            />
             <Text style={tagline}>Paiements sécurisés pour services</Text>
           </Section>
 
@@ -88,7 +94,7 @@ export const PaymentReminderEmail = ({
           </Text>
           
           <Text style={text}>
-            Vous avez une transaction RivvLock qui expire bientôt.
+            Vous avez reçu une invitation à effectuer un règlement via RivvLock, mais le paiement n'a pas encore été effectué.
           </Text>
 
           <Section style={{ ...timeBox, borderColor: config.color }}>
@@ -158,7 +164,7 @@ export default PaymentReminderEmail;
 
 // Styles
 const main = {
-  backgroundColor: '#f6f9fc',
+  backgroundColor: '#F7F7F7',
   fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
 };
 
@@ -173,19 +179,17 @@ const container = {
 const header = {
   padding: '32px 20px 20px',
   textAlign: 'center' as const,
-  backgroundColor: '#9b87f5',
+  backgroundColor: '#ffffff',
+  borderBottom: '3px solid #007BFF',
 };
 
-const logo = {
-  color: '#ffffff',
-  fontSize: '32px',
-  fontWeight: 'bold',
-  margin: '0 0 8px',
-  textAlign: 'center' as const,
+const logoImage = {
+  margin: '0 auto 16px',
+  display: 'block',
 };
 
 const tagline = {
-  color: '#ffffff',
+  color: '#484848',
   fontSize: '14px',
   margin: '0',
   textAlign: 'center' as const,
@@ -281,14 +285,14 @@ const button = {
 };
 
 const linkText = {
-  color: '#9b87f5',
+  color: '#007BFF',
   fontSize: '14px',
   margin: '8px 20px',
   wordBreak: 'break-all' as const,
 };
 
 const link = {
-  color: '#9b87f5',
+  color: '#007BFF',
   textDecoration: 'underline',
 };
 
@@ -323,7 +327,7 @@ const footer = {
 };
 
 const footerLink = {
-  color: '#9b87f5',
+  color: '#007BFF',
   textDecoration: 'underline',
 };
 
