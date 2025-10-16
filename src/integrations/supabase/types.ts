@@ -958,6 +958,7 @@ export type Database = {
           date_change_requested_at: string | null
           date_change_status: string | null
           description: string | null
+          fee_ratio_client: number | null
           funds_released: boolean | null
           funds_released_at: string | null
           id: string
@@ -996,6 +997,7 @@ export type Database = {
           date_change_requested_at?: string | null
           date_change_status?: string | null
           description?: string | null
+          fee_ratio_client?: number | null
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string
@@ -1034,6 +1036,7 @@ export type Database = {
           date_change_requested_at?: string | null
           date_change_status?: string | null
           description?: string | null
+          fee_ratio_client?: number | null
           funds_released?: boolean | null
           funds_released_at?: string | null
           id?: string

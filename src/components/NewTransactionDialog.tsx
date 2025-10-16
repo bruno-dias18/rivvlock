@@ -3,7 +3,7 @@ import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { DateTimePicker } from '@/components/DateTimePicker';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,6 +70,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [transactionTitle, setTransactionTitle] = useState('');
+  const [feeRatio, setFeeRatio] = useState(0); // 0-100
+  const [showFeeDetails, setShowFeeDetails] = useState(false);
   
   const { data: profile } = useProfile();
   
@@ -123,16 +129,22 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const onSubmit = async (data: TransactionFormData) => {
     setIsLoading(true);
     try {
+      // Calculer les frais client
+      const totalFees = data.price * 0.05263;
+      const clientFees = totalFees * (feeRatio / 100);
+      const finalPrice = data.price + clientFees;
+
       const { data: result, error } = await supabase.functions.invoke('create-transaction', {
         body: {
           title: data.title,
           description: data.description,
-          price: data.price,
+          price: finalPrice, // Prix final incluant les frais client
           currency: data.currency,
           paymentDeadlineHours: parseInt(data.paymentDeadlineHours),
           serviceDate: data.serviceDate.toISOString(),
           serviceEndDate: data.serviceEndDate?.toISOString(),
-          clientEmail: data.clientEmail || null
+          clientEmail: data.clientEmail || null,
+          fee_ratio_client: feeRatio
         }
       });
 
@@ -281,61 +293,83 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               />
             </div>
 
-            {/* Net amount display for seller */}
+            {/* Fee distribution slider */}
             {watchedPrice > 0 && (
-              <div className="rounded-lg bg-muted/50 p-4 border">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Prix demandé :</span>
-                  <span>{watchedPrice.toFixed(2)} {watchedCurrency}</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="fee-distribution" className="text-sm font-medium">
+                    Répartition des frais de plateforme (5%)
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowFeeDetails(!showFeeDetails)}
+                  >
+                    <Info className="h-4 w-4" />
+                  </Button>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Frais plateforme (5%) :</span>
-                  <span>-{platformFee.toFixed(2)} {watchedCurrency}</span>
-                </div>
-                <div className="flex items-center justify-between font-medium text-primary border-t pt-2 mt-2">
-                  <span>Vous recevrez :</span>
-                  <span>{netAmount.toFixed(2)} {watchedCurrency}</span>
-                </div>
-              </div>
-            )}
 
-            {/* Reverse calculation: charge client for fees */}
-            {watchedPrice > 0 && (
-              <div className="rounded-lg bg-blue-50/50 p-4 border border-blue-200">
-                <div className="flex items-start gap-2 mb-3">
-                  <span className="text-lg">💡</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-900 mb-1">
-                      Répercuter les frais au client ?
-                    </p>
-                    <p className="text-xs text-blue-700">
-                      Pour toucher exactement <strong>{watchedPrice.toFixed(2)} {watchedCurrency}</strong>
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 mb-3">
+                {showFeeDetails && (
+                  <Alert className="text-xs">
+                    <AlertDescription>
+                      Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
+                      le support client et la médiation. Vous pouvez choisir de les répartir entre 
+                      vous et votre client selon votre stratégie commerciale.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-blue-700">Facturez :</span>
-                    <span className="font-semibold text-blue-900">
-                      {reversePrice.toFixed(2)} {watchedCurrency}
-                    </span>
+                    <span className="text-muted-foreground">Client paie</span>
+                    <Badge variant="secondary" className="font-mono">
+                      {feeRatio}%
+                    </Badge>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-blue-600">
-                    <span>dont frais payés par client :</span>
-                    <span>+{reverseFee.toFixed(2)} {watchedCurrency}</span>
+
+                  <Slider
+                    id="fee-distribution"
+                    value={[feeRatio]}
+                    onValueChange={([value]) => setFeeRatio(value)}
+                    min={0}
+                    max={100}
+                    step={10}
+                    className="w-full"
+                  />
+
+                  <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Frais à charge du client</p>
+                      <p className="font-semibold text-base">
+                        {((watchedPrice * 0.05263) * (feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground">Frais à votre charge</p>
+                      <p className="font-semibold text-base">
+                        {((watchedPrice * 0.05263) * (1 - feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2 rounded-lg border p-4">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Prix final pour le client</span>
+                      <span className="font-medium">
+                        {(watchedPrice + (watchedPrice * 0.05263 * feeRatio / 100)).toFixed(2)} {watchedCurrency}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Vous recevrez</span>
+                      <span className="font-bold text-lg text-green-600">
+                        {(watchedPrice - (watchedPrice * 0.05263 * (1 - feeRatio / 100))).toFixed(2)} {watchedCurrency}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleApplyReversePrice}
-                  className="w-full border-blue-300 hover:bg-blue-100 hover:border-blue-400"
-                >
-                  → Appliquer ce montant
-                </Button>
               </div>
             )}
 

@@ -226,16 +226,15 @@ export default function PaymentLinkPage() {
                 <p className="font-medium">{transaction.seller_display_name}</p>
               </div>
               
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="font-medium">Montant</span>
-                <span className="text-2xl font-bold">
-                  {transaction.price} {transaction.currency}
-                </span>
-              </div>
-              
-              <div className="bg-muted/50 rounded-lg p-3 border border-muted">
-                <p className="text-xs text-muted-foreground text-center">
-                  Prix incluant les frais de service qui garantissent la sécurité de votre paiement et la protection de la transaction
+              <div className="space-y-2">
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-medium">Total</span>
+                  <span className="text-2xl font-bold">
+                    {transaction.price.toFixed(2)} {transaction.currency}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  * Frais de plateforme RivvLock (5%) inclus
                 </p>
               </div>
             </div>
@@ -316,16 +315,15 @@ export default function PaymentLinkPage() {
                 <p className="font-medium">{transaction.seller_display_name}</p>
               </div>
               
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="font-medium">Total</span>
-                <span className="text-2xl font-bold">
-                  {transaction.price} {transaction.currency}
-                </span>
-              </div>
-              
-              <div className="bg-muted/50 rounded-lg p-3 border border-muted">
-                <p className="text-xs text-muted-foreground text-center">
-                  Prix incluant les frais de service qui garantissent la sécurité de votre paiement et la protection de la transaction
+              <div className="space-y-2">
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-medium">Total</span>
+                  <span className="text-2xl font-bold">
+                    {transaction.price.toFixed(2)} {transaction.currency}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground italic">
+                  * Frais de plateforme RivvLock (5%) inclus
                 </p>
               </div>
             </div>

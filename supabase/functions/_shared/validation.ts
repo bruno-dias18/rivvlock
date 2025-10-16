@@ -51,6 +51,12 @@ export const createTransactionSchema = z.object({
     .optional()
     .or(z.literal(''))
     .nullable(),
+  
+  fee_ratio_client: z.number()
+    .min(0, { message: "Le ratio ne peut pas être négatif" })
+    .max(100, { message: "Le ratio ne peut pas dépasser 100" })
+    .optional()
+    .default(0),
 });
 
 // Validation pour join-transaction

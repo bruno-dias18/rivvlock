@@ -63,7 +63,7 @@ serve(async (req) => {
     
     // Validation des données d'entrée
     const validatedData = validate(createTransactionSchema, requestBody);
-    const { title, description, price, currency, serviceDate, serviceEndDate, paymentDeadlineHours, clientEmail } = validatedData;
+    const { title, description, price, currency, serviceDate, serviceEndDate, paymentDeadlineHours, clientEmail, fee_ratio_client } = validatedData;
 
     // Validation supplémentaire des montants (sécurité)
     if (price < 1 || price > 1000000) {
@@ -118,7 +118,8 @@ serve(async (req) => {
       payment_deadline: paymentDeadline.toISOString(),
       seller_display_name: sellerDisplayName,
       status: 'pending',
-      client_email: clientEmail || null
+      client_email: clientEmail || null,
+      fee_ratio_client: fee_ratio_client || 0
     };
 
     // Add service_end_date if provided
