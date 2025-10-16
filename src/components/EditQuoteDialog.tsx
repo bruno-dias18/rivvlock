@@ -355,14 +355,14 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
                     </Badge>
                   </div>
                   
-                  <Slider
-                    value={[discountPercentage]}
-                    onValueChange={([value]) => setDiscountPercentage(value)}
-                    min={0}
-                    max={50}
-                    step={5}
-                    className="w-full"
-                  />
+                <Slider
+                  value={[discountPercentage]}
+                  onValueChange={([value]) => setDiscountPercentage(value)}
+                  min={0}
+                  max={50}
+                  step={1}
+                  className="w-full"
+                />
                   
                   {discountPercentage > 0 && (
                     <div className="flex justify-between text-sm font-medium text-blue-700">
