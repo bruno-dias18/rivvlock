@@ -138,6 +138,7 @@ export const useRealtimeActivityRefresh = () => {
             ['unread-quotes-global', user.id],
             ['unread-transaction-tabs', user.id],
             ['unread-quote-tabs', user.id],
+            ['unread-disputes-global', user.id],
           ]);
         }
       )
