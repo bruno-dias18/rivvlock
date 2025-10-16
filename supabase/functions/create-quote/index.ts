@@ -23,6 +23,8 @@ interface CreateQuoteRequest {
   service_date?: string;
   service_end_date?: string;
   valid_until: string;
+  total_amount?: number;
+  fee_ratio_client?: number;
 }
 
 serve(async (req) => {
@@ -62,7 +64,11 @@ serve(async (req) => {
 
     const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
     const taxAmount = subtotal * (taxRate / 100);
-    const totalAmount = subtotal + taxAmount;
+    
+    // Utiliser le total_amount du frontend si fourni (incluant les frais client)
+    // Sinon, calculer le total standard
+    const totalAmount = body.total_amount || (subtotal + taxAmount);
+    const feeRatioClient = body.fee_ratio_client || 0;
 
     // Créer le devis
     const { data: quote, error: quoteError } = await supabaseAdmin
@@ -82,6 +88,7 @@ serve(async (req) => {
         service_date: body.service_date || null,
         service_end_date: body.service_end_date || null,
         valid_until: body.valid_until,
+        fee_ratio_client: feeRatioClient,
         status: 'pending'
       })
       .select()

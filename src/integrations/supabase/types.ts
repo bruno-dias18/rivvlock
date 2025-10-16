@@ -646,6 +646,7 @@ export type Database = {
           created_at: string
           currency: string
           description: string | null
+          fee_ratio_client: number | null
           id: string
           items: Json
           secure_token: string
@@ -669,6 +670,7 @@ export type Database = {
           created_at?: string
           currency: string
           description?: string | null
+          fee_ratio_client?: number | null
           id?: string
           items?: Json
           secure_token?: string
@@ -692,6 +694,7 @@ export type Database = {
           created_at?: string
           currency?: string
           description?: string | null
+          fee_ratio_client?: number | null
           id?: string
           items?: Json
           secure_token?: string

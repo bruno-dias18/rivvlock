@@ -6,7 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Info } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +32,8 @@ interface Props {
 export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const { data: profile } = useProfile();
   const [isLoading, setIsLoading] = useState(false);
+  const [feeRatio, setFeeRatio] = useState(0); // 0-100
+  const [showFeeDetails, setShowFeeDetails] = useState(false);
 
   const getDefaultCurrency = (): Currency => {
     if (profile?.country === 'CH') return 'chf';
@@ -48,8 +54,6 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const [items, setItems] = useState<QuoteItem[]>([
     { description: '', quantity: 1, unit_price: 0, total: 0 }
   ]);
-
-  const [showFeesAsSeparateLine, setShowFeesAsSeparateLine] = useState(true);
 
   useEffect(() => {
     if (profile?.country) {
@@ -81,13 +85,11 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const taxAmount = subtotal * (taxRate / 100);
   const totalAmount = subtotal + taxAmount;
 
-  // Calculate platform fees and net amount
-  const platformFee = totalAmount * PLATFORM_FEE_RATE;
-  const netAmountSeller = totalAmount - platformFee;
-
-  // Reverse calculation: to receive exactly totalAmount net
-  const reverseTotal = totalAmount / (1 - PLATFORM_FEE_RATE);
-  const reverseFee = reverseTotal - totalAmount;
+  // Calculate fees based on feeRatio
+  const totalFees = totalAmount * PLATFORM_FEE_RATE;
+  const clientFees = totalFees * (feeRatio / 100);
+  const sellerFees = totalFees * (1 - feeRatio / 100);
+  const finalPrice = totalAmount + clientFees;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,7 +116,9 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
           currency,
           service_date: serviceDate?.toISOString() || null,
           service_end_date: serviceEndDate?.toISOString() || null,
-          valid_until: validUntil.toISOString()
+          valid_until: validUntil.toISOString(),
+          total_amount: finalPrice, // Prix final incluant les frais client
+          fee_ratio_client: feeRatio
         }
       });
 
@@ -288,7 +292,6 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
             {/* Totals */}
             <div className="space-y-3 pt-4 border-t">
-              {/* Standard calculation */}
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Sous-total HT</span>
@@ -304,117 +307,83 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                 </div>
               </div>
 
-              {/* Seller fees display - only if amount > 0 */}
+              {/* Fee distribution slider */}
               {totalAmount > 0 && (
-                <div className="rounded-lg bg-muted/50 p-4 border space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Total facturé au client :</span>
-                    <span className="font-medium">{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="fee-distribution-quote" className="text-sm font-medium">
+                      Répartition des frais de plateforme (5%)
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowFeeDetails(!showFeeDetails)}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Frais plateforme (5%) :</span>
-                    <span className="text-destructive font-medium">-{platformFee.toFixed(2)} {currency.toUpperCase()}</span>
-                  </div>
-                  <div className="flex items-center justify-between font-semibold text-primary border-t pt-2 mt-2">
-                    <span className="flex items-center gap-1">
-                      <span>💰</span>
-                      <span>Vous recevrez :</span>
-                    </span>
-                    <span className="text-lg">{netAmountSeller.toFixed(2)} {currency.toUpperCase()}</span>
-                  </div>
-                </div>
-              )}
 
-              {/* Option: pass fees to client */}
-              {totalAmount > 0 && (
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-4 border border-blue-200 dark:border-blue-800 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <span className="text-base">💡</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                        Répercuter les frais sur le client ?
-                      </p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
-                        Pour toucher exactement <strong>{totalAmount.toFixed(2)} {currency.toUpperCase()}</strong> net
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1.5 bg-white dark:bg-slate-900 p-3 rounded border border-blue-100 dark:border-blue-900">
+                  {showFeeDetails && (
+                    <Alert className="text-xs">
+                      <AlertDescription>
+                        Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
+                        le support client et la médiation. Vous pouvez ajuster vos prix manuellement 
+                        ou utiliser le slider pour répercuter automatiquement.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-blue-700 dark:text-blue-300">Montant à facturer :</span>
-                      <span className="font-bold text-blue-900 dark:text-blue-100 text-base">
-                        {reverseTotal.toFixed(2)} {currency.toUpperCase()}
-                      </span>
+                      <span className="text-muted-foreground">Client paie</span>
+                      <Badge variant="secondary" className="font-mono">
+                        {feeRatio}%
+                      </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400">
-                      <span>Frais payés par le client :</span>
-                      <span className="font-medium">+{reverseFee.toFixed(2)} {currency.toUpperCase()}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Checkbox pour choisir le mode d'affichage */}
-                  <div className="flex items-start gap-2 px-1 py-2">
-                    <input
-                      type="checkbox"
-                      id="show-fees-separate"
-                      checked={showFeesAsSeparateLine}
-                      onChange={(e) => setShowFeesAsSeparateLine(e.target.checked)}
-                      className="h-4 w-4 mt-0.5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex-1">
-                      <label 
-                        htmlFor="show-fees-separate" 
-                        className="text-xs text-blue-700 dark:text-blue-300 cursor-pointer font-medium"
-                      >
-                        Afficher les frais comme ligne séparée (Recommandé)
-                      </label>
-                      <p className="text-[10px] text-blue-600/80 dark:text-blue-400/80 mt-1 leading-tight space-y-0.5">
-                        <span className="block">✓ Conformité légale maximale (DGCCRF/LCD)</span>
-                        <span className="block">✓ Plus transparent pour le client</span>
-                        <span className="block">✓ Facilite la comptabilité</span>
-                        <span className="block text-orange-600 dark:text-orange-400 mt-1">
-                          ⚠️ Si décoché : la répartition peut être considérée comme pratique commerciale trompeuse
-                        </span>
-                      </p>
-                    </div>
-                  </div>
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (showFeesAsSeparateLine) {
-                        // Option légalement recommandée : Ajouter une ligne "Frais de plateforme"
-                        const feeItem: QuoteItem = {
-                          description: "Frais de plateforme RivvLock (5%)",
-                          quantity: 1,
-                          unit_price: reverseFee,
-                          total: reverseFee
-                        };
-                        setItems([...items, feeItem]);
-                        toast.success('Ligne "Frais de plateforme" ajoutée', {
-                          description: `+${reverseFee.toFixed(2)} ${currency.toUpperCase()} - Conformité légale maximale`
-                        });
-                      } else {
-                        // Option alternative : Répartir proportionnellement (moins transparent)
-                        const ratio = reverseTotal / totalAmount;
-                        const adjustedItems = items.map(item => ({
-                          ...item,
-                          unit_price: parseFloat((item.unit_price * ratio).toFixed(2)),
-                          total: parseFloat((item.total * ratio).toFixed(2))
-                        }));
-                        setItems(adjustedItems);
-                        toast.success('Prix ajustés pour inclure les frais', {
-                          description: `Frais répartis sur tous les items (+${reverseFee.toFixed(2)} ${currency.toUpperCase()})`
-                        });
-                      }
-                    }}
-                    className="w-full border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-900/50"
-                  >
-                    → Appliquer ces montants
-                  </Button>
+                    <Slider
+                      id="fee-distribution-quote"
+                      value={[feeRatio]}
+                      onValueChange={([value]) => setFeeRatio(value)}
+                      min={0}
+                      max={100}
+                      step={10}
+                      className="w-full"
+                    />
+
+                    <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Frais à charge du client</p>
+                        <p className="font-semibold text-base">
+                          {clientFees.toFixed(2)} {currency.toUpperCase()}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-muted-foreground">Frais à votre charge</p>
+                        <p className="font-semibold text-base">
+                          {sellerFees.toFixed(2)} {currency.toUpperCase()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="space-y-2 rounded-lg border p-4">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Prix final pour le client</span>
+                        <span className="font-medium">
+                          {finalPrice.toFixed(2)} {currency.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="font-medium">Vous recevrez</span>
+                        <span className="font-bold text-lg text-green-600">
+                          {(totalAmount - sellerFees).toFixed(2)} {currency.toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
