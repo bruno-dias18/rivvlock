@@ -36,20 +36,22 @@ export const useMarkConversationAsRead = () => {
         }, {
           onConflict: 'user_id,conversation_id'
         });
+
+      // Optimistic update - both key variants
+      queryClient.setQueryData(['unread-conversation-messages', conversationId, user.id], 0);
+      queryClient.setQueryData(['unread-conversation-messages', conversationId], 0); // compat
+
+      // Refetch all related queries with exact keys
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId, user.id], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-conversation-messages', conversationId], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-quotes-global'], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-quote-tabs'], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-transactions-global'], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-transaction-tabs'], type: 'all' }),
+        queryClient.refetchQueries({ queryKey: ['unread-disputes-global'], type: 'all' }),
+      ]);
     }
-
-    // Optimistic update
-    queryClient.setQueryData(['unread-conversation-messages', conversationId], 0);
-
-    // Invalidate all related queries
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['unread-conversation-messages', conversationId] }),
-      queryClient.invalidateQueries({ queryKey: ['unread-quotes-global'] }),
-      queryClient.invalidateQueries({ queryKey: ['unread-quote-tabs'] }),
-      queryClient.invalidateQueries({ queryKey: ['unread-transactions-global'] }),
-      queryClient.invalidateQueries({ queryKey: ['unread-transaction-tabs'] }),
-      queryClient.invalidateQueries({ queryKey: ['unread-disputes-global'] }),
-    ]);
   }, [queryClient]);
 
   const getLastSeen = useCallback((conversationId: string): string | null => {

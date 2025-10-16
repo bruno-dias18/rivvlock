@@ -42,6 +42,7 @@ export function useUnreadConversationMessages(conversationId: string | null | un
     enabled: !!conversationId && !!user?.id,
     staleTime: 0,
     gcTime: 5 * 60_000,
+    refetchOnMount: 'always',
   });
 
   return { unreadCount, refetch };
