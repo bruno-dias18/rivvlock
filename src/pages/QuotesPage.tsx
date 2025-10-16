@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, Send, Inbox } from 'lucide-react';
 import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
 import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -18,17 +18,18 @@ export const QuotesPage = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [selectedTab, setSelectedTab] = useState<string>('all');
+  const [selectedTab, setSelectedTab] = useState<string>('sent');
   const [messagingQuoteId, setMessagingQuoteId] = useState<string | null>(null);
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
-  const { quotes, isLoading, archiveQuote } = useQuotes();
+  const { sentQuotes, receivedQuotes, isLoading, archiveQuote } = useQuotes();
   const isMobile = useIsMobile();
 
   // Handle openMessage query parameter
   useEffect(() => {
     const openMessageParam = searchParams.get('openMessage');
-    if (openMessageParam && quotes.length > 0) {
-      const quote = quotes.find(q => q.id === openMessageParam);
+    const allQuotes = [...sentQuotes, ...receivedQuotes];
+    if (openMessageParam && allQuotes.length > 0) {
+      const quote = allQuotes.find(q => q.id === openMessageParam);
       if (quote) {
         setMessagingQuoteId(quote.id);
         setMessagingClientName(quote.client_name || undefined);
@@ -37,7 +38,7 @@ export const QuotesPage = () => {
         setSearchParams(searchParams, { replace: true });
       }
     }
-  }, [searchParams, quotes, setSearchParams]);
+  }, [searchParams, sentQuotes, receivedQuotes, setSearchParams]);
 
   const handleViewQuote = (quote: Quote) => {
     setSelectedQuote(quote);
@@ -49,18 +50,7 @@ export const QuotesPage = () => {
     setMessagingClientName(clientName);
   };
 
-  const filterOptions = [
-    { value: 'all', label: 'Tous' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'negotiating', label: 'En négociation' },
-    { value: 'accepted', label: 'Acceptés' },
-    { value: 'refused', label: 'Refusés' },
-    { value: 'archived', label: 'Archivés' },
-  ];
-
-  const filteredQuotes = selectedTab === 'all' 
-    ? quotes 
-    : quotes.filter(q => q.status === selectedTab);
+  const currentQuotes = selectedTab === 'sent' ? sentQuotes : receivedQuotes;
 
   return (
     <DashboardLayoutWithSidebar>
@@ -73,74 +63,66 @@ export const QuotesPage = () => {
           </Button>
         </div>
 
-        {/* Mobile: Select dropdown */}
-        {isMobile ? (
-          <div className="space-y-4">
-            <Select value={selectedTab} onValueChange={(v) => setSelectedTab(v)}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Filtrer les devis" />
-              </SelectTrigger>
-              <SelectContent>
-                {filterOptions.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Tabs for Sent / Received */}
+        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v)} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="sent" className="flex items-center gap-2">
+              <Send className="h-4 w-4" />
+              Envoyés ({sentQuotes.length})
+            </TabsTrigger>
+            <TabsTrigger value="received" className="flex items-center gap-2">
+              <Inbox className="h-4 w-4" />
+              Reçus ({receivedQuotes.length})
+            </TabsTrigger>
+          </TabsList>
 
-            <div className="space-y-3">
-              {isLoading ? (
-                <p className="text-center py-4">Chargement...</p>
-              ) : filteredQuotes.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Aucun devis dans cette catégorie</p>
-                </div>
-              ) : (
-                filteredQuotes.map(quote => (
-                  <QuoteCard
-                    key={quote.id}
-                    quote={quote}
-                    onView={handleViewQuote}
-                    onArchive={archiveQuote}
-                    onOpenMessaging={handleOpenMessaging}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        ) : (
-          /* Desktop: Tabs */
-          <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v)}>
-            <TabsList>
-              <TabsTrigger value="all">Tous</TabsTrigger>
-              <TabsTrigger value="pending">En attente</TabsTrigger>
-              <TabsTrigger value="negotiating">En négociation</TabsTrigger>
-              <TabsTrigger value="accepted">Acceptés</TabsTrigger>
-              <TabsTrigger value="refused">Refusés</TabsTrigger>
-              <TabsTrigger value="archived">Archivés</TabsTrigger>
-            </TabsList>
+          <TabsContent value="sent" className="space-y-4 mt-6">
+            {isLoading ? (
+              <div className="text-center py-4">Chargement...</div>
+            ) : sentQuotes.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Aucun devis envoyé</p>
+              </div>
+            ) : (
+              sentQuotes.map(quote => (
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  onView={() => handleViewQuote(quote)}
+                  onArchive={() => archiveQuote(quote.id)}
+                  onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
+                  isSeller={true}
+                />
+              ))
+            )}
+          </TabsContent>
 
-            <TabsContent value={selectedTab} className="space-y-4">
-              {isLoading ? (
-                <p>Chargement...</p>
-              ) : filteredQuotes.length === 0 ? (
-                <p className="text-muted-foreground">Aucun devis dans cette catégorie</p>
-              ) : (
-                filteredQuotes.map(quote => (
-                  <QuoteCard
-                    key={quote.id}
-                    quote={quote}
-                    onView={handleViewQuote}
-                    onArchive={archiveQuote}
-                    onOpenMessaging={handleOpenMessaging}
-                  />
-                ))
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
+          <TabsContent value="received" className="space-y-4 mt-6">
+            {isLoading ? (
+              <div className="text-center py-4">Chargement...</div>
+            ) : receivedQuotes.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Inbox className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Aucun devis reçu</p>
+                <p className="text-sm mt-2">
+                  Les devis que vous acceptez ou sur lesquels vous posez des questions apparaîtront ici
+                </p>
+              </div>
+            ) : (
+              receivedQuotes.map(quote => (
+                <QuoteCard
+                  key={quote.id}
+                  quote={quote}
+                  onView={() => handleViewQuote(quote)}
+                  onArchive={() => archiveQuote(quote.id)}
+                  onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
+                  isSeller={false}
+                />
+              ))
+            )}
+          </TabsContent>
+        </Tabs>
 
         <CreateQuoteDialog
           open={createDialogOpen}

@@ -65,6 +65,9 @@ verify_jwt = true
 [functions.accept-quote]
 verify_jwt = true
 
+[functions.attach-quote-to-user]
+verify_jwt = true
+
 [functions.admin-delete-transaction]
 verify_jwt = true
 

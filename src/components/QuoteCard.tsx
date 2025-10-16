@@ -11,6 +11,7 @@ interface Props {
   onView: (quote: Quote) => void;
   onArchive: (quoteId: string) => void;
   onOpenMessaging?: (quoteId: string, clientName?: string) => void;
+  isSeller: boolean;
 }
 
 const statusConfig = {
@@ -22,7 +23,7 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging }: Props) => {
+export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller }: Props) => {
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
 
@@ -39,7 +40,7 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging }: Props) 
 
             <div className="space-y-1 text-sm text-muted-foreground">
               <p className="truncate">
-                <span className="font-medium">Client:</span> {quote.client_name || quote.client_email}
+                <span className="font-medium">{isSeller ? 'Client:' : 'Devis reçu'}</span> {isSeller ? (quote.client_name || quote.client_email) : ''}
               </p>
               <p>
                 <span className="font-medium">Montant:</span>{' '}

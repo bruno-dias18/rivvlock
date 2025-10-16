@@ -13,10 +13,11 @@ export const useQuotes = () => {
     queryFn: async (): Promise<Quote[]> => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      // Fetch quotes where user is seller OR client
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
-        .eq('seller_id', user.id)
+        .or(`seller_id.eq.${user.id},client_user_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -30,6 +31,10 @@ export const useQuotes = () => {
     enabled: !!user?.id,
     staleTime: 30000,
   });
+
+  // Separate sent and received quotes
+  const sentQuotes = quotes.filter(q => q.seller_id === user?.id);
+  const receivedQuotes = quotes.filter(q => q.client_user_id === user?.id);
 
   const archiveQuote = useMutation({
     mutationFn: async (quoteId: string) => {
@@ -70,6 +75,8 @@ export const useQuotes = () => {
 
   return {
     quotes,
+    sentQuotes,
+    receivedQuotes,
     isLoading,
     error,
     archiveQuote: archiveQuote.mutateAsync,

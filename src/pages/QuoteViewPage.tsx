@@ -11,6 +11,7 @@ import { ArrowLeft, MessageSquare, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
 import { toast } from 'sonner';
+import { useAttachQuote } from '@/hooks/useAttachQuote';
 
 interface QuoteItem {
   description: string;
@@ -52,6 +53,7 @@ export const QuoteViewPage = () => {
   const { quoteId, token } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { mutateAsync: attachQuote } = useAttachQuote();
   const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +109,11 @@ export const QuoteViewPage = () => {
 
     setIsAccepting(true);
     try {
+      // Attach quote before accepting
+      if (token) {
+        await attachQuote({ quoteId: quoteId!, token });
+      }
+      
       const { data, error } = await supabase.functions.invoke('accept-quote', {
         body: { quoteId, token }
       });
@@ -125,11 +132,22 @@ export const QuoteViewPage = () => {
     }
   };
 
-  const handleOpenMessaging = () => {
+  const handleOpenMessaging = async () => {
     if (!user) {
       navigate(`/auth?redirect=/quote/${quoteId}/${token}&openMessage=true`);
       return;
     }
+    
+    // Attach quote before opening messaging
+    if (token) {
+      try {
+        await attachQuote({ quoteId: quoteId!, token });
+      } catch (err) {
+        console.error('Error attaching quote:', err);
+        // Continue anyway
+      }
+    }
+    
     setMessagingOpen(true);
   };
 
@@ -319,6 +337,7 @@ export const QuoteViewPage = () => {
         {quoteId && (
           <QuoteMessaging
             quoteId={quoteId}
+            token={token}
             open={messagingOpen}
             onOpenChange={setMessagingOpen}
             clientName={quoteData.client_name || undefined}

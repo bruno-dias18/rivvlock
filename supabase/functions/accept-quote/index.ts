@@ -17,6 +17,23 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // Get authenticated user if exists
+    const authHeader = req.headers.get('Authorization');
+    let authenticatedUserId: string | null = null;
+
+    if (authHeader) {
+      const supabaseAuth = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      
+      const { data: { user } } = await supabaseAuth.auth.getUser();
+      authenticatedUserId = user?.id || null;
+      
+      console.log('[accept-quote] Authenticated user ID:', authenticatedUserId);
+    }
+
     const { quoteId, token } = await req.json();
 
     if (!quoteId || !token) {
@@ -39,6 +56,15 @@ serve(async (req) => {
       throw new Error('Quote is not in a valid state to be accepted');
     }
 
+    // Attach quote to authenticated user if not already attached
+    if (authenticatedUserId && !quote.client_user_id && quote.seller_id !== authenticatedUserId) {
+      console.log('[accept-quote] Attaching quote to authenticated user');
+      await supabaseAdmin
+        .from('quotes')
+        .update({ client_user_id: authenticatedUserId })
+        .eq('id', quoteId);
+    }
+
     // Vérifier si le devis a une date de service
     const hasServiceDate = quote.service_date && quote.service_date !== null;
 
@@ -55,7 +81,7 @@ serve(async (req) => {
       .from('transactions')
       .insert({
         user_id: quote.seller_id,
-        buyer_id: null,
+        buyer_id: authenticatedUserId || null,
         client_email: quote.client_email,
         title: quote.title,
         description: quote.description,

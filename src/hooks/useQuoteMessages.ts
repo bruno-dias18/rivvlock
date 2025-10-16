@@ -4,10 +4,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuoteMessage } from '@/types/quotes';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+import { useAttachQuote } from './useAttachQuote';
 
-export const useQuoteMessages = (quoteId: string) => {
+export const useQuoteMessages = (quoteId: string, token?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { mutateAsync: attachQuote } = useAttachQuote();
 
   const { data: messages = [], isLoading } = useQuery({
     queryKey: ['quote-messages', quoteId],
@@ -60,6 +62,16 @@ export const useQuoteMessages = (quoteId: string) => {
       senderEmail: string;
       senderName: string;
     }) => {
+      // Attach quote if user is connected
+      if (user && token) {
+        try {
+          await attachQuote({ quoteId, token });
+        } catch (err) {
+          console.log('Quote attachment error (non-critical):', err);
+          // Continue even if attachment fails (might be already attached)
+        }
+      }
+
       const { error } = await supabase
         .from('quote_messages')
         .insert({
@@ -75,6 +87,7 @@ export const useQuoteMessages = (quoteId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quote-messages', quoteId] });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
       toast.success('Message envoyé');
     },
     onError: (error) => {

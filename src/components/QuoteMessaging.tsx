@@ -14,13 +14,15 @@ import { logger } from '@/lib/logger';
 
 interface QuoteMessagingProps {
   quoteId: string;
+  token?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   clientName?: string;
 }
 
 export const QuoteMessaging = ({ 
-  quoteId, 
+  quoteId,
+  token,
   open, 
   onOpenChange,
   clientName 
@@ -42,7 +44,7 @@ export const QuoteMessaging = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
 
-  const { messages, isLoading, sendMessage, isSendingMessage } = useQuoteMessages(quoteId);
+  const { messages, isLoading, sendMessage, isSendingMessage } = useQuoteMessages(quoteId, token);
 
   const ensureBottom = () => {
     if (bottomRef.current) {
