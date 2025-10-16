@@ -62,10 +62,13 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-orange-800">
           <Calendar className="h-5 w-5" />
-          Demande de modification de date
+          {currentDate ? 'Demande de modification de date' : 'Proposition de date de service'}
         </CardTitle>
         <CardDescription>
-          Le vendeur souhaite modifier la date de service de cette transaction.
+          {currentDate 
+            ? 'Le vendeur souhaite modifier la date de service de cette transaction.'
+            : 'Le vendeur propose une date de service pour cette transaction.'
+          }
         </CardDescription>
       </CardHeader>
 
@@ -82,7 +85,11 @@ export const DateChangeApprovalCard: React.FC<DateChangeApprovalCardProps> = ({
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            Une réponse de votre part est attendue. Si vous ne répondez pas, la transaction suivra son cours normal.
+            {currentDate ? (
+              "Une réponse de votre part est attendue. Si vous ne répondez pas, la transaction conservera la date actuelle."
+            ) : (
+              "Une réponse de votre part est attendue. Sans date de service validée, la transaction ne pourra pas progresser."
+            )}
           </AlertDescription>
         </Alert>
 
