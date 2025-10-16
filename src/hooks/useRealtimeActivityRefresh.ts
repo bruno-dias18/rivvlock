@@ -25,8 +25,9 @@ export const useRealtimeActivityRefresh = () => {
 
       if (now - lastRefetch > 2000) {
         lastInvalidationRef.current[key] = now;
-        queryClient.refetchQueries({ queryKey });
-        logger.debug('Realtime: Refetched cache', { queryKey });
+        // ✅ type: 'all' force le refetch même pour les queries inactives
+        queryClient.refetchQueries({ queryKey, type: 'all' });
+        logger.debug('Realtime: Refetched cache (active + inactive)', { queryKey });
       }
     };
 

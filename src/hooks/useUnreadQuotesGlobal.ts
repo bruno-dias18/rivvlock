@@ -57,8 +57,10 @@ export const useUnreadQuotesGlobal = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    staleTime: 30_000,
+    staleTime: 10_000, // ✅ Plus agressif: 10s au lieu de 30s
     gcTime: 5 * 60_000,
+    refetchOnMount: 'always', // ✅ Force refetch à chaque remount
+    refetchInterval: 15_000, // ✅ Fallback polling toutes les 15s
   });
 
   // Realtime subscription pour tous les messages

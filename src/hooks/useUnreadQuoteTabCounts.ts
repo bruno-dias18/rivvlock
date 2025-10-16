@@ -48,8 +48,10 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
       return { sentUnread, receivedUnread };
     },
     enabled: !!user?.id,
-    staleTime: 10_000,
+    staleTime: 10_000, // ✅ Déjà optimisé à 10s
     gcTime: 5 * 60_000,
+    refetchOnMount: 'always', // ✅ Force refetch à chaque remount
+    refetchInterval: 15_000, // ✅ Fallback polling toutes les 15s
   });
 
   useEffect(() => {
