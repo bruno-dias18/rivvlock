@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 import type { Dispute } from '@/types';
 
 export const useUnreadDisputeMessages = (disputeId: string, dispute?: Dispute) => {
@@ -42,8 +43,42 @@ export const useUnreadDisputeMessages = (disputeId: string, dispute?: Dispute) =
       return count || 0;
     },
     enabled: !!user?.id && !!disputeId,
-    refetchInterval: 30000,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user?.id || !disputeId) return;
+
+    const channel = supabase
+      .channel(`dispute-messages-unread-${disputeId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispute_messages' },
+        (payload) => {
+          const row = payload.new as any;
+          if (row?.dispute_id === disputeId && row?.sender_id !== user.id) {
+            refetch();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispute_message_reads' },
+        (payload) => {
+          const row = payload.new as any;
+          if (row?.dispute_id === disputeId) {
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, disputeId, refetch]);
 
   // ✅ DEPRECATED: markAsSeen conservé pour compatibilité mais recommandé d'utiliser useDisputeMessageReads
   const markAsSeen = () => {

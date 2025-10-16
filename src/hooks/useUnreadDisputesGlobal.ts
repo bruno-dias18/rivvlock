@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
 
 export const useUnreadDisputesGlobal = () => {
   const { user } = useAuth();
@@ -54,8 +55,39 @@ export const useUnreadDisputesGlobal = () => {
       return totalUnread;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
   });
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('disputes-global-unread')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispute_messages' },
+        (payload) => {
+          const row = payload.new as any;
+          if (row?.sender_id !== user.id) {
+            refetch();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'dispute_message_reads' },
+        () => {
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, refetch]);
 
   // ✅ DEPRECATED: markAllAsSeen conservé pour compatibilité
   const markAllAsSeen = () => {
