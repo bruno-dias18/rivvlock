@@ -14,6 +14,7 @@ interface Props {
   onArchive: (quoteId: string) => void;
   onOpenMessaging?: (quoteId: string, clientName?: string) => void;
   isSeller: boolean;
+  onMarkAsViewed?: (quoteId: string) => void;
 }
 
 const statusConfig = {
@@ -25,11 +26,24 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller }: Props) => {
+export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller, onMarkAsViewed }: Props) => {
   const { unreadCount } = useUnreadConversationMessages(quote.conversation_id);
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
-  const hasBeenModified = new Date(quote.updated_at).getTime() !== new Date(quote.created_at).getTime();
+  
+  // Show "modified" indicator only if quote was updated after the client last viewed it
+  const hasBeenModified = !isSeller && (
+    !quote.client_last_viewed_at || 
+    new Date(quote.updated_at).getTime() > new Date(quote.client_last_viewed_at).getTime()
+  );
+
+  const handleView = () => {
+    // Mark as viewed when client opens the quote
+    if (!isSeller && hasBeenModified && onMarkAsViewed) {
+      onMarkAsViewed(quote.id);
+    }
+    onView(quote);
+  };
 
   return (
     <Card className={cn(
@@ -81,7 +95,7 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
               variant="outline"
               onClick={(e) => {
                 e.stopPropagation();
-                onView(quote);
+                handleView();
               }}
               className={cn(
                 "flex-1 sm:flex-initial",

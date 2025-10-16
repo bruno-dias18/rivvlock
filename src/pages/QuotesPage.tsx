@@ -27,7 +27,7 @@ export const QuotesPage = () => {
   const [selectedTab, setSelectedTab] = useState<string>('sent');
   const [messagingQuoteId, setMessagingQuoteId] = useState<string | null>(null);
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
-  const { sentQuotes, receivedQuotes, isLoading, archiveQuote } = useQuotes();
+  const { sentQuotes, receivedQuotes, isLoading, archiveQuote, markAsViewed } = useQuotes();
   const isMobile = useIsMobile();
   const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(sentQuotes, receivedQuotes);
 
@@ -140,6 +140,7 @@ export const QuotesPage = () => {
                   onArchive={() => archiveQuote(quote.id)}
                   onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
                   isSeller={false}
+                  onMarkAsViewed={markAsViewed}
                 />
               ))
             )}
@@ -172,6 +173,7 @@ export const QuotesPage = () => {
           onOpenMessaging={handleOpenMessaging}
           onEdit={handleEditQuote}
           userRole={selectedQuote?.seller_id === user?.id ? 'seller' : 'client'}
+          onMarkAsViewed={markAsViewed}
         />
 
         {/* Quote Messaging Dialog */}

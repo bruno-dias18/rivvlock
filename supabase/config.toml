@@ -161,6 +161,9 @@ verify_jwt = true
 [functions.mark-payment-authorized]
 verify_jwt = true
 
+[functions.mark-quote-as-viewed]
+verify_jwt = true
+
 [functions.process-automatic-transfer]
 verify_jwt = false
 

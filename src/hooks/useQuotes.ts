@@ -129,6 +129,24 @@ export const useQuotes = () => {
     }
   });
 
+  const markAsViewed = useMutation({
+    mutationFn: async (quoteId: string) => {
+      const { error } = await supabase.functions.invoke('mark-quote-as-viewed', {
+        body: { quoteId }
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Silently refresh quotes to update the UI
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+    onError: (error) => {
+      // Fail silently, this is not critical
+      console.error('Error marking quote as viewed:', error);
+    }
+  });
+
   return {
     quotes,
     sentQuotes,
@@ -138,6 +156,7 @@ export const useQuotes = () => {
     archiveQuote: archiveQuote.mutateAsync,
     resendEmail: resendEmail.mutateAsync,
     updateQuote: updateQuote.mutateAsync,
-    acceptQuote: acceptQuote.mutateAsync
+    acceptQuote: acceptQuote.mutateAsync,
+    markAsViewed: markAsViewed.mutateAsync
   };
 };

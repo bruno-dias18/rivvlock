@@ -7,7 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Mail, MessageSquare, Check } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
   onOpenMessaging?: (quoteId: string, clientName?: string) => void;
   onEdit?: (quote: Quote) => void;
   userRole: 'seller' | 'client';
+  onMarkAsViewed?: (quoteId: string) => Promise<void>;
 }
 
 const statusConfig = {
@@ -28,10 +29,23 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging, onEdit, userRole }: Props) => {
+export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging, onEdit, userRole, onMarkAsViewed }: Props) => {
   const { resendEmail, acceptQuote } = useQuotes();
   const [isResending, setIsResending] = useState(false);
   const [isAccepting, setIsAccepting] = useState(false);
+
+  // Mark as viewed when client opens the dialog
+  useEffect(() => {
+    if (open && quote && userRole === 'client' && onMarkAsViewed) {
+      // Check if it needs to be marked (has been modified and not viewed)
+      const hasBeenModified = !quote.client_last_viewed_at || 
+        new Date(quote.updated_at).getTime() > new Date(quote.client_last_viewed_at).getTime();
+      
+      if (hasBeenModified) {
+        onMarkAsViewed(quote.id).catch(console.error);
+      }
+    }
+  }, [open, quote, userRole, onMarkAsViewed]);
 
   if (!quote) return null;
 
