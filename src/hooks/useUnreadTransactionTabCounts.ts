@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 
 interface TransactionLike { id: string; conversation_id: string | null; status: string; }
 
@@ -80,29 +79,6 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
     gcTime: 5 * 60_000,
     refetchOnMount: true, // ✅ Use global config
   });
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const convIds = new Set(
-      transactions.map(t => t.conversation_id).filter(Boolean) as string[]
-    );
-
-    const channel = supabase
-      .channel('unread-transaction-tabs-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const row = payload.new as any;
-          if (row?.sender_id !== user.id && convIds.has(row?.conversation_id)) {
-            refetch();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id, transactions, refetch]);
 
   return {
     pending: data?.pending ?? 0,

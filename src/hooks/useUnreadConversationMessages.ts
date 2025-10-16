@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 
 /**
  * Hook pour compter les messages non lus d'une conversation
@@ -39,29 +38,6 @@ export function useUnreadConversationMessages(conversationId: string | null | un
     staleTime: 30_000,
     gcTime: 5 * 60_000,
   });
-
-  // Realtime subscription
-  useEffect(() => {
-    if (!conversationId || !user?.id) return;
-
-    const channel = supabase
-      .channel(`conversation-unread-${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const row = payload.new as any;
-          if (row?.conversation_id === conversationId && row?.sender_id !== user.id) {
-            refetch();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId, user?.id, refetch]);
 
   return { unreadCount, refetch };
 }

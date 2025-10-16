@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 
 /**
  * Hook pour compter le nombre total de messages non lus dans tous les devis de l'utilisateur
@@ -61,30 +60,6 @@ export const useUnreadQuotesGlobal = () => {
     gcTime: 5 * 60_000,
     refetchOnMount: true, // ✅ Use global config
   });
-
-  // Realtime subscription pour tous les messages
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('quotes-global-unread')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const row = payload.new as any;
-          // Refetch si le message n'est pas de l'utilisateur
-          if (row?.sender_id !== user.id) {
-            refetch();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, refetch]);
 
   return { unreadCount, refetch, isLoading };
 };

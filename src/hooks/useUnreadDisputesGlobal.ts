@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 
 export const useUnreadDisputesGlobal = () => {
   const { user } = useAuth();
@@ -60,37 +59,7 @@ export const useUnreadDisputesGlobal = () => {
     refetchOnMount: true, // ✅ Use global config
   });
 
-  // Realtime subscription
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel('disputes-global-unread')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'dispute_messages' },
-        (payload) => {
-          const row = payload.new as any;
-          if (row?.sender_id !== user.id) {
-            refetch();
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'dispute_message_reads' },
-        () => {
-          refetch();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, refetch]);
-
-  // ✅ DEPRECATED: markAllAsSeen conservé pour compatibilité
+  // DEPRECATED: Use useDisputeMessageReads instead
   const markAllAsSeen = () => {
     localStorage.setItem('last_seen_disputes_global', new Date().toISOString());
   };

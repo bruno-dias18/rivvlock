@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
 
 interface QuoteLike { id: string; conversation_id: string | null; }
 
@@ -52,30 +51,6 @@ export const useUnreadQuoteTabCounts = (sentQuotes: QuoteLike[], receivedQuotes:
     gcTime: 5 * 60_000,
     refetchOnMount: true, // ✅ Use global config
   });
-
-  useEffect(() => {
-    if (!user?.id) return;
-    const convIds = new Set([
-      ...sentQuotes.map(q => q.conversation_id).filter(Boolean) as string[],
-      ...receivedQuotes.map(q => q.conversation_id).filter(Boolean) as string[],
-    ]);
-
-    const channel = supabase
-      .channel('unread-quote-tabs-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
-          const row = payload.new as any;
-          if (row?.sender_id !== user.id && convIds.has(row?.conversation_id)) {
-            refetch();
-          }
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user?.id, sentQuotes, receivedQuotes, refetch]);
 
   return { sentUnread: data?.sentUnread ?? 0, receivedUnread: data?.receivedUnread ?? 0, refetch, isLoading };
 };
