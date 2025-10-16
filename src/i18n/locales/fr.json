@@ -455,7 +455,8 @@
       "feesPricing": {
         "commission": "RIVVLOCK prélève une commission de 5% sur chaque transaction réalisée via la plateforme. Cette commission couvre les frais de traitement, de sécurisation et de médiation.",
         "payment": "Les frais de traitement des paiements (Stripe) sont inclus dans cette commission de 5%.",
-        "included": "Cette commission inclut tous les frais de service : sécurisation des fonds, support client, médiation en cas de litige, et frais bancaires."
+        "included": "Cette commission inclut tous les frais de service : sécurisation des fonds, support client, médiation en cas de litige, et frais bancaires.",
+        "display": "Affichage des frais dans les devis : Par défaut, ces frais apparaissent comme ligne séparée pour une transparence maximale et une conformité légale optimale (DGCCRF en France, LCD en Suisse). Le vendeur peut choisir de les répartir proportionnellement sur les autres lignes, mais cette pratique peut comporter des risques juridiques selon la législation en vigueur. Dans tous les cas, le montant total TTC payé par le client inclut toujours ces frais de 5%."
       },
       "disputesRefunds": {
         "policy": "En cas de litige entre les parties, RIVVLOCK applique une politique de remboursement équitable selon la résolution du litige :",

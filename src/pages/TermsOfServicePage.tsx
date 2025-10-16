@@ -108,6 +108,7 @@ const TermsOfServicePage: React.FC = () => {
               <p>{t('terms.content.feesPricing.commission')}</p>
               <p>{t('terms.content.feesPricing.payment')}</p>
               <p>{t('terms.content.feesPricing.included')}</p>
+              <p>{t('terms.content.feesPricing.display')}</p>
             </CardContent>
           </Card>
 

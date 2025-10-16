@@ -49,6 +49,8 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
     { description: '', quantity: 1, unit_price: 0, total: 0 }
   ]);
 
+  const [showFeesAsSeparateLine, setShowFeesAsSeparateLine] = useState(true);
+
   useEffect(() => {
     if (profile?.country) {
       setCurrency(getDefaultCurrency());
@@ -351,22 +353,63 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                     </div>
                   </div>
                   
+                  {/* Checkbox pour choisir le mode d'affichage */}
+                  <div className="flex items-start gap-2 px-1 py-2">
+                    <input
+                      type="checkbox"
+                      id="show-fees-separate"
+                      checked={showFeesAsSeparateLine}
+                      onChange={(e) => setShowFeesAsSeparateLine(e.target.checked)}
+                      className="h-4 w-4 mt-0.5 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <label 
+                        htmlFor="show-fees-separate" 
+                        className="text-xs text-blue-700 dark:text-blue-300 cursor-pointer font-medium"
+                      >
+                        Afficher les frais comme ligne séparée (Recommandé)
+                      </label>
+                      <p className="text-[10px] text-blue-600/80 dark:text-blue-400/80 mt-1 leading-tight space-y-0.5">
+                        <span className="block">✓ Conformité légale maximale (DGCCRF/LCD)</span>
+                        <span className="block">✓ Plus transparent pour le client</span>
+                        <span className="block">✓ Facilite la comptabilité</span>
+                        <span className="block text-orange-600 dark:text-orange-400 mt-1">
+                          ⚠️ Si décoché : la répartition peut être considérée comme pratique commerciale trompeuse
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      // Adjust all prices proportionally
-                      const ratio = reverseTotal / totalAmount;
-                      const adjustedItems = items.map(item => ({
-                        ...item,
-                        unit_price: parseFloat((item.unit_price * ratio).toFixed(2)),
-                        total: parseFloat((item.total * ratio).toFixed(2))
-                      }));
-                      setItems(adjustedItems);
-                      toast.success('Prix ajustés pour inclure les frais', {
-                        description: `Les frais de plateforme seront payés par le client (+${reverseFee.toFixed(2)} ${currency.toUpperCase()})`
-                      });
+                      if (showFeesAsSeparateLine) {
+                        // Option légalement recommandée : Ajouter une ligne "Frais de plateforme"
+                        const feeItem: QuoteItem = {
+                          description: "Frais de plateforme RivvLock (5%)",
+                          quantity: 1,
+                          unit_price: reverseFee,
+                          total: reverseFee
+                        };
+                        setItems([...items, feeItem]);
+                        toast.success('Ligne "Frais de plateforme" ajoutée', {
+                          description: `+${reverseFee.toFixed(2)} ${currency.toUpperCase()} - Conformité légale maximale`
+                        });
+                      } else {
+                        // Option alternative : Répartir proportionnellement (moins transparent)
+                        const ratio = reverseTotal / totalAmount;
+                        const adjustedItems = items.map(item => ({
+                          ...item,
+                          unit_price: parseFloat((item.unit_price * ratio).toFixed(2)),
+                          total: parseFloat((item.total * ratio).toFixed(2))
+                        }));
+                        setItems(adjustedItems);
+                        toast.success('Prix ajustés pour inclure les frais', {
+                          description: `Frais répartis sur tous les items (+${reverseFee.toFixed(2)} ${currency.toUpperCase()})`
+                        });
+                      }
                     }}
                     className="w-full border-blue-300 hover:bg-blue-100 dark:border-blue-700 dark:hover:bg-blue-900/50"
                   >
