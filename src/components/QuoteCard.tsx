@@ -6,6 +6,7 @@ import { FileText, Archive, Eye, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
+import { cn } from '@/lib/utils';
 
 interface Props {
   quote: Quote;
@@ -28,9 +29,13 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
   const { unreadCount } = useUnreadConversationMessages(quote.conversation_id);
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
+  const hasBeenModified = new Date(quote.updated_at).getTime() !== new Date(quote.created_at).getTime();
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={cn(
+      "hover:shadow-md transition-shadow",
+      hasBeenModified && !isSeller && "border-2 border-blue-500 shadow-blue-100"
+    )}>
       <CardContent className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           <div className="flex-1 min-w-0">
@@ -40,6 +45,11 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
                 <h3 className="font-semibold text-base sm:text-lg break-words">{quote.title}</h3>
               </div>
               <Badge className={statusInfo.color}>{statusInfo.label}</Badge>
+              {hasBeenModified && !isSeller && (
+                <Badge className="bg-blue-100 text-blue-800 border border-blue-300">
+                  Modifié
+                </Badge>
+              )}
             </div>
 
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -68,7 +78,7 @@ export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging, isSeller 
           <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
             <Button
               size="sm"
-              variant="outline"
+              variant={hasBeenModified && !isSeller ? "default" : "outline"}
               onClick={(e) => {
                 e.stopPropagation();
                 onView(quote);
