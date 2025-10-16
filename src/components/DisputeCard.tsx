@@ -1,6 +1,6 @@
 import React, { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Scale } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { UnifiedMessaging } from './UnifiedMessaging';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
+import { CreateProposalDialog } from './CreateProposalDialog';
 import { logger } from '@/lib/logger';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 import { DisputeHeader } from './DisputeCard/DisputeHeader';
@@ -32,8 +33,9 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   const [isTransactionDetailsOpen, setIsTransactionDetailsOpen] = useState(!isMobile);
   const [isDisputeMessageExpanded, setIsDisputeMessageExpanded] = useState(!isMobile);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
 
-  const { proposals } = useDisputeProposals(dispute.id);
+  const { proposals, createProposal, isCreating } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
   const { unreadCount: unreadMessages, refetch: refetchUnread } = useUnreadConversationMessages(dispute.conversation_id);
   const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
@@ -260,6 +262,22 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
 
+        {/* Faire une proposition Button */}
+        {!dispute.status.startsWith('resolved') && 
+         ['open', 'responded', 'negotiating'].includes(dispute.status) && 
+         (transaction.user_id === user?.id || transaction.buyer_id === user?.id) && (
+          <div>
+            <Button
+              variant="default"
+              className="w-full"
+              onClick={() => setShowProposalDialog(true)}
+            >
+              <Scale className="h-4 w-4 mr-2" />
+              Faire une proposition
+            </Button>
+          </div>
+        )}
+
         {/* Discussion Button */}
         {!dispute.status.startsWith('resolved') && dispute.conversation_id && (
           <div>
@@ -302,8 +320,21 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           open={showMessaging}
           onOpenChange={setShowMessaging}
           title="Discussion du litige"
+          disputeId={dispute.id}
         />
       )}
+
+      <CreateProposalDialog
+        open={showProposalDialog}
+        onOpenChange={setShowProposalDialog}
+        onCreateProposal={async (data) => {
+          await createProposal(data);
+          onRefetch?.();
+        }}
+        isCreating={isCreating}
+        transactionAmount={transaction.price}
+        currency={transaction.currency}
+      />
     </Card>
   );
 };

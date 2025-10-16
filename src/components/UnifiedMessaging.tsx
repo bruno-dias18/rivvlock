@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, MessageSquare, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Send, MessageSquare, X, CheckCircle, XCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConversation } from '@/hooks/useConversation';
 import { useMarkConversationAsRead } from '@/hooks/useMarkConversationAsRead';
@@ -13,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from '@
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { logger } from '@/lib/logger';
+import { useDisputeProposals } from '@/hooks/useDisputeProposals';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UnifiedMessagingProps {
   conversationId: string | null | undefined;
@@ -20,6 +23,7 @@ interface UnifiedMessagingProps {
   onOpenChange: (open: boolean) => void;
   otherParticipantName?: string;
   title?: string;
+  disputeId?: string;
 }
 
 export const UnifiedMessaging = ({ 
@@ -27,7 +31,8 @@ export const UnifiedMessaging = ({
   open, 
   onOpenChange,
   otherParticipantName,
-  title
+  title,
+  disputeId
 }: UnifiedMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -47,6 +52,14 @@ export const UnifiedMessaging = ({
   const lastMessageTimeRef = useRef<number>(0);
 
   const { messages, isLoading, sendMessage, isSendingMessage } = useConversation(conversationId);
+  
+  const { 
+    proposals, 
+    acceptProposal, 
+    rejectProposal, 
+    isAccepting, 
+    isRejecting 
+  } = useDisputeProposals(disputeId || '');
 
   // Marquer la conversation comme lue à l'ouverture
   useEffect(() => {
@@ -136,6 +149,45 @@ export const UnifiedMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
+  const isProposalMessage = (message: string) => {
+    return message.includes('Proposition') || 
+           message.includes('proposition') || 
+           message.includes('Remboursement') ||
+           message.includes('remboursement');
+  };
+
+  const extractProposalId = async (messageText: string, messageCreatedAt: string) => {
+    if (!disputeId) return null;
+    
+    const proposal = proposals?.find(p => {
+      const proposalTime = new Date(p.created_at).getTime();
+      const messageTime = new Date(messageCreatedAt).getTime();
+      const timeDiff = Math.abs(proposalTime - messageTime);
+      return timeDiff < 5000; // 5 seconds tolerance
+    });
+    
+    return proposal || null;
+  };
+
+  const handleAcceptProposal = async (proposalId: string) => {
+    try {
+      await acceptProposal(proposalId);
+      toast.success('Proposition acceptée avec succès');
+    } catch (error) {
+      logger.error('Error accepting proposal:', error);
+      toast.error('Erreur lors de l\'acceptation de la proposition');
+    }
+  };
+
+  const handleRejectProposal = async (proposalId: string) => {
+    try {
+      await rejectProposal(proposalId);
+      toast.success('Proposition refusée');
+    } catch (error) {
+      logger.error('Error rejecting proposal:', error);
+      toast.error('Erreur lors du rejet de la proposition');
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -192,25 +244,77 @@ export const UnifiedMessaging = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                >
+              {messages.map((message) => {
+                const isProposal = message.message_type === 'system' && isProposalMessage(message.message);
+                const [proposalData, setProposalData] = useState<any>(null);
+
+                useEffect(() => {
+                  if (isProposal && disputeId) {
+                    extractProposalId(message.message, message.created_at).then(setProposalData);
+                  }
+                }, [isProposal, message.message, message.created_at]);
+
+                return (
                   <div
-                    className={`max-w-[75%] rounded-lg p-3 ${
-                      message.sender_id === user?.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background border'
-                    }`}
+                    key={message.id}
+                    className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className="text-xs opacity-70 mb-1">
-                      {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
+                    <div
+                      className={`max-w-[85%] rounded-lg p-3 ${
+                        isProposal
+                          ? 'bg-amber-50 dark:bg-amber-950 border-2 border-amber-300 dark:border-amber-700'
+                          : message.sender_id === user?.id
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background border'
+                      }`}
+                    >
+                      {isProposal && (
+                        <Badge className="mb-2 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-700">
+                          💰 Proposition officielle
+                        </Badge>
+                      )}
+                      <div className="text-xs opacity-70 mb-1">
+                        {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
+                      </div>
+                      <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
+                      
+                      {isProposal && proposalData && proposalData.status === 'pending' && proposalData.proposer_id !== user?.id && (
+                        <div className="mt-3 flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => handleAcceptProposal(proposalData.id)}
+                            disabled={isAccepting || isRejecting}
+                            className="flex-1"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Accepter
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRejectProposal(proposalData.id)}
+                            disabled={isAccepting || isRejecting}
+                            className="flex-1"
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Refuser
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {isProposal && proposalData && proposalData.status !== 'pending' && (
+                        <Badge 
+                          className="mt-2" 
+                          variant={proposalData.status === 'accepted' ? 'default' : 'destructive'}
+                        >
+                          {proposalData.status === 'accepted' ? '✓ Acceptée' : '✗ Refusée'}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
           <div ref={bottomRef} />
