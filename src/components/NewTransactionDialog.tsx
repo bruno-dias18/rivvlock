@@ -28,6 +28,7 @@ const transactionSchema = z.object({
   description: z.string().min(10, 'La description doit contenir au moins 10 caractères').max(500, 'La description ne peut pas dépasser 500 caractères'),
   price: z.number().min(0.01, 'Le prix doit être supérieur à 0'),
   currency: z.enum(['EUR', 'CHF'], { required_error: 'Veuillez sélectionner une devise' }),
+  paymentDeadlineHours: z.enum(['24', '72', '168'], { required_error: 'Veuillez sélectionner un délai' }),
   serviceDate: z.date({
     required_error: "La date et l'heure du service sont requises",
   }).refine((date) => {
@@ -77,6 +78,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       description: '',
       price: 0,
       currency: getDefaultCurrency(),
+      paymentDeadlineHours: '24', // Default to 24h
     },
   });
 
@@ -123,6 +125,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           description: data.description,
           price: data.price,
           currency: data.currency,
+          paymentDeadlineHours: parseInt(data.paymentDeadlineHours),
           serviceDate: data.serviceDate.toISOString(),
           serviceEndDate: data.serviceEndDate?.toISOString()
         }
@@ -333,6 +336,65 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
             <FormField
               control={form.control}
+              name="paymentDeadlineHours"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Date limite de paiement</FormLabel>
+                  <FormControl>
+                    <div className="space-y-2">
+                      <label className="flex items-center space-x-3 cursor-pointer rounded-lg border p-3 hover:bg-accent transition-colors">
+                        <input
+                          type="radio"
+                          value="24"
+                          checked={field.value === '24'}
+                          onChange={() => field.onChange('24')}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">24 heures avant</div>
+                          <div className="text-sm text-muted-foreground">Idéal pour la plupart des services</div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center space-x-3 cursor-pointer rounded-lg border p-3 hover:bg-accent transition-colors">
+                        <input
+                          type="radio"
+                          value="72"
+                          checked={field.value === '72'}
+                          onChange={() => field.onChange('72')}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">3 jours avant</div>
+                          <div className="text-sm text-muted-foreground">Pour anticiper les achats de matériel</div>
+                        </div>
+                      </label>
+                      
+                      <label className="flex items-center space-x-3 cursor-pointer rounded-lg border p-3 hover:bg-accent transition-colors">
+                        <input
+                          type="radio"
+                          value="168"
+                          checked={field.value === '168'}
+                          onChange={() => field.onChange('168')}
+                          className="h-4 w-4 text-primary"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium">1 semaine avant</div>
+                          <div className="text-sm text-muted-foreground">Pour une planification longue</div>
+                        </div>
+                      </label>
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    Le client devra payer avant cette date pour confirmer la transaction
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="serviceDate"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
@@ -344,9 +406,6 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                       placeholder="Sélectionner une date et heure"
                     />
                   </FormControl>
-                  <FormDescription>
-                    Le paiement devra être effectué au plus tard 24h avant cette date/heure.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

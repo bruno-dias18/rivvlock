@@ -25,6 +25,13 @@ export const createTransactionSchema = z.object({
     errorMap: () => ({ message: "Devise invalide (EUR ou CHF uniquement)" })
   }),
   
+  paymentDeadlineHours: z.number()
+    .refine((hours) => [24, 72, 168].includes(hours), {
+      message: "Délai de paiement invalide (24, 72 ou 168 heures uniquement)"
+    })
+    .optional()
+    .default(24),
+  
   serviceDate: z.string()
     .refine((date) => {
       const serviceDate = new Date(date);

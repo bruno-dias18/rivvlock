@@ -63,24 +63,27 @@ serve(async (req) => {
     
     // Validation des données d'entrée
     const validatedData = validate(createTransactionSchema, requestBody);
-    const { title, description, price, currency, serviceDate, serviceEndDate } = validatedData;
+    const { title, description, price, currency, serviceDate, serviceEndDate, paymentDeadlineHours } = validatedData;
 
     // Validation supplémentaire des montants (sécurité)
     if (price < 1 || price > 1000000) {
       throw new Error('Le montant doit être entre 1 et 1 000 000');
     }
 
-    logStep('Request data validated', { title, price, currency, serviceEndDate });
+    logStep('Request data validated', { title, price, currency, serviceEndDate, paymentDeadlineHours });
 
     // Generate secure 256-bit token for shared link
     const sharedLinkToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
     
-    // Calculate payment deadline (24h before service date)
+    // Calculate payment deadline using custom hours (default 24h)
+    const deadlineHours = paymentDeadlineHours || 24;
     const serviceDateObj = new Date(serviceDate);
-    const paymentDeadline = new Date(serviceDateObj.getTime() - (24 * 60 * 60 * 1000));
+    const paymentDeadline = new Date(serviceDateObj.getTime() - (deadlineHours * 60 * 60 * 1000));
     
     // Set shared link expiration to payment deadline
     const sharedLinkExpiresAt = paymentDeadline;
+    
+    logStep('Payment deadline calculated', { deadlineHours, paymentDeadline: paymentDeadline.toISOString() });
 
     // Get seller's display name from profiles
     const { data: profileData, error: profileError } = await supabaseAdmin
