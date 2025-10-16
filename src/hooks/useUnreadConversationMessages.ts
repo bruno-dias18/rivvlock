@@ -5,42 +5,44 @@ import { logger } from '@/lib/logger';
 
 /**
  * Hook pour compter les messages non lus d'une conversation
+ * Utilise conversation_reads (DB) comme source de vérité
  */
 export function useUnreadConversationMessages(conversationId: string | null | undefined) {
   const { user } = useAuth();
 
   const { data: unreadCount = 0, refetch } = useQuery({
-    queryKey: ['unread-conversation-messages', conversationId],
+    queryKey: ['unread-conversation-messages', conversationId, user?.id],
     queryFn: async (): Promise<number> => {
       if (!conversationId || !user?.id) return 0;
 
-      // Récupérer le timestamp de dernière lecture depuis localStorage
-      const lastSeenKey = `conversation_seen_${conversationId}`;
-      const lastSeen = localStorage.getItem(lastSeenKey);
+      // Étape A: récupérer last_read_at depuis conversation_reads
+      const { data: read } = await supabase
+        .from('conversation_reads')
+        .select('last_read_at')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      // Construire la requête (optimisé: select id uniquement)
-      let query = supabase
+      // Étape B: compter les messages non lus (après last_read_at ou depuis l'origine)
+      const lastReadAt = read?.last_read_at ?? '1970-01-01T00:00:00Z';
+      
+      const { count, error } = await supabase
         .from('messages')
         .select('id', { count: 'exact', head: true })
         .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id);
-
-      // Si on a un lastSeen, ne compter que les messages après cette date
-      if (lastSeen) {
-        query = query.gt('created_at', lastSeen);
-      }
-
-      const { count, error } = await query;
+        .neq('sender_id', user.id)
+        .gt('created_at', lastReadAt);
 
       if (error) {
         logger.error('UnreadConv count error', { conversationId, error: String(error) });
         return 0;
       }
-      logger.debug('UnreadConv', { conversationId, lastSeen, count });
+      
+      logger.debug('UnreadConv from DB', { conversationId, lastReadAt, count });
       return count || 0;
     },
     enabled: !!conversationId && !!user?.id,
-    staleTime: 0, // ✅ 0s pour refetch immédiat après invalidation Realtime
+    staleTime: 0, // Refetch immédiat après invalidation Realtime
     gcTime: 5 * 60_000,
   });
 

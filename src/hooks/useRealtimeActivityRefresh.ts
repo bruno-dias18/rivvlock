@@ -125,28 +125,15 @@ export const useRealtimeActivityRefresh = () => {
           
           logger.debug('Realtime: New message', payload);
 
-          // ✅ Mise à jour optimiste immédiate du badge "Discussion"
-          const lastSeenKey = `conversation_seen_${message.conversation_id}`;
-          const lastSeen = localStorage.getItem(lastSeenKey);
-          
-          // 🔧 Comparaison numérique robuste au lieu de chaînes
-          const createdAt = new Date(message.created_at).getTime();
-          const lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : 0;
-          const shouldBump = !lastSeen || (!Number.isNaN(createdAt) && createdAt > lastSeenMs);
-          
-          if (shouldBump) {
-            queryClient.setQueryData<number>(
-              ['unread-conversation-messages', message.conversation_id],
-              (prev) => Math.max(0, (typeof prev === 'number' ? prev : 0) + 1)
-            );
-            logger.debug('🔔 Badge bump:', { conversationId: message.conversation_id, createdAt, lastSeenMs });
-          }
+          // ✅ Refetch type 'all' pour unread-conversation-messages (même si inactif)
+          queryClient.refetchQueries({ 
+            queryKey: ['unread-conversation-messages', message.conversation_id],
+            type: 'all' 
+          });
 
-          // Refetch pour confirmation serveur (throttle 3s)
+          // Refetch pour tous les compteurs globaux
           invalidateMultiple([
             ['conversation-messages', message.conversation_id],
-            ['unread-conversation-messages', message.conversation_id],
-            ['unread-conversation-messages'],
             ['unread-transactions-global', user.id],
             ['unread-quotes-global', user.id],
             ['unread-transaction-tabs', user.id],
