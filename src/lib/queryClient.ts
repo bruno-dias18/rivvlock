@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
       refetchOnWindowFocus: false, // Don't refetch on window focus
       refetchOnReconnect: true, // Refetch on reconnect
-      refetchOnMount: true, // ✅ Allow components to see fresh data on remount
+      refetchOnMount: false, // ✅ Don't refetch on mount (rely on staleTime instead for performance)
     },
     mutations: {
       retry: 1, // Retry mutations once

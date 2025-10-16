@@ -1086,6 +1086,10 @@ export type Database = {
         Args: { check_ip?: string; check_token: string }
         Returns: boolean
       }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       detect_suspicious_pattern: {
         Args: { p_operation: string; p_table_name: string; p_user_id?: string }
         Returns: boolean
