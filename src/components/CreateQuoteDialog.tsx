@@ -118,7 +118,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Créer un devis</DialogTitle>
         </DialogHeader>
@@ -127,7 +127,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
           {/* Client Info */}
           <div className="space-y-4">
             <h3 className="font-medium">Informations client</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="client-email">Email client *</Label>
                 <Input
@@ -198,10 +198,11 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
               </Button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-5">
+                <div key={index} className="space-y-2 md:space-y-0 md:grid md:grid-cols-12 gap-2 p-3 border rounded-lg md:p-0 md:border-0 md:items-end">
+                  <div className="md:col-span-5">
+                    <Label className="md:hidden text-xs">Description</Label>
                     <Input
                       placeholder="Description"
                       value={item.description}
@@ -209,37 +210,42 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       required
                     />
                   </div>
-                  <div className="col-span-2">
-                    <Input
-                      type="number"
-                      placeholder="Qté"
-                      min="1"
-                      step="1"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
-                      required
-                    />
+                  <div className="grid grid-cols-3 gap-2 md:contents">
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs">Qté</Label>
+                      <Input
+                        type="number"
+                        placeholder="Qté"
+                        min="1"
+                        step="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 0)}
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs">Prix</Label>
+                      <Input
+                        type="number"
+                        placeholder="Prix"
+                        min="0"
+                        step="0.01"
+                        value={item.unit_price}
+                        onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
+                        required
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="md:hidden text-xs">Total</Label>
+                      <Input
+                        type="number"
+                        value={item.total.toFixed(2)}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <Input
-                      type="number"
-                      placeholder="Prix unit."
-                      min="0"
-                      step="0.01"
-                      value={item.unit_price}
-                      onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
-                      required
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <Input
-                      type="number"
-                      value={item.total.toFixed(2)}
-                      readOnly
-                      className="bg-muted"
-                    />
-                  </div>
-                  <div className="col-span-1">
+                  <div className="md:col-span-1 flex justify-end md:justify-center">
                     <Button
                       type="button"
                       variant="ghost"
@@ -274,7 +280,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
           {/* Dates */}
           <div className="space-y-4">
             <h3 className="font-medium">Dates (optionnelles)</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label>Date de prestation</Label>
                 <Popover>
