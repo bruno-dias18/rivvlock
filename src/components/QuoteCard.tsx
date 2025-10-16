@@ -2,7 +2,7 @@ import { Quote } from '@/types/quotes';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Archive, Eye } from 'lucide-react';
+import { FileText, Archive, Eye, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -10,6 +10,7 @@ interface Props {
   quote: Quote;
   onView: (quote: Quote) => void;
   onArchive: (quoteId: string) => void;
+  onOpenMessaging?: (quoteId: string, clientName?: string) => void;
 }
 
 const statusConfig = {
@@ -21,7 +22,7 @@ const statusConfig = {
   archived: { label: 'Archivé', color: 'bg-gray-100 text-gray-600' },
 };
 
-export const QuoteCard = ({ quote, onView, onArchive }: Props) => {
+export const QuoteCard = ({ quote, onView, onArchive, onOpenMessaging }: Props) => {
   const statusInfo = statusConfig[quote.status];
   const canArchive = ['refused', 'accepted', 'expired'].includes(quote.status);
 
@@ -60,17 +61,32 @@ export const QuoteCard = ({ quote, onView, onArchive }: Props) => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(quote);
-              }}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              Voir
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView(quote);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Voir
+              </Button>
+              {onOpenMessaging && (
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenMessaging(quote.id, quote.client_name || undefined);
+                  }}
+                >
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  Messagerie
+                </Button>
+              )}
+            </div>
             {canArchive && quote.status !== 'archived' && (
               <Button
                 size="sm"

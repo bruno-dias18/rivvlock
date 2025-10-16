@@ -101,6 +101,7 @@ export const QuotesPage = () => {
                     quote={quote}
                     onView={handleViewQuote}
                     onArchive={archiveQuote}
+                    onOpenMessaging={handleOpenMessaging}
                   />
                 ))
               )}
@@ -130,6 +131,7 @@ export const QuotesPage = () => {
                     quote={quote}
                     onView={handleViewQuote}
                     onArchive={archiveQuote}
+                    onOpenMessaging={handleOpenMessaging}
                   />
                 ))
               )}

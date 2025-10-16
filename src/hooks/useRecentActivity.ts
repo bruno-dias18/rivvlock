@@ -24,7 +24,11 @@ const RELEVANT_ACTIVITY_TYPES = [
   'transaction_completed',
   'dispute_created',
   'seller_validation',
-  'buyer_validation'
+  'buyer_validation',
+  'quote_created',
+  'quote_accepted',
+  'quote_refused',
+  'quote_message_received'
 ];
 
 export const useRecentActivity = () => {

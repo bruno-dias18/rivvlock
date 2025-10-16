@@ -52,7 +52,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -124,7 +124,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging 
           <Separator />
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             {quote.service_date && (
               <div>
                 <p className="font-semibold">Date de début:</p>
@@ -160,23 +160,24 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging 
           {/* Share Link */}
           <div>
             <h3 className="font-semibold mb-2">Lien client</h3>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 readOnly
                 value={quoteLink}
-                className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted"
+                className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted break-all"
               />
-              <Button variant="outline" onClick={copyLink}>
+              <Button variant="outline" onClick={copyLink} className="shrink-0">
                 Copier
               </Button>
               <Button 
                 variant="default" 
                 onClick={handleResendEmail}
                 disabled={isResending}
+                className="shrink-0"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                {isResending ? 'Envoi...' : 'Renvoyer le mail'}
+                {isResending ? 'Envoi...' : 'Renvoyer'}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">

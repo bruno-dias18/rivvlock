@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, MessageSquare } from 'lucide-react';
+import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, MessageSquare, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
@@ -13,6 +13,8 @@ import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadMessagesByStatus } from '@/hooks/useUnreadTransactionMessages';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
+import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuoteMessages';
+import { useQuotes } from '@/hooks/useQuotes';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
@@ -38,6 +40,8 @@ export default function DashboardPage() {
   const { messageCounts } = useUnreadMessagesByStatus();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
+  const { unreadCount: unreadQuoteMessages } = useUnreadQuotesGlobal();
+  const { quotes } = useQuotes();
 
   const handleSyncPayments = async () => {
     toast.promise(
@@ -54,6 +58,18 @@ export default function DashboardPage() {
   };
 
   const transactionStatuses = [
+    {
+      title: 'Devis',
+      description: 'Devis en attente de réponse',
+      count: String(quotes?.filter(q => ['pending', 'negotiating'].includes(q.status)).length || 0),
+      isLoading: false,
+      icon: FileText,
+      category: 'quotes' as const,
+      badgeColor: 'bg-purple-500 text-white hover:bg-purple-600',
+      onClick: () => {
+        navigate('/quotes');
+      },
+    },
     {
       title: t('dashboard.pending'),
       description: t('dashboard.pendingDesc'),
@@ -165,7 +181,13 @@ export default function DashboardPage() {
                         {newCounts[status.category]}
                       </Badge>
                     )}
-                    {messageCounts[status.category] > 0 && (
+                    {status.category === 'quotes' && unreadQuoteMessages > 0 && (
+                      <Badge className={status.badgeColor}>
+                        <MessageSquare className="h-3 w-3 mr-1" />
+                        {unreadQuoteMessages}
+                      </Badge>
+                    )}
+                    {status.category !== 'quotes' && messageCounts[status.category] > 0 && (
                       <Badge className={status.badgeColor}>
                         <MessageSquare className="h-3 w-3 mr-1" />
                         {messageCounts[status.category]}
