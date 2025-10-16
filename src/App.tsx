@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 // Lazy load all dashboard pages for better performance
 const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
+const QuotesPage = lazy(() => import("./pages/QuotesPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const PaymentLinkPage = lazy(() => import("./pages/PaymentLinkPage"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
@@ -85,6 +86,10 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/transactions", 
                  element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/quotes", 
+                 element: React.createElement(Suspense, { fallback: React.createElement("div", null, "Loading...") }, React.createElement(ProtectedRoute, null, React.createElement(QuotesPage)))
                }),
                React.createElement(Route, { 
                  path: "/dashboard/profile", 
