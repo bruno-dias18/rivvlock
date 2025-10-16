@@ -91,38 +91,102 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
             )}
           </div>
 
-          {/* Price */}
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-2xl font-bold">
-              {transaction.price.toFixed(2)} {transaction.currency.toUpperCase()}
-            </span>
-            {transactionData.fee_ratio_client > 0 && (
-              <Badge variant="outline" className="text-xs">
-                +{transactionData.fee_ratio_client}% frais client
-              </Badge>
-            )}
-          </div>
-
           {/* Items if present */}
-          {transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-semibold">{t('quotes.items', 'Articles')}:</h4>
-              <div className="border rounded-lg divide-y">
+          {transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0 ? (
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {t('quotes.items', 'Articles')}
+              </h4>
+              <div className="border rounded-lg divide-y bg-muted/30">
                 {transactionData.items.map((item: any, index: number) => (
-                  <div key={index} className="p-3 flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-medium">{item.description}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {item.quantity} × {item.unit_price.toFixed(2)} {transaction.currency.toUpperCase()}
+                  <div key={index} className="p-3 flex justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium break-words">{item.description}</div>
+                      {item.details && (
+                        <div className="text-sm text-muted-foreground mt-1 break-words">{item.details}</div>
+                      )}
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Quantité: {item.quantity} × {item.unit_price.toFixed(2)} {transaction.currency.toUpperCase()}
                       </div>
                     </div>
-                    <div className="font-semibold">
+                    <div className="font-semibold shrink-0">
                       {(item.quantity * item.unit_price).toFixed(2)} {transaction.currency.toUpperCase()}
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Pricing breakdown */}
+              <div className="border rounded-lg p-4 bg-muted/20 space-y-2">
+                {/* Subtotal */}
+                {transactionData.subtotal && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t('quotes.subtotal', 'Sous-total')}:</span>
+                    <span className="font-medium">
+                      {transactionData.subtotal.toFixed(2)} {transaction.currency.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Discount */}
+                {transactionData.discount_percentage > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>{t('quotes.discount', 'Remise')} ({transactionData.discount_percentage}%):</span>
+                    <span className="font-medium">
+                      -{((transactionData.subtotal * transactionData.discount_percentage) / 100).toFixed(2)} {transaction.currency.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Tax */}
+                {transactionData.tax_rate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      {t('quotes.tax', 'TVA')} ({transactionData.tax_rate}%):
+                    </span>
+                    <span className="font-medium">
+                      {transactionData.tax_amount?.toFixed(2) || '0.00'} {transaction.currency.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Client fees */}
+                {transactionData.fee_ratio_client > 0 && (
+                  <div className="flex justify-between text-sm text-orange-600">
+                    <span>{t('quotes.clientFees', 'Frais client')} ({transactionData.fee_ratio_client}%):</span>
+                    <span className="font-medium">
+                      +{((transaction.price * transactionData.fee_ratio_client) / (100 + transactionData.fee_ratio_client)).toFixed(2)} {transaction.currency.toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* Total */}
+                <div className="flex justify-between pt-2 border-t">
+                  <span className="font-semibold">{t('quotes.total', 'Total')}:</span>
+                  <span className="text-xl font-bold">
+                    {transaction.price.toFixed(2)} {transaction.currency.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Single price without items */
+            <div className="border rounded-lg p-4 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{t('quotes.total', 'Total')}:</span>
+                </div>
+                <span className="text-2xl font-bold">
+                  {transaction.price.toFixed(2)} {transaction.currency.toUpperCase()}
+                </span>
+              </div>
+              {transactionData.fee_ratio_client > 0 && (
+                <div className="mt-2 pt-2 border-t text-sm text-muted-foreground">
+                  <span>Frais client inclus: +{transactionData.fee_ratio_client}%</span>
+                </div>
+              )}
             </div>
           )}
 
