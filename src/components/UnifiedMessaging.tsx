@@ -129,7 +129,7 @@ export const UnifiedMessaging = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 inset-x-2 top-0 bottom-0 translate-x-0 translate-y-0 sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:translate-x-[-50%] sm:translate-y-[-50%]"
+        className="max-w-2xl w-[calc(100%-1rem)] p-0 flex flex-col gap-0 inset-x-2 top-0 bottom-0 translate-x-0 translate-y-0 sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:translate-x-[-50%] sm:translate-y-[-50%] [&>button]:hidden"
         style={{
           ...(isMobile ? {
             bottom: `calc(${keyboardInset}px + env(safe-area-inset-bottom, 0px))`,
