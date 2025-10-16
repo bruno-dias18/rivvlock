@@ -16,6 +16,7 @@ import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { logger } from '@/lib/logger';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface UnifiedMessagingProps {
   conversationId: string | null | undefined;
@@ -67,6 +68,14 @@ export const UnifiedMessaging = ({
       markAsRead(conversationId);
     }
   }, [open, conversationId, markAsRead]);
+
+  // Forcer un refetch instantané à l'ouverture pour éviter le cache vide
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (open && conversationId) {
+      queryClient.refetchQueries({ queryKey: ['conversation-messages', conversationId], type: 'all' });
+    }
+  }, [open, conversationId, queryClient]);
 
   // Auto-marquer comme lu quand de nouveaux messages arrivent et la dialog est ouverte
   useEffect(() => {

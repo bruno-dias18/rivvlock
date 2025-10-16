@@ -37,7 +37,8 @@ export const useConversation = (conversationId: string | null | undefined) => {
     staleTime: 60_000,
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: false,
-    refetchInterval: 30_000, // Réduit à 30s au lieu de 10s
+    refetchOnMount: 'always',
+    placeholderData: (prev) => prev,
   });
 
   const sendMessage = useMutation({
@@ -71,7 +72,7 @@ export const useConversation = (conversationId: string | null | undefined) => {
       .channel(`conversation-${conversationId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
         (payload) => {
           const row = payload.new as UnifiedMessage | undefined;
           if (!row || row.conversation_id !== conversationId) return;
