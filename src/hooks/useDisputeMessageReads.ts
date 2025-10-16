@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/lib/logger';
 
 /**
  * Hook to manage dispute message read status in the database
@@ -34,7 +35,7 @@ export const useDisputeMessageReads = () => {
         );
 
       if (error) {
-        console.error('Error marking dispute as seen:', error);
+        logger.error('Error marking dispute as seen:', error);
         throw error;
       }
 
@@ -46,11 +47,9 @@ export const useDisputeMessageReads = () => {
       queryClient.invalidateQueries({ queryKey: ['unread-disputes-global'] });
       queryClient.invalidateQueries({ queryKey: ['unread-admin-messages'] });
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
-      
-      console.log('✅ Dispute marked as seen in DB:', data.disputeId);
     },
     onError: (error) => {
-      console.error('❌ Failed to mark dispute as seen:', error);
+      logger.error('Failed to mark dispute as seen:', error);
       // Silent error - no need to show toast for background operation
     },
   });

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Quote } from '@/types/quotes';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export const useQuotes = () => {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export const useQuotes = () => {
       toast.success('Devis archivé');
     },
     onError: (error) => {
-      console.error('Error archiving quote:', error);
+      logger.error('Error archiving quote:', error);
       toast.error('Erreur lors de l\'archivage');
     }
   });
@@ -69,7 +70,7 @@ export const useQuotes = () => {
       toast.success(`Email renvoyé avec succès à ${data.client_email}`);
     },
     onError: (error) => {
-      console.error('Error resending quote email:', error);
+      logger.error('Error resending quote email:', error);
       toast.error('Erreur lors de l\'envoi de l\'email');
     }
   });
@@ -104,7 +105,7 @@ export const useQuotes = () => {
       toast.success('Devis modifié avec succès');
     },
     onError: (error) => {
-      console.error('Error updating quote:', error);
+      logger.error('Error updating quote:', error);
       toast.error('Erreur lors de la modification du devis');
     }
   });
@@ -125,7 +126,7 @@ export const useQuotes = () => {
       toast.success('Devis accepté avec succès !');
     },
     onError: (error: any) => {
-      console.error('Error accepting quote:', error);
+      logger.error('Error accepting quote:', error);
       toast.error(error.message || 'Erreur lors de l\'acceptation du devis');
     }
   });
@@ -144,7 +145,7 @@ export const useQuotes = () => {
     },
     onError: (error) => {
       // Fail silently, this is not critical
-      console.error('Error marking quote as viewed:', error);
+      logger.error('Error marking quote as viewed:', error);
     }
   });
 

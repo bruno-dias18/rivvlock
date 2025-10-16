@@ -9,6 +9,7 @@ import { Mail, MessageSquare, Check } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface Props {
   quote: Quote | null;
@@ -42,7 +43,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
         new Date(quote.updated_at).getTime() > new Date(quote.client_last_viewed_at).getTime();
       
       if (hasBeenModified) {
-        onMarkAsViewed(quote.id).catch(console.error);
+        onMarkAsViewed(quote.id).catch(err => logger.error('Error marking quote as viewed:', err));
       }
     }
   }, [open, quote, userRole, onMarkAsViewed]);
@@ -62,7 +63,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
       setIsResending(true);
       await resendEmail(quote.id);
     } catch (error) {
-      console.error('Error resending email:', error);
+      logger.error('Error resending email:', error);
     } finally {
       setIsResending(false);
     }
@@ -74,7 +75,7 @@ export const QuoteDetailsDialog = ({ quote, open, onOpenChange, onOpenMessaging,
       await acceptQuote({ quoteId: quote.id, token: quote.secure_token });
       onOpenChange(false);
     } catch (error) {
-      console.error('Error accepting quote:', error);
+      logger.error('Error accepting quote:', error);
     } finally {
       setIsAccepting(false);
     }

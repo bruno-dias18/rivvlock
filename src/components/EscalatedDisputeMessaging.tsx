@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useKeyboardInsets } from '@/lib/useKeyboardInsets';
 import { useIsMobile } from '@/lib/mobileUtils';
+import { logger } from '@/lib/logger';
 
 interface EscalatedDisputeMessagingProps {
   disputeId: string;
@@ -149,7 +150,7 @@ export const EscalatedDisputeMessaging = ({
       // Scroll after everything
       requestAnimationFrame(() => ensureBottom());
     } catch (error) {
-      console.error('Error sending message:', error);
+      logger.error('Error sending message:', error);
       toast.error(t('Erreur lors de l\'envoi du message'));
     }
   };

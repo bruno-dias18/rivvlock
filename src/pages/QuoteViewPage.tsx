@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
 import { toast } from 'sonner';
 import { useAttachQuote } from '@/hooks/useAttachQuote';
+import { logger } from '@/lib/logger';
 
 interface QuoteItem {
   description: string;
@@ -99,7 +100,6 @@ export const QuoteViewPage = () => {
         
         // Vérifier si l'utilisateur est connecté avec le bon email
         if (user && data.quote.client_email && user.email !== data.quote.client_email) {
-          console.log('[QuoteViewPage] Email mismatch detected on page load');
           setEmailMismatchInfo({
             clientEmail: data.quote.client_email,
             message: `Ce devis a été envoyé à ${data.quote.client_email}. Veuillez vous connecter avec cette adresse.`
@@ -109,7 +109,7 @@ export const QuoteViewPage = () => {
         setError('Données du devis manquantes');
       }
     } catch (err: any) {
-      console.error('Error fetching quote:', err);
+      logger.error('Error fetching quote:', err);
       setError(err.message || 'Erreur lors de la récupération du devis');
     } finally {
       setLoading(false);
@@ -154,13 +154,9 @@ export const QuoteViewPage = () => {
         // For other errors, continue (might be "already attached")
       }
       
-      console.log('[QuoteViewPage] Accepting quote:', { quoteId, token });
-      
       const { data, error } = await supabase.functions.invoke('accept-quote', {
         body: { quoteId, token }
       });
-
-      console.log('[QuoteViewPage] Accept quote response:', { data, error });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -170,7 +166,7 @@ export const QuoteViewPage = () => {
         navigate('/transactions');
       }, 1500);
     } catch (err: any) {
-      console.error('Error accepting quote:', err);
+      logger.error('Error accepting quote:', err);
       toast.error(err.message || 'Erreur lors de l\'acceptation du devis');
     } finally {
       setIsAccepting(false);
@@ -207,7 +203,7 @@ export const QuoteViewPage = () => {
           return; // Stop here, don't open messaging
         }
         // Continue for other errors (might already be attached or user is seller)
-        console.error('Error attaching quote:', err);
+        logger.error('Error attaching quote:', err);
       }
     }
     

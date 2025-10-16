@@ -19,6 +19,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Currency } from '@/types';
 import { QuoteItem } from '@/types/quotes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { logger } from '@/lib/logger';
 
 // Platform fee rate (RivvLock + Stripe)
 const PLATFORM_FEE_RATE = 0.05; // 5%
@@ -169,7 +170,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
       setServiceDate(undefined);
       setServiceEndDate(undefined);
     } catch (error) {
-      console.error('Error creating quote:', error);
+      logger.error('Error creating quote:', error);
       toast.error('Erreur lors de la création du devis');
     } finally {
       setIsLoading(false);

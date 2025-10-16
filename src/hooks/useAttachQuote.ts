@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 interface AttachQuoteParams {
   quoteId: string;
@@ -30,7 +31,7 @@ export const useAttachQuote = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Error attaching quote:', error);
+      logger.error('Error attaching quote:', error);
       
       // Special case: email mismatch (UI will handle this with AlertDialog)
       if (error.message?.includes('email_mismatch') || error.error === 'email_mismatch') {

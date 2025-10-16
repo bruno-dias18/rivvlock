@@ -21,6 +21,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { Currency } from '@/types';
 import { Quote, QuoteItem } from '@/types/quotes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { logger } from '@/lib/logger';
 
 const PLATFORM_FEE_RATE = 0.05;
 
@@ -149,7 +150,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error updating quote:', error);
+      logger.error('Error updating quote:', error);
       toast.error('Erreur lors de la modification du devis');
     } finally {
       setIsLoading(false);

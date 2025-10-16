@@ -18,6 +18,7 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
+import { logger } from '@/lib/logger';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -49,7 +50,7 @@ export default function ProfilePage() {
       
       toast.success(t('profile.dataExported'));
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error:', error);
       toast.error(t('profile.exportError'));
     } finally {
       setIsExportingData(false);

@@ -5,6 +5,7 @@ import { UnifiedMessaging } from './UnifiedMessaging';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
+import { logger } from '@/lib/logger';
 
 interface TransactionMessagingProps {
   transactionId: string;
@@ -63,8 +64,8 @@ export const TransactionMessaging = ({
           throw new Error('Pas de conversation_id retourné');
         }
       } catch (error) {
-        console.error('Error ensuring conversation:', error);
-        toast.error(error);
+        logger.error('Error ensuring conversation:', error);
+        toast.error('Erreur lors de l\'initialisation de la conversation');
         onOpenChange(false);
       } finally {
         setIsEnsuringConversation(false);
