@@ -27,7 +27,7 @@ import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
 import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
-import { useUnreadTransactionsCount } from '@/hooks/useUnreadTransactionMessages';
+import { useUnreadTransactionTabCounts } from '@/hooks/useUnreadTransactionTabCounts';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { CompleteTransactionButtonWithStatus } from '@/components/CompleteTransactionButtonWithStatus';
@@ -225,16 +225,8 @@ export default function TransactionsPage() {
   const completedTransactions = sortTransactions(transactions.filter(t => t.status === 'validated' && t.refund_status !== 'full'));
   const disputedTransactions = sortTransactions(transactions.filter(t => t.status === 'disputed'));
   
-  // Get unread messages counts
-  const { unreadTransactionIds: unreadPending } = useUnreadTransactionsCount(pendingTransactions);
-  const { unreadTransactionIds: unreadBlocked } = useUnreadTransactionsCount(blockedTransactions);
-  const { unreadTransactionIds: unreadCompleted } = useUnreadTransactionsCount(completedTransactions);
-  const { unreadTransactionIds: unreadDisputed } = useUnreadTransactionsCount(disputedTransactions);
-  
-  const hasUnreadPending = unreadPending.length > 0;
-  const hasUnreadBlocked = unreadBlocked.length > 0;
-  const hasUnreadCompleted = unreadCompleted.length > 0;
-  const hasUnreadDisputed = unreadDisputed.length > 0;
+  // Get unread messages counts per tab with unified system
+  const tabCounts = useUnreadTransactionTabCounts(transactions);
 
   const handleCopyLink = async (text: string) => {
     try {
@@ -571,10 +563,10 @@ export default function TransactionsPage() {
                   {newCounts.pending}
                 </Badge>
               )}
-              {unreadPending.length > 0 && (
+              {tabCounts.pending > 0 && (
                 <Badge className="bg-blue-600 text-white hover:bg-blue-700">
                   <MessageSquare className="h-3 w-3 mr-1" />
-                  {unreadPending.length}
+                  {tabCounts.pending}
                 </Badge>
               )}
             </div>
@@ -591,10 +583,10 @@ export default function TransactionsPage() {
                   {newCounts.blocked}
                 </Badge>
               )}
-              {unreadBlocked.length > 0 && (
+              {tabCounts.blocked > 0 && (
                 <Badge className="bg-orange-600 text-white hover:bg-orange-700">
                   <MessageSquare className="h-3 w-3 mr-1" />
-                  {unreadBlocked.length}
+                  {tabCounts.blocked}
                 </Badge>
               )}
             </div>
@@ -611,10 +603,10 @@ export default function TransactionsPage() {
                       {newCounts.completed}
                     </Badge>
                   )}
-                  {unreadCompleted.length > 0 && (
+                  {tabCounts.completed > 0 && (
                     <Badge className="bg-green-600 text-white hover:bg-green-700">
                       <MessageSquare className="h-3 w-3 mr-1" />
-                      {unreadCompleted.length}
+                      {tabCounts.completed}
                     </Badge>
                   )}
                 </div>
@@ -657,10 +649,10 @@ export default function TransactionsPage() {
                       {newCounts.completed}
                     </Badge>
                   )}
-                  {unreadCompleted.length > 0 && (
+                  {tabCounts.completed > 0 && (
                     <Badge className="bg-green-600 text-white hover:bg-green-700 text-[10px] h-5 px-1.5">
                       <MessageSquare className="h-2.5 w-2.5 mr-0.5" />
-                      {unreadCompleted.length}
+                      {tabCounts.completed}
                     </Badge>
                   )}
                 </div>

@@ -66,3 +66,4 @@ export { useUnreadConversationMessages } from './useUnreadConversationMessages';
 export { useMarkConversationAsRead } from './useMarkConversationAsRead';
 export { useUnreadQuotesGlobal } from './useUnreadQuotesGlobal';
 export { useUnreadTransactionsGlobal } from './useUnreadTransactionsGlobal';
+export { useUnreadTransactionTabCounts } from './useUnreadTransactionTabCounts';
