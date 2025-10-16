@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle, FileText, Calendar, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ArrowLeft, MessageSquare, Check } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { QuoteMessaging } from '@/components/QuoteMessaging';
+import { toast } from 'sonner';
 
 interface QuoteItem {
   description: string;
@@ -46,11 +48,15 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   archived: { label: 'Archivé', className: 'bg-gray-400' },
 };
 
-export default function QuoteViewPage() {
-  const { quoteId, token } = useParams<{ quoteId: string; token: string }>();
+export const QuoteViewPage = () => {
+  const { quoteId, token } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [quoteData, setQuoteData] = useState<QuoteData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [messagingOpen, setMessagingOpen] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   useEffect(() => {
     if (!quoteId || !token) {
@@ -60,7 +66,15 @@ export default function QuoteViewPage() {
     }
 
     fetchQuote();
-  }, [quoteId, token]);
+
+    // Check if we should open messaging (from redirect)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('openMessage') === 'true' && user) {
+      setMessagingOpen(true);
+      // Clean URL
+      window.history.replaceState({}, '', `/quote/${quoteId}/${token}`);
+    }
+  }, [quoteId, token, user]);
 
   const fetchQuote = async () => {
     try {
@@ -68,47 +82,80 @@ export default function QuoteViewPage() {
         body: { quote_id: quoteId, secure_token: token }
       });
 
-      if (fetchError) {
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
 
       if (!data || !data.success) {
         setError(data?.error || 'Erreur lors de la récupération du devis');
       } else if (data.quote) {
-        setQuote(data.quote);
+        setQuoteData(data.quote);
       } else {
         setError('Données du devis manquantes');
       }
     } catch (err: any) {
-      logger.error('Error fetching quote:', err);
+      console.error('Error fetching quote:', err);
       setError(err.message || 'Erreur lors de la récupération du devis');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleAcceptQuote = async () => {
+    if (!user) {
+      navigate(`/auth?redirect=/quote/${quoteId}/${token}`);
+      return;
+    }
+
+    setIsAccepting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('accept-quote', {
+        body: { quoteId, token }
+      });
+
+      if (error) throw error;
+
+      toast.success('Devis accepté avec succès ! Redirection vers la transaction...');
+      setTimeout(() => {
+        navigate('/transactions');
+      }, 1500);
+    } catch (err) {
+      console.error('Error accepting quote:', err);
+      toast.error('Erreur lors de l\'acceptation du devis');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
+  const handleOpenMessaging = () => {
+    if (!user) {
+      navigate(`/auth?redirect=/quote/${quoteId}/${token}&openMessage=true`);
+      return;
+    }
+    setMessagingOpen(true);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Chargement du devis...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <Card className="max-w-md w-full">
+      <div className="container mx-auto p-6 flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
           <CardHeader>
-            <div className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              <CardTitle>Erreur</CardTitle>
-            </div>
+            <CardTitle className="text-destructive">Erreur</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">{error}</p>
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/">Retour à l'accueil</Link>
+            <Button onClick={() => navigate('/')} variant="outline" className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour à l'accueil
             </Button>
           </CardContent>
         </Card>
@@ -116,35 +163,30 @@ export default function QuoteViewPage() {
     );
   }
 
-  if (!quote) {
-    return null;
-  }
+  if (!quoteData) return null;
 
-  const statusInfo = statusConfig[quote.status] || statusConfig.pending;
-  const isExpired = quote.status === 'expired' || new Date(quote.valid_until) < new Date();
+  const statusInfo = statusConfig[quoteData.status] || statusConfig.pending;
+  const isExpired = quoteData.status === 'expired' || new Date(quoteData.valid_until) < new Date();
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-6 w-6 text-primary" />
-            <h1 className="text-3xl font-bold">Devis</h1>
-          </div>
-          <p className="text-muted-foreground">
-            De <span className="font-semibold">{quote.seller_name}</span>
-          </p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto p-6 max-w-4xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à l'accueil
+        </Button>
 
-        {/* Main Card */}
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between">
+            <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <CardTitle className="text-2xl mb-2">{quote.title}</CardTitle>
-                {quote.description && (
-                  <CardDescription className="text-base">{quote.description}</CardDescription>
+                <CardTitle className="text-2xl mb-2">{quoteData.title}</CardTitle>
+                {quoteData.description && (
+                  <p className="text-sm text-muted-foreground">{quoteData.description}</p>
                 )}
               </div>
               <Badge className={statusInfo.className}>
@@ -154,15 +196,18 @@ export default function QuoteViewPage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Seller Info */}
+            <div>
+              <h3 className="font-semibold mb-2">Vendeur</h3>
+              <p className="text-sm">{quoteData.seller_name}</p>
+            </div>
+
             {/* Client Info */}
             <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Informations client
-              </h3>
+              <h3 className="font-semibold mb-2">Client</h3>
               <div className="text-sm space-y-1">
-                {quote.client_name && <p className="font-medium">{quote.client_name}</p>}
-                <p className="text-muted-foreground">{quote.client_email}</p>
+                {quoteData.client_name && <p><strong>Nom:</strong> {quoteData.client_name}</p>}
+                <p><strong>Email:</strong> {quoteData.client_email}</p>
               </div>
             </div>
 
@@ -170,19 +215,17 @@ export default function QuoteViewPage() {
 
             {/* Items */}
             <div>
-              <h3 className="font-semibold mb-4">Services</h3>
-              <div className="space-y-3">
-                {quote.items.map((item, index) => (
-                  <div key={index} className="flex justify-between items-start p-3 bg-muted/50 rounded-lg">
+              <h3 className="font-semibold mb-3">Détails de la prestation</h3>
+              <div className="space-y-2">
+                {quoteData.items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg">
                     <div className="flex-1">
                       <p className="font-medium">{item.description}</p>
                       <p className="text-sm text-muted-foreground">
-                        Quantité: {item.quantity} × {item.unit_price.toFixed(2)} {quote.currency}
+                        Quantité: {item.quantity} × {item.unit_price.toFixed(2)} {quoteData.currency.toUpperCase()}
                       </p>
                     </div>
-                    <p className="font-semibold">
-                      {item.total.toFixed(2)} {quote.currency}
-                    </p>
+                    <p className="font-semibold">{item.total.toFixed(2)} {quoteData.currency.toUpperCase()}</p>
                   </div>
                 ))}
               </div>
@@ -190,84 +233,100 @@ export default function QuoteViewPage() {
 
             <Separator />
 
-            {/* Pricing */}
+            {/* Totals */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Sous-total</span>
-                <span>{quote.subtotal.toFixed(2)} {quote.currency}</span>
+                <span>Sous-total:</span>
+                <span>{quoteData.subtotal.toFixed(2)} {quoteData.currency.toUpperCase()}</span>
               </div>
-              {quote.tax_rate && quote.tax_amount && (
+              {quoteData.tax_rate && quoteData.tax_amount && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">TVA ({quote.tax_rate}%)</span>
-                  <span>{quote.tax_amount.toFixed(2)} {quote.currency}</span>
+                  <span>TVA ({quoteData.tax_rate}%):</span>
+                  <span>{quoteData.tax_amount.toFixed(2)} {quoteData.currency.toUpperCase()}</span>
                 </div>
               )}
               <Separator />
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span>{quote.total_amount.toFixed(2)} {quote.currency}</span>
+              <div className="flex justify-between font-bold text-lg">
+                <span>Total TTC:</span>
+                <span>{quoteData.total_amount.toFixed(2)} {quoteData.currency.toUpperCase()}</span>
               </div>
             </div>
 
-            {/* Dates */}
-            {(quote.service_date || quote.service_end_date || quote.valid_until) && (
-              <>
-                <Separator />
-                <div className="space-y-2 text-sm">
-                  {quote.service_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-muted-foreground">Date de prestation:</span>
-                      <span className="font-medium">
-                        {format(new Date(quote.service_date), 'PPP', { locale: fr })}
-                        {quote.service_end_date && 
-                          ` - ${format(new Date(quote.service_end_date), 'PPP', { locale: fr })}`
-                        }
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">Valable jusqu'au:</span>
-                    <span className={`font-medium ${isExpired ? 'text-destructive' : ''}`}>
-                      {format(new Date(quote.valid_until), 'PPP', { locale: fr })}
-                    </span>
-                  </div>
-                </div>
-              </>
-            )}
+            <Separator />
 
-            {/* Actions */}
-            {quote.status === 'pending' && !isExpired && (
+            {/* Dates */}
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {quoteData.service_date && (
+                <div>
+                  <p className="font-semibold">Date de début:</p>
+                  <p className="text-muted-foreground">
+                    {format(new Date(quoteData.service_date), 'dd MMMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+              )}
+              {quoteData.service_end_date && (
+                <div>
+                  <p className="font-semibold">Date de fin:</p>
+                  <p className="text-muted-foreground">
+                    {format(new Date(quoteData.service_end_date), 'dd MMMM yyyy', { locale: fr })}
+                  </p>
+                </div>
+              )}
+              <div>
+                <p className="font-semibold">Valide jusqu'au:</p>
+                <p className="text-muted-foreground">
+                  {format(new Date(quoteData.valid_until), 'dd MMMM yyyy', { locale: fr })}
+                </p>
+              </div>
+              <div>
+                <p className="font-semibold">Créé le:</p>
+                <p className="text-muted-foreground">
+                  {format(new Date(quoteData.created_at), 'dd MMMM yyyy', { locale: fr })}
+                </p>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            {quoteData.status === 'pending' && !isExpired && (
               <>
                 <Separator />
-                <div className="flex gap-3">
-                  <Button asChild className="flex-1">
-                    <a href={`mailto:${quote.seller_name.toLowerCase().replace(/\s/g, '')}?subject=Acceptation du devis - ${quote.title}`}>
-                      Accepter le devis
-                    </a>
+                <div className="flex gap-3 flex-col sm:flex-row">
+                  <Button 
+                    className="flex-1"
+                    size="lg"
+                    onClick={handleAcceptQuote}
+                    disabled={isAccepting}
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    {isAccepting ? 'Acceptation...' : 'Accepter le devis'}
                   </Button>
-                  <Button asChild variant="outline" className="flex-1">
-                    <a href={`mailto:${quote.seller_name.toLowerCase().replace(/\s/g, '')}?subject=Question sur le devis - ${quote.title}`}>
-                      Poser une question
-                    </a>
+                  <Button 
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                    onClick={handleOpenMessaging}
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Poser une question
                   </Button>
                 </div>
-                <p className="text-xs text-center text-muted-foreground">
-                  Ces boutons ouvrent votre client email. Contactez directement le vendeur pour accepter ou discuter du devis.
-                </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="mt-8 text-center">
-          <Button asChild variant="ghost">
-            <Link to="/">← Retour à l'accueil</Link>
-          </Button>
-        </div>
+        {/* Quote Messaging Dialog */}
+        {quoteId && (
+          <QuoteMessaging
+            quoteId={quoteId}
+            open={messagingOpen}
+            onOpenChange={setMessagingOpen}
+            clientName={quoteData.client_name || undefined}
+          />
+        )}
       </div>
     </div>
   );
-}
+};
+
+export default QuoteViewPage;
