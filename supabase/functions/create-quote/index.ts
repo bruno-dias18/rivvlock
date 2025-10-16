@@ -105,9 +105,48 @@ serve(async (req) => {
       metadata: { quote_id: quote.id }
     });
 
-    // TODO: Envoyer email au client avec le lien du devis
-    const quoteLink = `${req.headers.get('origin')}/quote/${quote.secure_token}`;
+    // Générer le lien du devis
+    const origin = req.headers.get('origin') || 'https://app.rivvlock.com';
+    const quoteLink = `${origin}/quote/${quote.id}/${quote.secure_token}`;
     console.log('Quote created, link:', quoteLink);
+
+    // Récupérer le nom du vendeur
+    const { data: sellerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('first_name, last_name, company_name')
+      .eq('user_id', userData.user.id)
+      .single();
+
+    const sellerName = sellerProfile?.company_name || 
+                      `${sellerProfile?.first_name || ''} ${sellerProfile?.last_name || ''}`.trim() ||
+                      'Le vendeur';
+
+    // Envoyer email au client
+    try {
+      await supabaseAdmin.functions.invoke('send-email', {
+        body: {
+          type: 'quote_created',
+          to: body.client_email,
+          data: {
+            clientName: body.client_name || body.client_email,
+            sellerName,
+            quoteTitle: body.title,
+            quoteLink,
+            totalAmount: totalAmount.toFixed(2),
+            currency: body.currency,
+            validUntil: new Date(body.valid_until).toLocaleDateString('fr-FR', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })
+          }
+        }
+      });
+      console.log('Quote email sent to:', body.client_email);
+    } catch (emailError) {
+      console.error('Failed to send quote email:', emailError);
+      // Ne pas bloquer la création du devis si l'email échoue
+    }
 
     return new Response(
       JSON.stringify({ success: true, quote, quote_link: quoteLink }),

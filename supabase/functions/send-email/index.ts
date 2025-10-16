@@ -4,6 +4,7 @@ import React from "npm:react@18.3.1";
 import { renderAsync } from "npm:@react-email/components@0.0.22";
 import { TransactionCreatedEmail } from "./_templates/transaction-created.tsx";
 import { PaymentReminderEmail } from "./_templates/payment-reminder.tsx";
+import { QuoteCreatedEmail } from "./_templates/quote-created.tsx";
 import { logger } from "../_shared/logger.ts";
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
@@ -13,7 +14,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-type EmailType = 'transaction_created' | 'payment_reminder';
+type EmailType = 'transaction_created' | 'payment_reminder' | 'quote_created';
 
 interface EmailPayload {
   type: EmailType;
@@ -66,6 +67,11 @@ serve(async (req) => {
         '2h': '⚠️'
       };
       subject = `${urgencyEmojis[data.urgencyLevel] || '⏰'} Rappel de paiement : ${data.transactionTitle}`;
+    } else if (type === 'quote_created') {
+      html = await renderAsync(
+        React.createElement(QuoteCreatedEmail, data)
+      );
+      subject = `📋 Nouveau devis : ${data.quoteTitle}`;
     } else {
       throw new Error(`Unknown email type: ${type}`);
     }
