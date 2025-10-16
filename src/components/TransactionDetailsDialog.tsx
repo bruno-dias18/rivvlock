@@ -78,7 +78,7 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
           <div className="flex items-center justify-between gap-3">
             <DialogTitle className="text-xl">{transaction.title}</DialogTitle>
             <Badge className={getStatusColor(transaction.status)}>
-              {t(`transactions.status.${transaction.status}`)}
+              {t(`transactions.${transaction.status}`, transaction.status)}
             </Badge>
           </div>
         </DialogHeader>
