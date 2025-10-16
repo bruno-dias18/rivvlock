@@ -132,7 +132,7 @@ serve(async (req) => {
         title: quote.title,
         description: quote.description,
         price: quote.total_amount,
-        currency: quote.currency,
+        currency: quote.currency.toUpperCase(),
         service_date: quote.service_date,
         service_end_date: quote.service_end_date,
         status: transactionStatus,
