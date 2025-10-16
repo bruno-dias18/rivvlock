@@ -112,30 +112,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       conversations: {
         Row: {
           buyer_id: string | null
@@ -644,105 +620,6 @@ export type Database = {
           verified?: boolean
         }
         Relationships: []
-      }
-      quote_messages: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          message_type: string
-          metadata: Json | null
-          quote_id: string
-          sender_email: string
-          sender_id: string | null
-          sender_name: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          message_type?: string
-          metadata?: Json | null
-          quote_id: string
-          sender_email: string
-          sender_id?: string | null
-          sender_name: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          message_type?: string
-          metadata?: Json | null
-          quote_id?: string
-          sender_email?: string
-          sender_id?: string | null
-          sender_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quote_messages_quote_id_fkey"
-            columns: ["quote_id"]
-            isOneToOne: false
-            referencedRelation: "quotes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "quote_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      quote_revisions: {
-        Row: {
-          change_reason: string | null
-          changed_by: string
-          created_at: string
-          id: string
-          items: Json
-          quote_id: string
-          revision_number: number
-          total_amount: number
-        }
-        Insert: {
-          change_reason?: string | null
-          changed_by: string
-          created_at?: string
-          id?: string
-          items: Json
-          quote_id: string
-          revision_number: number
-          total_amount: number
-        }
-        Update: {
-          change_reason?: string | null
-          changed_by?: string
-          created_at?: string
-          id?: string
-          items?: Json
-          quote_id?: string
-          revision_number?: number
-          total_amount?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "quote_revisions_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "quote_revisions_quote_id_fkey"
-            columns: ["quote_id"]
-            isOneToOne: false
-            referencedRelation: "quotes"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       quotes: {
         Row: {
