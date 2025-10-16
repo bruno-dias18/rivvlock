@@ -597,13 +597,26 @@ export const generateInvoicePDF = async (
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 100, 100);
   
-  if (invoiceData.serviceDate) {
-    const serviceDate = new Date(invoiceData.serviceDate).toLocaleDateString(locale, dateOptions);
+  // Calculer la date de service effective à afficher
+  let effectiveServiceDate = invoiceData.serviceDate 
+    ? new Date(invoiceData.serviceDate) 
+    : null;
+
+  const validatedDateTime = new Date(invoiceData.validatedDate);
+
+  // Si la date de service est postérieure à la validation, utiliser la date de validation
+  if (effectiveServiceDate && effectiveServiceDate > validatedDateTime) {
+    effectiveServiceDate = validatedDateTime;
+  }
+
+  // Afficher la date de service (si elle existe)
+  if (effectiveServiceDate) {
+    const serviceDate = effectiveServiceDate.toLocaleDateString(locale, dateOptions);
     doc.text(`${t?.('invoice.servicePerformed') || 'Service réalisé le'}: ${serviceDate}`, margin, yPosition);
     yPosition += 5;
   }
   
-  const validatedDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
+  const validatedDate = validatedDateTime.toLocaleDateString(locale, dateOptions);
   doc.text(`${t?.('invoice.transactionValidated') || 'Transaction validée le'}: ${validatedDate}`, margin, yPosition);
   yPosition += 15;
   
