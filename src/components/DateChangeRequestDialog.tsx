@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { DateTimePicker } from '@/components/DateTimePicker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
@@ -31,6 +32,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
     currentDate ? new Date(currentDate) : undefined
   );
   const [proposedEndDate, setProposedEndDate] = useState<Date | undefined>();
+  const [paymentDeadlineHours, setPaymentDeadlineHours] = useState<'24' | '72' | '168'>('24');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,6 +50,7 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
           transactionId,
           proposedDate: proposedDate.toISOString(),
           proposedEndDate: proposedEndDate?.toISOString(),
+          paymentDeadlineHours: parseInt(paymentDeadlineHours),
           message: message.trim() || undefined
         }
       });
@@ -134,6 +137,26 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
                 />
                 <p className="text-xs text-muted-foreground">
                   Pour les services de plusieurs jours
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="payment-deadline">Délai de paiement</Label>
+                <Select 
+                  value={paymentDeadlineHours} 
+                  onValueChange={(value: '24' | '72' | '168') => setPaymentDeadlineHours(value)}
+                >
+                  <SelectTrigger id="payment-deadline">
+                    <SelectValue placeholder="Sélectionner le délai" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="24">24 heures avant le service</SelectItem>
+                    <SelectItem value="72">3 jours avant le service</SelectItem>
+                    <SelectItem value="168">1 semaine avant le service</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  L'acheteur devra payer avant cette échéance
                 </p>
               </div>
 

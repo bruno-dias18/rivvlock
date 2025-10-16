@@ -13,6 +13,7 @@ interface DateChangeRequest {
   transactionId: string;
   proposedDate: string;
   proposedEndDate?: string;
+  paymentDeadlineHours?: number;
   message?: string;
 }
 
@@ -65,11 +66,12 @@ const handler = async (req: Request): Promise<Response> => {
       transactionId: requestBody.transactionId,
       proposedServiceDate: requestBody.proposedDate,
       proposedServiceEndDate: requestBody.proposedEndDate,
+      paymentDeadlineHours: requestBody.paymentDeadlineHours,
       message: requestBody.message
     };
     
     const validatedData = validate(requestDateChangeSchema, validationData);
-    const { transactionId, proposedServiceDate, proposedServiceEndDate, message } = validatedData;
+    const { transactionId, proposedServiceDate, proposedServiceEndDate, paymentDeadlineHours, message } = validatedData;
 
     logger.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedServiceDate, proposedServiceEndDate, userId: user.id });
 
@@ -136,6 +138,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Add proposed_service_end_date if provided
     if (proposedServiceEndDate) {
       updateData.proposed_service_end_date = proposedServiceEndDate;
+    }
+
+    // Add payment_deadline_hours if provided
+    if (paymentDeadlineHours) {
+      updateData.payment_deadline_hours = paymentDeadlineHours;
     }
 
     const { error: updateError } = await supabase

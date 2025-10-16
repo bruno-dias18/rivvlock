@@ -132,6 +132,13 @@ export const requestDateChangeSchema = z.object({
       return !isNaN(new Date(date).getTime());
     }, { message: "Date de fin invalide" }),
   
+  paymentDeadlineHours: z.number()
+    .int({ message: "Le délai doit être un entier" })
+    .refine((hours) => [24, 72, 168].includes(hours), {
+      message: "Délai de paiement invalide (24, 72 ou 168 heures uniquement)"
+    })
+    .optional(),
+  
   message: z.string()
     .max(500, { message: "Le message ne peut pas dépasser 500 caractères" })
     .optional(),
