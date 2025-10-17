@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer';
 import { InstallPromptBanner } from '@/components/InstallPromptBanner';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import logoHome from '@/assets/rivvlock-logo-home.png';
+import logoLock from '@/assets/rivvlock-logo-lock.png';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -24,9 +24,9 @@ export default function HomePage() {
         <div className="max-w-md w-full space-y-8 text-center">
           <div>
             <img 
-              src={logoHome} 
+              src={logoLock} 
               alt="RivvLock" 
-              className="w-64 mx-auto mb-4"
+              className="w-32 h-32 mx-auto mb-4"
             />
             <p className="text-muted-foreground">
               Secure escrow transactions made simple
