@@ -9,7 +9,6 @@ import i18n from "./i18n/config";
 import "./index.css";
 
 // Eager-loaded pages (critical path)
-import HomePage from "./pages/HomePage";
 import AuthPage from "./pages/AuthPage";
 import RegistrationSuccessPage from "./pages/RegistrationSuccessPage";
 import NotFound from "./pages/NotFound";
@@ -62,7 +61,7 @@ const App: React.FC = () => {
             React.createElement(
               Routes,
               null,
-               React.createElement(Route, { path: "/", element: React.createElement(HomePage) }),
+               React.createElement(Route, { path: "/", element: React.createElement(Navigate, { to: "/auth", replace: true }) }),
                React.createElement(Route, { path: "/auth", element: React.createElement(AuthPage) }),
                React.createElement(Route, { path: "/registration-success", element: React.createElement(RegistrationSuccessPage) }),
                React.createElement(Route, { path: "/terms", element: React.createElement(TermsOfServicePage) }),
