@@ -1,0 +1,168 @@
+import { logger } from './logger';
+
+/**
+ * Performance monitoring utilities for RivvLock
+ */
+
+interface PerformanceMark {
+  name: string;
+  startTime: number;
+}
+
+interface PerformanceMetric {
+  name: string;
+  duration: number;
+  timestamp: Date;
+}
+
+class PerformanceMonitor {
+  private marks: Map<string, PerformanceMark> = new Map();
+  private metrics: PerformanceMetric[] = [];
+  private readonly maxMetrics = 100;
+
+  /**
+   * Start measuring a performance metric
+   */
+  startMeasure(name: string): void {
+    this.marks.set(name, {
+      name,
+      startTime: performance.now(),
+    });
+  }
+
+  /**
+   * End measuring and record the metric
+   */
+  endMeasure(name: string): number | null {
+    const mark = this.marks.get(name);
+    if (!mark) {
+      logger.warn(`Performance mark "${name}" not found`);
+      return null;
+    }
+
+    const duration = performance.now() - mark.startTime;
+    this.marks.delete(name);
+
+    // Store metric
+    this.metrics.push({
+      name,
+      duration,
+      timestamp: new Date(),
+    });
+
+    // Limit stored metrics
+    if (this.metrics.length > this.maxMetrics) {
+      this.metrics.shift();
+    }
+
+    // Log slow operations (> 1 second)
+    if (duration > 1000) {
+      logger.warn(`Slow operation detected: ${name} took ${duration.toFixed(2)}ms`);
+    }
+
+    return duration;
+  }
+
+  /**
+   * Get average duration for a specific metric
+   */
+  getAverageDuration(name: string): number {
+    const relevantMetrics = this.metrics.filter(m => m.name === name);
+    if (relevantMetrics.length === 0) return 0;
+
+    const total = relevantMetrics.reduce((sum, m) => sum + m.duration, 0);
+    return total / relevantMetrics.length;
+  }
+
+  /**
+   * Get all recorded metrics
+   */
+  getMetrics(): PerformanceMetric[] {
+    return [...this.metrics];
+  }
+
+  /**
+   * Clear all metrics
+   */
+  clearMetrics(): void {
+    this.metrics = [];
+    this.marks.clear();
+  }
+
+  /**
+   * Get performance summary
+   */
+  getSummary(): Record<string, { count: number; average: number; max: number }> {
+    const summary: Record<string, { count: number; average: number; max: number }> = {};
+
+    this.metrics.forEach(metric => {
+      if (!summary[metric.name]) {
+        summary[metric.name] = { count: 0, average: 0, max: 0 };
+      }
+
+      summary[metric.name].count++;
+      summary[metric.name].max = Math.max(summary[metric.name].max, metric.duration);
+    });
+
+    // Calculate averages
+    Object.keys(summary).forEach(name => {
+      const relevantMetrics = this.metrics.filter(m => m.name === name);
+      const total = relevantMetrics.reduce((sum, m) => sum + m.duration, 0);
+      summary[name].average = total / relevantMetrics.length;
+    });
+
+    return summary;
+  }
+}
+
+export const performanceMonitor = new PerformanceMonitor();
+
+/**
+ * Helper function to measure async operations
+ */
+export async function measureAsync<T>(
+  name: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  performanceMonitor.startMeasure(name);
+  try {
+    const result = await operation();
+    return result;
+  } finally {
+    const duration = performanceMonitor.endMeasure(name);
+    if (duration !== null) {
+      logger.log(`${name} completed in ${duration.toFixed(2)}ms`);
+    }
+  }
+}
+
+/**
+ * Helper function to measure sync operations
+ */
+export function measureSync<T>(name: string, operation: () => T): T {
+  performanceMonitor.startMeasure(name);
+  try {
+    const result = operation();
+    return result;
+  } finally {
+    const duration = performanceMonitor.endMeasure(name);
+    if (duration !== null) {
+      logger.log(`${name} completed in ${duration.toFixed(2)}ms`);
+    }
+  }
+}
+
+/**
+ * React hook for component render monitoring
+ */
+export function useRenderMonitor(componentName: string) {
+  if (typeof window === 'undefined') return;
+
+  const measureName = `render-${componentName}`;
+  performanceMonitor.startMeasure(measureName);
+
+  // Use effect cleanup to measure
+  return () => {
+    performanceMonitor.endMeasure(measureName);
+  };
+}
