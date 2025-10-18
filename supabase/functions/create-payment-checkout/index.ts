@@ -1,184 +1,115 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  Handler,
+  HandlerContext
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  logger.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    logStep("Function started");
-
-    // Create Supabase client using the anon key for user authentication
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    // Create admin client using service role key for database queries
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // Retrieve authenticated user
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
-
-    const { transactionId, transaction_id, transactionToken } = await req.json();
-    const finalTransactionId = transactionId || transaction_id;
-    if (!finalTransactionId) throw new Error("Transaction ID is required");
-
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2024-06-20",
-    });
-
-    logStep("Fetching transaction details", { transactionId: finalTransactionId });
-
-    // Get transaction details using admin client
-    const { data: transaction, error: transactionError } = await supabaseAdmin
-      .from('transactions')
-      .select('id, title, description, price, currency, user_id, buyer_id, status, shared_link_token')
-      .eq('id', finalTransactionId)
-      .single();
-
-    if (transactionError || !transaction) {
-      logStep("Transaction query error", { error: transactionError, transactionId: finalTransactionId });
-      throw new Error("Transaction not found");
-    }
-
-    // Verify user is the buyer
-    if (transaction.buyer_id !== user.id) {
-      throw new Error("Only the buyer can create a payment session");
-    }
-
-    // Verify transaction is in pending status
-    if (transaction.status !== 'pending') {
-      throw new Error("Transaction is not available for payment");
-    }
-
-    logStep("Transaction verified", { transactionId: transaction.id, status: transaction.status });
-
-    // Check if a Stripe customer record exists for this user
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      logStep("Existing Stripe customer found", { customerId });
-    } else {
-      logStep("No existing Stripe customer found");
-    }
-
-    // Calculate amount in cents
-    const amountInCents = Math.round(transaction.price * 100);
-
-    // Use the request origin for redirects to maintain the session
-    const origin = Deno.env.get("APP_URL") || req.headers.get("origin") || 'https://rivvlock.lovable.app';
-    logStep("Using origin for redirects", { origin });
-    
-    // Create a Stripe Checkout session
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: transaction.currency.toLowerCase(),
-            product_data: {
-              name: transaction.title,
-              description: transaction.description || 'Transaction RIVVLOCK',
-            },
-            unit_amount: amountInCents,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${origin}/payment-success`,
-      cancel_url: `${origin}/payment-link/${transactionToken || transaction.shared_link_token}?payment=cancelled`,
-      metadata: {
-        transaction_id: finalTransactionId,
-        transactionId: finalTransactionId, // Alternative key for compatibility
-        user_id: user.id,
-        rivvlock_escrow: 'true'
-      },
-      payment_intent_data: {
-        capture_method: 'manual', // For escrow - funds will be captured later
-        metadata: {
-          transaction_id: finalTransactionId,
-          transactionId: finalTransactionId, // Alternative key for compatibility
-          user_id: user.id,
-          rivvlock_escrow: 'true'
-        }
-      }
-    });
-
-    logStep("Stripe Checkout session created", { sessionId: session.id, url: session.url });
-
-    // Update transaction with Stripe session info using admin client
-    const { error: updateError } = await supabaseAdmin
-      .from('transactions')
-      .update({ 
-        stripe_payment_intent_id: session.payment_intent as string,
-        payment_method: 'stripe'
-      })
-      .eq('id', finalTransactionId);
-
-    if (updateError) {
-      logStep("Warning: Failed to update transaction", { error: updateError });
-    }
-
-    // Auto-sync after creating checkout session
-    try {
-      logStep("Auto-syncing Stripe payments...");
-      const { data: syncResult, error: syncError } = await supabaseAdmin.functions.invoke('sync-stripe-payments');
-      if (syncError) {
-        logStep("Auto-sync error", { error: syncError });
-      } else {
-        logStep("Auto-sync completed", { result: syncResult });
-      }
-    } catch (syncErr) {
-      logStep("Failed to call sync function", { error: syncErr });
-    }
-
-    return new Response(JSON.stringify({ 
-      success: true,
-      sessionUrl: session.url,
-      url: session.url,  // Add url property for compatibility
-      sessionId: session.id 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: errorMessage 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
+const paymentSchema = z.object({
+  transactionId: z.string().uuid(),
 });
+
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, adminClient, body } = ctx;
+  const { transactionId } = body;
+
+  logger.log('[PAYMENT-CHECKOUT] Processing for:', transactionId);
+
+  // Get transaction
+  const { data: transaction, error: txError } = await adminClient!
+    .from('transactions')
+    .select('*')
+    .eq('id', transactionId)
+    .single();
+
+  if (txError || !transaction) {
+    throw new Error('Transaction not found');
+  }
+
+  // Verify user is buyer
+  if (transaction.buyer_id !== user!.id) {
+    throw new Error('Only the buyer can create a payment');
+  }
+
+  // Verify buyer has Stripe customer
+  const { data: buyerProfile } = await adminClient!
+    .from('profiles')
+    .select('stripe_customer_id')
+    .eq('user_id', user!.id)
+    .single();
+
+  if (!buyerProfile?.stripe_customer_id) {
+    throw new Error('Buyer must have a Stripe customer ID');
+  }
+
+  // Verify seller has Stripe account
+  const { data: sellerAccount } = await adminClient!
+    .from('stripe_accounts')
+    .select('stripe_account_id')
+    .eq('user_id', transaction.user_id)
+    .single();
+
+  if (!sellerAccount?.stripe_account_id) {
+    throw new Error('Seller must have a configured Stripe account');
+  }
+
+  // Initialize Stripe
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    apiVersion: "2024-06-20",
+  });
+
+  const amount = Math.round(transaction.price * 100);
+  const currency = transaction.currency.toLowerCase();
+
+  // Create Checkout Session
+  const session = await stripe.checkout.sessions.create({
+    customer: buyerProfile.stripe_customer_id,
+    payment_method_types: ['card'],
+    line_items: [{
+      price_data: {
+        currency,
+        product_data: {
+          name: transaction.title,
+          description: transaction.description || undefined,
+        },
+        unit_amount: amount,
+      },
+      quantity: 1,
+    }],
+    mode: 'payment',
+    payment_intent_data: {
+      capture_method: 'manual',
+      metadata: {
+        transaction_id: transactionId,
+        seller_id: transaction.user_id,
+        buyer_id: user!.id,
+      },
+    },
+    success_url: `${Deno.env.get("APP_URL")}/payment-success?transaction_id=${transactionId}`,
+    cancel_url: `${Deno.env.get("APP_URL")}/transactions?tab=pending`,
+  });
+
+  logger.log('[PAYMENT-CHECKOUT] Session created:', session.id);
+
+  return successResponse({ 
+    session_id: session.id, 
+    session_url: session.url 
+  });
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit(),
+  withValidation(paymentSchema)
+)(handler);
+
+serve(composedHandler);

@@ -1,229 +1,140 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
-import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
-import { validate, createDisputeSchema } from "../_shared/validation.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  Handler,
+  HandlerContext
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  logger.log(`[CREATE-DISPUTE] ${step}${detailsStr}`);
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    logStep("Function started");
-
-    // Rate limiting - protection contre les abus
-    const clientIp = getClientIp(req);
-    await checkRateLimit(clientIp);
-
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader) throw new Error("No authorization header provided");
-
-  // Client with user auth for user-specific operations
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false }
-    }
-  );
-
-  // Pure service role client to bypass RLS for system operations
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    {
-      auth: { persistSession: false }
-    }
-  );
-
-  const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-  if (userError) throw new Error(`Authentication error: ${userError.message}`);
-  const user = userData.user;
-  if (!user?.id) throw new Error("User not authenticated");
-  logStep("User authenticated", { userId: user.id });
-
-    // Rate limiting par utilisateur
-    await checkRateLimit(clientIp, user.id);
-
-    // Parse et validation des données
-    const requestBody = await req.json();
-    const validatedData = validate(createDisputeSchema, requestBody);
-    const { transactionId, disputeType, reason } = validatedData;
-    
-    logStep("Request data validated", { transactionId, disputeType, reason });
-
-    // Verify user is part of the transaction and it's in paid status
-    const { data: transaction, error: transactionError } = await supabaseClient
-      .from("transactions")
-      .select("*")
-      .eq("id", transactionId)
-      .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
-      .eq("status", "paid")
-      .single();
-
-    if (transactionError || !transaction) {
-      throw new Error("Transaction not found or not authorized");
-    }
-    logStep("Transaction verified", { transactionId });
-
-    // Check if dispute already exists for this transaction
-    const { data: existingDispute } = await supabaseClient
-      .from("disputes")
-      .select("id")
-      .eq("transaction_id", transactionId)
-      .eq("status", "open")
-      .single();
-
-    if (existingDispute) {
-      throw new Error("A dispute already exists for this transaction");
-    }
-
-    // Create the dispute with 48h deadline
-    const disputeDeadline = new Date();
-    disputeDeadline.setHours(disputeDeadline.getHours() + 48);
-
-    const { data: dispute, error: disputeError } = await supabaseClient
-      .from("disputes")
-      .insert({
-        transaction_id: transactionId,
-        reporter_id: user.id,
-        dispute_type: disputeType || "quality_issue",
-        reason: reason,
-        status: "open",
-        dispute_deadline: disputeDeadline.toISOString(),
-      })
-      .select()
-      .single();
-
-    if (disputeError) {
-      throw new Error(`Failed to create dispute: ${disputeError.message}`);
-    }
-    logStep("Dispute created", { disputeId: dispute.id });
-
-    // Link conversation (unified messaging) from transaction if exists
-    try {
-      const { data: tx } = await supabaseClient
-        .from('transactions')
-        .select('conversation_id, user_id, buyer_id, title')
-        .eq('id', transactionId)
-        .single();
-
-      if (tx?.conversation_id) {
-        // Use service role client to bypass RLS for linking
-        const { error: convUpdateErr } = await supabase
-          .from('conversations')
-          .update({ dispute_id: dispute.id })
-          .eq('id', tx.conversation_id);
-
-        if (convUpdateErr) {
-          logStep('Error updating conversation', convUpdateErr);
-        }
-
-        const { error: disputeUpdateErr } = await supabase
-          .from('disputes')
-          .update({ conversation_id: tx.conversation_id })
-          .eq('id', dispute.id);
-
-        if (disputeUpdateErr) {
-          logStep('Error updating dispute', disputeUpdateErr);
-        }
-
-        // Insert initial message in unified conversation as well (non-escalated channel)
-        await supabaseClient
-          .from('messages')
-          .insert({
-            conversation_id: tx.conversation_id,
-            sender_id: user.id,
-            message: reason,
-            message_type: 'text'
-          });
-        logStep('Initial unified message and links created');
-      }
-    } catch (convErr) {
-      logStep('Error linking conversation', convErr);
-    }
-
-    // Update transaction status to 'disputed'
-    const { error: updateError } = await supabaseClient
-      .from('transactions')
-      .update({ status: 'disputed' })
-      .eq('id', transactionId);
-
-    if (updateError) {
-      logStep("Error updating transaction status", updateError);
-      // Don't throw here, dispute is already created
-    } else {
-      logStep("Transaction status updated to disputed");
-    }
-
-    // Log activity
-    const { error: activityError } = await supabaseClient
-      .from('activity_logs')
-      .insert({
-        user_id: user.id,
-        activity_type: 'dispute_created',
-        title: `Litige créé pour "${transaction.title}"`,
-        description: `Type: ${disputeType}, Raison: ${reason}`,
-        metadata: {
-          dispute_id: dispute.id,
-          transaction_id: transactionId,
-          dispute_type: disputeType
-        }
-      });
-
-    if (activityError) {
-      logStep("Error logging activity", activityError);
-    }
-
-    // Send notification to seller via send-notifications function
-    try {
-      const { error: notificationError } = await supabaseClient.functions.invoke('send-notifications', {
-        body: {
-          type: 'dispute_created',
-          transactionId: transactionId,
-          message: `Un client a ouvert un litige sur votre transaction "${transaction.title}". Type: ${disputeType}`,
-          recipients: [transaction.user_id] // Seller ID
-        }
-      });
-      
-      if (notificationError) {
-        logStep("Error sending notification", notificationError);
-      } else {
-        logStep("Notification sent to seller");
-      }
-    } catch (error) {
-      logStep("Error invoking notification function", error);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Dispute created successfully",
-        disputeId: dispute.id
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
+const createDisputeSchema = z.object({
+  transactionId: z.string().uuid(),
+  disputeType: z.string(),
+  reason: z.string().min(1),
 });
+
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, supabaseClient, adminClient, body } = ctx;
+  const { transactionId, disputeType, reason } = body;
+
+  logger.log('[CREATE-DISPUTE] User:', user!.id, 'Transaction:', transactionId);
+
+  // Verify transaction
+  const { data: transaction, error: txError } = await supabaseClient!
+    .from('transactions')
+    .select('*')
+    .eq('id', transactionId)
+    .or(`user_id.eq.${user!.id},buyer_id.eq.${user!.id}`)
+    .eq('status', 'paid')
+    .single();
+
+  if (txError || !transaction) {
+    throw new Error('Transaction not found or not authorized');
+  }
+
+  // Check existing dispute
+  const { data: existingDispute } = await supabaseClient!
+    .from('disputes')
+    .select('id')
+    .eq('transaction_id', transactionId)
+    .eq('status', 'open')
+    .single();
+
+  if (existingDispute) {
+    throw new Error('A dispute already exists for this transaction');
+  }
+
+  // Create dispute with 48h deadline
+  const disputeDeadline = new Date();
+  disputeDeadline.setHours(disputeDeadline.getHours() + 48);
+
+  const { data: dispute, error: disputeError } = await supabaseClient!
+    .from('disputes')
+    .insert({
+      transaction_id: transactionId,
+      reporter_id: user!.id,
+      dispute_type: disputeType || 'quality_issue',
+      reason,
+      status: 'open',
+      dispute_deadline: disputeDeadline.toISOString(),
+    })
+    .select()
+    .single();
+
+  if (disputeError) {
+    throw new Error(`Failed to create dispute: ${disputeError.message}`);
+  }
+
+  // Link conversation
+  try {
+    const { data: tx } = await supabaseClient!
+      .from('transactions')
+      .select('conversation_id')
+      .eq('id', transactionId)
+      .single();
+
+    if (tx?.conversation_id) {
+      await adminClient!
+        .from('conversations')
+        .update({ dispute_id: dispute.id })
+        .eq('id', tx.conversation_id);
+
+      await adminClient!
+        .from('disputes')
+        .update({ conversation_id: tx.conversation_id })
+        .eq('id', dispute.id);
+
+      await supabaseClient!
+        .from('messages')
+        .insert({
+          conversation_id: tx.conversation_id,
+          sender_id: user!.id,
+          message: reason,
+          message_type: 'text'
+        });
+    }
+  } catch (convErr) {
+    logger.error('[CREATE-DISPUTE] Conversation linking error:', convErr);
+  }
+
+  // Update transaction
+  await supabaseClient!
+    .from('transactions')
+    .update({ status: 'disputed' })
+    .eq('id', transactionId);
+
+  // Log activity
+  await supabaseClient!
+    .from('activity_logs')
+    .insert({
+      user_id: user!.id,
+      activity_type: 'dispute_created',
+      title: `Litige créé pour "${transaction.title}"`,
+      description: `Type: ${disputeType}`,
+      metadata: {
+        dispute_id: dispute.id,
+        transaction_id: transactionId,
+      }
+    });
+
+  logger.log('[CREATE-DISPUTE] Created:', dispute.id);
+
+  return successResponse({ 
+    disputeId: dispute.id,
+    message: 'Dispute created successfully'
+  });
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit(),
+  withValidation(createDisputeSchema)
+)(handler);
+
+serve(composedHandler);

@@ -23,6 +23,8 @@ import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
+import { usePaginatedTransactions } from '@/hooks/usePaginatedTransactions';
+import { PaginationControls } from '@/components/transactions/PaginationControls';
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
 import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
@@ -77,6 +79,10 @@ export default function TransactionsPage() {
     }
     return 'desc';
   });
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   
   const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
