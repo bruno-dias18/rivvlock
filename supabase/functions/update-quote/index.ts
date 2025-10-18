@@ -66,33 +66,6 @@ serve(async (req) => {
     const taxRate = 0; // Will be calculated based on seller's profile
     const taxAmount = subtotal * (taxRate / 100);
 
-    // Create a revision in quote_revisions
-    const { data: latestRevision } = await supabase
-      .from('quote_revisions')
-      .select('revision_number')
-      .eq('quote_id', quote_id)
-      .order('revision_number', { ascending: false })
-      .limit(1)
-      .single();
-
-    const nextRevisionNumber = (latestRevision?.revision_number || 0) + 1;
-
-    const { error: revisionError } = await supabase
-      .from('quote_revisions')
-      .insert({
-        quote_id: quote_id,
-        revision_number: nextRevisionNumber,
-        items: items,
-        total_amount: total_amount,
-        changed_by: user.id,
-        change_reason: 'Modification par le vendeur'
-      });
-
-    if (revisionError) {
-      console.error('Error creating revision:', revisionError);
-      throw revisionError;
-    }
-
     // Update the quote
     const { error: updateError } = await supabase
       .from('quotes')
@@ -130,7 +103,6 @@ serve(async (req) => {
           message: 'Le devis a été modifié. Veuillez consulter la nouvelle version.',
           message_type: 'proposal_update',
           metadata: {
-            revision_number: nextRevisionNumber,
             action: 'quote_modified'
           }
         });
@@ -149,8 +121,7 @@ serve(async (req) => {
         data: {
           client_name: existingQuote.client_name || existingQuote.client_email,
           quote_title: title,
-          quote_link: `${supabaseUrl.replace('https://', 'https://app.')}/quote/${quote_id}/${existingQuote.secure_token}`,
-          revision_number: nextRevisionNumber
+          quote_link: `${supabaseUrl.replace('https://', 'https://app.')}/quote/${quote_id}/${existingQuote.secure_token}`
         }
       }
     });
@@ -161,8 +132,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        success: true,
-        revision_number: nextRevisionNumber
+        success: true
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
