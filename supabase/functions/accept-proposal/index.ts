@@ -42,8 +42,8 @@ serve(async (req) => {
 
     logger.log("Accepting proposal:", proposalId, "by user:", user.id);
 
-    // Get the proposal
-    const { data: proposal, error: proposalError } = await supabaseClient
+    // Get the proposal with admin client to bypass RLS
+    const { data: proposal, error: proposalError } = await adminClient
       .from("dispute_proposals")
       .select("*")
       .eq("id", proposalId)
@@ -59,8 +59,8 @@ serve(async (req) => {
       throw new Error("Cannot accept your own proposal");
     }
 
-    // Get the dispute
-    const { data: dispute, error: disputeError } = await supabaseClient
+    // Get the dispute with admin client to bypass RLS
+    const { data: dispute, error: disputeError } = await adminClient
       .from("disputes")
       .select("*")
       .eq("id", proposal.dispute_id)
@@ -71,8 +71,8 @@ serve(async (req) => {
       throw new Error("Dispute not found");
     }
 
-    // Get the transaction
-    const { data: transaction, error: transactionError } = await supabaseClient
+    // Get the transaction with admin client to bypass RLS
+    const { data: transaction, error: transactionError } = await adminClient
       .from("transactions")
       .select("*")
       .eq("id", dispute.transaction_id)
@@ -397,6 +397,26 @@ serve(async (req) => {
       });
     if (messageInsertError) {
       logger.error("Error inserting system message:", messageInsertError);
+    }
+
+    // Also write to unified conversations/messages if a conversation exists
+    if (dispute.conversation_id) {
+      await adminClient
+        .from('messages')
+        .insert({
+          conversation_id: dispute.conversation_id,
+          sender_id: user.id,
+          message: confirmationText,
+          message_type: 'system',
+          metadata: {
+            proposal_id: proposalId,
+            proposal_type: proposal.proposal_type,
+            refund_percentage: proposal.refund_percentage,
+            dispute_id: dispute.id,
+            transaction_id: transaction.id,
+            accepted: true,
+          },
+        });
     }
 
     logger.log("✅ Proposal accepted and processed successfully");
