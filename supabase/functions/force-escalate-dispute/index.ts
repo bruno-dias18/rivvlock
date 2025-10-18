@@ -7,6 +7,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Production-visible step logger
+const logStep = (step: string, details?: Record<string, unknown>) => {
+  const ts = new Date().toISOString();
+  const d = details ? ` | ${JSON.stringify(details)}` : '';
+  console.log(`[FORCE-ESCALATE ${ts}] ${step}${d}`);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,6 +54,13 @@ serve(async (req) => {
     }
 
     const { disputeId } = await req.json();
+    logStep('INPUT_VALIDATED_START', { disputeId });
+    if (!disputeId || typeof disputeId !== 'string' || !/^[0-9a-fA-F-]{36}$/.test(disputeId)) {
+      return new Response(JSON.stringify({ error: 'Invalid disputeId' }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     logger.log("Force escalating dispute:", disputeId, "by admin:", user.id);
 
