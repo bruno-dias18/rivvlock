@@ -17,6 +17,7 @@ import { AdminOfficialProposalDialog } from './AdminOfficialProposalDialog';
 import { logger } from '@/lib/logger';
 
 import { useForceEscalateDispute } from '@/hooks/useForceEscalateDispute';
+import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
 
 interface AdminDisputeCardProps {
   dispute: any;
@@ -36,6 +37,9 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const { mutate: forceEscalate } = useForceEscalateDispute();
 
   const { proposals } = useDisputeProposals(dispute.id);
+  
+  // Compteur de messages admin non lus pour ce litige
+  const { unreadCount: disputeUnreadCount } = useUnreadDisputeAdminMessages(dispute.id, dispute);
 
   // Ensure transaction data is available even if join is not returned by Supabase
   const [transaction, setTransaction] = useState<any>(dispute.transactions);

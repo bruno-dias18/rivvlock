@@ -11,6 +11,7 @@ import { AdminDisputeCard } from '@/components/AdminDisputeCard';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
+import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 
 export default function AdminDisputesPage() {
   const { t } = useTranslation();
@@ -22,6 +23,9 @@ export default function AdminDisputesPage() {
   // Hook pour les notifications de litiges escaladés
   const { markAsSeen } = useAdminDisputeNotifications();
   const { markAllAsSeen } = useUnreadDisputesGlobal();
+  
+  // Compteur de messages admin non lus
+  const { unreadCount: adminUnreadCount } = useUnreadAdminMessages();
   
   // Marquer comme vu quand l'utilisateur visite la page avec le filtre escalated
   useEffect(() => {
@@ -150,8 +154,13 @@ export default function AdminDisputesPage() {
                 onClick={() => setStatusFilter('escalated')}
               >
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     Escaladés
+                    {adminUnreadCount > 0 && (
+                      <Badge variant="destructive" className="ml-auto">
+                        {adminUnreadCount}
+                      </Badge>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

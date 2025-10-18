@@ -8,6 +8,7 @@ import { UnifiedMessaging } from '@/components/UnifiedMessaging';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 
 interface AdminDisputeMessagingProps {
   disputeId: string;
@@ -39,6 +40,10 @@ export const AdminDisputeMessaging = ({
   } = useAdminDisputeConversations({ disputeId, sellerId, buyerId });
 
   const isResolved = status.startsWith('resolved');
+  
+  // Compteurs de messages non lus
+  const { unreadCount: sellerUnreadCount } = useUnreadConversationMessages(sellerConversationId);
+  const { unreadCount: buyerUnreadCount } = useUnreadConversationMessages(buyerConversationId);
 
   useEffect(() => {
     // Créer automatiquement les conversations si elles n'existent pas
@@ -89,10 +94,15 @@ export const AdminDisputeMessaging = ({
           <CardContent>
             <Button
               onClick={() => setSellerDialogOpen(true)}
-              className="w-full"
+              className="w-full relative"
               disabled={isResolved}
             >
               Ouvrir la conversation
+              {sellerUnreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {sellerUnreadCount}
+                </Badge>
+              )}
             </Button>
             {isResolved && (
               <p className="text-xs text-muted-foreground mt-2 text-center">
@@ -114,10 +124,15 @@ export const AdminDisputeMessaging = ({
           <CardContent>
             <Button
               onClick={() => setBuyerDialogOpen(true)}
-              className="w-full"
+              className="w-full relative"
               disabled={isResolved}
             >
               Ouvrir la conversation
+              {buyerUnreadCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {buyerUnreadCount}
+                </Badge>
+              )}
             </Button>
             {isResolved && (
               <p className="text-xs text-muted-foreground mt-2 text-center">
