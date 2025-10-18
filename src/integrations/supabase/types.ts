@@ -1217,6 +1217,7 @@ export type Database = {
         | "quote"
         | "admin_seller_dispute"
         | "admin_buyer_dispute"
+        | "dispute"
       country_code: "FR" | "CH"
       currency_code: "EUR" | "CHF"
       dispute_status:
@@ -1367,6 +1368,7 @@ export const Constants = {
         "quote",
         "admin_seller_dispute",
         "admin_buyer_dispute",
+        "dispute",
       ],
       country_code: ["FR", "CH"],
       currency_code: ["EUR", "CHF"],
