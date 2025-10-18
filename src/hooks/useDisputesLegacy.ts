@@ -55,9 +55,14 @@ export const useDisputesLegacy = () => {
 
       const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
       
-      // Filtrer les litiges selon l'archivage individuel
+      // Filtrer les litiges selon l'archivage individuel et fournir un fallback de transaction
       const enriched = disputes
-        .map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }))
+        .map((d: any) => {
+          const tx = txMap.get(d.transaction_id);
+          // Fallback minimal pour éviter que l'UI ne masque le litige si la transaction est inaccessible (RLS)
+          const fallbackTx = tx ?? ({ id: d.transaction_id, price: 0, currency: 'eur', status: 'disputed' } as any);
+          return { ...d, transactions: fallbackTx };
+        })
         .filter((dispute: any) => {
           const tx = dispute.transactions;
           if (!tx) return true; // Garder si transaction non trouvée (failsafe)

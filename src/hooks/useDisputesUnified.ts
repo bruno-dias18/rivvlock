@@ -49,6 +49,13 @@ export const useDisputesUnified = () => {
       const conversations = conversationsData || [];
       if (conversations.length === 0) return [];
 
+      // Build quick lookup to recover participants if transactions query is restricted by RLS
+      const convByDisputeId = new Map(
+        conversations
+          .filter((c: any) => c.dispute)
+          .map((c: any) => [c.dispute.id, c] as const)
+      );
+
       // Extract disputes from conversations
       const disputes = conversations
         .map((conv: any) => conv.dispute)
@@ -75,12 +82,30 @@ export const useDisputesUnified = () => {
 
       const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
 
-      // Enrich disputes with transaction data and filter by archival status
+      // Enrich disputes with transaction data and filter by archival status.
+      // Always attach a minimal fallback transaction to avoid UI drops when RLS blocks tx SELECT.
       const enriched = disputes
-        .map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }))
+        .map((d: any) => {
+          const tx = txMap.get(d.transaction_id);
+          if (tx) return { ...d, transactions: tx };
+
+          const conv = convByDisputeId.get(d.id);
+          const fallbackTx = {
+            id: d.transaction_id,
+            // Participants recovered from conversation when available (for permissions/UI logic)
+            user_id: conv?.seller_id ?? undefined,
+            buyer_id: conv?.buyer_id ?? undefined,
+            // Safe defaults for optional UI sections
+            price: 0,
+            currency: 'eur',
+            status: 'disputed',
+            title: undefined,
+          } as any;
+          return { ...d, transactions: fallbackTx };
+        })
         .filter((dispute: any) => {
           const tx = dispute.transactions;
-          if (!tx) return true;
+          if (!tx) return true; // keep if transaction still missing (failsafe)
 
           const isSeller = tx.user_id === user?.id;
           const isBuyer = tx.buyer_id === user?.id;
