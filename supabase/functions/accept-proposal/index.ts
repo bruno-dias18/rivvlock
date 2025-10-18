@@ -319,8 +319,8 @@ serve(async (req) => {
         // refresh charge id after capture
         chargeId = typeof captured.latest_charge === 'string' ? captured.latest_charge : chargeId;
         logger.log(`✅ Full amount captured for no_refund`);
-      } else if (pi.status === 'succeeded') {
-        logger.log(`Payment already captured - skipping capture for no_refund`);
+      } else if (pi.status === 'succeeded' || pi.status === 'processing') {
+        logger.log(`Payment already captured or processing - skipping capture for no_refund`);
       } else if (pi.status === 'canceled') {
         throw new Error('Payment was canceled - cannot release funds');
       } else {

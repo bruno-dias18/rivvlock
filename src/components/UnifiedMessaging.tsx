@@ -243,9 +243,12 @@ export const UnifiedMessaging = ({
     try {
       await acceptProposal(proposalId);
       toast.success('Proposition acceptée avec succès');
-    } catch (error) {
-      logger.error('Error accepting proposal:', error);
-      toast.error('Erreur lors de l\'acceptation de la proposition');
+    } catch (error: any) {
+      console.error('Error accepting proposal:', error);
+      const message = error?.message || error?.error || 'Erreur lors de l\'acceptation de la proposition';
+      toast.error('Erreur lors de l\'acceptation de la proposition', {
+        description: message,
+      });
     }
   };
 
