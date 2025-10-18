@@ -36,9 +36,10 @@ serve(async (req) => {
   );
 
   try {
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    const user = userData.user;
+    const bearerMatch = authHeader?.match(/^Bearer\s+(.+)$/i);
+    const token = bearerMatch ? bearerMatch[1] : "";
+    const { data: userData } = await supabaseClient.auth.getUser(token || undefined);
+    const user = userData?.user;
     
     if (!user?.id) {
       throw new Error("User not authenticated");
