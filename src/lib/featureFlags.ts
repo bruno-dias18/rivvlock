@@ -18,11 +18,11 @@ export const FEATURES = {
    * - Week 1: false (Preparation)
    * - Week 2: false (Data migration)
    * - Week 3: false (Code implementation)
-   * - Week 4 Day 1: true (Admin only - Alpha)
+   * - Week 4 Day 1: true (Admin only - Alpha) ← ACTUELLEMENT ICI
    * - Week 4 Day 3: true (10% users - Beta)
    * - Week 4 Day 5: true (100% users - Production)
    */
-  UNIFIED_DISPUTES: false,
+  UNIFIED_DISPUTES: true,
 
   /**
    * Enable double-running mode for validation
