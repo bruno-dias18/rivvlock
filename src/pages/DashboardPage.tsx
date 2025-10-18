@@ -24,6 +24,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -32,6 +33,13 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [isNewTransactionOpen, setIsNewTransactionOpen] = useState(false);
   const [isBankAccountDialogOpen, setIsBankAccountDialogOpen] = useState(false);
+  const { isAdmin } = useIsAdmin();
+
+  useEffect(() => {
+    if (isAdmin) {
+      navigate('/dashboard/admin', { replace: true });
+    }
+  }, [isAdmin, navigate]);
 
   const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
   const { data: stripeAccount } = useStripeAccount();

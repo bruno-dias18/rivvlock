@@ -8,12 +8,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { UnifiedMessaging } from './UnifiedMessaging';
+import { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { logger } from '@/lib/logger';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
+import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
 import { useMarkConversationAsRead } from '@/hooks/useMarkConversationAsRead';
 import { DisputeHeader } from './DisputeCard/DisputeHeader';
 import { DisputeContent } from './DisputeCard/DisputeContent';
@@ -38,6 +40,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   const { proposals, createProposal, isCreating } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
   const { unreadCount: unreadMessages, refetch: refetchUnread } = useUnreadConversationMessages(dispute.conversation_id);
+  const { unreadCount: unreadAdminMessages } = useUnreadDisputeAdminMessages(dispute.id, dispute);
   const { markAsRead } = useMarkConversationAsRead();
 
   const transaction = dispute.transactions;
@@ -278,27 +281,27 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         )}
 
         {/* Discussion Button */}
-        {!dispute.status.startsWith('resolved') && dispute.conversation_id && (
+        {!dispute.status.startsWith('resolved') && ((dispute.status !== 'escalated' && dispute.conversation_id) || dispute.status === 'escalated') && (
           <div>
             <Button
-              variant={unreadMessages > 0 ? "default" : "outline"}
+              variant={(dispute.status === 'escalated' ? unreadAdminMessages : unreadMessages) > 0 ? "default" : "outline"}
               className="w-full relative"
               onClick={() => {
                 setShowMessaging(true);
-                if (dispute.conversation_id) {
+                if (dispute.status !== 'escalated' && dispute.conversation_id) {
                   markAsRead(dispute.conversation_id);
+                  refetchUnread();
                 }
-                refetchUnread();
               }}
             >
               <MessageSquare className="h-4 w-4 mr-2" />
               Voir la discussion
-              {unreadMessages > 0 && (
+              {((dispute.status === 'escalated' ? unreadAdminMessages : unreadMessages) > 0) && (
                 <Badge 
                   variant="destructive" 
                   className="ml-2"
                 >
-                  {unreadMessages} nouveau{unreadMessages > 1 ? 'x' : ''}
+                  {(dispute.status === 'escalated' ? unreadAdminMessages : unreadMessages)} nouveau{(dispute.status === 'escalated' ? unreadAdminMessages : unreadMessages) > 1 ? 'x' : ''}
                 </Badge>
               )}
             </Button>
@@ -315,14 +318,25 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         />
       </CardContent>
 
-      {dispute.conversation_id && (
-        <UnifiedMessaging
-          conversationId={dispute.conversation_id}
-          open={showMessaging}
-          onOpenChange={setShowMessaging}
-          title="Discussion du litige"
-          disputeId={dispute.id}
-        />
+      {showMessaging && (
+        dispute.status === 'escalated' ? (
+          <EscalatedDisputeMessaging
+            disputeId={dispute.id}
+            transactionId={transaction.id}
+            status={dispute.status}
+            onClose={() => setShowMessaging(false)}
+          />
+        ) : (
+          dispute.conversation_id && (
+            <UnifiedMessaging
+              conversationId={dispute.conversation_id}
+              open={showMessaging}
+              onOpenChange={setShowMessaging}
+              title="Discussion du litige"
+              disputeId={dispute.id}
+            />
+          )
+        )
       )}
 
       <CreateProposalDialog
