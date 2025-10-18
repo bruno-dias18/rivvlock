@@ -124,7 +124,7 @@ serve(async (req) => {
       })
       .eq("id", disputeId);
 
-    // Create notification messages to both parties
+    // Create notification messages to both parties via unified conversations
     const proposalText = proposalType === 'partial_refund'
       ? `Remboursement de ${refundPercentage}%`
       : proposalType === 'full_refund'
@@ -133,27 +133,43 @@ serve(async (req) => {
 
     const systemMessage = `🔔 PROPOSITION OFFICIELLE DE L'ADMINISTRATION\n\nL'équipe Rivvlock propose la solution suivante : ${proposalText}\n\n${message || ''}\n\n⚠️ Les deux parties (acheteur et vendeur) doivent valider cette proposition pour qu'elle soit appliquée.\n\nVous avez 48 heures pour répondre.`;
 
-    // Message to seller
-    await adminClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: disputeId,
-        sender_id: user.id,
-        recipient_id: transaction.user_id,
-        message: systemMessage,
-        message_type: 'admin_to_seller',
-      });
+    // Get or create admin conversations
+    const { data: conversations, error: convError } = await adminClient
+      .from("conversations")
+      .select('id, conversation_type')
+      .eq('dispute_id', disputeId)
+      .in('conversation_type', ['admin_seller_dispute', 'admin_buyer_dispute']);
 
-    // Message to buyer
-    await adminClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: disputeId,
-        sender_id: user.id,
-        recipient_id: transaction.buyer_id,
-        message: systemMessage,
-        message_type: 'admin_to_buyer',
-      });
+    if (convError) {
+      logger.error("Error fetching conversations:", convError);
+    }
+
+    const sellerConv = conversations?.find(c => c.conversation_type === 'admin_seller_dispute');
+    const buyerConv = conversations?.find(c => c.conversation_type === 'admin_buyer_dispute');
+
+    // Message to seller via admin-seller conversation
+    if (sellerConv) {
+      await adminClient
+        .from("messages")
+        .insert({
+          conversation_id: sellerConv.id,
+          sender_id: user.id,
+          message: systemMessage,
+          message_type: 'system',
+        });
+    }
+
+    // Message to buyer via admin-buyer conversation
+    if (buyerConv) {
+      await adminClient
+        .from("messages")
+        .insert({
+          conversation_id: buyerConv.id,
+          sender_id: user.id,
+          message: systemMessage,
+          message_type: 'system',
+        });
+    }
 
     logger.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
 
