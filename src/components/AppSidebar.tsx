@@ -21,7 +21,8 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-const navigationItems = [
+// Navigation pour les utilisateurs normaux (non-admin)
+const userNavigationItems = [
   {
     title: 'navigation.home',
     url: '/dashboard',
@@ -49,16 +50,17 @@ const navigationItems = [
   },
 ];
 
-const adminItems = [
-  {
-    title: 'Litiges',
-    url: '/dashboard/admin/disputes',
-    icon: AlertTriangle,
-  },
+// Navigation pour les admins uniquement
+const adminNavigationItems = [
   {
     title: 'navigation.admin',
     url: '/dashboard/admin',
     icon: Users,
+  },
+  {
+    title: 'Litiges',
+    url: '/dashboard/admin/disputes',
+    icon: AlertTriangle,
   },
 ];
 
@@ -100,45 +102,13 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>{t('dashboard.welcome')}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{t(item.title)}</span>
-                      {item.url === '/dashboard/transactions' && disputesUnread > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
-                        >
-                          {disputesUnread > 9 ? '9+' : disputesUnread}
-                        </Badge>
-                      )}
-                      {item.url === '/dashboard/quotes' && quotesUnread > 0 && (
-                        <Badge 
-                          className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold bg-purple-500 hover:bg-purple-600"
-                        >
-                          {quotesUnread > 9 ? '9+' : quotesUnread}
-                        </Badge>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {isAdmin && (
+        {/* Navigation pour admins uniquement */}
+        {isAdmin ? (
           <SidebarGroup>
-            <SidebarGroupLabel>{t('admin.dashboard')}</SidebarGroupLabel>
+            <SidebarGroupLabel>Administration</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminItems.map((item) => (
+                {adminNavigationItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive(item.url)}>
                       <NavLink to={item.url} className="flex items-center gap-2">
@@ -150,6 +120,40 @@ export function AppSidebar() {
                             className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
                           >
                             {disputesUnread > 9 ? '9+' : disputesUnread}
+                          </Badge>
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : (
+          /* Navigation pour utilisateurs normaux */
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('dashboard.welcome')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {userNavigationItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{t(item.title)}</span>
+                        {item.url === '/dashboard/transactions' && disputesUnread > 0 && (
+                          <Badge 
+                            variant="destructive" 
+                            className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold"
+                          >
+                            {disputesUnread > 9 ? '9+' : disputesUnread}
+                          </Badge>
+                        )}
+                        {item.url === '/dashboard/quotes' && quotesUnread > 0 && (
+                          <Badge 
+                            className="ml-auto h-5 min-w-[20px] px-1.5 flex items-center justify-center text-[10px] font-bold bg-purple-500 hover:bg-purple-600"
+                          >
+                            {quotesUnread > 9 ? '9+' : quotesUnread}
                           </Badge>
                         )}
                       </NavLink>

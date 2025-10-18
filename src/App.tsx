@@ -32,6 +32,7 @@ const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 // Eager-loaded critical components (avoid loading screens)
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminRoute } from "./components/AdminRoute";
+import { UserRoute } from "./components/UserRoute";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
@@ -81,25 +82,25 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/admin", element: React.createElement(Navigate, { to: "/dashboard/admin", replace: true }) }),
                React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
                React.createElement(Route, { 
-                 path: "/dashboard", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(DashboardPage))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/transactions", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(TransactionsPage))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/quotes", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(QuotesPage))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/profile", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(ProfilePage))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/reports", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(AnnualReportsPage))
-               }),
+                  path: "/dashboard", 
+                  element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(DashboardPage)))
+                }),
+                React.createElement(Route, { 
+                  path: "/dashboard/transactions", 
+                  element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(TransactionsPage)))
+                }),
+                React.createElement(Route, { 
+                  path: "/dashboard/quotes", 
+                  element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(QuotesPage)))
+                }),
+                React.createElement(Route, { 
+                  path: "/dashboard/profile", 
+                  element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(ProfilePage)))
+                }),
+                React.createElement(Route, { 
+                  path: "/dashboard/reports", 
+                  element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(AnnualReportsPage)))
+                }),
                React.createElement(Route, { 
                  path: "/dashboard/admin", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminPage)))
