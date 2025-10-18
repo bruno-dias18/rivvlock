@@ -599,7 +599,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
                     <Send className="h-4 w-4 mr-2" />
                     Faire une proposition officielle
                   </Button>
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <Button
                       variant="destructive"
                       onClick={() => handleProcessDispute('refund')}
@@ -607,6 +607,14 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
                       className="flex-1"
                     >
                       Rembourser directement
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={() => setShowOfficialProposal(true)}
+                      disabled={isProcessing}
+                      className="flex-1 bg-orange-600 hover:bg-orange-700"
+                    >
+                      Partager directement
                     </Button>
                     <Button
                       variant="outline"

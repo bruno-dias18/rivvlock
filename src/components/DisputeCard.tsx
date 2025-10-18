@@ -265,8 +265,10 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
           </div>
         )}
 
-        {/* Faire une proposition Button */}
+        {/* Faire une proposition Button - Bloqué si escaladé */}
         {!dispute.status.startsWith('resolved') && 
+         dispute.status !== 'escalated' &&
+         !dispute.escalated_at &&
          ['open', 'responded', 'negotiating'].includes(dispute.status) && 
          (transaction.user_id === user?.id || transaction.buyer_id === user?.id) && (
           <div>
@@ -278,6 +280,15 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               <Scale className="h-4 w-4 mr-2" />
               Faire une proposition
             </Button>
+          </div>
+        )}
+        
+        {/* Message si escaladé */}
+        {(dispute.status === 'escalated' || dispute.escalated_at) && !dispute.status.startsWith('resolved') && (
+          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
+            <p className="text-sm text-purple-800 dark:text-purple-200">
+              ⚠️ Ce litige a été escaladé au support RivvLock. Seule l'équipe administrative peut désormais faire des propositions de résolution.
+            </p>
           </div>
         )}
 
