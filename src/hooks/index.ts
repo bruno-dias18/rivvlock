@@ -9,6 +9,7 @@ export { useTransactionsWithNewActivity } from './useTransactionsWithNewActivity
 export { useHasTransactionMessages } from './useHasTransactionMessages';
 export { useValidationStatus } from './useValidationStatus';
 export { useAnnualTransactions } from './useAnnualTransactions';
+export { usePaginatedTransactions } from './usePaginatedTransactions';
 
 // Dispute Hooks
 export { useDisputes } from './useDisputes';
@@ -61,3 +62,6 @@ export { useMarkConversationAsRead } from './useMarkConversationAsRead';
 export { useUnreadQuotesGlobal } from './useUnreadQuotesGlobal';
 export { useUnreadTransactionsGlobal } from './useUnreadTransactionsGlobal';
 export { useUnreadTransactionTabCounts } from './useUnreadTransactionTabCounts';
+
+// Utility Hooks
+export { useDebounce, useDebouncedCallback } from './useDebounce';
