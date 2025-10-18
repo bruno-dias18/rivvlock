@@ -21,7 +21,8 @@ export const useForceEscalateDispute = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
     },
     onError: (error: any) => {
-      toast.error(error);
+      console.error('Force escalate error:', error);
+      toast.error(error.message || 'Une erreur inattendue est survenue');
     }
   });
 };

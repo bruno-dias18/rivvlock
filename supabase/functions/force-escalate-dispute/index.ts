@@ -55,7 +55,7 @@ serve(async (req) => {
       .from("disputes")
       .select(`
         *,
-        transactions (*)
+        transactions!inner(*)
       `)
       .eq("id", disputeId)
       .single();
@@ -65,7 +65,16 @@ serve(async (req) => {
       throw new Error("Dispute not found");
     }
 
+    logger.log("Dispute data:", JSON.stringify(dispute, null, 2));
+
     const transaction = dispute.transactions;
+
+    if (!transaction) {
+      logger.error("Transaction not found for dispute:", disputeId);
+      throw new Error("Transaction not found");
+    }
+
+    logger.log("Transaction data:", JSON.stringify(transaction, null, 2));
 
     // Check if already escalated
     if (dispute.status === 'escalated') {
