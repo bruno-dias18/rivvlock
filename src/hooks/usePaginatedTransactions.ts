@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Transaction } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/lib/logger";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -84,7 +85,7 @@ export function usePaginatedTransactions(
       const { data, error, count } = await query;
 
       if (error) {
-        console.error('Error fetching paginated transactions:', error);
+        logger.error('Error fetching paginated transactions:', error);
         throw error;
       }
 
