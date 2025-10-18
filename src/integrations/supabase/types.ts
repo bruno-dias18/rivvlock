@@ -135,7 +135,9 @@ export type Database = {
       }
       conversations: {
         Row: {
+          admin_id: string | null
           buyer_id: string | null
+          conversation_type: Database["public"]["Enums"]["conversation_type"]
           created_at: string
           dispute_id: string | null
           id: string
@@ -146,7 +148,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_id?: string | null
           buyer_id?: string | null
+          conversation_type?: Database["public"]["Enums"]["conversation_type"]
           created_at?: string
           dispute_id?: string | null
           id?: string
@@ -157,7 +161,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_id?: string | null
           buyer_id?: string | null
+          conversation_type?: Database["public"]["Enums"]["conversation_type"]
           created_at?: string
           dispute_id?: string | null
           id?: string
@@ -187,79 +193,6 @@ export type Database = {
             columns: ["transaction_id"]
             isOneToOne: false
             referencedRelation: "transactions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dispute_message_reads: {
-        Row: {
-          created_at: string
-          dispute_id: string
-          id: string
-          last_seen_at: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          dispute_id: string
-          id?: string
-          last_seen_at?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          dispute_id?: string
-          id?: string
-          last_seen_at?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dispute_message_reads_dispute_id_fkey"
-            columns: ["dispute_id"]
-            isOneToOne: false
-            referencedRelation: "disputes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      dispute_messages: {
-        Row: {
-          created_at: string
-          dispute_id: string
-          id: string
-          message: string
-          message_type: string
-          recipient_id: string | null
-          sender_id: string
-        }
-        Insert: {
-          created_at?: string
-          dispute_id: string
-          id?: string
-          message: string
-          message_type?: string
-          recipient_id?: string | null
-          sender_id: string
-        }
-        Update: {
-          created_at?: string
-          dispute_id?: string
-          id?: string
-          message?: string
-          message_type?: string
-          recipient_id?: string | null
-          sender_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "dispute_messages_dispute_id_fkey"
-            columns: ["dispute_id"]
-            isOneToOne: false
-            referencedRelation: "disputes"
             referencedColumns: ["id"]
           },
         ]
@@ -1111,6 +1044,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      create_escalated_dispute_conversations: {
+        Args: { p_admin_id: string; p_dispute_id: string }
+        Returns: {
+          buyer_conversation_id: string
+          seller_conversation_id: string
+        }[]
+      }
       detect_suspicious_pattern: {
         Args: { p_operation: string; p_table_name: string; p_user_id?: string }
         Returns: boolean
@@ -1272,6 +1212,11 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user" | "super_admin"
+      conversation_type:
+        | "transaction"
+        | "quote"
+        | "admin_seller_dispute"
+        | "admin_buyer_dispute"
       country_code: "FR" | "CH"
       currency_code: "EUR" | "CHF"
       dispute_status:
@@ -1417,6 +1362,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user", "super_admin"],
+      conversation_type: [
+        "transaction",
+        "quote",
+        "admin_seller_dispute",
+        "admin_buyer_dispute",
+      ],
       country_code: ["FR", "CH"],
       currency_code: ["EUR", "CHF"],
       dispute_status: [

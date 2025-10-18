@@ -19,10 +19,9 @@ vi.mock('@/hooks/useUnreadDisputeAdminMessages', () => ({
   }),
 }));
 
-vi.mock('@/hooks/useDisputeMessageReads', () => ({
-  useDisputeMessageReads: () => ({
-    markDisputeAsSeen: vi.fn(),
-    isMarking: false,
+vi.mock('@/hooks/useMarkConversationAsRead', () => ({
+  useMarkConversationAsRead: () => ({
+    markAsRead: vi.fn(),
   }),
 }));
 

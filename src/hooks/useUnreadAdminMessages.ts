@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+/**
+ * Hook pour compter tous les messages admin non lus
+ * Utilise le système de conversations unifiées
+ */
 export const useUnreadAdminMessages = () => {
   const { user } = useAuth();
 
@@ -10,13 +14,7 @@ export const useUnreadAdminMessages = () => {
     queryFn: async () => {
       if (!user?.id) return 0;
 
-      // ✅ NOUVEAU: Récupérer tous les dispute_ids avec leurs last_seen_at depuis la DB
-      const { data: readStatuses } = await supabase
-        .from('dispute_message_reads')
-        .select('dispute_id, last_seen_at')
-        .eq('user_id', user.id);
-
-      // ✅ NOUVEAU: Récupérer les disputes de l'utilisateur via une jointure
+      // Récupérer les disputes actifs de l'utilisateur
       const { data: userDisputes } = await supabase
         .from('disputes')
         .select(`
@@ -36,36 +34,48 @@ export const useUnreadAdminMessages = () => {
 
       if (activeDisputeIds.length === 0) return 0;
 
-      // Construire un map des last_seen par dispute_id
-      const lastSeenMap = new Map(
-        readStatuses?.map(rs => [rs.dispute_id, rs.last_seen_at]) || []
+      // Récupérer les conversations admin pour ces disputes
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('id, dispute_id')
+        .in('dispute_id', activeDisputeIds)
+        .in('conversation_type', ['admin_seller_dispute', 'admin_buyer_dispute']);
+
+      if (!conversations || conversations.length === 0) return 0;
+
+      const conversationIds = conversations.map(c => c.id);
+
+      // Récupérer les read statuses
+      const { data: reads } = await supabase
+        .from('conversation_reads')
+        .select('conversation_id, last_read_at')
+        .eq('user_id', user.id)
+        .in('conversation_id', conversationIds);
+
+      const readMap = new Map(
+        reads?.map(r => [r.conversation_id, r.last_read_at]) || []
       );
 
       let totalUnread = 0;
 
-      // Compter les messages non lus pour chaque dispute actif
-      for (const disputeId of activeDisputeIds) {
-        const lastSeen = lastSeenMap.get(disputeId);
+      // Compter les messages non lus pour chaque conversation
+      for (const convId of conversationIds) {
+        const lastReadAt = readMap.get(convId) ?? '1970-01-01T00:00:00Z';
 
-        let query = supabase
-          .from('dispute_messages')
+        const { count } = await supabase
+          .from('messages')
           .select('id', { count: 'exact', head: true })
-          .eq('dispute_id', disputeId)
-          .or(`message_type.eq.admin_to_seller,message_type.eq.admin_to_buyer`)
-          .eq('recipient_id', user.id);
+          .eq('conversation_id', convId)
+          .neq('sender_id', user.id)
+          .gt('created_at', lastReadAt);
 
-        if (lastSeen) {
-          query = query.gt('created_at', lastSeen);
-        }
-
-        const { count } = await query;
         totalUnread += count || 0;
       }
 
       return totalUnread;
     },
     enabled: !!user?.id,
-    refetchInterval: 60000, // Réduit à 60s
+    refetchInterval: 60000,
   });
 
   return {

@@ -3,6 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Dispute } from '@/types';
 
+/**
+ * Hook pour compter les messages admin non lus dans une conversation de litige escaladé
+ * Utilise le système de conversations unifiées
+ */
 export const useUnreadDisputeAdminMessages = (disputeId: string, dispute?: Dispute) => {
   const { user } = useAuth();
 
@@ -11,44 +15,58 @@ export const useUnreadDisputeAdminMessages = (disputeId: string, dispute?: Dispu
     queryFn: async () => {
       if (!user?.id || !disputeId) return 0;
 
-      // ✅ NOUVEAU: Si le dispute est résolu, retourner 0
+      // Si le dispute est résolu, retourner 0
       if (dispute?.status && ['resolved_refund', 'resolved_release', 'resolved'].includes(dispute.status)) {
         return 0;
       }
 
-      // ✅ NOUVEAU: Récupérer last_seen_at depuis la DB au lieu de localStorage
-      const { data: readStatus } = await supabase
-        .from('dispute_message_reads')
-        .select('last_seen_at')
-        .eq('user_id', user.id)
-        .eq('dispute_id', disputeId)
+      // Récupérer la conversation admin correspondante
+      const { data: transaction } = await supabase
+        .from('transactions')
+        .select('user_id, buyer_id')
+        .eq('id', dispute?.transaction_id || '')
         .maybeSingle();
 
-      const lastSeen = readStatus?.last_seen_at;
+      if (!transaction) return 0;
 
-      let query = supabase
-        .from('dispute_messages')
-        .select('id', { count: 'exact', head: true })
+      const isSeller = transaction.user_id === user.id;
+      const conversationType = isSeller ? 'admin_seller_dispute' : 'admin_buyer_dispute';
+
+      // Trouver la conversation
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id')
         .eq('dispute_id', disputeId)
-        .or(`message_type.eq.admin_to_seller,message_type.eq.admin_to_buyer`)
-        .eq('recipient_id', user.id);
+        .eq('conversation_type', conversationType)
+        .maybeSingle();
 
-      if (lastSeen) {
-        query = query.gt('created_at', lastSeen);
-      }
+      if (!conversation) return 0;
 
-      const { count } = await query;
+      // Récupérer last_read_at depuis conversation_reads
+      const { data: read } = await supabase
+        .from('conversation_reads')
+        .select('last_read_at')
+        .eq('conversation_id', conversation.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // Compter les messages non lus
+      const { count } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversation.id)
+        .neq('sender_id', user.id)
+        .gt('created_at', read?.last_read_at ?? '1970-01-01T00:00:00Z');
+
       return count || 0;
     },
     enabled: !!user?.id && !!disputeId,
-    refetchInterval: 60000, // Réduit à 60s
+    refetchInterval: 60000,
   });
 
-  // ✅ DEPRECATED: markAsSeen conservé pour compatibilité
+  // DEPRECATED: conservé pour compatibilité
   const markAsSeen = () => {
-    if (disputeId) {
-      localStorage.setItem(`last_seen_dispute_${disputeId}`, new Date().toISOString());
-    }
+    // No-op, géré automatiquement par UnifiedMessaging
   };
 
   return { unreadCount, markAsSeen, refetch };

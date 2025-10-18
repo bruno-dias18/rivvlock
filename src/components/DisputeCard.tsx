@@ -14,11 +14,11 @@ import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
 import { CreateProposalDialog } from './CreateProposalDialog';
 import { logger } from '@/lib/logger';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
+import { useMarkConversationAsRead } from '@/hooks/useMarkConversationAsRead';
 import { DisputeHeader } from './DisputeCard/DisputeHeader';
 import { DisputeContent } from './DisputeCard/DisputeContent';
 import { DisputeResolution } from './DisputeCard/DisputeResolution';
 import type { Dispute, Transaction } from '@/types';
-import { useDisputeMessageReads } from '@/hooks/useDisputeMessageReads';
 
 interface DisputeCardProps {
   dispute: Dispute & { transactions?: Transaction };
@@ -38,7 +38,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
   const { proposals, createProposal, isCreating } = useDisputeProposals(dispute.id);
   const adminOfficialProposals = proposals?.filter(p => p.admin_created && p.requires_both_parties) || [];
   const { unreadCount: unreadMessages, refetch: refetchUnread } = useUnreadConversationMessages(dispute.conversation_id);
-  const { markDisputeAsSeen: markDisputeAsSeenDB } = useDisputeMessageReads();
+  const { markAsRead } = useMarkConversationAsRead();
 
   const transaction = dispute.transactions;
   if (!transaction) return null;
@@ -285,7 +285,9 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
               className="w-full relative"
               onClick={() => {
                 setShowMessaging(true);
-                markDisputeAsSeenDB(dispute.id);
+                if (dispute.conversation_id) {
+                  markAsRead(dispute.conversation_id);
+                }
                 refetchUnread();
               }}
             >

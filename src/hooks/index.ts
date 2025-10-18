@@ -16,8 +16,6 @@ export { useDisputes } from './useDisputes';
 export { useDisputeProposals } from './useDisputeProposals';
 export { useUnreadDisputesGlobal } from './useUnreadDisputesGlobal';
 export { useDisputeRealtimeNotifications } from './useDisputeRealtimeNotifications';
-export { useEscalatedDisputeMessaging } from './useEscalatedDisputeMessaging';
-export { useDisputeMessageReads } from './useDisputeMessageReads';
 
 // Admin Hooks
 export { useAdminTransactions } from './useAdminTransactions';
@@ -26,11 +24,14 @@ export { useAdminUsers } from './useAdminUsers';
 export { useAdminStats } from './useAdminStats';
 export { useAdminAnalytics } from './useAdminAnalytics';
 export { useAdminActivityLogs } from './useAdminActivityLogs';
-export { useAdminDisputeMessaging } from './useAdminDisputeMessaging';
 export { useAdminDisputeNotifications } from './useAdminDisputeNotifications';
 export { useUnreadAdminMessages } from './useUnreadAdminMessages';
 export { useUnreadDisputeAdminMessages } from './useUnreadDisputeAdminMessages';
 export { useIsAdmin } from './useIsAdmin';
+
+// Escalated Dispute Conversations (nouveau système)
+export { useEscalatedDisputeConversations } from './useEscalatedDisputeConversations';
+export { useAdminDisputeConversations } from './useAdminDisputeConversations';
 
 // User & Profile Hooks
 export { useProfile } from './useProfile';

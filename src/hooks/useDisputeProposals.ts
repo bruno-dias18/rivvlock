@@ -144,16 +144,24 @@ export const useDisputeProposals = (disputeId: string) => {
 
         const messageText = `❌ Proposition refusée${proposalText ? ` : ${proposalText}` : ''}`;
 
-        // 3) Insère un message système en broadcast (visible par TOUS)
-        await supabase
-          .from('dispute_messages')
-          .insert({
-            dispute_id: proposal.dispute_id,
-            sender_id: user.id,
-            recipient_id: null, // broadcast
-            message: messageText,
-            message_type: 'system',
-          });
+        // 3) Insère un message système dans la conversation de transaction
+        // Récupérer la conversation de la transaction
+        const { data: dispute } = await supabase
+          .from('disputes')
+          .select('transaction_id, transactions!inner(conversation_id)')
+          .eq('id', proposal.dispute_id)
+          .single();
+
+        if (dispute?.transactions?.conversation_id) {
+          await supabase
+            .from('messages')
+            .insert({
+              conversation_id: dispute.transactions.conversation_id,
+              sender_id: user.id,
+              message: messageText,
+              message_type: 'system',
+            });
+        }
       }
 
       return { success: true };
