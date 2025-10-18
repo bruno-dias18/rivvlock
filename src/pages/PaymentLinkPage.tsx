@@ -334,6 +334,15 @@ export default function PaymentLinkPage() {
           <div className="bg-card border rounded-lg p-6 space-y-4">
             <h1 className="text-2xl font-bold text-center">Paiement sécurisé</h1>
             
+            {/* Payment Method Selector - Moved to top for visibility */}
+            <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-4">
+              <PaymentMethodSelector
+                transaction={transaction}
+                selectedMethod={selectedPaymentMethod}
+                onMethodSelect={setSelectedPaymentMethod}
+              />
+            </div>
+            
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Service</label>
@@ -354,15 +363,6 @@ export default function PaymentLinkPage() {
                   </p>
                 </div>
               )}
-              
-              {/* Payment Method Selector */}
-              <div className="pt-4 border-t">
-                <PaymentMethodSelector
-                  transaction={transaction}
-                  selectedMethod={selectedPaymentMethod}
-                  onMethodSelect={setSelectedPaymentMethod}
-                />
-              </div>
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
