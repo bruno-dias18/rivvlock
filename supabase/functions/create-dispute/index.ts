@@ -29,11 +29,21 @@ serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) throw new Error("No authorization header provided");
 
+  // Client with user auth for user-specific operations
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     {
       global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false }
+    }
+  );
+
+  // Pure service role client to bypass RLS for system operations
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    {
       auth: { persistSession: false }
     }
   );
@@ -112,7 +122,7 @@ serve(async (req) => {
 
       if (tx?.conversation_id) {
         // Use service role client to bypass RLS for linking
-        const { error: convUpdateErr } = await supabaseClient
+        const { error: convUpdateErr } = await supabase
           .from('conversations')
           .update({ dispute_id: dispute.id })
           .eq('id', tx.conversation_id);
@@ -121,7 +131,7 @@ serve(async (req) => {
           logStep('Error updating conversation', convUpdateErr);
         }
 
-        const { error: disputeUpdateErr } = await supabaseClient
+        const { error: disputeUpdateErr } = await supabase
           .from('disputes')
           .update({ conversation_id: tx.conversation_id })
           .eq('id', dispute.id);
