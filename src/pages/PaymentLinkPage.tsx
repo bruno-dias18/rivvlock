@@ -427,6 +427,7 @@ export default function PaymentLinkPage() {
                 onClick={handlePayNow}
                 className="w-full"
                 size="lg"
+                aria-label="Payer"
                 disabled={
                   !selectedPaymentMethod ||
                   processingPayment || 
