@@ -51,9 +51,14 @@ export const useDisputesUnified = () => {
       if (conversations.length === 0) return [];
 
       // Extract disputes from conversations directly
-      let disputes = conversations
-        .map((conv: any) => conv.dispute)
-        .filter((dispute: any) => dispute !== null);
+      // Use Map to deduplicate disputes by ID (multiple conversations can reference same dispute)
+      const disputeMap = new Map();
+      conversations.forEach((conv: any) => {
+        if (conv.dispute && !disputeMap.has(conv.dispute.id)) {
+          disputeMap.set(conv.dispute.id, conv.dispute);
+        }
+      });
+      let disputes = Array.from(disputeMap.values());
 
       // Fallback: if some conversations have conversation_type='dispute' but dispute is null,
       // fetch disputes by conversation_id (resilience for old data)
