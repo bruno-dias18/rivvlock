@@ -31,6 +31,7 @@ export const useDisputesUnified = () => {
       logger.info('Fetching disputes (unified architecture)', { userId: user.id });
 
       // Fetch disputes through conversations (unified architecture)
+      // Primary query: conversations with dispute_id set
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
         .select(`
@@ -38,7 +39,7 @@ export const useDisputesUnified = () => {
           dispute:disputes!conversations_dispute_id_fkey(*),
           messages(count)
         `)
-        .eq('conversation_type', 'dispute')
+        .in('conversation_type', ['dispute', 'admin_seller_dispute', 'admin_buyer_dispute'])
         .order('updated_at', { ascending: false });
 
       if (conversationsError) {
@@ -49,19 +50,35 @@ export const useDisputesUnified = () => {
       const conversations = conversationsData || [];
       if (conversations.length === 0) return [];
 
+      // Extract disputes from conversations directly
+      let disputes = conversations
+        .map((conv: any) => conv.dispute)
+        .filter((dispute: any) => dispute !== null);
+
+      // Fallback: if some conversations have conversation_type='dispute' but dispute is null,
+      // fetch disputes by conversation_id (resilience for old data)
+      const orphanConvs = conversations.filter(
+        (c: any) => c.conversation_type === 'dispute' && c.dispute === null
+      );
+      if (orphanConvs.length > 0) {
+        const orphanConvIds = orphanConvs.map((c: any) => c.id);
+        const { data: orphanDisputes } = await supabase
+          .from('disputes')
+          .select('*')
+          .in('conversation_id', orphanConvIds);
+        if (orphanDisputes && orphanDisputes.length > 0) {
+          disputes = [...disputes, ...orphanDisputes];
+        }
+      }
+
+      if (disputes.length === 0) return [];
+
       // Build quick lookup to recover participants if transactions query is restricted by RLS
       const convByDisputeId = new Map(
         conversations
           .filter((c: any) => c.dispute)
           .map((c: any) => [c.dispute.id, c] as const)
       );
-
-      // Extract disputes from conversations
-      const disputes = conversations
-        .map((conv: any) => conv.dispute)
-        .filter((dispute: any) => dispute !== null);
-
-      if (disputes.length === 0) return [];
 
       // Fetch related transactions
       const transactionIds = Array.from(
