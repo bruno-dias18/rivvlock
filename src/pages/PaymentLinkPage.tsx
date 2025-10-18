@@ -34,7 +34,7 @@ export default function PaymentLinkPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer'>('card');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
 
   useEffect(() => {
@@ -386,18 +386,21 @@ export default function PaymentLinkPage() {
                 className="w-full"
                 size="lg"
                 disabled={
+                  !selectedPaymentMethod ||
                   processingPayment || 
                   (transaction.payment_deadline ? new Date(transaction.payment_deadline) < new Date() : false)
                 }
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                {transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()
-                  ? 'Délai expiré'
-                  : processingPayment 
-                    ? 'Préparation...'
-                    : selectedPaymentMethod === 'bank_transfer' 
-                      ? 'Voir les instructions de virement'
-                      : 'Payer par carte'
+                {!selectedPaymentMethod
+                  ? 'Choisissez un mode de paiement'
+                  : transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()
+                    ? 'Délai expiré'
+                    : processingPayment 
+                      ? 'Préparation...'
+                      : selectedPaymentMethod === 'bank_transfer' 
+                        ? 'Voir les instructions de virement'
+                        : 'Payer par carte'
                 }
               </Button>
             )}
