@@ -76,15 +76,15 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Créer une proposition officielle
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 px-1 -mx-1">
           <div className={`${immediateExecution ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'} border p-4 rounded-lg transition-colors`}>
             <div className="flex items-start gap-2">
               {immediateExecution ? (
@@ -208,23 +208,23 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
               Ce message sera visible par l'acheteur et le vendeur
             </p>
           </div>
+        </div>
 
-          <div className="flex gap-3 justify-end pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Annuler
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting || !message.trim()}
-              className={immediateExecution ? "bg-red-600 hover:bg-red-700" : ""}
-            >
-              {isSubmitting ? "Traitement en cours..." : immediateExecution ? "⚡ Arbitrer et exécuter immédiatement" : "Envoyer la proposition officielle"}
-            </Button>
-          </div>
+        <div className="flex gap-3 justify-end pt-4 border-t flex-shrink-0">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting || !message.trim()}
+            className={immediateExecution ? "bg-red-600 hover:bg-red-700" : ""}
+          >
+            {isSubmitting ? "Traitement en cours..." : immediateExecution ? "⚡ Arbitrer et exécuter immédiatement" : "Envoyer la proposition officielle"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
