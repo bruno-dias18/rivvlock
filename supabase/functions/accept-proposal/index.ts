@@ -394,26 +394,14 @@ serve(async (req) => {
       logger.error("Error updating transaction:", txUpdateError);
     }
 
-    // Create confirmation message
+    // Create confirmation message in conversation
     const confirmationText = proposal.proposal_type === 'partial_refund'
       ? `✅ Accord accepté : Remboursement de ${proposal.refund_percentage}% effectué automatiquement`
       : proposal.proposal_type === 'full_refund'
       ? `✅ Accord accepté : Remboursement intégral effectué automatiquement`
       : `✅ Accord accepté : Fonds libérés au vendeur`;
 
-    const { error: messageInsertError } = await adminClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: dispute.id,
-        sender_id: user.id,
-        message: confirmationText,
-        message_type: 'system',
-      });
-    if (messageInsertError) {
-      logger.error("Error inserting system message:", messageInsertError);
-    }
-
-    // Also write to unified conversations/messages if a conversation exists
+    // Write to unified conversations/messages if a conversation exists
     if (dispute.conversation_id) {
       await adminClient
         .from('messages')

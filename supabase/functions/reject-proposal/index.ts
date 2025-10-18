@@ -91,21 +91,23 @@ serve(async (req) => {
 
     logger.log("✅ Proposal rejected successfully");
 
-    // Create a message in the dispute
+    // Create a message in the dispute conversation
     const proposalText = proposal.proposal_type === 'partial_refund'
       ? `Remboursement de ${proposal.refund_percentage}%`
       : proposal.proposal_type === 'full_refund'
       ? 'Remboursement intégral (100%)'
       : 'Aucun remboursement';
 
-    await supabaseClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: dispute.id,
-        sender_id: user.id,
-        message: `❌ Proposition refusée : ${proposalText}`,
-        message_type: "system",
-      });
+    if (dispute.conversation_id) {
+      await supabaseClient
+        .from("messages")
+        .insert({
+          conversation_id: dispute.conversation_id,
+          sender_id: user.id,
+          message: `❌ Proposition refusée : ${proposalText}`,
+          message_type: "text",
+        });
+    }
 
     // Log activity for proposer
     await supabaseClient.from('activity_logs').insert({

@@ -118,16 +118,7 @@ serve(async (req) => {
       proposalText = `Proposition officielle : ${proposalType}`;
     }
 
-    await supabaseClient
-      .from("dispute_messages")
-      .insert({
-        dispute_id: disputeId,
-        sender_id: user.id,
-        message: proposalText + (message ? `\n${message}` : ''),
-        message_type: 'system',
-      });
-
-    // Also write to unified conversations/messages if a conversation exists
+    // Write to unified conversations/messages if a conversation exists
     if (dispute.conversation_id) {
       await supabaseClient
         .from('messages')

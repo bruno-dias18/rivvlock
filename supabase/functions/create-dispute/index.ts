@@ -155,24 +155,6 @@ serve(async (req) => {
       logStep('Error linking conversation', convErr);
     }
 
-    // Insert initial dispute message (kept for escalated/admin channel logic)
-    const { error: messageError } = await supabaseClient
-      .from('dispute_messages')
-      .insert({
-        dispute_id: dispute.id,
-        sender_id: user.id,
-        message: reason,
-        message_type: 'initial',
-        recipient_id: null // Visible par tous les participants
-      });
-
-    if (messageError) {
-      logStep("Error creating initial message", messageError);
-      // Don't throw here, dispute is already created
-    } else {
-      logStep("Initial message created");
-    }
-
     // Update transaction status to 'disputed'
     const { error: updateError } = await supabaseClient
       .from('transactions')

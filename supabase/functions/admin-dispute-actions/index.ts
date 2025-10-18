@@ -111,13 +111,29 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const targetType = recipientId === dispute.transactions?.user_id ? 'admin_to_seller' : 'admin_to_buyer';
+        const conversationType = targetType === 'admin_to_seller' ? 'admin_seller_dispute' : 'admin_buyer_dispute';
+
+        // Find the appropriate admin conversation
+        const { data: conversation, error: convError } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('dispute_id', disputeId)
+          .eq('conversation_type', conversationType)
+          .single();
+
+        if (convError || !conversation) {
+          logStep('Conversation not found', { convError, conversationType });
+          return new Response(
+            JSON.stringify({ error: 'Conversation not found for this dispute' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
 
         const { error: messageError } = await supabase
-          .from('dispute_messages')
+          .from('messages')
           .insert({
-            dispute_id: disputeId,
+            conversation_id: conversation.id,
             sender_id: user.id,
-            recipient_id: recipientId,
             message: message || '',
             message_type: targetType
           });
