@@ -63,6 +63,23 @@ export const UnifiedMessaging = ({
     isRejecting 
   } = useDisputeProposals(disputeId || '');
 
+  // DEBUG: Log proposals data
+  useEffect(() => {
+    if (disputeId && proposals.length > 0) {
+      console.log('🔍 UnifiedMessaging - Proposals loaded:', {
+        count: proposals.length,
+        proposals: proposals.map((p: any) => ({
+          id: p.id,
+          proposer_id: p.proposer_id,
+          status: p.status,
+          proposal_type: p.proposal_type,
+          created_at: p.created_at
+        })),
+        currentUserId: user?.id
+      });
+    }
+  }, [disputeId, proposals, user?.id]);
+
   // Marquer la conversation comme lue à l'ouverture
   useEffect(() => {
     if (open && conversationId) {
@@ -183,8 +200,15 @@ export const UnifiedMessaging = ({
       if (proposalId) {
         const found = proposals.find((p: any) => p.id === proposalId);
         if (found) {
+          console.log('✅ Found proposal via metadata:', { 
+            messageId: message.id, 
+            proposalId: found.id,
+            proposer_id: found.proposer_id 
+          });
           map.set(message.id, found);
           return;
+        } else {
+          console.warn('⚠️ Proposal ID in metadata but not found:', proposalId);
         }
       }
 
@@ -201,10 +225,17 @@ export const UnifiedMessaging = ({
       });
 
       if (matchingProposal) {
+        console.log('✅ Found proposal via fallback:', { 
+          messageId: message.id, 
+          proposalId: matchingProposal.id 
+        });
         map.set(message.id, matchingProposal);
+      } else {
+        console.warn('⚠️ System proposal message but no matching proposal found:', message.message);
       }
     });
 
+    console.log('🗺️ Final messageToProposal map:', map.size, 'entries');
     return map;
   }, [disputeId, proposals, messages]);
 
@@ -311,7 +342,18 @@ export const UnifiedMessaging = ({
                       </div>
                       <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
                       
-                      {isProposal && proposalData && proposalData.status === 'pending' && proposalData.proposer_id !== user?.id && (
+                      {isProposal && proposalData && (() => {
+                        const shouldShowButtons = proposalData.status === 'pending' && proposalData.proposer_id !== user?.id;
+                        console.log('🔘 Button visibility check:', {
+                          messageId: message.id,
+                          proposalId: proposalData.id,
+                          status: proposalData.status,
+                          proposer_id: proposalData.proposer_id,
+                          current_user_id: user?.id,
+                          shouldShowButtons
+                        });
+                        return shouldShowButtons;
+                      })() && (
                         <div className="mt-3 flex gap-2">
                           <Button
                             size="sm"
