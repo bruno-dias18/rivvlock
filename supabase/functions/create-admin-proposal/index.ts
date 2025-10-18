@@ -36,14 +36,12 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    // Verify user is admin
-    const { data: adminRole } = await supabaseClient
-      .from('admin_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Verify user is admin via secure RPC
+    const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
+      check_user_id: user.id
+    });
 
-    if (!adminRole || adminRole.role !== 'admin') {
+    if (!isAdmin) {
       throw new Error("Unauthorized: admin access required");
     }
 
@@ -56,7 +54,7 @@ serve(async (req) => {
     });
 
     // Get dispute details
-    const { data: dispute, error: disputeError } = await supabaseClient
+    const { data: dispute, error: disputeError } = await adminClient
       .from("disputes")
       .select("*")
       .eq("id", disputeId)
@@ -133,51 +131,25 @@ serve(async (req) => {
 
     const systemMessage = `🔔 PROPOSITION OFFICIELLE DE L'ADMINISTRATION\n\nL'équipe Rivvlock propose la solution suivante : ${proposalText}\n\n${message || ''}\n\n⚠️ Les deux parties (acheteur et vendeur) doivent valider cette proposition pour qu'elle soit appliquée.\n\nVous avez 48 heures pour répondre.`;
 
-    // Create admin conversations if they don't exist
-    const { data: existingConversations } = await adminClient
-      .from("conversations")
-      .select('id, conversation_type')
-      .eq('dispute_id', disputeId)
-      .in('conversation_type', ['admin_seller_dispute', 'admin_buyer_dispute']);
+    // Ensure admin conversations exist (idempotent via RPC)
+    const { data: convs, error: convError } = await adminClient.rpc(
+      'create_escalated_dispute_conversations',
+      {
+        p_dispute_id: disputeId,
+        p_admin_id: user.id,
+      }
+    );
 
-    let sellerConvId = existingConversations?.find(c => c.conversation_type === 'admin_seller_dispute')?.id;
-    let buyerConvId = existingConversations?.find(c => c.conversation_type === 'admin_buyer_dispute')?.id;
-
-    // Create seller conversation if doesn't exist
-    if (!sellerConvId) {
-      const { data: newSellerConv } = await adminClient
-        .from("conversations")
-        .insert({
-          seller_id: transaction.user_id,
-          dispute_id: disputeId,
-          admin_id: user.id,
-          conversation_type: 'admin_seller_dispute',
-          status: 'active'
-        })
-        .select('id')
-        .single();
-      
-      sellerConvId = newSellerConv?.id;
-      logger.log("[ADMIN-PROPOSAL] Created seller conversation:", sellerConvId);
+    if (convError) {
+      logger.error("[ADMIN-PROPOSAL] Error ensuring conversations:", convError);
     }
 
-    // Create buyer conversation if doesn't exist
-    if (!buyerConvId) {
-      const { data: newBuyerConv } = await adminClient
-        .from("conversations")
-        .insert({
-          buyer_id: transaction.buyer_id,
-          dispute_id: disputeId,
-          admin_id: user.id,
-          conversation_type: 'admin_buyer_dispute',
-          status: 'active'
-        })
-        .select('id')
-        .single();
-      
-      buyerConvId = newBuyerConv?.id;
-      logger.log("[ADMIN-PROPOSAL] Created buyer conversation:", buyerConvId);
-    }
+    const sellerConvId = Array.isArray(convs)
+      ? convs[0]?.seller_conversation_id
+      : (convs as any)?.seller_conversation_id;
+    const buyerConvId = Array.isArray(convs)
+      ? convs[0]?.buyer_conversation_id
+      : (convs as any)?.buyer_conversation_id;
 
     // Send messages to both conversations
     if (sellerConvId) {
