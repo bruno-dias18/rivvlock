@@ -328,8 +328,8 @@ export default function PaymentLinkPage() {
     );
   }
 
-  // Show transaction details and processing state for authenticated users
-  if (user && transaction) {
+  // Show transaction details and processing state for authenticated users or E2E mode
+  if ((user || isE2E) && transaction) {
     // Show bank transfer instructions if selected
     if (showBankInstructions) {
       return (
@@ -409,6 +409,13 @@ export default function PaymentLinkPage() {
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Montant</label>
+                <p className="font-medium">
+                  {transaction.price.toFixed(2)} {transaction.currency}
+                </p>
               </div>
             </div>
 
