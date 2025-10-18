@@ -75,6 +75,16 @@ serve(async (req) => {
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Transaction found, buyer verified");
 
+    // Calculate time until payment deadline
+    const paymentDeadline = transaction.payment_deadline 
+      ? new Date(transaction.payment_deadline) 
+      : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default 7 days
+    const now = new Date();
+    const timeUntilDeadline = paymentDeadline.getTime() - now.getTime();
+    const hoursUntilDeadline = timeUntilDeadline / (1000 * 60 * 60);
+    
+    logger.log(`⏰ [CREATE-PAYMENT-INTENT] Payment deadline: ${paymentDeadline.toISOString()}, hours until: ${hoursUntilDeadline.toFixed(2)}`);
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2024-06-20",
     });
@@ -87,6 +97,18 @@ serve(async (req) => {
       .single();
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
+
+    // Determine available payment methods based on deadline
+    const paymentMethodTypes = ['card'];
+    
+    // Only allow bank transfer if deadline is >= 72 hours (3 days) away
+    // SEPA standard can take 1-3 business days
+    if (hoursUntilDeadline >= 72) {
+      paymentMethodTypes.push('customer_balance');
+      logger.log("✅ [CREATE-PAYMENT-INTENT] Bank transfer available (deadline > 3 days)");
+    } else {
+      logger.log("⚠️ [CREATE-PAYMENT-INTENT] Bank transfer blocked (deadline < 3 days)");
+    }
 
     // Prepare payment intent data
     const paymentIntentData: any = {
@@ -102,8 +124,11 @@ serve(async (req) => {
         service_date: transaction.service_date,
         platform: 'rivvlock',
         rivvlock_escrow: 'true',
+        bank_transfer_available: hoursUntilDeadline >= 72 ? 'yes' : 'no',
+        hours_until_deadline: Math.round(hoursUntilDeadline).toString(),
+        payment_deadline: paymentDeadline.toISOString(),
       },
-      payment_method_types: ['card'],
+      payment_method_types: paymentMethodTypes,
     };
 
     // Use existing Stripe customer if available (buyer's customer)
@@ -117,12 +142,12 @@ serve(async (req) => {
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Payment intent created:", paymentIntent.id);
 
-    // Update transaction with payment intent ID (using admin client)
+    // Update transaction with payment intent ID and payment method (using admin client)
     const { error: updateError } = await adminClient
       .from("transactions")
       .update({ 
         stripe_payment_intent_id: paymentIntent.id,
-        payment_method: paymentMethod 
+        payment_method: paymentMethod || 'card'
       })
       .eq("id", transactionId);
 

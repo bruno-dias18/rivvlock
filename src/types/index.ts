@@ -76,6 +76,7 @@ export interface Transaction {
   service_end_date: string | null;
   payment_deadline: string | null;
   validation_deadline: string | null;
+  payment_method?: 'card' | 'bank_transfer';
   stripe_payment_intent_id: string | null;
   stripe_transfer_id: string | null;
   shared_link_token: string | null;
