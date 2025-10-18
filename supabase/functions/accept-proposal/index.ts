@@ -292,7 +292,7 @@ serve(async (req) => {
         throw new Error("No payment intent found for this transaction");
       }
 
-      // Release funds to seller - capture the payment on platform, then transfer net to seller
+      // Release funds to seller - capture the payment on platform (if needed), then transfer net to seller
       const totalAmount = Math.round(transaction.price * 100);
       const platformFee = Math.round(totalAmount * 0.05);
       const currency = String(transaction.currency).toLowerCase();
@@ -308,12 +308,25 @@ serve(async (req) => {
         throw new Error('Seller Stripe account not found');
       }
 
-      logger.log(`Capturing full amount for seller (no refund)`);
+      // Check PI status to avoid capture errors if already captured
+      const pi = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+      logger.log(`NO_REFUND flow - PaymentIntent status: ${pi.status}`);
+      let chargeId = typeof pi.latest_charge === 'string' ? pi.latest_charge : null;
 
-      // Capture without application_fee_amount (separate charges + transfers)
-      await stripe.paymentIntents.capture(
-        transaction.stripe_payment_intent_id
-      );
+      if (pi.status === 'requires_capture') {
+        logger.log(`Capturing full amount for seller (no refund)`);
+        const captured = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
+        // refresh charge id after capture
+        chargeId = typeof captured.latest_charge === 'string' ? captured.latest_charge : chargeId;
+        logger.log(`✅ Full amount captured for no_refund`);
+      } else if (pi.status === 'succeeded') {
+        logger.log(`Payment already captured - skipping capture for no_refund`);
+      } else if (pi.status === 'canceled') {
+        throw new Error('Payment was canceled - cannot release funds');
+      } else {
+        // Any other state is unexpected for releasing funds
+        throw new Error(`PaymentIntent not capturable (status=${pi.status})`);
+      }
 
       // Transfer net amount to seller
       const transferAmount = totalAmount - platformFee;
@@ -323,6 +336,7 @@ serve(async (req) => {
           currency,
           destination: sellerAccount.stripe_account_id,
           transfer_group: `txn_${transaction.id}`,
+          ...(chargeId ? { source_transaction: chargeId } : {}),
         });
         logger.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
       }
