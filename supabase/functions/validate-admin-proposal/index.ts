@@ -114,18 +114,27 @@ serve(async (req) => {
         })
         .eq("id", dispute.id);
 
-      // Send rejection message
+      // Send rejection message to admin conversation
       const rejectMessage = `❌ ${isSeller ? 'Le vendeur' : 'L\'acheteur'} a rejeté la proposition officielle de l'administration.`;
       try {
-        await adminClient
-          .from("dispute_messages")
-          .insert({
-            dispute_id: dispute.id,
-            sender_id: user.id,
-            message: rejectMessage,
-            message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
-            recipient_id: null,
-          });
+        // Find the admin conversation for this party
+        const { data: conversation } = await adminClient
+          .from("conversations")
+          .select("id")
+          .eq("dispute_id", dispute.id)
+          .eq("conversation_type", isSeller ? 'admin_seller_dispute' : 'admin_buyer_dispute')
+          .single();
+
+        if (conversation) {
+          await adminClient
+            .from("messages")
+            .insert({
+              conversation_id: conversation.id,
+              sender_id: user.id,
+              message: rejectMessage,
+              message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
+            });
+        }
       } catch (msgError) {
         logger.warn("Non-critical: Could not insert rejection message", msgError);
       }
@@ -155,18 +164,27 @@ serve(async (req) => {
       .update(updates)
       .eq("id", proposalId);
 
-    // Send validation message
+    // Send validation message to admin conversation
     const validationMessage = `✅ ${isSeller ? 'Le vendeur' : 'L\'acheteur'} a validé la proposition officielle.`;
     try {
-      await adminClient
-        .from("dispute_messages")
-        .insert({
-          dispute_id: dispute.id,
-          sender_id: user.id,
-          message: validationMessage,
-          message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
-          recipient_id: null,
-        });
+      // Find the admin conversation for this party
+      const { data: conversation } = await adminClient
+        .from("conversations")
+        .select("id")
+        .eq("dispute_id", dispute.id)
+        .eq("conversation_type", isSeller ? 'admin_seller_dispute' : 'admin_buyer_dispute')
+        .single();
+
+      if (conversation) {
+        await adminClient
+          .from("messages")
+          .insert({
+            conversation_id: conversation.id,
+            sender_id: user.id,
+            message: validationMessage,
+            message_type: isSeller ? 'seller_to_admin' : 'buyer_to_admin',
+          });
+      }
     } catch (msgError) {
       logger.warn("Non-critical: Could not insert validation message", msgError);
     }
@@ -428,27 +446,44 @@ serve(async (req) => {
         : `✅ Les deux parties ont validé la proposition : Fonds libérés au vendeur`;
 
       try {
+        // Get admin conversations
+        const { data: sellerConv } = await adminClient
+          .from("conversations")
+          .select("id")
+          .eq("dispute_id", dispute.id)
+          .eq("conversation_type", 'admin_seller_dispute')
+          .single();
+
+        const { data: buyerConv } = await adminClient
+          .from("conversations")
+          .select("id")
+          .eq("dispute_id", dispute.id)
+          .eq("conversation_type", 'admin_buyer_dispute')
+          .single();
+
         // Message au vendeur
-        await adminClient
-          .from("dispute_messages")
-          .insert({
-            dispute_id: dispute.id,
-            sender_id: user.id,
-            message: confirmationText,
-            message_type: 'admin_to_seller',
-            recipient_id: transaction.user_id
-          });
+        if (sellerConv) {
+          await adminClient
+            .from("messages")
+            .insert({
+              conversation_id: sellerConv.id,
+              sender_id: user.id,
+              message: confirmationText,
+              message_type: 'admin_to_seller',
+            });
+        }
         
         // Message à l'acheteur
-        await adminClient
-          .from("dispute_messages")
-          .insert({
-            dispute_id: dispute.id,
-            sender_id: user.id,
-            message: confirmationText,
-            message_type: 'admin_to_buyer',
-            recipient_id: transaction.buyer_id
-          });
+        if (buyerConv) {
+          await adminClient
+            .from("messages")
+            .insert({
+              conversation_id: buyerConv.id,
+              sender_id: user.id,
+              message: confirmationText,
+              message_type: 'admin_to_buyer',
+            });
+        }
       } catch (msgError) {
         logger.warn("Non-critical: Could not insert confirmation messages", msgError);
       }
