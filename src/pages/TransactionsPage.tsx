@@ -36,6 +36,7 @@ import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { SortButtons } from '@/components/SortButtons';
 import { logger } from '@/lib/logger';
+import { getPublicBaseUrl } from '@/lib/appUrl';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import type { Transaction } from '@/types';
 
@@ -251,29 +252,16 @@ export default function TransactionsPage() {
 
   const handlePayment = async (transaction: any) => {
     try {
-      const { data, error } = await supabase.functions.invoke('create-payment-checkout', {
-        body: { transactionId: transaction.id }
-      });
+      const base = getPublicBaseUrl();
+      const token = transaction.shared_link_token;
+      const targetUrl = token
+        ? `${base}/payment-link/${token}?payment=cancelled`
+        : `${base}/payment-link/${transaction.id}?txId=${transaction.id}&payment=cancelled`;
 
-      if (error) throw error;
-
-      const url = data?.url || data?.sessionUrl;
-      if (!url) throw new Error('URL de session Stripe introuvable');
-
-      if (isMobile) {
-        // iOS/Safari: ensure navigation is not blocked even after async
-        setTimeout(() => {
-          window.location.assign(url);
-        }, 0);
-      } else {
-        const opened = window.open(url, '_blank');
-        if (!opened) {
-          // Fallback if popup blocked
-          window.location.assign(url);
-        }
-      }
+      // Open the RivvLock payment link (method selection) instead of Stripe
+      window.location.assign(targetUrl);
     } catch (error) {
-      logger.error('Payment error:', error);
+      logger.error('Payment redirect error:', error);
       toast.error(t('transactions.paymentError'), {
         description: t('transactions.paymentErrorDescription'),
       });
