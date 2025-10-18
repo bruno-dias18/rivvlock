@@ -4,6 +4,7 @@ import { MessageSquare, Scale } from 'lucide-react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -320,12 +321,16 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
 
       {showMessaging && (
         dispute.status === 'escalated' ? (
-          <EscalatedDisputeMessaging
-            disputeId={dispute.id}
-            transactionId={transaction.id}
-            status={dispute.status}
-            onClose={() => setShowMessaging(false)}
-          />
+          <Dialog open={showMessaging} onOpenChange={setShowMessaging}>
+            <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+              <EscalatedDisputeMessaging
+                disputeId={dispute.id}
+                transactionId={transaction.id}
+                status={dispute.status}
+                onClose={() => setShowMessaging(false)}
+              />
+            </DialogContent>
+          </Dialog>
         ) : (
           dispute.conversation_id && (
             <UnifiedMessaging
