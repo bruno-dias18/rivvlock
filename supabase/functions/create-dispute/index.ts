@@ -111,15 +111,24 @@ serve(async (req) => {
         .single();
 
       if (tx?.conversation_id) {
-        await supabaseClient
+        // Use service role client to bypass RLS for linking
+        const { error: convUpdateErr } = await supabaseClient
           .from('conversations')
           .update({ dispute_id: dispute.id })
           .eq('id', tx.conversation_id);
 
-        await supabaseClient
+        if (convUpdateErr) {
+          logStep('Error updating conversation', convUpdateErr);
+        }
+
+        const { error: disputeUpdateErr } = await supabaseClient
           .from('disputes')
           .update({ conversation_id: tx.conversation_id })
           .eq('id', dispute.id);
+
+        if (disputeUpdateErr) {
+          logStep('Error updating dispute', disputeUpdateErr);
+        }
 
         // Insert initial message in unified conversation as well (non-escalated channel)
         await supabaseClient
@@ -130,7 +139,7 @@ serve(async (req) => {
             message: reason,
             message_type: 'text'
           });
-        logStep('Initial unified message created');
+        logStep('Initial unified message and links created');
       }
     } catch (convErr) {
       logStep('Error linking conversation', convErr);
