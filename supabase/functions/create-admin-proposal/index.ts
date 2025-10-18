@@ -133,42 +133,75 @@ serve(async (req) => {
 
     const systemMessage = `🔔 PROPOSITION OFFICIELLE DE L'ADMINISTRATION\n\nL'équipe Rivvlock propose la solution suivante : ${proposalText}\n\n${message || ''}\n\n⚠️ Les deux parties (acheteur et vendeur) doivent valider cette proposition pour qu'elle soit appliquée.\n\nVous avez 48 heures pour répondre.`;
 
-    // Get or create admin conversations
-    const { data: conversations, error: convError } = await adminClient
+    // Create admin conversations if they don't exist
+    const { data: existingConversations } = await adminClient
       .from("conversations")
       .select('id, conversation_type')
       .eq('dispute_id', disputeId)
       .in('conversation_type', ['admin_seller_dispute', 'admin_buyer_dispute']);
 
-    if (convError) {
-      logger.error("Error fetching conversations:", convError);
+    let sellerConvId = existingConversations?.find(c => c.conversation_type === 'admin_seller_dispute')?.id;
+    let buyerConvId = existingConversations?.find(c => c.conversation_type === 'admin_buyer_dispute')?.id;
+
+    // Create seller conversation if doesn't exist
+    if (!sellerConvId) {
+      const { data: newSellerConv } = await adminClient
+        .from("conversations")
+        .insert({
+          seller_id: transaction.user_id,
+          dispute_id: disputeId,
+          admin_id: user.id,
+          conversation_type: 'admin_seller_dispute',
+          status: 'active'
+        })
+        .select('id')
+        .single();
+      
+      sellerConvId = newSellerConv?.id;
+      logger.log("[ADMIN-PROPOSAL] Created seller conversation:", sellerConvId);
     }
 
-    const sellerConv = conversations?.find(c => c.conversation_type === 'admin_seller_dispute');
-    const buyerConv = conversations?.find(c => c.conversation_type === 'admin_buyer_dispute');
+    // Create buyer conversation if doesn't exist
+    if (!buyerConvId) {
+      const { data: newBuyerConv } = await adminClient
+        .from("conversations")
+        .insert({
+          buyer_id: transaction.buyer_id,
+          dispute_id: disputeId,
+          admin_id: user.id,
+          conversation_type: 'admin_buyer_dispute',
+          status: 'active'
+        })
+        .select('id')
+        .single();
+      
+      buyerConvId = newBuyerConv?.id;
+      logger.log("[ADMIN-PROPOSAL] Created buyer conversation:", buyerConvId);
+    }
 
-    // Message to seller via admin-seller conversation
-    if (sellerConv) {
+    // Send messages to both conversations
+    if (sellerConvId) {
       await adminClient
         .from("messages")
         .insert({
-          conversation_id: sellerConv.id,
+          conversation_id: sellerConvId,
           sender_id: user.id,
           message: systemMessage,
           message_type: 'system',
         });
+      logger.log("[ADMIN-PROPOSAL] Message sent to seller conversation");
     }
 
-    // Message to buyer via admin-buyer conversation
-    if (buyerConv) {
+    if (buyerConvId) {
       await adminClient
         .from("messages")
         .insert({
-          conversation_id: buyerConv.id,
+          conversation_id: buyerConvId,
           sender_id: user.id,
           message: systemMessage,
           message_type: 'system',
         });
+      logger.log("[ADMIN-PROPOSAL] Message sent to buyer conversation");
     }
 
     logger.log("[ADMIN-PROPOSAL] Notification messages sent to both parties");
