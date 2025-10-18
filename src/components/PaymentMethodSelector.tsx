@@ -11,7 +11,7 @@ import { fr } from "date-fns/locale";
 interface PaymentMethodSelectorProps {
   transaction: Transaction;
   onMethodSelect: (method: 'card' | 'bank_transfer') => void;
-  selectedMethod: 'card' | 'bank_transfer';
+  selectedMethod?: 'card' | 'bank_transfer' | null;
 }
 
 export const PaymentMethodSelector = ({ 
