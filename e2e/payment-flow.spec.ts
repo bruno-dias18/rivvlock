@@ -18,7 +18,7 @@ test.describe('Payment Flow', () => {
 
   test('should display payment method selector', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Check that payment method selector is visible
     await expect(page.getByText(/choisissez votre méthode de paiement/i)).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('Payment Flow', () => {
 
   test('should enable pay button only after selecting payment method', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Pay button should be disabled initially
     const payButton = page.getByRole('button', { name: /payer/i });
@@ -43,7 +43,7 @@ test.describe('Payment Flow', () => {
 
   test('should redirect to Stripe for card payment', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Select card payment method
     await page.getByText(/carte bancaire/i).click();
@@ -63,7 +63,7 @@ test.describe('Payment Flow', () => {
 
   test('should display bank transfer instructions', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Select bank transfer payment method
     await page.getByText(/virement bancaire/i).click();
@@ -78,7 +78,7 @@ test.describe('Payment Flow', () => {
 
   test('should show transaction details', async ({ page }) => {
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Should display transaction information
     await expect(page.getByText(/montant/i)).toBeVisible();
@@ -106,7 +106,7 @@ test.describe('Mobile Payment Flow', () => {
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
     await page.goto('/payment-link/test-token-123');
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('[data-testid="payment-method-selector"]');
 
     // Check that layout is mobile-friendly
     const paymentSelector = page.locator('[data-testid="payment-method-selector"]');
