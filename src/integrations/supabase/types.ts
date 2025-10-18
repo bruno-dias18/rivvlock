@@ -142,7 +142,7 @@ export type Database = {
           dispute_id: string | null
           id: string
           quote_id: string | null
-          seller_id: string
+          seller_id: string | null
           status: string
           transaction_id: string | null
           updated_at: string
@@ -155,7 +155,7 @@ export type Database = {
           dispute_id?: string | null
           id?: string
           quote_id?: string | null
-          seller_id: string
+          seller_id?: string | null
           status?: string
           transaction_id?: string | null
           updated_at?: string
@@ -168,7 +168,7 @@ export type Database = {
           dispute_id?: string | null
           id?: string
           quote_id?: string | null
-          seller_id?: string
+          seller_id?: string | null
           status?: string
           transaction_id?: string | null
           updated_at?: string
