@@ -201,12 +201,12 @@ export default function PaymentLinkPage() {
   };
 
   // Show loading state while checking auth or fetching transaction
-  if (authLoading || loading) {
+  if ((authLoading && !isE2E) || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         {debugMode && (
           <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)}
+            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)} | isE2E={String(isE2E)}
           </div>
         )}
         <div className="text-center">
