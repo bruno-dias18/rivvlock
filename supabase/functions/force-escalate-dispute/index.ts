@@ -152,35 +152,21 @@ serve(async (req) => {
 
     logger.log("✅ Dispute escaladé (mise à jour statut OK)");
 
-    // Create escalated conversations for admin (idempotent)
-    // First, check if they already exist to avoid duplicates
-    const { data: existingAdminConvs, error: existingConvErr } = await adminClient
-      .from('conversations')
-      .select('id, conversation_type')
-      .eq('dispute_id', disputeId)
-      .in('conversation_type', ['admin_seller_dispute','admin_buyer_dispute']);
+    // Create escalated conversations (idempotent via RPC)
+    logStep('CREATING_ESCALATED_CONVERSATIONS', { disputeId, adminId: user.id });
+    
+    const { data: conversations, error: convError } = await adminClient
+      .rpc('create_escalated_dispute_conversations', {
+        p_dispute_id: disputeId,
+        p_admin_id: user.id
+      });
 
-    if (existingConvErr) {
-      logger.error("Error checking existing admin conversations:", existingConvErr);
-    }
-
-    let conversations: any = null;
-    if (existingAdminConvs && existingAdminConvs.length >= 2) {
-      logStep('ADMIN_CONVERSATIONS_ALREADY_EXIST', { count: existingAdminConvs.length });
-      conversations = existingAdminConvs;
+    if (convError) {
+      logger.error("Error creating escalated conversations:", convError);
+      // Continue anyway - conversations might already exist
     } else {
-      const { data: convs, error: convError } = await adminClient
-        .rpc('create_escalated_dispute_conversations', {
-          p_dispute_id: disputeId,
-          p_admin_id: user.id
-        });
-
-      if (convError) {
-        logger.error("Error creating escalated conversations:", convError);
-      } else {
-        conversations = convs;
-        logger.log("✅ Created escalated conversations:", conversations);
-      }
+      logger.log("✅ Escalated conversations ensured:", conversations);
+      logStep('CONVERSATIONS_CREATED_OR_VERIFIED', conversations);
     }
 
     // Insert system message in main conversation
