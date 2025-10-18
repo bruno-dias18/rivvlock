@@ -39,7 +39,7 @@ export const useDisputesUnified = () => {
           dispute:disputes!conversations_dispute_id_fkey(*),
           messages(count)
         `)
-        .in('conversation_type', ['dispute', 'admin_seller_dispute', 'admin_buyer_dispute'])
+        .in('conversation_type', ['transaction', 'dispute', 'admin_seller_dispute', 'admin_buyer_dispute'])
         .order('updated_at', { ascending: false });
 
       if (conversationsError) {
