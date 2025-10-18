@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { logger } from "../_shared/logger.ts";
+import { logger } from "../_shared/production-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +25,7 @@ serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
-      logger.error("❌ [STRIPE-WEBHOOK] No stripe-signature header");
+      logger.error("No stripe-signature header");
       throw new Error("No stripe-signature header");
     }
 
@@ -33,25 +33,25 @@ serve(async (req) => {
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!webhookSecret) {
-      logger.error("❌ [STRIPE-WEBHOOK] STRIPE_WEBHOOK_SECRET not configured");
+      logger.error("STRIPE_WEBHOOK_SECRET not configured");
       throw new Error("Webhook secret not configured");
     }
 
     // Verify webhook signature
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     
-    logger.log(`🔔 [STRIPE-WEBHOOK] Event received: ${event.type}`);
+    logger.info(`Stripe webhook event received: ${event.type}`);
 
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const transactionId = paymentIntent.metadata.transaction_id;
       
       if (!transactionId) {
-        logger.error("❌ [STRIPE-WEBHOOK] No transaction_id in payment intent metadata");
+        logger.error("No transaction_id in payment intent metadata");
         throw new Error("No transaction_id in metadata");
       }
 
-      logger.log(`✅ [STRIPE-WEBHOOK] Payment succeeded for transaction: ${transactionId}`);
+      logger.info("Payment succeeded", { transactionId });
 
       // Determine payment method used
       let paymentMethod = 'card';
@@ -59,10 +59,10 @@ serve(async (req) => {
         const pm = await stripe.paymentMethods.retrieve(paymentIntent.payment_method as string);
         if (pm.type === 'customer_balance') {
           paymentMethod = 'bank_transfer';
-          logger.log(`🏦 [STRIPE-WEBHOOK] Bank transfer payment detected`);
+          logger.debug("Bank transfer payment detected");
         } else if (pm.type === 'card') {
           paymentMethod = 'card';
-          logger.log(`💳 [STRIPE-WEBHOOK] Card payment detected`);
+          logger.debug("Card payment detected");
         }
       }
 
@@ -76,7 +76,7 @@ serve(async (req) => {
         .eq("id", transactionId);
 
       if (updateError) {
-        logger.error("❌ [STRIPE-WEBHOOK] Error updating transaction:", updateError);
+        logger.error("Error updating transaction", updateError, { transactionId });
         throw updateError;
       }
 
@@ -99,7 +99,7 @@ serve(async (req) => {
           },
         });
 
-      logger.log(`✅ [STRIPE-WEBHOOK] Transaction ${transactionId} updated to paid with method ${paymentMethod}`);
+      logger.info("Transaction updated to paid", { transactionId, paymentMethod });
 
       return new Response(JSON.stringify({ received: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -112,11 +112,11 @@ serve(async (req) => {
       const transactionId = paymentIntent.metadata.transaction_id;
       
       if (!transactionId) {
-        logger.error("❌ [STRIPE-WEBHOOK] No transaction_id in failed payment intent");
+        logger.error("No transaction_id in failed payment intent");
         throw new Error("No transaction_id in metadata");
       }
 
-      logger.log(`❌ [STRIPE-WEBHOOK] Payment failed for transaction: ${transactionId}`);
+      logger.warn("Payment failed for transaction", { transactionId });
 
       // Update transaction to expired status
       const { error: updateError } = await adminClient
@@ -127,7 +127,7 @@ serve(async (req) => {
         .eq("id", transactionId);
 
       if (updateError) {
-        logger.error("❌ [STRIPE-WEBHOOK] Error updating failed transaction:", updateError);
+        logger.error("Error updating failed transaction", updateError, { transactionId });
         throw updateError;
       }
 
@@ -146,7 +146,7 @@ serve(async (req) => {
           },
         });
 
-      logger.log(`✅ [STRIPE-WEBHOOK] Transaction ${transactionId} updated to expired after payment failure`);
+      logger.info("Transaction updated to expired after payment failure", { transactionId });
 
       return new Response(JSON.stringify({ received: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -155,7 +155,7 @@ serve(async (req) => {
     }
 
     // Unhandled event type
-    logger.log(`ℹ️ [STRIPE-WEBHOOK] Unhandled event type: ${event.type}`);
+    logger.debug("Unhandled webhook event type", { eventType: event.type });
     
     return new Response(JSON.stringify({ received: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -163,7 +163,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    logger.error("❌ [STRIPE-WEBHOOK] Error:", error);
+    logger.error("Stripe webhook error", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

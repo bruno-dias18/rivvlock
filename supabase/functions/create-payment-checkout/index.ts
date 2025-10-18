@@ -91,7 +91,7 @@ serve(async (req) => {
     const amountInCents = Math.round(transaction.price * 100);
 
     // Use the request origin for redirects to maintain the session
-    const origin = req.headers.get("origin") || 'https://rivvlock.lovable.app';
+    const origin = Deno.env.get("APP_URL") || req.headers.get("origin") || 'https://rivvlock.lovable.app';
     logStep("Using origin for redirects", { origin });
     
     // Create a Stripe Checkout session
