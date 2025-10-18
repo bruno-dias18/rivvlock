@@ -5,6 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, AlertCircle, CreditCard, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
+import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
+import { BankTransferInstructions } from '@/components/BankTransferInstructions';
+import { Transaction } from '@/types';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +22,7 @@ interface TransactionData {
   service_date: string;
   payment_deadline?: string;
   status?: string;
+  payment_method?: 'card' | 'bank_transfer';
 }
 
 export default function PaymentLinkPage() {
@@ -27,9 +31,11 @@ export default function PaymentLinkPage() {
   const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [transaction, setTransaction] = useState<TransactionData | null>(null);
+  const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer'>('card');
+  const [showBankInstructions, setShowBankInstructions] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -90,6 +96,25 @@ export default function PaymentLinkPage() {
   const handlePayNow = async () => {
     if (!user || !transaction || processingPayment) return;
 
+    // If bank transfer is selected, mark transaction method and show instructions
+    if (selectedPaymentMethod === 'bank_transfer') {
+      try {
+        // Update transaction with bank_transfer payment method
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({ payment_method: 'bank_transfer' })
+          .eq('id', transaction.id);
+
+        if (updateError) throw updateError;
+
+        setShowBankInstructions(true);
+      } catch (err: any) {
+        logger.error('Error updating payment method:', err);
+        setError(err.message || 'Erreur lors de la sélection du mode de paiement');
+      }
+      return;
+    }
+
     setProcessingPayment(true);
     try {
       // 1. Join the transaction first
@@ -107,7 +132,8 @@ export default function PaymentLinkPage() {
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
         body: { 
           transactionId: transaction.id,
-          transactionToken: token || new URLSearchParams(window.location.search).get('txId')
+          transactionToken: token || new URLSearchParams(window.location.search).get('txId'),
+          payment_method: selectedPaymentMethod
         }
       });
 
@@ -262,6 +288,32 @@ export default function PaymentLinkPage() {
 
   // Show transaction details and processing state for authenticated users
   if (user && transaction) {
+    // Show bank transfer instructions if selected
+    if (showBankInstructions) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center">
+              <img 
+                src="/assets/rivvlock-logo.jpeg" 
+                alt="RIVVLOCK Logo" 
+                className="mx-auto h-16 w-auto object-contain mb-6"
+                loading="lazy"
+              />
+            </div>
+            <BankTransferInstructions transaction={transaction} />
+            <Button 
+              variant="outline"
+              onClick={() => setShowBankInstructions(false)}
+              className="w-full"
+            >
+              Retour
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         {debugMode && (
@@ -303,30 +355,18 @@ export default function PaymentLinkPage() {
                 </div>
               )}
               
-              {transaction.payment_deadline && (
-                <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
-                  <PaymentCountdown 
-                    paymentDeadline={transaction.payment_deadline} 
-                    className="justify-center"
-                  />
-                </div>
-              )}
+              {/* Payment Method Selector */}
+              <div className="pt-4 border-t">
+                <PaymentMethodSelector
+                  transaction={transaction}
+                  selectedMethod={selectedPaymentMethod}
+                  onMethodSelect={setSelectedPaymentMethod}
+                />
+              </div>
               
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <span className="font-medium">Total</span>
-                  <span className="text-2xl font-bold">
-                    {transaction.price.toFixed(2)} {transaction.currency}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground italic">
-                  * Frais de plateforme RivvLock (5%) inclus
-                </p>
               </div>
             </div>
 
@@ -355,7 +395,9 @@ export default function PaymentLinkPage() {
                   ? 'Délai expiré'
                   : processingPayment 
                     ? 'Préparation...'
-                    : 'Payer maintenant'
+                    : selectedPaymentMethod === 'bank_transfer' 
+                      ? 'Voir les instructions de virement'
+                      : 'Payer par carte'
                 }
               </Button>
             )}

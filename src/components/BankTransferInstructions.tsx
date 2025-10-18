@@ -10,12 +10,12 @@ import { fr } from "date-fns/locale";
 
 interface BankTransferInstructionsProps {
   transaction: Transaction;
-  paymentIntentId: string;
+  paymentIntentId?: string;
 }
 
 export const BankTransferInstructions = ({ 
   transaction, 
-  paymentIntentId 
+  paymentIntentId = '' 
 }: BankTransferInstructionsProps) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
