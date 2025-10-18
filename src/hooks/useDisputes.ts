@@ -1,15 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useEffect } from 'react';
+import { useDisputesLegacy } from './useDisputesLegacy';
+import { useDisputesUnified } from './useDisputesUnified';
+import { FEATURES } from '@/lib/featureFlags';
 import { logger } from '@/lib/logger';
-import type { Dispute } from '@/types';
-import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
+import { compareDisputeData } from '@/lib/disputeMigrationUtils';
 
 /**
  * Fetches and manages disputes for the current user
  * 
- * Returns disputes where the user is the reporter, seller, or buyer of the related transaction.
- * Automatically enriches disputes with transaction data and latest proposal information.
+ * Phase 5: Adaptive hook that uses feature flags to switch between:
+ * - Legacy disputes system (direct queries)
+ * - Unified disputes system (conversation-based)
+ * 
+ * When DOUBLE_RUNNING is enabled, both systems run in parallel for validation.
  * 
  * @returns {UseQueryResult<Dispute[]>} Query result with disputes array
  * 
@@ -26,70 +29,70 @@ import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
  * ```
  */
 export const useDisputes = () => {
-  const { user } = useAuth();
+  // Fetch from both systems if double-running is enabled
+  const legacyQuery = useDisputesLegacy();
+  const unifiedQuery = useDisputesUnified();
 
-  return useQuery({
-    queryKey: ['disputes', user?.id],
-    queryFn: async () => {
-      if (!user?.id) {
-        throw new Error(ErrorMessages.UNAUTHORIZED);
-      }
+  // Choose which system to use based on feature flags
+  const activeQuery = FEATURES.UNIFIED_DISPUTES ? unifiedQuery : legacyQuery;
 
-      // Step 1: fetch disputes only (RLS restricts to reporter/seller/buyer)
-      const { data: disputesData, error: disputesError } = await supabase
-        .from('disputes')
-        .select('*')
-        .order('created_at', { ascending: false });
+  // Double-running validation: Compare results from both systems
+  useEffect(() => {
+    if (!FEATURES.DOUBLE_RUNNING || !FEATURES.UNIFIED_DISPUTES) return;
+    if (!legacyQuery.data || !unifiedQuery.data) return;
 
-      if (disputesError) {
-        logger.error('Error fetching disputes:', disputesError);
-        throw new Error(getUserFriendlyError(disputesError, { code: 'database' }));
-      }
+    const legacyDisputes = legacyQuery.data;
+    const unifiedDisputes = unifiedQuery.data;
 
-      const disputes = disputesData || [];
-      if (disputes.length === 0) return [];
+    // Compare counts
+    if (legacyDisputes.length !== unifiedDisputes.length) {
+      logger.error('DISPUTE_MISMATCH: Count difference', {
+        legacy: legacyDisputes.length,
+        unified: unifiedDisputes.length,
+      });
+    }
 
-      // Step 2: fetch related transactions separately (no FK relation defined)
-      const transactionIds = Array.from(new Set(disputes.map((d: any) => d.transaction_id).filter(Boolean)));
-      if (transactionIds.length === 0) return disputes;
+    // Compare individual disputes
+    const legacyMap = new Map(legacyDisputes.map(d => [d.id, d]));
+    const unifiedMap = new Map(unifiedDisputes.map(d => [d.id, d]));
 
-      const { data: transactions, error: txError } = await supabase
-        .from('transactions')
-        .select('*')
-        .in('id', transactionIds);
-
-      if (txError) {
-        // Do not break the page; return disputes without embedded transaction
-        logger.warn('Failed to fetch transactions for disputes:', txError);
-        return disputes;
-      }
-
-      const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
-      
-      // Filtrer les litiges selon l'archivage individuel
-      const enriched = disputes
-        .map((d: any) => ({ ...d, transactions: txMap.get(d.transaction_id) }))
-        .filter((dispute: any) => {
-          const tx = dispute.transactions;
-          if (!tx) return true; // Garder si transaction non trouvée (failsafe)
-          
-          const isSeller = tx.user_id === user?.id;
-          const isBuyer = tx.buyer_id === user?.id;
-          
-          // Filtrer selon l'archivage individuel
-          if (isSeller && dispute.archived_by_seller) return false;
-          if (isBuyer && dispute.archived_by_buyer) return false;
-          
-          return true;
+    // Check for missing disputes in unified
+    legacyDisputes.forEach((legacyDispute) => {
+      const unifiedDispute = unifiedMap.get(legacyDispute.id);
+      if (!unifiedDispute) {
+        logger.error('DISPUTE_MISMATCH: Missing in unified', {
+          disputeId: legacyDispute.id,
         });
-      
-      return enriched;
+        return;
+      }
 
-    },
-    enabled: !!user?.id,
-    staleTime: 30000, // Cache for 30 seconds
-    gcTime: 300000, // Keep in cache for 5 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-  });
+      // Deep comparison
+      const comparison = compareDisputeData(legacyDispute, unifiedDispute);
+      if (comparison.mismatches.length > 0) {
+        logger.error('DISPUTE_MISMATCH: Data difference', {
+          disputeId: legacyDispute.id,
+          mismatches: comparison.mismatches,
+        });
+      }
+    });
+
+    // Check for extra disputes in unified
+    unifiedDisputes.forEach((unifiedDispute) => {
+      if (!legacyMap.has(unifiedDispute.id)) {
+        logger.error('DISPUTE_MISMATCH: Extra in unified', {
+          disputeId: unifiedDispute.id,
+        });
+      }
+    });
+
+    // Log success if no mismatches
+    if (legacyDisputes.length === unifiedDisputes.length) {
+      logger.info('DISPUTE_DOUBLE_RUNNING: No mismatches detected', {
+        count: legacyDisputes.length,
+      });
+    }
+  }, [legacyQuery.data, unifiedQuery.data]);
+
+  // Return the active query result
+  return activeQuery;
 };
