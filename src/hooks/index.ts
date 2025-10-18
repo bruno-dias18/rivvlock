@@ -8,6 +8,7 @@ export { useTransactions, useSyncStripePayments } from './useTransactions';
 export { useTransactionsWithNewActivity } from './useTransactionsWithNewActivity';
 export { useHasTransactionMessages } from './useHasTransactionMessages';
 export { useValidationStatus } from './useValidationStatus';
+export { useForceEscalateDispute } from './useForceEscalateDispute';
 export { useAnnualTransactions } from './useAnnualTransactions';
 export { usePaginatedTransactions } from './usePaginatedTransactions';
 

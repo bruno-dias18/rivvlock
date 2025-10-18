@@ -131,6 +131,9 @@ verify_jwt = false
 [functions.fix-resolved-disputes]
 verify_jwt = false
 
+[functions.force-escalate-dispute]
+verify_jwt = true
+
 [functions.gdpr-data-retention-cleanup]
 verify_jwt = false
 

@@ -256,8 +256,12 @@ export const UnifiedMessaging = ({
     try {
       await rejectProposal(proposalId);
       toast.success('Proposition refusée');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error rejecting proposal:', error);
+      const message = error?.message || error?.error || 'Erreur lors du rejet de la proposition';
+      toast.error('Erreur lors du rejet de la proposition', {
+        description: message,
+      });
       toast.error('Erreur lors du rejet de la proposition');
     }
   };

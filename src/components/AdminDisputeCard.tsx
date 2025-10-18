@@ -16,6 +16,8 @@ import { fr } from 'date-fns/locale';
 import { AdminOfficialProposalDialog } from './AdminOfficialProposalDialog';
 import { logger } from '@/lib/logger';
 
+import { useForceEscalateDispute } from '@/hooks/useForceEscalateDispute';
+
 interface AdminDisputeCardProps {
   dispute: any;
   onRefetch?: () => void;
@@ -31,6 +33,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const [loadedNotes, setLoadedNotes] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOfficialProposal, setShowOfficialProposal] = useState(false);
+  const { mutate: forceEscalate } = useForceEscalateDispute();
 
   const { proposals } = useDisputeProposals(dispute.id);
 
@@ -224,6 +227,27 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
       logger.error('Error processing dispute:', error);
       toast.error(`Erreur lors du traitement du litige`);
     } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleForceEscalate = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir escalader ce litige maintenant ? Les parties ne pourront plus négocier directement.')) return;
+
+    setIsProcessing(true);
+    try {
+      forceEscalate(dispute.id, {
+        onSuccess: () => {
+          onRefetch?.();
+          setIsProcessing(false);
+        },
+        onError: () => {
+          setIsProcessing(false);
+        }
+      });
+    } catch (error) {
+      logger.error('Error force escalating dispute:', error);
+      toast.error('Erreur lors de l\'escalade du litige');
       setIsProcessing(false);
     }
   };
@@ -520,6 +544,33 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             </div>
           )}
         </div>
+
+        {/* Force Escalate Button (Admin only) */}
+        {dispute.status !== 'escalated' && !isExpired && (
+          <div>
+            <Separator />
+            <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 p-4 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                  Escalade manuelle
+                </h4>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Escalader ce litige immédiatement sans attendre le compte à rebours
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleForceEscalate}
+                disabled={isProcessing}
+                className="w-full"
+              >
+                {isProcessing ? 'Escalade...' : 'Escalader maintenant'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Admin Actions */}
         {isExpired && (
