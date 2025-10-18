@@ -82,9 +82,41 @@ export default function TransactionsPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 50;
+
+  // Feature flag: enable pagination (set to true to activate)
+  const usePagination = true;
+
+  // Map sortBy for pagination (only supports created_at, updated_at, price)
+  const paginatedSortBy = (['created_at', 'updated_at', 'price'].includes(sortBy) 
+    ? sortBy 
+    : 'created_at') as 'created_at' | 'updated_at' | 'price';
+
+  // Use paginated transactions hook if enabled
+  const { 
+    data: paginatedData,
+    isLoading: paginatedLoading,
+    refetch: refetchPaginated
+  } = usePaginatedTransactions({
+    page: currentPage,
+    pageSize,
+    sortBy: paginatedSortBy,
+    sortOrder: sortOrder as 'asc' | 'desc'
+  });
+
+  // Use standard hook as fallback
+  const { 
+    data: allTransactions = [], 
+    isLoading: allLoading,
+    error: queryError,
+    refetch: refetchAll 
+  } = useTransactions();
+
+  // Select data source based on feature flag
+  const transactions = usePagination ? (paginatedData?.transactions || []) : allTransactions;
+  const isLoading = usePagination ? paginatedLoading : allLoading;
+  const refetch = usePagination ? refetchPaginated : refetchAll;
   
-  const { data: transactions = [], isLoading, error: queryError, refetch } = useTransactions();
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();

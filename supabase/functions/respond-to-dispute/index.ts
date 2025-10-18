@@ -1,168 +1,126 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.sh/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Helper logging function for debugging
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  logger.log(`[RESPOND-TO-DISPUTE] ${step}${detailsStr}`);
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    logStep("Function started");
-
-    // 🔒 SÉCURITÉ: Client séparé pour authentification JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: { headers: { Authorization: authHeader } },
-        auth: { persistSession: false }
-      }
-    );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await authClient.auth.getUser(token);
-    if (userError || !user) {
-      logStep("Authentication failed", userError);
-      throw new Error("User not authenticated");
-    }
-
-    logStep("User authenticated", { userId: user.id });
-
-    // 🔒 SÉCURITÉ: Client DB avec SERVICE_ROLE_KEY (non-pollué)
-    // Contourne RLS mais validations manuelles ci-dessous conservées
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    // Parse request body
-    const { disputeId, response } = await req.json();
-    
-    if (!disputeId || !response?.trim()) {
-      throw new Error("Missing required fields: disputeId and response");
-    }
-
-    logStep("Processing dispute response", { disputeId, responseLength: response.length });
-
-    // Get dispute without join (avoid FK relationship error)
-    const { data: dispute, error: disputeError } = await supabase
-      .from("disputes")
-      .select("*")
-      .eq("id", disputeId)
-      .single();
-
-    if (disputeError || !dispute) {
-      logStep("Dispute not found", disputeError);
-      throw new Error("Dispute not found");
-    }
-
-    // Get transaction separately
-    const { data: transaction, error: transactionError } = await supabase
-      .from("transactions")
-      .select("*")
-      .eq("id", dispute.transaction_id)
-      .single();
-
-    if (transactionError || !transaction) {
-      logStep("Transaction not found", transactionError);
-      throw new Error("Transaction not found");
-    }
-    
-    // Verify user is the seller of the transaction
-    if (transaction.user_id !== user.id) {
-      logStep("Unauthorized - user is not the seller", { 
-        userId: user.id, 
-        sellerId: transaction.user_id 
-      });
-      throw new Error("Only the seller can respond to this dispute");
-    }
-
-    // Update dispute with seller response
-    const { error: updateError } = await supabase
-      .from("disputes")
-      .update({
-        resolution: response.trim(),
-        status: 'responded',
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", disputeId);
-
-    if (updateError) {
-      logStep("Error updating dispute", updateError);
-      throw updateError;
-    }
-
-    logStep("Dispute updated successfully");
-
-    // Log activity
-    const { error: activityError } = await supabase
-      .from('activity_logs')
-      .insert({
-        user_id: user.id,
-        activity_type: 'dispute_created', // We can reuse this type or create a new one
-        title: `Réponse au litige sur "${transaction.title}"`,
-        description: `Le vendeur a répondu au litige`,
-        metadata: {
-          dispute_id: disputeId,
-          transaction_id: transaction.id,
-          response_length: response.length
-        }
-      });
-
-    if (activityError) {
-      logStep("Error logging activity", activityError);
-    }
-
-    // Send notification to the reporter (buyer who created the dispute)
-    try {
-      const { error: notificationError } = await supabase.functions.invoke('send-notifications', {
-        body: {
-          type: 'dispute_response',
-          transactionId: transaction.id,
-          message: `Le vendeur a répondu à votre litige concernant "${transaction.title}". Consultez la transaction pour voir la réponse.`,
-          recipients: [dispute.reporter_id]
-        }
-      });
-      
-      if (notificationError) {
-        logStep("Error sending notification", notificationError);
-      } else {
-        logStep("Notification sent to dispute reporter");
-      }
-    } catch (error) {
-      logStep("Error invoking notification function", error);
-    }
-
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: "Response submitted successfully"
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
-  } catch (error) {
-    logStep("ERROR", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
-  }
+const respondToDisputeSchema = z.object({
+  disputeId: z.string().uuid(),
+  response: z.string().min(1),
 });
+
+const handler = async (ctx: any) => {
+  const { user, adminClient, body } = ctx;
+  const { disputeId, response } = body;
+  
+  logger.log('[RESPOND-TO-DISPUTE] Processing dispute response', { disputeId, responseLength: response.length });
+
+  // Get dispute without join (avoid FK relationship error)
+  const { data: dispute, error: disputeError } = await adminClient
+    .from("disputes")
+    .select("*")
+    .eq("id", disputeId)
+    .single();
+
+  if (disputeError || !dispute) {
+    logger.log('[RESPOND-TO-DISPUTE] Dispute not found', disputeError);
+    return errorResponse("Dispute not found", 404);
+  }
+
+  // Get transaction separately
+  const { data: transaction, error: transactionError } = await adminClient
+    .from("transactions")
+    .select("*")
+    .eq("id", dispute.transaction_id)
+    .single();
+
+  if (transactionError || !transaction) {
+    logger.log('[RESPOND-TO-DISPUTE] Transaction not found', transactionError);
+    return errorResponse("Transaction not found", 404);
+  }
+  
+  // Verify user is the seller of the transaction
+  if (transaction.user_id !== user.id) {
+    logger.log('[RESPOND-TO-DISPUTE] Unauthorized - user is not the seller', { 
+      userId: user.id, 
+      sellerId: transaction.user_id 
+    });
+    return errorResponse("Only the seller can respond to this dispute", 403);
+  }
+
+  // Update dispute with seller response
+  const { error: updateError } = await adminClient
+    .from("disputes")
+    .update({
+      resolution: response.trim(),
+      status: 'responded',
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", disputeId);
+
+  if (updateError) {
+    logger.log('[RESPOND-TO-DISPUTE] Error updating dispute', updateError);
+    throw updateError;
+  }
+
+  logger.log('[RESPOND-TO-DISPUTE] Dispute updated successfully');
+
+  // Log activity
+  const { error: activityError } = await adminClient
+    .from('activity_logs')
+    .insert({
+      user_id: user.id,
+      activity_type: 'dispute_created',
+      title: `Réponse au litige sur "${transaction.title}"`,
+      description: `Le vendeur a répondu au litige`,
+      metadata: {
+        dispute_id: disputeId,
+        transaction_id: transaction.id,
+        response_length: response.length
+      }
+    });
+
+  if (activityError) {
+    logger.log('[RESPOND-TO-DISPUTE] Error logging activity', activityError);
+  }
+
+  // Send notification to the reporter (buyer who created the dispute)
+  try {
+    const { error: notificationError } = await adminClient.functions.invoke('send-notifications', {
+      body: {
+        type: 'dispute_response',
+        transactionId: transaction.id,
+        message: `Le vendeur a répondu à votre litige concernant "${transaction.title}". Consultez la transaction pour voir la réponse.`,
+        recipients: [dispute.reporter_id]
+      }
+    });
+    
+    if (notificationError) {
+      logger.log('[RESPOND-TO-DISPUTE] Error sending notification', notificationError);
+    } else {
+      logger.log('[RESPOND-TO-DISPUTE] Notification sent to dispute reporter');
+    }
+  } catch (error) {
+    logger.log('[RESPOND-TO-DISPUTE] Error invoking notification function', error);
+  }
+
+  return successResponse({ 
+    message: "Response submitted successfully"
+  });
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit({ maxRequests: 10, windowMs: 60000 }),
+  withValidation(respondToDisputeSchema)
+)(handler);
+
+serve(composedHandler);

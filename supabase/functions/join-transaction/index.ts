@@ -1,244 +1,178 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.sh/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
-import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
-import { validate, joinTransactionSchema } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const joinTransactionSchema = z.object({
+  transaction_id: z.string().uuid(),
+  linkToken: z.string().optional(),
+  token: z.string().optional(),
+});
+
+const handler = async (ctx: any) => {
+  const { user, adminClient, body } = ctx;
+  
+  logger.log('🔍 [JOIN-TRANSACTION] Processing transaction:', body.transaction_id);
+  
+  const transaction_id = body.transaction_id;
+  const linkToken = body.linkToken || body.token;
+
+  // Verify transaction exists and token is valid
+  const { data: transaction, error: fetchError } = await adminClient
+    .from('transactions')
+    .select('*')
+    .eq('id', transaction_id)
+    .eq('shared_link_token', linkToken)
+    .single();
+
+  if (fetchError || !transaction) {
+    logger.error('❌ [JOIN-TRANSACTION] Transaction fetch error:', fetchError);
+    return errorResponse('Transaction non trouvée ou token invalide', 404);
+  }
+
+  logger.log('✅ [JOIN-TRANSACTION] Transaction found:', transaction.id);
+
+  // Check if link is expired
+  const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
+  if (expiresAt && new Date(expiresAt) < new Date()) {
+    return errorResponse('Le lien d\'invitation a expiré', 400);
+  }
+
+  // Check if user is not the seller
+  if (transaction.user_id === user.id) {
+    return errorResponse('Vous ne pouvez pas rejoindre votre propre transaction', 400);
+  }
+
+  // Check if transaction already has a buyer
+  if (transaction.buyer_id && transaction.buyer_id !== user.id) {
+    return errorResponse('Cette transaction a déjà un acheteur assigné', 400);
+  }
+
+  // If user is already the buyer, return success
+  if (transaction.buyer_id === user.id) {
+    logger.log('✅ [JOIN-TRANSACTION] User already assigned as buyer');
+    return successResponse({ 
+      message: 'Utilisateur déjà assigné à cette transaction' 
+    });
+  }
+
+  // Get buyer profile for display name
+  const { data: buyerProfile } = await adminClient
+    .from('profiles')
+    .select('company_name, first_name, last_name')
+    .eq('user_id', user.id)
+    .single();
+
+  const buyerDisplayName = buyerProfile?.company_name || 
+    `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
+    'Acheteur';
+
+  // Calculate payment deadline (24h before service date and time)
+  const serviceDate = new Date(transaction.service_date);
+  const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+  
+  logger.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
+    serviceDate: serviceDate.toISOString(),
+    paymentDeadline: paymentDeadline.toISOString(),
+    timeDiff: (serviceDate.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60)
+  });
+  
+  // Validate that payment deadline is in the future
+  const now = new Date();
+  if (paymentDeadline <= now) {
+    return errorResponse(
+      'Service trop proche : le paiement doit être possible au moins 24h avant le service.',
+      400
+    );
+  }
+
+  // Create conversation if it doesn't exist
+  let conversationId = transaction.conversation_id;
+  
+  if (!conversationId) {
+    const { data: newConversation, error: convError } = await adminClient
+      .from('conversations')
+      .insert({
+        seller_id: transaction.user_id,
+        buyer_id: user.id,
+        transaction_id: transaction.id,
+        status: 'active'
+      })
+      .select('id')
+      .single();
+
+    if (convError) {
+      logger.error('❌ [JOIN-TRANSACTION] Conversation creation error:', convError);
+    } else if (newConversation) {
+      conversationId = newConversation.id;
+      logger.log('✅ [JOIN-TRANSACTION] Conversation created:', conversationId);
+    }
+  }
+
+  // Assign user as buyer
+  const { error: updateError } = await adminClient
+    .from('transactions')
+    .update({ 
+      buyer_id: user.id,
+      buyer_display_name: buyerDisplayName,
+      payment_deadline: paymentDeadline.toISOString(),
+      conversation_id: conversationId,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', transaction_id);
+
+  if (updateError) {
+    logger.error('❌ [JOIN-TRANSACTION] Update error:', updateError);
+    return errorResponse('Erreur lors de l\'assignation à la transaction', 500);
+  }
+
+  logger.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', user.id);
+
+  // Log activity for both buyer and seller
+  try {
+    await adminClient.from('activity_logs').insert([
+      {
+        user_id: user.id,
+        activity_type: 'transaction_joined',
+        title: 'Transaction rejointe',
+        description: `Vous avez rejoint la transaction "${transaction.title}"`
+      },
+      {
+        user_id: transaction.user_id,
+        activity_type: 'buyer_joined_transaction',
+        title: `${buyerDisplayName} a rejoint votre transaction`,
+        description: `Un client a rejoint votre transaction "${transaction.title}"`,
+        metadata: {
+          transaction_id: transaction.id,
+          buyer_id: user.id,
+          buyer_name: buyerDisplayName
+        }
+      }
+    ]);
+  } catch (logError) {
+    logger.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);
+  }
+
+  return successResponse({ 
+    message: 'Transaction rejointe avec succès',
+    transaction_id: transaction_id,
+    buyer_id: user.id
+  });
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit({ maxRequests: 10, windowMs: 60000 }),
+  withValidation(joinTransactionSchema)
+)(handler);
 
-  try {
-    logger.log('🔍 [JOIN-TRANSACTION] Starting request processing');
-
-    // Rate limiting - protection contre les abus
-    const clientIp = getClientIp(req);
-    await checkRateLimit(clientIp);
-
-    // User client for authentication
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    // Admin client for database operations
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Get user from auth header
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Aucun token d\'authentification fourni');
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await userClient.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      throw new Error('Utilisateur non authentifié');
-    }
-
-    logger.log('✅ [JOIN-TRANSACTION] User authenticated:', userData.user.id);
-
-    // Rate limiting par utilisateur
-    await checkRateLimit(clientIp, userData.user.id);
-
-    // Parse request body (support both `token` and `linkToken`)
-    const body = await req.json();
-    
-    // Validation des données d'entrée
-    const validatedData = validate(joinTransactionSchema, body);
-    const transaction_id = validatedData.transaction_id;
-    const linkToken = validatedData.linkToken || validatedData.token;
-
-    logger.log('🔍 [JOIN-TRANSACTION] Processing transaction:', transaction_id);
-
-    // Verify transaction exists and token is valid (using admin client)
-    const { data: transaction, error: fetchError } = await adminClient
-      .from('transactions')
-      .select('*')
-      .eq('id', transaction_id)
-      .eq('shared_link_token', linkToken)
-      .single();
-
-    if (fetchError || !transaction) {
-      logger.error('❌ [JOIN-TRANSACTION] Transaction fetch error:', fetchError);
-      throw new Error('Transaction non trouvée ou token invalide');
-    }
-
-    logger.log('✅ [JOIN-TRANSACTION] Transaction found:', transaction.id);
-
-    // Check if link is expired
-    const expiresAt = transaction.shared_link_expires_at || transaction.link_expires_at;
-    if (expiresAt && new Date(expiresAt) < new Date()) {
-      throw new Error('Le lien d\'invitation a expiré');
-    }
-
-    // Check if user is not the seller
-    if (transaction.user_id === userData.user.id) {
-      throw new Error('Vous ne pouvez pas rejoindre votre propre transaction');
-    }
-
-    // Check if transaction already has a buyer
-    if (transaction.buyer_id && transaction.buyer_id !== userData.user.id) {
-      throw new Error('Cette transaction a déjà un acheteur assigné');
-    }
-
-    // If user is already the buyer, return success
-    if (transaction.buyer_id === userData.user.id) {
-      logger.log('✅ [JOIN-TRANSACTION] User already assigned as buyer');
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Utilisateur déjà assigné à cette transaction' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      );
-    }
-
-    // Get buyer profile for display name
-    const { data: buyerProfile } = await adminClient
-      .from('profiles')
-      .select('company_name, first_name, last_name')
-      .eq('user_id', userData.user.id)
-      .single();
-
-    const buyerDisplayName = buyerProfile?.company_name || 
-      `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
-      'Acheteur';
-
-    // Calculate payment deadline (24h before service date and time)
-    const serviceDate = new Date(transaction.service_date);
-    const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
-    
-    logger.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
-      serviceDate: serviceDate.toISOString(),
-      paymentDeadline: paymentDeadline.toISOString(),
-      timeDiff: (serviceDate.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60)
-    });
-    
-    // Validate that payment deadline is in the future
-    const now = new Date();
-    if (paymentDeadline <= now) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Service trop proche : le paiement doit être possible au moins 24h avant le service.' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-
-    // Create conversation if it doesn't exist
-    let conversationId = transaction.conversation_id;
-    
-    if (!conversationId) {
-      const { data: newConversation, error: convError } = await adminClient
-        .from('conversations')
-        .insert({
-          seller_id: transaction.user_id,
-          buyer_id: userData.user.id,
-          transaction_id: transaction.id,
-          status: 'active'
-        })
-        .select('id')
-        .single();
-
-      if (convError) {
-        logger.error('❌ [JOIN-TRANSACTION] Conversation creation error:', convError);
-      } else if (newConversation) {
-        conversationId = newConversation.id;
-        logger.log('✅ [JOIN-TRANSACTION] Conversation created:', conversationId);
-      }
-    }
-
-    // Assign user as buyer (using admin client to bypass RLS)
-    const { error: updateError } = await adminClient
-      .from('transactions')
-      .update({ 
-        buyer_id: userData.user.id,
-        buyer_display_name: buyerDisplayName,
-        payment_deadline: paymentDeadline.toISOString(),
-        conversation_id: conversationId,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', transaction_id);
-
-    if (updateError) {
-      logger.error('❌ [JOIN-TRANSACTION] Update error:', updateError);
-      throw new Error('Erreur lors de l\'assignation à la transaction');
-    }
-
-    logger.log('✅ [JOIN-TRANSACTION] Successfully assigned buyer:', userData.user.id);
-
-    // Log activity for both buyer and seller
-    try {
-      // Log for the buyer
-      await adminClient
-        .from('activity_logs')
-        .insert({
-          user_id: userData.user.id,
-          activity_type: 'transaction_joined',
-          title: 'Transaction rejointe',
-          description: `Vous avez rejoint la transaction "${transaction.title}"`
-        });
-
-      // Log for the seller
-      await adminClient
-        .from('activity_logs')
-        .insert({
-          user_id: transaction.user_id,
-          activity_type: 'buyer_joined_transaction',
-          title: `${buyerDisplayName} a rejoint votre transaction`,
-          description: `Un client a rejoint votre transaction "${transaction.title}"`,
-          metadata: {
-            transaction_id: transaction.id,
-            buyer_id: userData.user.id,
-            buyer_name: buyerDisplayName
-          }
-        });
-    } catch (logError) {
-      logger.error('❌ [JOIN-TRANSACTION] Error logging activity:', logError);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Transaction rejointe avec succès',
-        transaction_id: transaction_id,
-        buyer_id: userData.user.id
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
-
-  } catch (error) {
-    logger.error('Join Transaction Function Error:', error);
-    
-    const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
-    
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        success: false 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    );
-  }
-});
+serve(composedHandler);
