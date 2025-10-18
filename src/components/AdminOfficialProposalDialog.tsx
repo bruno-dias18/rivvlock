@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AlertTriangle, FileText } from 'lucide-react';
+import { AlertTriangle, FileText, Zap } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { logger } from '@/lib/logger';
 
 interface AdminOfficialProposalDialogProps {
@@ -27,6 +28,7 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
   const [refundPercentage, setRefundPercentage] = useState<number>(50);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [immediateExecution, setImmediateExecution] = useState(false);
 
   const handleSubmit = async () => {
     if (!message.trim()) {
@@ -47,16 +49,22 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
           proposalType,
           refundPercentage: proposalType === 'partial_refund' ? refundPercentage : null,
           message: message.trim(),
+          immediateExecution,
         },
       });
 
       if (error) throw error;
 
-      toast.success("Proposition officielle envoyée aux deux parties");
+      if (immediateExecution) {
+        toast.success("Décision exécutée immédiatement - Litige résolu");
+      } else {
+        toast.success("Proposition officielle envoyée aux deux parties");
+      }
       onOpenChange(false);
       setMessage('');
       setRefundPercentage(50);
       setProposalType('partial_refund');
+      setImmediateExecution(false);
       onSuccess?.();
     } catch (error) {
       logger.error('Error creating admin proposal:', error);
@@ -77,19 +85,56 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-4 rounded-lg">
+          <div className={`${immediateExecution ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800' : 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'} border p-4 rounded-lg transition-colors`}>
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-purple-900 dark:text-purple-100">
-                <p className="font-medium mb-1">Proposition administrative officielle</p>
-                <p>
-                  Cette proposition sera envoyée aux deux parties (acheteur et vendeur) qui devront
-                  <strong> tous les deux valider</strong> pour que la solution soit appliquée automatiquement.
-                </p>
-                <p className="mt-2 text-xs text-purple-700 dark:text-purple-300">
-                  ⏱️ Les parties auront 48 heures pour répondre.
-                </p>
+              {immediateExecution ? (
+                <Zap className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className={`text-sm ${immediateExecution ? 'text-red-900 dark:text-red-100' : 'text-purple-900 dark:text-purple-100'}`}>
+                {immediateExecution ? (
+                  <>
+                    <p className="font-medium mb-1">⚡ Arbitrage immédiat - Exécution automatique</p>
+                    <p>
+                      Cette décision sera <strong>exécutée immédiatement</strong> sans validation des parties.
+                      Le litige sera résolu instantanément selon vos instructions.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium mb-1">Proposition administrative officielle</p>
+                    <p>
+                      Cette proposition sera envoyée aux deux parties (acheteur et vendeur) qui devront
+                      <strong> tous les deux valider</strong> pour que la solution soit appliquée automatiquement.
+                    </p>
+                    <p className="mt-2 text-xs text-purple-700 dark:text-purple-300">
+                      ⏱️ Les parties auront 48 heures pour répondre.
+                    </p>
+                  </>
+                )}
               </div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg border">
+            <Checkbox
+              id="immediate-execution"
+              checked={immediateExecution}
+              onCheckedChange={(checked) => setImmediateExecution(checked as boolean)}
+            />
+            <div className="flex-1">
+              <Label 
+                htmlFor="immediate-execution" 
+                className="text-sm font-medium cursor-pointer flex items-center gap-2"
+              >
+                <Zap className="h-4 w-4 text-orange-600" />
+                Arbitrage immédiat (exécution sans validation des parties)
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                En cochant cette case, la décision sera appliquée immédiatement et le litige sera résolu automatiquement.
+                Les parties seront notifiées de votre décision finale.
+              </p>
             </div>
           </div>
 
@@ -175,8 +220,9 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
+              className={immediateExecution ? "bg-red-600 hover:bg-red-700" : ""}
             >
-              {isSubmitting ? "Envoi en cours..." : "Envoyer la proposition officielle"}
+              {isSubmitting ? "Traitement en cours..." : immediateExecution ? "⚡ Arbitrer et exécuter immédiatement" : "Envoyer la proposition officielle"}
             </Button>
           </div>
         </div>

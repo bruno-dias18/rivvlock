@@ -45,12 +45,13 @@ serve(async (req) => {
       throw new Error("Unauthorized: admin access required");
     }
 
-    const { disputeId, proposalType, refundPercentage, message } = await req.json();
+    const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = await req.json();
 
     logger.log("[ADMIN-PROPOSAL] Creating official admin proposal:", {
       disputeId,
       proposalType,
       refundPercentage,
+      immediateExecution,
     });
 
     // Get dispute details
@@ -85,6 +86,210 @@ serve(async (req) => {
     // Validate refund percentage for partial refunds
     if (proposalType === 'partial_refund' && (!refundPercentage || refundPercentage < 0 || refundPercentage > 100)) {
       throw new Error("Invalid refund percentage");
+    }
+
+    // If immediate execution, resolve directly via process-dispute logic
+    if (immediateExecution) {
+      logger.log("[ADMIN-PROPOSAL] Immediate execution requested, executing directly");
+      
+      // Determine action based on proposal type
+      const action = (proposalType === 'full_refund' || proposalType === 'partial_refund') ? 'refund' : 'release';
+      const finalRefundPercentage = proposalType === 'full_refund' ? 100 : (proposalType === 'partial_refund' ? refundPercentage : 0);
+
+      // Build proposal text
+      const proposalText = proposalType === 'partial_refund'
+        ? `Remboursement de ${finalRefundPercentage}%`
+        : proposalType === 'full_refund'
+        ? 'Remboursement complet (100%)'
+        : 'Pas de remboursement';
+
+      // Import Stripe
+      const Stripe = (await import("https://esm.sh/stripe@18.5.0")).default;
+      const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+        apiVersion: "2024-06-20",
+      });
+
+      const totalAmount = Math.round(transaction.price * 100);
+      const platformFee = Math.round(totalAmount * 0.05);
+      const currency = String(transaction.currency).toLowerCase();
+
+      let paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+      let newTransactionStatus;
+      let disputeStatus;
+
+      if (action === 'refund') {
+        const refundAmount = Math.round((totalAmount * finalRefundPercentage) / 100);
+        const sellerAmount = totalAmount - refundAmount - platformFee;
+        
+        if (paymentIntent.status === 'requires_capture') {
+          await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+          
+          if (finalRefundPercentage < 100 && sellerAmount > 0) {
+            const { data: sellerAccount } = await adminClient
+              .from('stripe_accounts')
+              .select('stripe_account_id')
+              .eq('user_id', transaction.user_id)
+              .maybeSingle();
+
+            if (sellerAccount?.stripe_account_id) {
+              await stripe.transfers.create({
+                amount: sellerAmount,
+                currency,
+                destination: sellerAccount.stripe_account_id,
+                transfer_group: `txn_${transaction.id}`,
+                metadata: { dispute_id: disputeId, type: 'immediate_partial_refund', refund_percentage: finalRefundPercentage }
+              });
+            }
+          }
+        } else if (paymentIntent.status === 'succeeded') {
+          await stripe.refunds.create({
+            payment_intent: transaction.stripe_payment_intent_id,
+            amount: refundAmount,
+            reason: 'requested_by_customer',
+            metadata: { 
+              dispute_id: disputeId, 
+              admin_immediate: 'true', 
+              type: finalRefundPercentage === 100 ? 'admin_full_refund' : 'admin_partial_refund',
+              refund_percentage: finalRefundPercentage
+            }
+          });
+          
+          if (finalRefundPercentage < 100 && sellerAmount > 0) {
+            const { data: sellerAccount } = await adminClient
+              .from('stripe_accounts')
+              .select('stripe_account_id')
+              .eq('user_id', transaction.user_id)
+              .maybeSingle();
+
+            if (sellerAccount?.stripe_account_id) {
+              await stripe.transfers.create({
+                amount: sellerAmount,
+                currency,
+                destination: sellerAccount.stripe_account_id,
+                transfer_group: `txn_${transaction.id}`,
+                metadata: { dispute_id: disputeId, type: 'immediate_partial_refund', refund_percentage: finalRefundPercentage }
+              });
+            }
+          }
+        }
+
+        newTransactionStatus = 'disputed';
+        disputeStatus = 'resolved_refund';
+
+      } else if (action === 'release') {
+        const { data: sellerAccount } = await adminClient
+          .from('stripe_accounts')
+          .select('stripe_account_id')
+          .eq('user_id', transaction.user_id)
+          .maybeSingle();
+
+        if (!sellerAccount?.stripe_account_id) {
+          throw new Error('Seller Stripe account not found');
+        }
+
+        if (paymentIntent.status === 'requires_capture') {
+          paymentIntent = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
+        }
+
+        let chargeId = paymentIntent.latest_charge as string | null;
+        if (!chargeId) {
+          const refreshed = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+          paymentIntent = refreshed;
+          chargeId = paymentIntent.latest_charge as string | null;
+        }
+        if (!chargeId) {
+          throw new Error("No charge ID found in payment intent");
+        }
+
+        const transferAmount = totalAmount - platformFee;
+        if (transferAmount > 0) {
+          await stripe.transfers.create({
+            amount: transferAmount,
+            currency,
+            destination: sellerAccount.stripe_account_id,
+            source_transaction: chargeId,
+            transfer_group: `txn_${transaction.id}`,
+            description: `Admin immediate release for transaction ${transaction.id}`,
+            metadata: { dispute_id: disputeId, type: 'admin_immediate_release' }
+          });
+        }
+
+        newTransactionStatus = 'validated';
+        disputeStatus = 'resolved_release';
+      }
+
+      // Update dispute
+      const resolutionText = `Arbitrage immédiat: ${proposalType} - Message: ${message}`;
+      await adminClient
+        .from("disputes")
+        .update({ 
+          status: disputeStatus,
+          resolved_at: new Date().toISOString(),
+          resolution: resolutionText,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", disputeId);
+
+      // Update transaction
+      const transactionUpdate: any = {
+        status: newTransactionStatus,
+        funds_released: action === 'release',
+        funds_released_at: action === 'release' ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      };
+
+      if (action === 'refund') {
+        transactionUpdate.refund_status = finalRefundPercentage === 100 ? 'full' : 'partial';
+        transactionUpdate.refund_amount = Math.round((transaction.price * finalRefundPercentage) / 100);
+      }
+
+      await adminClient
+        .from("transactions")
+        .update(transactionUpdate)
+        .eq("id", transaction.id);
+
+      logger.log("[ADMIN-PROPOSAL] Immediate execution completed");
+
+      // Send notification messages
+      const { data: convs } = await adminClient.rpc(
+        'create_escalated_dispute_conversations',
+        {
+          p_dispute_id: disputeId,
+          p_admin_id: user.id,
+        }
+      );
+
+      const sellerConvId = Array.isArray(convs) ? convs[0]?.seller_conversation_id : (convs as any)?.seller_conversation_id;
+      const buyerConvId = Array.isArray(convs) ? convs[0]?.buyer_conversation_id : (convs as any)?.buyer_conversation_id;
+
+      const immediateMessage = `⚡ DÉCISION ADMINISTRATIVE IMMÉDIATE\n\nL'équipe Rivvlock a arbitré ce litige et appliqué la solution suivante : ${proposalText}\n\n${message || ''}\n\n✅ Cette décision a été exécutée immédiatement.`;
+
+      if (sellerConvId) {
+        await adminClient.from("messages").insert({
+          conversation_id: sellerConvId,
+          sender_id: user.id,
+          message: immediateMessage,
+          message_type: 'system',
+        });
+      }
+
+      if (buyerConvId) {
+        await adminClient.from("messages").insert({
+          conversation_id: buyerConvId,
+          sender_id: user.id,
+          message: immediateMessage,
+          message_type: 'system',
+        });
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        immediate_execution: true,
+        dispute_status: disputeStatus,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     // Create the official admin proposal
