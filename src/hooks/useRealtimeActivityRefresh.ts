@@ -110,7 +110,29 @@ export const useRealtimeActivityRefresh = () => {
           ]);
         }
       )
-      // 4. Nouveaux messages sur conversations (transactions et quotes)
+      // 4. Changements sur les devis (status, etc.)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quotes',
+        },
+        (payload) => {
+          const quote = payload.new as any;
+          // Vérifier si l'utilisateur est participant
+          if (quote.seller_id === user.id || quote.client_user_id === user.id) {
+            logger.info('🔄 Realtime: Quote changed', payload);
+            invalidateMultiple([
+              ['quotes', user.id],
+              ['unread-quotes-global', user.id],
+              ['unread-quote-tabs', user.id],
+              ['new-items-notifications', user.id],
+            ]);
+          }
+        }
+      )
+      // 5. Nouveaux messages sur conversations (transactions et quotes)
       .on(
         'postgres_changes',
         {
@@ -163,7 +185,7 @@ export const useRealtimeActivityRefresh = () => {
           ]);
         }
       )
-      // 5. Nouveaux messages sur les litiges
+      // 6. Nouveaux messages sur les litiges
       .on(
         'postgres_changes',
         {

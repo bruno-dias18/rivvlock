@@ -123,6 +123,8 @@ export const useQuotes = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-quotes-global'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-quote-tabs'] });
       toast.success('Devis accepté avec succès !');
     },
     onError: (error: any) => {
