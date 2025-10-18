@@ -69,7 +69,7 @@ serve(async (req) => {
       .from("disputes")
       .select(`
         *,
-        transactions!inner(*)
+        transactions (*)
       `)
       .eq("id", disputeId)
       .single();
@@ -79,21 +79,60 @@ serve(async (req) => {
       throw new Error("Dispute not found");
     }
 
-    logger.log("Dispute data:", JSON.stringify(dispute, null, 2));
+    logStep('DISPUTE_LOADED', { disputeId, transaction_id: dispute.transaction_id, status: dispute.status });
 
-    const transaction = dispute.transactions;
+    // If already escalated, return idempotent success
+    if (dispute.status === 'escalated') {
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: "Déjà escaladé",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Ensure we have the transaction
+    let transaction = (dispute as any).transactions;
+    if (!transaction && dispute.transaction_id) {
+      const { data: tx, error: txError } = await adminClient
+        .from('transactions')
+        .select('*')
+        .eq('id', dispute.transaction_id)
+        .maybeSingle();
+      if (txError) {
+        logger.error("Error fetching transaction fallback:", txError);
+      }
+      transaction = tx ?? null;
+    }
 
     if (!transaction) {
-      logger.error("Transaction not found for dispute:", disputeId);
-      throw new Error("Transaction not found");
+      // Fallback: escalate status even if transaction embed failed
+      logStep('TRANSACTION_MISSING_ESCALATE_ONLY', { disputeId });
+      const { error: updateError } = await adminClient
+        .from("disputes")
+        .update({
+          status: 'escalated',
+          escalated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", disputeId);
+
+      if (updateError) {
+        logger.error("Error updating dispute (no tx):", updateError);
+        throw updateError;
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
+        message: "Litige escaladé (contexte transaction indisponible)",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
-    logger.log("Transaction data:", JSON.stringify(transaction, null, 2));
-
-    // Check if already escalated
-    if (dispute.status === 'escalated') {
-      throw new Error("Dispute is already escalated");
-    }
+    logStep('TRANSACTION_LOADED', { transaction_id: transaction.id });
 
     // Update dispute to escalated status
     const { error: updateError } = await adminClient
@@ -110,7 +149,7 @@ serve(async (req) => {
       throw updateError;
     }
 
-    logger.log("✅ Dispute escalated successfully");
+    logger.log("✅ Dispute escaladé (mise à jour statut OK)");
 
     // Create escalated conversations for admin
     const { data: conversations, error: convError } = await adminClient

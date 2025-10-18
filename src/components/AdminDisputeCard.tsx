@@ -563,10 +563,10 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
                 variant="destructive"
                 size="sm"
                 onClick={handleForceEscalate}
-                disabled={isProcessing}
+                disabled={isProcessing || dispute.status === 'escalated'}
                 className="w-full"
               >
-                {isProcessing ? 'Escalade...' : 'Escalader maintenant'}
+                {dispute.status === 'escalated' ? 'Déjà escaladé' : (isProcessing ? 'Escalade...' : 'Escalader maintenant')}
               </Button>
             </div>
           </div>
