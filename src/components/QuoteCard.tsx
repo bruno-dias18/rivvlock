@@ -94,21 +94,28 @@ const QuoteCardComponent = ({ quote, onView, onArchive, onOpenMessaging, isSelle
           </div>
 
           <div className="flex flex-row sm:flex-col gap-2 w-full sm:w-auto">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleView();
-              }}
-              className={cn(
-                "flex-1 sm:flex-initial",
-                hasBeenModified && !isSeller && "border-blue-500 border-2 text-blue-600 hover:bg-blue-50"
+            <div className="relative flex-1 sm:flex-initial">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleView();
+                }}
+                className={cn(
+                  "w-full",
+                  hasBeenModified && !isSeller && "border-blue-500 border-2 text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Eye className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Voir</span>
+              </Button>
+              {hasBeenModified && !isSeller && (
+                <Badge className="absolute -top-2 -right-2 bg-red-500 text-white px-1.5 py-0.5 text-[10px] hover:scale-110 transition-transform">
+                  Nouveau
+                </Badge>
               )}
-            >
-              <Eye className="h-4 w-4 sm:mr-1" />
-              <span className="hidden sm:inline">Voir</span>
-            </Button>
+            </div>
             {/* Masquer la messagerie pour les devis acceptés (conversation dans la transaction) */}
             {onOpenMessaging && quote.status !== 'accepted' && (
               <Button
