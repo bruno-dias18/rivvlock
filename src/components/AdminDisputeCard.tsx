@@ -587,45 +587,17 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
             <div className="space-y-3">
               <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 p-3 rounded-lg">
                 <p className="text-sm text-purple-800 dark:text-purple-200 mb-3">
-                  Le litige a été escaladé au support. Vous pouvez faire une proposition officielle qui nécessitera la validation des deux parties, ou arbitrer directement.
+                  Le litige a été escaladé au support. Vous pouvez faire une proposition officielle avec ou sans validation des deux parties (arbitrage immédiat).
                 </p>
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="default"
-                    onClick={() => setShowOfficialProposal(true)}
-                    disabled={isProcessing}
-                    className="w-full"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Faire une proposition officielle
-                  </Button>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleProcessDispute('refund')}
-                      disabled={isProcessing}
-                      className="flex-1"
-                    >
-                      Rembourser directement
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={() => setShowOfficialProposal(true)}
-                      disabled={isProcessing}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700"
-                    >
-                      Partager directement
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => handleProcessDispute('release')}
-                      disabled={isProcessing}
-                      className="flex-1"
-                    >
-                      Libérer directement
-                    </Button>
-                  </div>
-                </div>
+                <Button
+                  variant="default"
+                  onClick={() => setShowOfficialProposal(true)}
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Ouvrir l'interface d'arbitrage
+                </Button>
               </div>
             </div>
           </div>

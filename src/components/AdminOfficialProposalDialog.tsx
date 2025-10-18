@@ -209,7 +209,7 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
             </p>
           </div>
 
-          <div className="flex gap-2 justify-end pt-4">
+          <div className="flex gap-3 justify-end pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -219,7 +219,7 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !message.trim()}
               className={immediateExecution ? "bg-red-600 hover:bg-red-700" : ""}
             >
               {isSubmitting ? "Traitement en cours..." : immediateExecution ? "⚡ Arbitrer et exécuter immédiatement" : "Envoyer la proposition officielle"}
