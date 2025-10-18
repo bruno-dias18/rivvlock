@@ -1021,7 +1021,13 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      dispute_migration_status: {
+        Row: {
+          count: string | null
+          metric: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       are_transaction_counterparties: {
