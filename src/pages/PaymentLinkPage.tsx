@@ -196,7 +196,15 @@ export default function PaymentLinkPage() {
       }
     } catch (err: any) {
       logger.error('Error initiating payment:', err);
-      setError(err.message || 'Erreur lors de la préparation du paiement');
+      const msg = err?.message || 'Erreur lors de la préparation du paiement';
+      const text = String(msg).toLowerCase();
+      if (text.includes('401') || text.includes('unauthorized') || text.includes('jwt') || text.includes('session')) {
+        setError('Session expirée. Veuillez vous reconnecter pour poursuivre le paiement.');
+        const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
+        navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
+      } else {
+        setError(msg);
+      }
       setProcessingPayment(false);
     }
   };
