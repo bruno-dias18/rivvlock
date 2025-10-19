@@ -165,7 +165,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         };
 
         // Send notification via edge function
-        const { error: notificationError } = await supabaseClient.functions.invoke(
+        const { error: notificationError } = await adminClient.functions.invoke(
           'send-notifications',
           { body: notificationPayload }
         );

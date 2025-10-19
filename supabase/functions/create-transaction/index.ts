@@ -24,7 +24,7 @@ const createTransactionSchema = z.object({
 });
 
 const handler: Handler = async (req, ctx: HandlerContext) => {
-  const { user, supabaseClient, body } = ctx;
+  const { user, supabaseClient, adminClient, body } = ctx;
   const { 
     title, description, price, currency, service_date, 
     client_email, buyer_display_name, fee_ratio_client 
@@ -78,13 +78,15 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   // Send email if client_email provided
   if (client_email) {
     try {
-      await supabaseClient!.functions.invoke('send-email', {
+      await adminClient!.functions.invoke('send-email', {
         body: {
           type: 'transaction_created',
           to: client_email,
-          transactionId: transaction.id,
-          transactionTitle: title,
-          serviceDate: service_date,
+          data: {
+            transactionId: transaction.id,
+            transactionTitle: title,
+            serviceDate: service_date,
+          }
         }
       });
       logger.log('[CREATE-TRANSACTION] Email sent to:', client_email);

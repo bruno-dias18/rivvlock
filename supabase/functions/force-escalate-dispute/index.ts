@@ -175,7 +175,7 @@ const handler = async (ctx: any) => {
 
     // Send notifications
     try {
-      await supabaseClient.functions.invoke('send-notifications', {
+      await adminClient!.functions.invoke('send-notifications', {
         body: {
           type: 'dispute_escalated',
           transactionId: transaction.id,

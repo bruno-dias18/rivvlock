@@ -16,7 +16,7 @@ const rejectProposalSchema = z.object({
 });
 
 const handler = async (ctx: any) => {
-  const { user, supabaseClient, body } = ctx;
+  const { user, supabaseClient, adminClient, body } = ctx;
   const { proposalId } = body;
   
   logger.log("Rejecting proposal:", proposalId);
@@ -106,7 +106,7 @@ const handler = async (ctx: any) => {
 
   // Send notification to proposer
   try {
-    await supabaseClient.functions.invoke('send-notifications', {
+    await adminClient!.functions.invoke('send-notifications', {
       body: {
         type: 'dispute_proposal_rejected',
         transactionId: transaction.id,

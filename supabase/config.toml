@@ -81,7 +81,8 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.clean-old-users]
-verify_jwt = false
+verify_jwt = true
+
 
 [functions.confirm-transaction-date]
 verify_jwt = true
@@ -114,7 +115,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.delete-expired-transaction]
-verify_jwt = false
+verify_jwt = true
 
 [functions.delete-user-account]
 verify_jwt = true
@@ -171,7 +172,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.process-automatic-transfer]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-dispute]
 verify_jwt = true
