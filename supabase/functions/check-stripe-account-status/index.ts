@@ -5,7 +5,8 @@ import {
   withCors, 
   withAuth, 
   successResponse,
-  errorResponse 
+  errorResponse,
+  Handler 
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
@@ -14,7 +15,7 @@ const logStep = (step: string, details?: any) => {
   logger.log(`[CHECK-STRIPE-STATUS] ${step}${detailsStr}`);
 };
 
-const handler = async (ctx: any) => {
+const handler: Handler = async (req, ctx) => {
   const { user, adminClient } = ctx;
   
   try {
