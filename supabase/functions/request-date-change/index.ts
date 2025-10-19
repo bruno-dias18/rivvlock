@@ -1,82 +1,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit,
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
-import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
-import { validate, requestDateChangeSchema } from "../_shared/validation.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const schema = z.object({
+  transactionId: z.string().uuid(),
+  proposedDate: z.string(),
+  proposedEndDate: z.string().optional(),
+  paymentDeadlineHours: z.number().int().positive().optional(),
+  message: z.string().optional()
+});
 
-interface DateChangeRequest {
-  transactionId: string;
-  proposedDate: string;
-  proposedEndDate?: string;
-  paymentDeadlineHours?: number;
-  message?: string;
-}
-
-const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const handler: Handler = async (_req, ctx: HandlerContext) => {
+  const { user, supabaseClient, body } = ctx;
+  const { transactionId, proposedDate, proposedEndDate, paymentDeadlineHours, message } = body;
 
   try {
-    // Rate limiting - protection contre les abus
-    const clientIp = getClientIp(req);
-    await checkRateLimit(clientIp);
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
-          },
-        },
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    const authHeader = req.headers.get('Authorization')!;
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-
-    if (authError || !user) {
-      logger.error('Authentication error:', authError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
-    }
-
-    // Rate limiting par utilisateur
-    await checkRateLimit(clientIp, user.id);
-
-    // Parse et validation des données
-    const requestBody = await req.json();
-    
-    // Adapter les noms de champs pour la validation
-    const validationData = {
-      transactionId: requestBody.transactionId,
-      proposedServiceDate: requestBody.proposedDate,
-      proposedServiceEndDate: requestBody.proposedEndDate,
-      paymentDeadlineHours: requestBody.paymentDeadlineHours,
-      message: requestBody.message
-    };
-    
-    const validatedData = validate(requestDateChangeSchema, validationData);
-    const { transactionId, proposedServiceDate, proposedServiceEndDate, paymentDeadlineHours, message } = validatedData;
-
-    logger.log('[REQUEST-DATE-CHANGE] Request received:', { transactionId, proposedServiceDate, proposedServiceEndDate, userId: user.id });
-
     // First, check if the transaction exists at all
-    const { data: transactionExists, error: existsError } = await supabase
+    const { data: transactionExists, error: existsError } = await supabaseClient!
       .from('transactions')
       .select('id, user_id, buyer_id, status, date_change_count')
       .eq('id', transactionId)
@@ -84,35 +35,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (existsError) {
       logger.error('[REQUEST-DATE-CHANGE] Transaction lookup error:', existsError);
-      return new Response(JSON.stringify({ error: 'Transaction not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return errorResponse('Transaction not found', 404);
     }
 
-    logger.log('[REQUEST-DATE-CHANGE] Transaction found:', {
-      transactionId: transactionExists.id, 
-      sellerId: transactionExists.user_id, 
-      buyerId: transactionExists.buyer_id,
-      requesterId: user.id,
-      status: transactionExists.status,
-      changeCount: transactionExists.date_change_count 
-    });
-
     // Check if the user is the seller of this transaction
-    if (transactionExists.user_id !== user.id) {
+    if (transactionExists.user_id !== user!.id) {
       logger.error('[REQUEST-DATE-CHANGE] User not authorized - not the seller:', {
         sellerId: transactionExists.user_id, 
-        requesterId: user.id 
+        requesterId: user!.id 
       });
-      return new Response(JSON.stringify({ error: 'Not authorized - only the seller can request date changes' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return errorResponse('Not authorized - only the seller can request date changes', 403);
     }
 
     // Now get the full transaction data
-    const { data: transaction, error: transactionError } = await supabase
+    const { data: transaction, error: transactionError } = await supabaseClient!
       .from('transactions')
       .select('*')
       .eq('id', transactionId)
@@ -120,56 +56,47 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (transactionError || !transaction) {
       logger.error('Transaction not found or user not authorized:', transactionError);
-      return new Response(JSON.stringify({ error: 'Transaction not found or unauthorized' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return errorResponse('Transaction not found or unauthorized', 404);
     }
 
-    // Update transaction with proposed date change
     const updateData: any = {
-      proposed_service_date: proposedServiceDate,
+      proposed_service_date: proposedDate,
       date_change_status: 'pending_approval',
       date_change_requested_at: new Date().toISOString(),
       date_change_message: message || null,
       date_change_count: transaction.date_change_count + 1
     };
 
-    // Add proposed_service_end_date if provided
-    if (proposedServiceEndDate) {
-      updateData.proposed_service_end_date = proposedServiceEndDate;
+    if (proposedEndDate) {
+      updateData.proposed_service_end_date = proposedEndDate;
     }
 
-    // Add payment_deadline_hours if provided
     if (paymentDeadlineHours) {
       updateData.payment_deadline_hours = paymentDeadlineHours;
     }
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient!
       .from('transactions')
       .update(updateData)
       .eq('id', transactionId);
 
     if (updateError) {
       logger.error('Error updating transaction:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to update transaction' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      });
+      return errorResponse('Failed to update transaction', 500);
     }
 
     // Log the activity
-    const { error: logError } = await supabase
+    const { error: logError } = await supabaseClient!
       .from('activity_logs')
       .insert({
-        user_id: user.id,
+        user_id: user!.id,
         activity_type: 'seller_validation',
         title: 'Demande de modification de date',
-        description: `Nouvelle date proposée: ${new Date(proposedServiceDate).toLocaleString('fr-FR')}${message ? `. Message: ${message}` : ''}`,
+        description: `Nouvelle date proposée: ${new Date(proposedDate).toLocaleString('fr-FR')}${message ? `. Message: ${message}` : ''}`,
         metadata: {
           transaction_id: transactionId,
           old_service_date: transaction.service_date,
-          proposed_service_date: proposedServiceDate
+          proposed_service_date: proposedDate
         }
       });
 
@@ -177,23 +104,18 @@ const handler = async (req: Request): Promise<Response> => {
       logger.error('Error logging activity:', logError);
     }
 
-    logger.log('[REQUEST-DATE-CHANGE] Date change requested successfully');
-
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders },
-    });
-
+    return successResponse({});
   } catch (error: any) {
     logger.error('Error in request-date-change function:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      }
-    );
+    return errorResponse(error.message ?? 'Internal error', 500);
   }
 };
 
-serve(handler);
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit(),
+  withValidation(schema)
+)(handler);
+
+serve(composedHandler);

@@ -1,23 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { 
+  compose, 
+  withCors, 
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
+import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async () => {
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    const supabaseAdmin = createServiceClient();
 
     logger.log("🔍 Starting migration to fix resolved disputes...");
 
@@ -127,28 +122,15 @@ serve(async (req) => {
 
     logger.log(`🎉 Migration complete! Fixed ${fixedCount} disputes`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Migration complete! Fixed ${fixedCount} disputes`,
-        fixedCount
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
-  } catch (error) {
+    return successResponse({ message: `Migration complete! Fixed ${fixedCount} disputes`, fixedCount });
+  } catch (error: any) {
     logger.error("❌ Migration error:", error);
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: error.message
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    return errorResponse(error.message ?? 'Internal error', 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors
+)(handler);
+
+serve(composedHandler);
