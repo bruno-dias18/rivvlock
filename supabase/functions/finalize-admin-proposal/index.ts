@@ -20,7 +20,7 @@ function log(step: string, data?: Record<string, unknown>) {
   logger.log(`[FINALIZE-ADMIN-PROPOSAL] ${step}`, data ? JSON.stringify(data) : "");
 }
 
-const handler = async (ctx: any) => {
+const handler = async (_req: Request, ctx: any) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   const { proposalId } = body as { proposalId: string };
 
