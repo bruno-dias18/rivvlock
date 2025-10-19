@@ -84,11 +84,12 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
             .eq('id', proposal.id)
             .maybeSingle();
 
-          const validatedNow = isSeller ? fresh?.seller_validated : fresh?.buyer_validated;
           const bothNow = !!(fresh?.buyer_validated && fresh?.seller_validated);
           const acceptedNow = fresh?.status === 'accepted';
 
-          if (!(validatedNow || bothNow || acceptedNow)) {
+          // Only treat as success if BOTH validated OR proposal is accepted
+          // (not just if one party validated)
+          if (!(bothNow || acceptedNow)) {
             throw fnError;
           }
         } catch {
@@ -121,11 +122,11 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
           .eq('id', proposal.id)
           .maybeSingle();
 
-        const validatedNow = isSeller ? fresh?.seller_validated : fresh?.buyer_validated;
         const bothNow = !!(fresh?.buyer_validated && fresh?.seller_validated);
         const acceptedNow = fresh?.status === 'accepted';
 
-        if (validatedNow || bothNow || acceptedNow) {
+        // Only suppress error if BOTH parties validated OR accepted
+        if (bothNow || acceptedNow) {
           toast.success('Validation enregistrée avec succès');
           queryClient.invalidateQueries({ queryKey: ['dispute-proposals', proposal.dispute_id] });
           queryClient.invalidateQueries({ queryKey: ['disputes'] });
