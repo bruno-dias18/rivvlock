@@ -46,14 +46,28 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         return;
       }
 
-      const { error } = await supabase.functions.invoke('validate-admin-proposal', {
+      const { data, error: fnError } = await supabase.functions.invoke('validate-admin-proposal', {
         body: {
           proposalId: proposal.id,
           action,
         },
       });
 
-      if (error) throw error;
+      // Some environments can flag an error even when the function succeeded.
+      // If payload indicates success, proceed as success.
+      if (fnError) {
+        try {
+          const resp = (fnError as any)?.context?.response;
+          const json = resp && typeof resp.json === 'function' ? await resp.clone().json().catch(() => null) : null;
+          if (json?.success || json?.status === 'accepted' || json?.both_validated === true) {
+            // Treat as success despite non-2xx transport status
+          } else {
+            throw fnError;
+          }
+        } catch {
+          throw fnError;
+        }
+      }
 
       if (action === 'accept') {
         toast.success("Validation enregistrée avec succès");
