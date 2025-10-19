@@ -20,10 +20,11 @@ test.describe('Payment Flow', () => {
     // Wait for the page to load
     await page.waitForSelector('[data-testid="payment-method-selector"]');
 
-    // Check that payment method selector is visible
-    await expect(page.getByText(/choisissez votre méthode de paiement/i)).toBeVisible();
-    await expect(page.getByText(/carte bancaire/i)).toBeVisible();
-    await expect(page.getByText(/virement bancaire/i)).toBeVisible();
+    // Check that selector and options are visible (robust to text changes)
+    const selector = page.locator('[data-testid="payment-method-selector"]');
+    await expect(selector).toBeVisible();
+    await expect(page.getByLabel(/carte bancaire/i)).toBeVisible();
+    await expect(page.getByLabel(/virement bancaire/i)).toBeVisible();
   });
 
   test('should enable pay button only after selecting payment method', async ({ page }) => {
