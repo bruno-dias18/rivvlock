@@ -15,7 +15,7 @@ export default defineConfig({
     ['json', { outputFile: 'test-results/e2e-results.json' }],
   ],
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:4399',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -45,8 +45,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:8080',
+    command: 'npm run dev -- --port=4399',
+    url: 'http://localhost:4399',
     reuseExistingServer: false,
   },
 });
