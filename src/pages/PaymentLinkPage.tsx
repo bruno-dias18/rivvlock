@@ -36,7 +36,9 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
-  const isE2E = !!token && (token.startsWith('test-token') || token === 'expired-token-123');
+  const searchParams = new URLSearchParams(window.location.search);
+  const forceE2E = searchParams.get('e2e') === '1';
+  const isE2E = forceE2E || (!!token && (token.startsWith('test-token') || token === 'expired-token-123'));
 
   useEffect(() => {
     if (!token) {

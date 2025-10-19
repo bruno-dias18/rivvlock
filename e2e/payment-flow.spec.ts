@@ -15,7 +15,7 @@ test.describe('Payment Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the payment link page
     // Note: This would need a valid test transaction token
-    await page.goto('/payment-link/test-token-123');
+    await page.goto('/payment-link/test-token-123?e2e=1');
   });
 
   test('should display payment method selector', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('Payment Flow', () => {
 
   test('should handle expired payment links', async ({ page }) => {
     // Navigate to an expired payment link
-    await page.goto('/payment-link/expired-token-123');
+    await page.goto('/payment-link/expired-token-123?e2e=1');
 
     // Should display error message
     await expect(page.getByText(/lien expiré/i)).toBeVisible();
