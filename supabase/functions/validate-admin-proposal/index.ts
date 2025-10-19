@@ -294,7 +294,7 @@ const handler = async (_req: Request, ctx: any) => {
         }
 
         disputeStatus = "resolved_refund";
-        newTransactionStatus = "disputed";
+        newTransactionStatus = "validated";
       } else {
         // No refund - release funds to seller
         if (!transaction.stripe_payment_intent_id) {
