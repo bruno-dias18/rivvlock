@@ -16,7 +16,7 @@ const acceptProposalSchema = z.object({
   proposalId: z.string().uuid(),
 });
 
-const handler = async (ctx: any) => {
+const handler = async (_req: Request, ctx: any) => {
   const { user, adminClient, body } = ctx;
   const { proposalId } = body;
 
@@ -383,22 +383,27 @@ const handler = async (ctx: any) => {
 
   // Write to unified conversations/messages if a conversation exists
   if (dispute.conversation_id) {
-    await adminClient
-      .from('messages')
-      .insert({
-        conversation_id: dispute.conversation_id,
-        sender_id: user.id,
-        message: confirmationText,
-        message_type: 'system',
-        metadata: {
-          proposal_id: proposalId,
-          proposal_type: proposal.proposal_type,
-          refund_percentage: proposal.refund_percentage,
-          dispute_id: dispute.id,
-          transaction_id: transaction.id,
-          accepted: true,
-        },
-      });
+    try {
+      const { error: msgError } = await adminClient
+        .from('messages')
+        .insert({
+          conversation_id: dispute.conversation_id,
+          sender_id: user.id,
+          message: confirmationText,
+          message_type: 'system',
+          metadata: {
+            proposal_id: proposalId,
+            proposal_type: proposal.proposal_type,
+            refund_percentage: proposal.refund_percentage,
+            dispute_id: dispute.id,
+            transaction_id: transaction.id,
+            accepted: true,
+          },
+        });
+      if (msgError) logger.error('Error inserting confirmation message:', msgError);
+    } catch (e) {
+      logger.error('Exception inserting confirmation message:', e);
+    }
   }
 
   logger.log("✅ Proposal accepted and processed successfully");
@@ -407,18 +412,23 @@ const handler = async (ctx: any) => {
   const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
   
   for (const participantId of participants) {
-    await adminClient.from('activity_logs').insert({
-      user_id: participantId,
-      activity_type: 'dispute_proposal_accepted',
-      title: `Proposition acceptée pour "${transaction.title}"`,
-      description: confirmationText,
-      metadata: {
-        dispute_id: dispute.id,
-        transaction_id: transaction.id,
-        proposal_id: proposalId,
-        proposal_type: proposal.proposal_type
-      }
-    });
+    try {
+      const { error: actErr } = await adminClient.from('activity_logs').insert({
+        user_id: participantId,
+        activity_type: 'dispute_proposal_accepted',
+        title: `Proposition acceptée pour "${transaction.title}"`,
+        description: confirmationText,
+        metadata: {
+          dispute_id: dispute.id,
+          transaction_id: transaction.id,
+          proposal_id: proposalId,
+          proposal_type: proposal.proposal_type
+        }
+      });
+      if (actErr) logger.error('Error inserting activity log:', actErr);
+    } catch (e) {
+      logger.error('Exception inserting activity log:', e);
+    }
   }
 
   return successResponse({
