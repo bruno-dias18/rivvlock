@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const forceEscalateSchema = z.object({
+  disputeId: z.string().uuid(),
+});
 
 // Production-visible step logger
 const logStep = (step: string, details?: Record<string, unknown>) => {
@@ -14,36 +22,10 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
   console.log(`[FORCE-ESCALATE ${ts}] ${step}${d}`);
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    }
-  );
-
-  // Admin client
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
+const handler = async (ctx: any) => {
   try {
-    const bearerMatch = authHeader?.match(/^Bearer\s+(.+)$/i);
-    const token = bearerMatch ? bearerMatch[1] : "";
-    const { data: userData } = await supabaseClient.auth.getUser(token || undefined);
-    const user = userData?.user;
-    
-    if (!user?.id) {
-      throw new Error("User not authenticated");
-    }
+    const { user, supabaseClient, adminClient, body } = ctx;
+    const { disputeId } = body;
 
     // Verify user is admin
     const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
@@ -51,12 +33,10 @@ serve(async (req) => {
     });
 
     if (!isAdmin) {
-      throw new Error("Only admins can force escalate disputes");
+      return errorResponse("Only admins can force escalate disputes", 403);
     }
 
-    const { disputeId } = await req.json();
     logStep('INPUT_VALIDATED_START', { disputeId });
-
     logger.log("Force escalating dispute:", disputeId, "by admin:", user.id);
 
     // Get dispute with transaction
@@ -71,7 +51,7 @@ serve(async (req) => {
 
     if (disputeError || !dispute) {
       logger.error("Error fetching dispute:", disputeError);
-      throw new Error("Dispute not found");
+      return errorResponse("Dispute not found", 404);
     }
 
     logStep('DISPUTE_LOADED', { disputeId, transaction_id: dispute.transaction_id, status: dispute.status });
@@ -111,7 +91,7 @@ serve(async (req) => {
 
       if (updateError) {
         logger.error("Error updating dispute (no tx):", updateError);
-        throw updateError;
+        return errorResponse("Failed to escalate dispute", 500);
       }
 
       return successResponse({ 
@@ -133,7 +113,7 @@ serve(async (req) => {
 
     if (updateError) {
       logger.error("Error updating dispute:", updateError);
-      throw updateError;
+      return errorResponse("Failed to escalate dispute", 500);
     }
 
     logger.log("✅ Dispute escaladé (mise à jour statut OK)");
