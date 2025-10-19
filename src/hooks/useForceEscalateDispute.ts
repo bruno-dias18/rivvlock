@@ -48,10 +48,17 @@ export const useForceEscalateDispute = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
     },
     onError: (error: any) => {
+      // Show raw error details to the user to avoid generic messages
+      const raw = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
       console.error('Force escalate error details:', error);
+      // Fallback to our friendly toast but include the raw message inline for visibility
       const statusCode = (error as any)?.status || (error as any)?.statusCode;
       const code = (error as any)?.code;
-      toast.error(error, { statusCode, code, details: error });
+      import('sonner').then(({ toast }) => {
+        toast.error('Erreur escalade', {
+          description: `${raw}${statusCode ? ` (HTTP ${statusCode})` : ''}${code ? ` [${code}]` : ''}`.slice(0, 400),
+        });
+      });
     }
   });
 };
