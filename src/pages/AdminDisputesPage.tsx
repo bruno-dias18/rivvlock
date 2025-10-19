@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { AdminDisputeCard } from '@/components/AdminDisputeCard';
+import { VirtualDisputeList } from '@/components/VirtualDisputeList';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
@@ -261,13 +262,17 @@ export default function AdminDisputesPage() {
                   {statusFilter === 'all' ? 'Tous' : statusFilter}
                 </Badge>
               </div>
-              {disputes.map((dispute) => (
-                <AdminDisputeCard
-                  key={dispute.id}
-                  dispute={dispute}
-                  onRefetch={refetch}
-                />
-              ))}
+              {disputes.length > 10 ? (
+                <VirtualDisputeList disputes={disputes} onRefetch={refetch} />
+              ) : (
+                disputes.map((dispute) => (
+                  <AdminDisputeCard
+                    key={dispute.id}
+                    dispute={dispute}
+                    onRefetch={refetch}
+                  />
+                ))
+              )}
             </>
           ) : (
             <Card>

@@ -1,126 +1,64 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { compose, withCors, withAuth, successResponse, errorResponse } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const handler = compose(
+  withCors,
+  withAuth
+)(async (req, ctx) => {
+  const { transactionId } = await req.json();
 
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (!transactionId) {
+    return errorResponse('Transaction ID required', 400);
   }
 
-  try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
+  logger.log(`Marking messages as read for transaction ${transactionId} by user ${ctx.user!.id}`);
 
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      logger.error('Authentication error:', authError);
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+  // Verify user is participant in transaction
+  const { data: transaction, error: txError } = await ctx.supabaseClient!
+    .from('transactions')
+    .select('user_id, buyer_id')
+    .eq('id', transactionId)
+    .single();
 
-    const { transactionId } = await req.json();
-
-    if (!transactionId) {
-      return new Response(
-        JSON.stringify({ error: 'Transaction ID required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    logger.log(`Marking messages as read for transaction ${transactionId} by user ${user.id}`);
-
-    // Verify user is participant in transaction
-    const { data: transaction, error: txError } = await supabase
-      .from('transactions')
-      .select('user_id, buyer_id')
-      .eq('id', transactionId)
-      .single();
-
-    if (txError || !transaction) {
-      logger.error('Transaction not found:', txError);
-      return new Response(
-        JSON.stringify({ error: 'Transaction not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (transaction.user_id !== user.id && transaction.buyer_id !== user.id) {
-      logger.error('User not authorized for this transaction');
-      return new Response(
-        JSON.stringify({ error: 'Not authorized' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get all messages in this transaction not sent by user
-    const { data: messages, error: msgError } = await supabase
-      .from('transaction_messages')
-      .select('id')
-      .eq('transaction_id', transactionId)
-      .neq('sender_id', user.id);
-
-    if (msgError) {
-      logger.error('Error fetching messages:', msgError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch messages' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!messages || messages.length === 0) {
-      logger.log('No messages to mark as read');
-      return new Response(
-        JSON.stringify({ success: true, markedCount: 0 }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Create read records for all messages
-    const readRecords = messages.map(msg => ({
-      message_id: msg.id,
-      user_id: user.id,
-    }));
-
-    const { error: insertError } = await supabase
-      .from('message_reads')
-      .upsert(readRecords, { onConflict: 'message_id,user_id', ignoreDuplicates: true });
-
-    if (insertError) {
-      logger.error('Error marking messages as read:', insertError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to mark messages as read' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    logger.log(`Successfully marked ${messages.length} messages as read`);
-
-    return new Response(
-      JSON.stringify({ success: true, markedCount: messages.length }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    logger.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  if (txError || !transaction) {
+    logger.error('Transaction not found:', txError);
+    return errorResponse('Transaction not found', 404);
   }
+
+  if (transaction.user_id !== ctx.user!.id && transaction.buyer_id !== ctx.user!.id) {
+    logger.error('User not authorized for this transaction');
+    return errorResponse('Not authorized', 403);
+  }
+
+  // Get all messages in this transaction not sent by user
+  const { data: messages, error: msgError } = await ctx.supabaseClient!
+    .from('transaction_messages')
+    .select('id')
+    .eq('transaction_id', transactionId)
+    .neq('sender_id', ctx.user!.id);
+
+  if (msgError) {
+    logger.error('Error fetching messages:', msgError);
+    return errorResponse('Failed to fetch messages', 500);
+  }
+
+  if (!messages || messages.length === 0) {
+    return successResponse({ success: true, marked: 0 });
+  }
+
+  // Mark all messages as read
+  const { error: updateError } = await ctx.supabaseClient!
+    .from('transaction_messages')
+    .update({ read: true })
+    .in('id', messages.map(m => m.id));
+
+  if (updateError) {
+    logger.error('Error marking messages as read:', updateError);
+    return errorResponse('Failed to mark messages as read', 500);
+  }
+
+  logger.log(`Marked ${messages.length} messages as read for transaction ${transactionId}`);
+  return successResponse({ success: true, marked: messages.length });
 });
+
+Deno.serve(handler);

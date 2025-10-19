@@ -1,37 +1,66 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { compose, withCors, withAuth, successResponse, errorResponse } from "../_shared/middleware.ts";
+import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const handler = compose(
+  withCors,
+  withAuth
+)(async (req, ctx) => {
+  const {
+    quote_id,
+    title,
+    description,
+    items,
+    currency,
+    service_date,
+    service_end_date,
+    valid_until,
+    total_amount,
+    fee_ratio_client,
+    discount_percentage
+  } = await req.json();
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  // Verify user is the seller of this quote
+  const { data: existingQuote, error: fetchError } = await ctx.supabaseClient!
+    .from('quotes')
+    .select('*')
+    .eq('id', quote_id)
+    .eq('seller_id', ctx.user!.id)
+    .single();
+
+  if (fetchError || !existingQuote) {
+    return errorResponse('Quote not found or unauthorized', 404);
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  // Check quote is not in a final status
+  if (['accepted', 'refused', 'archived'].includes(existingQuote.status)) {
+    return errorResponse('Cannot modify a quote with final status', 400);
+  }
 
-    // Get user from JWT
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
+  // Calculate subtotal and tax
+  const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
+  
+  // Get seller's profile for tax rate
+  const { data: profile } = await ctx.supabaseClient!
+    .from('profiles')
+    .select('vat_rate, tva_rate')
+    .eq('user_id', ctx.user!.id)
+    .single();
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+  const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
+  const taxAmount = subtotal * (taxRate / 100);
 
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+  // Calculate discount amount if applicable
+  const discountAmount = discount_percentage 
+    ? subtotal * (discount_percentage / 100) 
+    : 0;
+  
+  const subtotalAfterDiscount = subtotal - discountAmount;
+  const taxAmountAfterDiscount = subtotalAfterDiscount * (taxRate / 100);
 
-    const {
-      quote_id,
+  // Update the quote
+  const { error: updateError } = await ctx.adminClient!
+    .from('quotes')
+    .update({
       title,
       description,
       items,
@@ -39,114 +68,24 @@ serve(async (req) => {
       service_date,
       service_end_date,
       valid_until,
-      total_amount,
-      fee_ratio_client,
-      discount_percentage
-    } = await req.json();
+      subtotal,
+      tax_rate: taxRate,
+      tax_amount: taxAmountAfterDiscount,
+      discount_percentage: discount_percentage || null,
+      discount_amount: discountAmount || null,
+      total_amount: total_amount || (subtotalAfterDiscount + taxAmountAfterDiscount),
+      fee_ratio_client: fee_ratio_client || 0,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', quote_id);
 
-    // Verify user is the seller of this quote
-    const { data: existingQuote, error: fetchError } = await supabase
-      .from('quotes')
-      .select('*')
-      .eq('id', quote_id)
-      .eq('seller_id', user.id)
-      .single();
-
-    if (fetchError || !existingQuote) {
-      throw new Error('Quote not found or unauthorized');
-    }
-
-    // Check quote is not in a final status
-    if (['accepted', 'refused', 'archived'].includes(existingQuote.status)) {
-      throw new Error('Cannot modify a quote with final status');
-    }
-
-    // Calculate subtotal, tax, etc.
-    const subtotal = items.reduce((sum: number, item: any) => sum + item.total, 0);
-    const taxRate = 0; // Will be calculated based on seller's profile
-    const taxAmount = subtotal * (taxRate / 100);
-
-    // Update the quote
-    const { error: updateError } = await supabase
-      .from('quotes')
-      .update({
-        title,
-        description,
-        items,
-        currency,
-        service_date,
-        service_end_date,
-        valid_until,
-        subtotal,
-        tax_rate: taxRate,
-        tax_amount: taxAmount,
-        total_amount,
-        fee_ratio_client,
-        discount_percentage: discount_percentage || 0,
-        status: 'negotiating',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', quote_id);
-
-    if (updateError) {
-      console.error('Error updating quote:', updateError);
-      throw updateError;
-    }
-
-    // Send a message to the conversation
-    if (existingQuote.conversation_id) {
-      const { error: messageError } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: existingQuote.conversation_id,
-          sender_id: user.id,
-          message: 'Le devis a été modifié. Veuillez consulter la nouvelle version.',
-          message_type: 'proposal_update',
-          metadata: {
-            action: 'quote_modified'
-          }
-        });
-
-      if (messageError) {
-        console.error('Error sending message:', messageError);
-      }
-    }
-
-    // Send email notification to client
-    const { error: emailError } = await supabase.functions.invoke('send-email', {
-      body: {
-        to: existingQuote.client_email,
-        subject: `Devis modifié - ${title}`,
-        template: 'quote-modified',
-        data: {
-          client_name: existingQuote.client_name || existingQuote.client_email,
-          quote_title: title,
-          quote_link: `${supabaseUrl.replace('https://', 'https://app.')}/quote/${quote_id}/${existingQuote.secure_token}`
-        }
-      }
-    });
-
-    if (emailError) {
-      console.error('Error sending email:', emailError);
-    }
-
-    return new Response(
-      JSON.stringify({ 
-        success: true
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('Error in update-quote:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
+  if (updateError) {
+    logger.error('Error updating quote:', updateError);
+    return errorResponse('Failed to update quote', 500);
   }
+
+  logger.log(`Quote ${quote_id} updated successfully by user ${ctx.user!.id}`);
+  return successResponse({ success: true, quote_id });
 });
+
+Deno.serve(handler);
