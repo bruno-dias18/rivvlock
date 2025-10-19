@@ -79,42 +79,10 @@ const handler: Handler = async (req) => {
     parsedLinkToken = token;
   }
 
-  // Check for abuse patterns
-  const { data: isBlocked, error: abuseError } = await supabaseClient
-    .rpc('check_token_abuse_secure', { 
-      check_token: token, 
-      check_ip: ipAddress 
-    });
+  // Note: We intentionally defer abuse checks until after we know whether the token
+  // matches a real transaction to avoid false positives for legitimate users.
+  // This prevents blocking valid tokens when users retry multiple times.
 
-  if (abuseError) {
-    logger.error('❌ [GET-TX-BY-TOKEN] Error checking abuse:', abuseError);
-  }
-
-  if (isBlocked) {
-    logger.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', {
-      token: maskToken(token), 
-      ipAddress: maskToken(ipAddress)
-    });
-    
-    try {
-      await adminClient.rpc('log_transaction_access', {
-        p_token: token,
-        p_transaction_id: null,
-        p_success: false,
-        p_ip_address: ipAddress,
-        p_user_agent: userAgent,
-        p_error_reason: 'rate_limit_exceeded'
-      });
-    } catch (logError) {
-      logger.error('Failed to log rate limit attempt:', logError);
-    }
-
-    return errorResponse(
-      'Trop de tentatives. Veuillez réessayer plus tard.',
-      429,
-      { reason: 'rate_limit_exceeded' }
-    );
-  }
 
   logger.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
@@ -189,7 +157,49 @@ const handler: Handler = async (req) => {
 
   if (!transactionId) {
     logger.error('❌ [GET-TX-BY-TOKEN] Transaction not found');
-    
+
+    // Now check for abuse only when token didn't match any transaction
+    let isBlocked: boolean | null = null;
+    try {
+      const { data, error: abuseError } = await supabaseClient
+        .rpc('check_token_abuse_secure', { 
+          check_token: token, 
+          check_ip: ipAddress 
+        });
+      if (abuseError) {
+        logger.error('❌ [GET-TX-BY-TOKEN] Error checking abuse:', abuseError);
+      } else {
+        isBlocked = data as unknown as boolean;
+      }
+    } catch (err) {
+      logger.error('❌ [GET-TX-BY-TOKEN] Abuse check failed:', err);
+    }
+
+    if (isBlocked) {
+      logger.warn('⚠️ [GET-TX-BY-TOKEN] Suspicious activity detected', {
+        token: maskToken(token), 
+        ipAddress: maskToken(ipAddress)
+      });
+      try {
+        await adminClient.rpc('log_transaction_access', {
+          p_token: token,
+          p_transaction_id: null,
+          p_success: false,
+          p_ip_address: ipAddress,
+          p_user_agent: userAgent,
+          p_error_reason: 'rate_limit_exceeded'
+        });
+      } catch (logError) {
+        logger.error('Failed to log rate limit attempt:', logError);
+      }
+
+      return errorResponse(
+        'Trop de tentatives. Veuillez réessayer plus tard.',
+        429,
+        { reason: 'rate_limit_exceeded' }
+      );
+    }
+
     try {
       await adminClient.rpc('log_transaction_access', {
         p_token: token,
@@ -202,7 +212,7 @@ const handler: Handler = async (req) => {
     } catch (logError) {
       logger.error('Failed to log access attempt:', logError);
     }
-    
+
     return errorResponse(
       'Transaction non trouvée, token invalide ou expiré',
       404,
@@ -223,6 +233,23 @@ const handler: Handler = async (req) => {
   }
 
   const transaction = fullTx;
+
+  // Server-side expiration check to avoid exposing expired transactions
+  if (transaction.shared_link_expires_at && new Date(transaction.shared_link_expires_at) < new Date()) {
+    try {
+      await adminClient.rpc('log_transaction_access', {
+        p_token: token,
+        p_transaction_id: transaction.id,
+        p_success: false,
+        p_ip_address: ipAddress,
+        p_user_agent: userAgent,
+        p_error_reason: 'expired'
+      });
+    } catch (logError) {
+      logger.error('Failed to log expired access:', logError);
+    }
+    return errorResponse('Lien expiré', 410, { reason: 'expired' });
+  }
 
   logger.log('✅ [GET-TX-BY-TOKEN] Transaction found:', transaction.id);
 
