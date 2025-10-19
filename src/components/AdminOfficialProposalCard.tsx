@@ -53,20 +53,24 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         },
       });
 
-      // Some environments can flag an error even when the function succeeded.
-      // If payload indicates success, proceed as success.
+      // Check if there's an actual error or if it's a false negative
+      let actuallySucceeded = !fnError;
       if (fnError) {
         try {
           const resp = (fnError as any)?.context?.response;
           const json = resp && typeof resp.json === 'function' ? await resp.clone().json().catch(() => null) : null;
+          // If the JSON payload indicates success, treat it as success
           if (json?.success || json?.status === 'accepted' || json?.both_validated === true) {
-            // Treat as success despite non-2xx transport status
-          } else {
-            throw fnError;
+            actuallySucceeded = true;
           }
         } catch {
-          throw fnError;
+          // If we can't read the response, assume it's a real error
         }
+      }
+
+      // If not actually succeeded, throw the error
+      if (!actuallySucceeded) {
+        throw fnError;
       }
 
       if (action === 'accept') {
