@@ -15,10 +15,19 @@ export interface ErrorContext {
  * Convert technical error to user-friendly message
  */
 export const getUserFriendlyError = (error: any, context?: ErrorContext): string => {
-  const errorMessage = error?.message || String(error);
-  const errorCode = error?.code || context?.code;
-  const statusCode = error?.statusCode || context?.statusCode;
-
+  const rawMessage = (error as any)?.message ?? (typeof error === 'string' ? error : '');
+  let errorMessage = rawMessage || String(error);
+  // Try to extract server-provided JSON { error: "..." }
+  try {
+    if (rawMessage && rawMessage.trim().startsWith('{')) {
+      const parsed = JSON.parse(rawMessage);
+      errorMessage = parsed.error || parsed.message || rawMessage;
+    } else if ((error as any)?.error && typeof (error as any).error === 'string') {
+      errorMessage = (error as any).error;
+    }
+  } catch {}
+  const errorCode = (error as any)?.code || context?.code;
+  const statusCode = (error as any)?.statusCode || (error as any)?.status || context?.statusCode;
   // Authentication errors
   if (errorCode === 'invalid_credentials' || errorMessage.includes('Invalid login credentials')) {
     return i18n.t('errors.auth.invalidCredentials', { 
