@@ -87,6 +87,7 @@ const handler: Handler = async (req) => {
   logger.log('🔍 [GET-TX-BY-TOKEN] Fetching transaction with masked token:', maskToken(token));
 
   let transactionId: string | null = null;
+  let rpcFallbackUsed = false;
 
   // PRIORITY 1: Try exact match on shared_link_token
   const { data: txByExactToken } = await adminClient
@@ -151,6 +152,42 @@ const handler: Handler = async (req) => {
       if (txById) {
         transactionId = txById.id;
         logger.log('✅ [GET-TX-BY-TOKEN] Found by direct ID:', transactionId);
+      }
+    }
+
+    // RPC Fallback: use secure function to bypass RLS
+    if (!transactionId) {
+      logger.log('🔄 [GET-TX-BY-TOKEN] Using RPC fallback: get_transaction_by_token_safe');
+      const { data: rpcData, error: rpcError } = await supabaseClient
+        .rpc('get_transaction_by_token_safe', { p_token: token });
+
+      if (rpcError) {
+        logger.error('❌ [GET-TX-BY-TOKEN] RPC fallback error:', rpcError);
+      } else if (rpcData && rpcData.length > 0) {
+        const rpcTx = rpcData[0];
+        logger.log('✅ [GET-TX-BY-TOKEN] Transaction found via RPC:', rpcTx.id);
+        
+        if (rpcTx.is_expired) {
+          logger.warn('⚠️ [GET-TX-BY-TOKEN] Transaction expired via RPC');
+          try {
+            await adminClient.rpc('log_transaction_access', {
+              p_token: token,
+              p_transaction_id: rpcTx.id,
+              p_success: false,
+              p_ip_address: ipAddress,
+              p_user_agent: userAgent,
+              p_error_reason: 'expired'
+            });
+          } catch (logError) {
+            logger.error('Failed to log expired access:', logError);
+          }
+          return errorResponse('Lien expiré', 410, { reason: 'expired' });
+        }
+        
+        transactionId = rpcTx.id;
+        rpcFallbackUsed = true;
+      } else {
+        logger.log('ℹ️ [GET-TX-BY-TOKEN] RPC returned no data, token not found');
       }
     }
   }
@@ -234,8 +271,8 @@ const handler: Handler = async (req) => {
 
   const transaction = fullTx;
 
-  // Server-side expiration check to avoid exposing expired transactions
-  if (transaction.shared_link_expires_at && new Date(transaction.shared_link_expires_at) < new Date()) {
+  // Server-side expiration check (unless RPC already handled it)
+  if (!rpcFallbackUsed && transaction.shared_link_expires_at && new Date(transaction.shared_link_expires_at) < new Date()) {
     try {
       await adminClient.rpc('log_transaction_access', {
         p_token: token,

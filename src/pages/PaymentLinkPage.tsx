@@ -107,11 +107,13 @@ export default function PaymentLinkPage() {
       } else {
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       }
-    } catch (err: any) {
-      setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
-    } finally {
-      setLoading(false);
-    }
+      } catch (err: any) {
+        console.error("Error during fetchTransaction:", err);
+        const errorMsg = err.message || "Erreur inconnue";
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
   };
 
   const handlePayNow = async () => {
@@ -198,6 +200,9 @@ export default function PaymentLinkPage() {
 
   // Show error state
   if (error) {
+    const isRateLimited = error.toLowerCase().includes('trop de tentatives') || 
+                          error.toLowerCase().includes('rate limit');
+    
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         {debugMode && (
@@ -207,11 +212,33 @@ export default function PaymentLinkPage() {
         )}
         <div className="max-w-md w-full text-center">
           <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Oups !</h1>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <Button onClick={() => window.location.href = '/'}>
-            Retour à l'accueil
-          </Button>
+          <h1 className="text-2xl font-bold mb-2">
+            {isRateLimited ? 'Trop de tentatives' : 'Oups !'}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {isRateLimited 
+              ? 'Vous avez effectué trop de tentatives. Pour votre sécurité, veuillez patienter 2 minutes avant de réessayer.'
+              : error}
+          </p>
+          <div className="flex gap-2 justify-center">
+            <Button 
+              onClick={() => {
+                setError(null);
+                setLoading(true);
+                fetchTransaction();
+              }}
+            >
+              Réessayer
+            </Button>
+            {!isRateLimited && (
+              <Button 
+                onClick={() => window.location.href = '/'}
+                variant="outline"
+              >
+                Retour à l'accueil
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );

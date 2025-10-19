@@ -1147,6 +1147,26 @@ export type Database = {
           vat_rate: number
         }[]
       }
+      get_transaction_by_token_safe: {
+        Args: { p_token: string }
+        Returns: {
+          buyer_display_name: string
+          buyer_id: string
+          currency: Database["public"]["Enums"]["currency_code"]
+          description: string
+          id: string
+          is_expired: boolean
+          payment_deadline: string
+          price: number
+          seller_display_name: string
+          service_date: string
+          service_end_date: string
+          shared_link_expires_at: string
+          status: Database["public"]["Enums"]["transaction_status"]
+          title: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
