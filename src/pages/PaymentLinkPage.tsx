@@ -163,17 +163,20 @@ export default function PaymentLinkPage() {
 
     setProcessingPayment(true);
     try {
-      // 1. Join the transaction first (if not already done)
+      // 1. Join the transaction first (best-effort, non-bloquant)
       if (!autoJoined) {
-        const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-          body: { 
-            transaction_id: transaction.id,
-            linkToken: token || new URLSearchParams(window.location.search).get('txId')
-          }
-        });
-
-        if (joinError) throw joinError;
-        if (joinData.error) throw new Error(joinData.error);
+        try {
+          const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
+            body: { 
+              transaction_id: transaction.id,
+              linkToken: token || new URLSearchParams(window.location.search).get('txId')
+            }
+          });
+          if (joinError) throw joinError;
+          if (joinData?.error) throw new Error(joinData.error);
+        } catch (joinErr) {
+          logger.warn('Join transaction skipped (continuing to checkout):', joinErr);
+        }
       }
 
       // 2. Create Stripe Checkout session immediately
