@@ -1,38 +1,36 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withRateLimit, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
+import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const fixTransactionSchema = z.object({
+  transactionId: z.string().uuid(),
+  paymentIntentId: z.string().optional(),
+});
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+const handler: Handler = async (_req, ctx: HandlerContext) => {
+  const { body } = ctx;
+  const { transactionId, paymentIntentId } = body;
 
   try {
-    const { transactionId, paymentIntentId } = await req.json();
-
-    if (!transactionId) {
-      throw new Error("Transaction ID is required");
-    }
-
-    // Create admin client
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const adminClient = createServiceClient();
 
     logger.log(`[FIX-TRANSACTION] Starting fix for transaction: ${transactionId}`);
 
     // Update status first
     const { error: statusError } = await adminClient
       .from("transactions")
-      .update({ 
-        status: 'paid'
-      })
+      .update({ status: 'paid' })
       .eq("id", transactionId);
 
     if (statusError) {
@@ -43,9 +41,7 @@ serve(async (req) => {
     if (paymentIntentId) {
       const { error: paymentError } = await adminClient
         .from("transactions")
-        .update({ 
-          stripe_payment_intent_id: paymentIntentId
-        })
+        .update({ stripe_payment_intent_id: paymentIntentId })
         .eq("id", transactionId);
 
       if (paymentError) {
@@ -69,21 +65,21 @@ serve(async (req) => {
 
     logger.log(`[FIX-TRANSACTION] Successfully fixed transaction: ${transactionId}`);
 
-    return new Response(JSON.stringify({ 
-      success: true,
+    return successResponse({ 
       message: "Transaction fixed successfully",
       transactionId
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`[FIX-TRANSACTION] Error:`, errorMessage);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withRateLimit(),
+  withValidation(fixTransactionSchema)
+)(handler);
+
+serve(composedHandler);

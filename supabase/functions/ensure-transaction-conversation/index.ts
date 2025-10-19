@@ -1,95 +1,55 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
+import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const ensureConversationSchema = z.object({
+  transactionId: z.string().uuid(),
+});
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const handler: Handler = async (_req, ctx: HandlerContext) => {
+  const { user, supabaseClient, adminClient, body } = ctx;
+  const { transactionId } = body;
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Client with user auth
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Parse request
-    const { transactionId } = await req.json();
-    if (!transactionId) {
-      return new Response(
-        JSON.stringify({ error: 'Transaction ID requis' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Admin client for service operations
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
-
     // Get transaction
-    const { data: transaction, error: txError } = await adminClient
+    const { data: transaction, error: txError } = await adminClient!
       .from('transactions')
       .select('id, user_id, buyer_id, conversation_id, status')
       .eq('id', transactionId)
       .single();
 
     if (txError || !transaction) {
-      return new Response(
-        JSON.stringify({ error: 'Transaction introuvable' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Transaction introuvable', 404);
     }
 
     // Check user is participant
-    const isParticipant = transaction.user_id === user.id || transaction.buyer_id === user.id;
+    const isParticipant = transaction.user_id === user!.id || transaction.buyer_id === user!.id;
     if (!isParticipant) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorisé - vous n\'êtes pas participant de cette transaction' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Non autorisé - vous n\'êtes pas participant de cette transaction', 403);
     }
 
     // If conversation already exists, return it
     if (transaction.conversation_id) {
-      return new Response(
-        JSON.stringify({ conversation_id: transaction.conversation_id }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return successResponse({ conversation_id: transaction.conversation_id });
     }
 
     // Check if buyer is assigned
     if (!transaction.buyer_id) {
-      return new Response(
-        JSON.stringify({ error: 'Aucun acheteur assigné à cette transaction' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return errorResponse('Aucun acheteur assigné à cette transaction', 400);
     }
 
     // Create conversation
-    const { data: conversation, error: convError } = await adminClient
+    const { data: conversation, error: convError } = await adminClient!
       .from('conversations')
       .insert({
         seller_id: transaction.user_id,
@@ -101,34 +61,32 @@ serve(async (req) => {
       .single();
 
     if (convError || !conversation) {
-      console.error('Error creating conversation:', convError);
-      return new Response(
-        JSON.stringify({ error: 'Erreur lors de la création de la conversation' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      logger.error('Error creating conversation:', convError);
+      return errorResponse('Erreur lors de la création de la conversation', 500);
     }
 
-    // Update transaction with conversation_id
-    const { error: updateError } = await adminClient
+    // Update transaction with conversation_id (best-effort)
+    const { error: updateError } = await adminClient!
       .from('transactions')
       .update({ conversation_id: conversation.id })
       .eq('id', transaction.id);
 
     if (updateError) {
-      console.error('Error updating transaction:', updateError);
-      // Don't fail - conversation is created
+      logger.error('Error updating transaction:', updateError);
+      // Do not fail - conversation is created
     }
 
-    return new Response(
-      JSON.stringify({ conversation_id: conversation.id }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    return successResponse({ conversation_id: conversation.id });
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Erreur serveur' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    logger.error('Unexpected error:', error);
+    return errorResponse('Erreur serveur', 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withValidation(ensureConversationSchema)
+)(handler);
+
+serve(composedHandler);

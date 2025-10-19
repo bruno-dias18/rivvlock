@@ -1,27 +1,40 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withRateLimit, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
+import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const createStripeCustomerSchema = z.object({
+  user_id: z.string().uuid(),
+  email: z.string().email(),
+  profile_data: z.object({
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    company_name: z.string().optional(),
+    user_type: z.string().optional(),
+    country: z.string().optional(),
+    phone: z.string().optional(),
+    address: z.string().optional()
+  }).optional()
+});
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { body } = ctx;
+  const { user_id, email, profile_data } = body;
+  
+  const supabaseClient = createServiceClient();
+  
   try {
-    const { user_id, email, profile_data } = await req.json();
-    
     logger.log("Creating Stripe customer for user:", user_id, email);
 
     // Check if profile already has a Stripe customer ID to avoid duplicates
@@ -35,13 +48,9 @@ serve(async (req) => {
       logger.error('Error checking existing profile:', profileError);
     } else if (existingProfile?.stripe_customer_id) {
       logger.log(`User ${user_id} already has Stripe customer ID:`, existingProfile.stripe_customer_id);
-      return new Response(JSON.stringify({ 
-        success: true,
+      return successResponse({ 
         stripe_customer_id: existingProfile.stripe_customer_id,
         message: "Customer already exists"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -116,23 +125,19 @@ serve(async (req) => {
 
     logger.log("Profile updated with Stripe customer ID:", stripeCustomerId);
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      stripe_customer_id: stripeCustomerId 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return successResponse({ stripe_customer_id: stripeCustomerId });
 
   } catch (error) {
     logger.error("Error creating Stripe customer:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({
-      error: errorMessage,
-      success: false 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withRateLimit(),
+  withValidation(createStripeCustomerSchema)
+)(handler);
+
+serve(composedHandler);

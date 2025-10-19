@@ -1,43 +1,32 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withRateLimit, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
+import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const schema = z.object({
+  transactionId: z.string().uuid(),
+  sellerId: z.string().uuid(),
+  buyerId: z.string().uuid().optional(),
+  amount: z.number().positive(),
+  currency: z.string().min(1),
+});
 
-interface InvoiceRequest {
-  transactionId: string;
-  sellerId: string;
-  buyerId?: string;
-  amount: number;
-  currency: string;
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+const handler: Handler = async (_req, ctx: HandlerContext) => {
+  const { body } = ctx;
+  const { transactionId, sellerId, buyerId, amount, currency } = body;
 
   try {
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    const { transactionId, sellerId, buyerId, amount, currency }: InvoiceRequest = await req.json();
-
-    if (!transactionId || !sellerId || !amount || !currency) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    const supabaseClient = createServiceClient();
 
     const currentYear = new Date().getFullYear();
     let invoiceNumber: string;
@@ -53,7 +42,6 @@ Deno.serve(async (req) => {
 
     if (sequenceError) {
       logger.error('Error getting sequence:', sequenceError);
-      
       // Try to create new sequence if doesn't exist
       const { data: insertData, error: insertError } = await supabaseClient
         .from('invoice_sequences')
@@ -69,13 +57,7 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         logger.error('Error creating sequence:', insertError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to generate invoice number' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+        return errorResponse('Failed to generate invoice number', 500);
       }
 
       invoiceNumber = `FAC-${currentYear}-${sellerCode}-${String(insertData.current_sequence).padStart(5, '0')}`;
@@ -94,13 +76,7 @@ Deno.serve(async (req) => {
 
       if (updateError) {
         logger.error('Error updating sequence:', updateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to update sequence' }),
-          { 
-            status: 500, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+        return errorResponse('Failed to update sequence', 500);
       }
 
       invoiceNumber = `FAC-${currentYear}-${sellerCode}-${String(updateData.current_sequence).padStart(5, '0')}`;
@@ -125,37 +101,23 @@ Deno.serve(async (req) => {
 
     if (invoiceError) {
       logger.error('Error storing invoice:', invoiceError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to store invoice record' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      return errorResponse('Failed to store invoice record', 500);
     }
 
     logger.log(`Generated invoice number: ${invoiceNumber} for seller: ${sellerId}`);
 
-    return new Response(
-      JSON.stringify({ 
-        invoiceNumber,
-        sellerCode,
-        year: currentYear
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return successResponse({ invoiceNumber, sellerCode, year: currentYear });
 
   } catch (error) {
     logger.error('Error in generate-invoice-number function:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return errorResponse('Internal server error', 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withRateLimit(),
+  withValidation(schema)
+)(handler);
+
+serve(composedHandler);
