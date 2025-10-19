@@ -109,13 +109,40 @@ export const useDisputeProposals = (disputeId: string) => {
 
   const acceptProposal = useMutation({
     mutationFn: async (proposalId: string) => {
-      const { data, error } = await supabase.functions.invoke('accept-proposal', {
-        body: { proposalId },
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('accept-proposal', {
+          body: { proposalId },
+        });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      return data;
+        if (error) {
+          // Try to extract server-provided error payload from the Edge Function response
+          const ctx: any = error as any;
+          const resp: Response | undefined = ctx?.context?.response;
+          if (resp) {
+            try {
+              const text = await resp.text();
+              try {
+                const json = JSON.parse(text);
+                const msg = json?.error || json?.message || text;
+                throw new Error(msg);
+              } catch (_) {
+                // Not JSON, use raw text
+                throw new Error(text || error.message);
+              }
+            } catch (_) {
+              throw new Error(error.message);
+            }
+          }
+          throw error;
+        }
+
+        if (data?.error) throw new Error(data.error);
+        return data;
+      } catch (err: any) {
+        // Normalize to a friendly error with details if available
+        const { getUserFriendlyError } = await import('@/lib/errorMessages');
+        throw new Error(getUserFriendlyError(err, { details: err }));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
@@ -164,7 +191,7 @@ export const useDisputeProposals = (disputeId: string) => {
           .from('disputes')
           .select('transaction_id, transactions!inner(conversation_id)')
           .eq('id', proposal.dispute_id)
-          .single();
+          .maybeSingle();
 
         if (dispute?.transactions?.conversation_id) {
           await supabase
