@@ -2,22 +2,21 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { differenceInHours } from "npm:date-fns@3.6.0";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[SEND-PAYMENT-REMINDERS] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     logStep('Cron job started');
 
@@ -140,35 +139,22 @@ serve(async (req) => {
 
     logStep('Cron job completed', { sent, skipped, failed });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        summary: {
-          total: pendingTransactions?.length || 0,
-          sent,
-          skipped,
-          failed
-        }
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return successResponse({
+      summary: {
+        total: pendingTransactions?.length || 0,
+        sent,
+        skipped,
+        failed
       }
-    );
+    });
 
   } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep('ERROR in send-payment-reminders', { message: errorMessage });
     
-    return new Response(
-      JSON.stringify({ 
-        error: errorMessage,
-        success: false 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

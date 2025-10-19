@@ -1,18 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     logger.log('[PROCESS-DISPUTE-DEADLINES] Function started');
 
@@ -51,16 +49,10 @@ serve(async (req) => {
     logger.log(`[PROCESS-DISPUTE-DEADLINES] Found ${expiredDisputes?.length || 0} expired disputes`);
 
     if (!expiredDisputes || expiredDisputes.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          message: 'No expired disputes found',
-          processed: 0 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      );
+      return successResponse({ 
+        message: 'No expired disputes found',
+        processed: 0 
+      });
     }
 
     const results = [];
@@ -203,29 +195,20 @@ serve(async (req) => {
 
     logger.log(`[PROCESS-DISPUTE-DEADLINES] Processing completed - ${results.length} disputes processed`);
 
-    return new Response(
-      JSON.stringify({
-        message: 'Dispute deadlines processed successfully',
-        processed: results.length,
-        results,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
+    return successResponse({
+      message: 'Dispute deadlines processed successfully',
+      processed: results.length,
+      results,
+    });
 
   } catch (error) {
     logger.error('[PROCESS-DISPUTE-DEADLINES] Function error:', error);
-    return new Response(
-      JSON.stringify({
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+    return errorResponse(
+      error instanceof Error ? error.message : 'Unknown error',
+      500
     );
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

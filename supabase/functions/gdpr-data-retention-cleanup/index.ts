@@ -1,6 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
 /**
  * GDPR/nLPD Data Retention Compliance Function
@@ -20,16 +28,7 @@ import { logger } from "../_shared/logger.ts";
  * - Access logs: 1 year (security data)
  */
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -43,10 +42,7 @@ serve(async (req) => {
       );
       
       if (authError || !user) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }), 
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Unauthorized', 401);
       }
 
       const { data: adminCheck } = await supabaseAdmin
@@ -57,10 +53,7 @@ serve(async (req) => {
         .single();
 
       if (!adminCheck) {
-        return new Response(
-          JSON.stringify({ error: 'Admin access required' }), 
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return errorResponse('Admin access required', 403);
       }
     }
 
@@ -210,43 +203,31 @@ serve(async (req) => {
 
     logger.log(`✅ GDPR cleanup completed: ${totalDeleted} records deleted`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'GDPR data retention cleanup completed',
-        timestamp: new Date().toISOString(),
-        cutoff_dates: {
-          legal_documents: tenYearsAgo.toISOString(),
-          operational_logs: oneYearAgo.toISOString()
-        },
-        results,
-        compliance: {
-          regulations: ['GDPR Art. 5.1.e', 'nLPD Art. 6 al. 3', 'Commercial codes'],
-          retention_periods: {
-            'transactions_invoices_disputes': '10 years',
-            'operational_logs': '1 year'
-          }
+    return successResponse({
+      message: 'GDPR data retention cleanup completed',
+      timestamp: new Date().toISOString(),
+      cutoff_dates: {
+        legal_documents: tenYearsAgo.toISOString(),
+        operational_logs: oneYearAgo.toISOString()
+      },
+      results,
+      compliance: {
+        regulations: ['GDPR Art. 5.1.e', 'nLPD Art. 6 al. 3', 'Commercial codes'],
+        retention_periods: {
+          'transactions_invoices_disputes': '10 years',
+          'operational_logs': '1 year'
         }
-      }), 
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    );
+    });
 
   } catch (error) {
     logger.error('❌ GDPR cleanup error:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: errorMessage,
-        timestamp: new Date().toISOString()
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+    return errorResponse(
+      error instanceof Error ? error.message : String(error),
+      500
     );
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

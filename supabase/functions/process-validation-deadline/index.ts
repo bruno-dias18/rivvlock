@@ -2,22 +2,21 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[PROCESS-VALIDATION-DEADLINE] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -44,13 +43,9 @@ serve(async (req) => {
 
     if (!expiredTransactions || expiredTransactions.length === 0) {
       logStep("ℹ️ No expired transactions found");
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         processed: 0,
         message: "No expired transactions to process"
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -328,23 +323,21 @@ serve(async (req) => {
       total: expiredTransactions.length 
     });
 
-    return new Response(JSON.stringify({ 
-      success: true,
+    return successResponse({ 
       processed: processedCount,
       skipped: skippedCount,
       errors: errorCount,
       total: expiredTransactions.length
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     logStep("❌ Function error", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(
+      error instanceof Error ? error.message : String(error),
+      500
+    );
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

@@ -1,17 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   // Admin client for database operations
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -142,20 +141,18 @@ serve(async (req) => {
 
     logger.log(`🏁 [SEND-VALIDATION-REMINDERS] Processing complete. Total reminders sent: ${totalSent}`);
 
-    return new Response(JSON.stringify({ 
-      success: true,
+    return successResponse({ 
       remindersSent: totalSent
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     logger.error("❌ [SEND-VALIDATION-REMINDERS] Function error:", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(
+      error instanceof Error ? error.message : String(error),
+      500
+    );
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

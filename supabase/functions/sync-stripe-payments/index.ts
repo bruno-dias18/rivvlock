@@ -2,22 +2,21 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[SYNC-STRIPE] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     logStep("Function started");
 
@@ -71,13 +70,9 @@ serve(async (req) => {
     logStep("Uncaptured Payment Intents found", { count: uncapturedPayments.length });
 
     if (uncapturedPayments.length === 0) {
-      return new Response(JSON.stringify({ 
-        success: true,
+      return successResponse({ 
         message: "No uncaptured payments found in Stripe",
         synchronized: 0
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -265,64 +260,6 @@ serve(async (req) => {
               status: matchingTransaction.status 
             });
 
-            // Backfill missing activity logs for already processed transactions
-            if (matchingTransaction.status === 'paid') {
-              try {
-                // Check for missing funds_blocked logs
-                const { data: existingLogs } = await adminClient
-                  .from('activity_logs')
-                  .select('id, user_id')
-                  .eq('activity_type', 'funds_blocked')
-                  .filter('metadata->>transaction_id', 'eq', matchingTransaction.id);
-
-                const existingUserIds = existingLogs?.map(log => log.user_id) || [];
-                const logsToCreate = [];
-
-                // Log for seller if missing
-                if (!existingUserIds.includes(matchingTransaction.user_id)) {
-                  logsToCreate.push({
-                    user_id: matchingTransaction.user_id,
-                    activity_type: 'funds_blocked',
-                    title: 'Fonds bloqués',
-                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
-                    metadata: {
-                      transaction_id: matchingTransaction.id,
-                      amount: matchingTransaction.price,
-                      currency: matchingTransaction.currency
-                    }
-                  });
-                }
-
-                // Log for buyer if missing
-                if (matchingTransaction.buyer_id && !existingUserIds.includes(matchingTransaction.buyer_id)) {
-                  logsToCreate.push({
-                    user_id: matchingTransaction.buyer_id,
-                    activity_type: 'funds_blocked',
-                    title: 'Fonds bloqués',
-                    description: `Les fonds pour "${matchingTransaction.title}" ont été bloqués et sont en sécurité`,
-                    metadata: {
-                      transaction_id: matchingTransaction.id,
-                      amount: matchingTransaction.price,
-                      currency: matchingTransaction.currency
-                    }
-                  });
-                }
-
-                if (logsToCreate.length > 0) {
-                  await adminClient.from('activity_logs').insert(logsToCreate);
-                  logStep("Backfilled missing funds_blocked logs", { 
-                    transactionId: matchingTransaction.id, 
-                    logsCreated: logsToCreate.length 
-                  });
-                }
-              } catch (backfillError) {
-                logStep("Error backfilling funds_blocked logs", { 
-                  transactionId: matchingTransaction.id, 
-                  error: backfillError 
-                });
-              }
-            }
-
             syncResults.push({
               paymentIntentId: paymentIntent.id,
               transactionId: matchingTransaction.id,
@@ -352,150 +289,27 @@ serve(async (req) => {
       }
     }
 
-    // Backfill missing activity logs for existing transactions
-    logStep("Starting backfill for missing activity logs");
-    
-    try {
-      // Get transactions that might be missing logs
-      const paidTransactions = transactions?.filter(t => t.status === 'paid') || [];
-      const validatedTransactions = transactions?.filter(t => t.status === 'validated') || [];
-
-      // Backfill funds_blocked logs for paid transactions
-      for (const transaction of paidTransactions) {
-        try {
-          // Check existing logs for this transaction
-          const { data: existingLogs } = await adminClient
-            .from('activity_logs')
-            .select('id, user_id')
-            .eq('activity_type', 'funds_blocked')
-            .filter('metadata->>transaction_id', 'eq', transaction.id);
-
-          const existingUserIds = existingLogs?.map(log => log.user_id) || [];
-
-          // Create missing logs
-          const logsToCreate = [];
-
-          // Log for seller
-          if (!existingUserIds.includes(transaction.user_id)) {
-            logsToCreate.push({
-              user_id: transaction.user_id,
-              activity_type: 'funds_blocked',
-              title: 'Fonds bloqués',
-              description: `Les fonds pour "${transaction.title}" ont été bloqués et sont en sécurité`,
-              metadata: {
-                transaction_id: transaction.id,
-                amount: transaction.price,
-                currency: transaction.currency
-              }
-            });
-          }
-
-          // Log for buyer
-          if (transaction.buyer_id && !existingUserIds.includes(transaction.buyer_id)) {
-            logsToCreate.push({
-              user_id: transaction.buyer_id,
-              activity_type: 'funds_blocked',
-              title: 'Fonds bloqués',
-              description: `Les fonds pour "${transaction.title}" ont été bloqués et sont en sécurité`,
-              metadata: {
-                transaction_id: transaction.id,
-                amount: transaction.price,
-                currency: transaction.currency
-              }
-            });
-          }
-
-          if (logsToCreate.length > 0) {
-            await adminClient.from('activity_logs').insert(logsToCreate);
-            logStep("Backfilled funds_blocked logs", { transactionId: transaction.id, logsCreated: logsToCreate.length });
-          }
-        } catch (backfillError) {
-          logStep("Error backfilling funds_blocked logs", { transactionId: transaction.id, error: backfillError });
-        }
-      }
-
-      // Backfill transaction_completed logs for validated transactions
-      for (const transaction of validatedTransactions) {
-        try {
-          // Check existing logs for this transaction
-          const { data: existingLogs } = await adminClient
-            .from('activity_logs')
-            .select('id, user_id')
-            .eq('activity_type', 'transaction_completed')
-            .filter('metadata->>transaction_id', 'eq', transaction.id);
-
-          const existingUserIds = existingLogs?.map(log => log.user_id) || [];
-
-          // Create missing logs
-          const logsToCreate = [];
-
-          // Log for buyer
-          if (transaction.buyer_id && !existingUserIds.includes(transaction.buyer_id)) {
-            logsToCreate.push({
-              user_id: transaction.buyer_id,
-              activity_type: 'transaction_completed',
-              title: 'Transaction complétée',
-              description: `Transaction "${transaction.title}" terminée avec succès. Fonds transférés au vendeur.`,
-              metadata: {
-                transaction_id: transaction.id,
-                amount: transaction.price,
-                currency: transaction.currency
-              }
-            });
-          }
-
-          // Log for seller
-          if (!existingUserIds.includes(transaction.user_id)) {
-            logsToCreate.push({
-              user_id: transaction.user_id,
-              activity_type: 'transaction_completed',
-              title: 'Transaction complétée',
-              description: `Transaction "${transaction.title}" terminée. ${transaction.price} ${transaction.currency} transférés sur votre compte.`,
-              metadata: {
-                transaction_id: transaction.id,
-                amount: transaction.price,
-                currency: transaction.currency
-              }
-            });
-          }
-
-          if (logsToCreate.length > 0) {
-            await adminClient.from('activity_logs').insert(logsToCreate);
-            logStep("Backfilled transaction_completed logs", { transactionId: transaction.id, logsCreated: logsToCreate.length });
-          }
-        } catch (backfillError) {
-          logStep("Error backfilling transaction_completed logs", { transactionId: transaction.id, error: backfillError });
-        }
-      }
-
-      logStep("Backfill completed successfully");
-    } catch (backfillError) {
-      logStep("Error during backfill process", { error: backfillError });
-    }
-
-    logStep("Synchronization completed", { 
-      total: uncapturedPayments.length,
+    logStep("Sync complete", { 
       synchronized: synchronizedCount,
-      results: syncResults 
+      total: uncapturedPayments.length,
+      results: syncResults.length 
     });
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      message: `Synchronization completed: ${synchronizedCount} transactions updated`,
+    return successResponse({ 
+      message: "Stripe payment sync completed",
       synchronized: synchronizedCount,
-      total: uncapturedPayments.length,
+      total_uncaptured: uncapturedPayments.length,
       results: syncResults
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in sync-stripe-payments", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    logStep("❌ Function error", error);
+    return errorResponse(
+      error instanceof Error ? error.message : String(error),
+      500
+    );
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

@@ -1,11 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { 
+  compose, 
+  withCors,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
 // Helper logging function
 const logStep = (step: string, details?: any) => {
@@ -13,11 +16,7 @@ const logStep = (step: string, details?: any) => {
   logger.log(`[PROCESS-EXPIRED-DEADLINES] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     logStep("Function started");
 
@@ -48,13 +47,10 @@ serve(async (req) => {
 
     if (!expiredTransactions || expiredTransactions.length === 0) {
       logStep("No expired transactions found");
-      return new Response(
-        JSON.stringify({ 
-          message: 'No expired transactions found',
-          processed: 0 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+      return successResponse({ 
+        message: 'No expired transactions found',
+        processed: 0 
+      });
     }
 
     // Update expired transactions status
@@ -121,34 +117,28 @@ serve(async (req) => {
       }
     }
 
-    // Optional: Send notifications (could be implemented later)
-    // await sendExpirationNotifications(expiredTransactions);
-
     logStep("Process completed successfully", { 
       expiredCount: expiredTransactions.length,
       activityLogsCount: activityLogs.length 
     });
 
-    return new Response(
-      JSON.stringify({
-        message: 'Expired transactions processed successfully',
-        processed: expiredTransactions.length,
-        transactions: expiredTransactions.map(t => ({
-          id: t.id,
-          title: t.title,
-          deadline: t.payment_deadline
-        }))
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    );
+    return successResponse({
+      message: 'Expired transactions processed successfully',
+      processed: expiredTransactions.length,
+      transactions: expiredTransactions.map(t => ({
+        id: t.id,
+        title: t.title,
+        deadline: t.payment_deadline
+      }))
+    });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in process-expired-payment-deadlines", { message: errorMessage });
     
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);
