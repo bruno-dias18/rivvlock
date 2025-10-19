@@ -8,13 +8,32 @@ export const useForceEscalateDispute = () => {
 
   return useMutation({
     mutationFn: async (disputeId: string) => {
-      const { data, error } = await supabase.functions.invoke('admin-dispute-actions', {
+      // Try the dedicated robust function first
+      const first = await supabase.functions.invoke('force-escalate-dispute', {
+        body: { disputeId }
+      });
+      console.debug('[useForceEscalateDispute] force-escalate-dispute result', { data: first.data, error: first.error, disputeId });
+      if (!first.error) {
+        if ((first.data as any)?.error) {
+          const err: any = new Error((first.data as any).error);
+          err.status = (first as any)?.status || (first.data as any)?.statusCode;
+          throw err;
+        }
+        return first.data;
+      }
+
+      // Fallback to generic admin-dispute-actions escalate
+      const fallback = await supabase.functions.invoke('admin-dispute-actions', {
         body: { action: 'escalate', disputeId }
       });
-      console.debug('[useForceEscalateDispute] invoke result', { data, error, disputeId });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
-      return data;
+      console.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
+      if (fallback.error) throw fallback.error;
+      if ((fallback.data as any)?.error) {
+        const err: any = new Error((fallback.data as any).error);
+        err.status = (fallback as any)?.status || (fallback.data as any)?.statusCode;
+        throw err;
+      }
+      return fallback.data;
     },
     onSuccess: () => {
       toast.success('Litige escaladé avec succès');

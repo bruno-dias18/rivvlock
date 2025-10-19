@@ -97,9 +97,15 @@ export const getUserFriendlyError = (error: any, context?: ErrorContext): string
   }
 
   // Permission errors
-  if (statusCode === 403 || errorMessage.includes('forbidden') || errorMessage.includes('unauthorized')) {
-    return i18n.t('errors.permission.denied', { 
-      defaultValue: 'You do not have permission to perform this action.' 
+  if (
+    statusCode === 403 ||
+    errorMessage.toLowerCase().includes('forbidden') ||
+    errorMessage.toLowerCase().includes('unauthorized') ||
+    errorMessage.toLowerCase().includes('insufficient permissions') ||
+    errorMessage.toLowerCase().includes('only admins can force escalate disputes')
+  ) {
+    return i18n.t('errors.permission.denied', {
+      defaultValue: 'Vous n’avez pas les droits pour effectuer cette action.'
     });
   }
 
