@@ -106,7 +106,7 @@ test.describe('Mobile Payment Flow', () => {
   });
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
-    await page.goto('/payment-link/test-token-123');
+    await page.goto('/payment-link/test-token-123?e2e=1');
     await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Check that layout is mobile-friendly
