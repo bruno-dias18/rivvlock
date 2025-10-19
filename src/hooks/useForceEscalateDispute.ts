@@ -8,8 +8,8 @@ export const useForceEscalateDispute = () => {
 
   return useMutation({
     mutationFn: async (disputeId: string) => {
-      const { data, error } = await supabase.functions.invoke('force-escalate-dispute', {
-        body: { disputeId }
+      const { data, error } = await supabase.functions.invoke('admin-dispute-actions', {
+        body: { action: 'escalate', disputeId }
       });
 
       if (error) throw error;
