@@ -48,7 +48,19 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 
     'Vendeur';
 
-  // Insert transaction
+  // Generate secure share token using database function
+  const { data: tokenData, error: tokenError } = await adminClient!
+    .rpc('generate_secure_token');
+  
+  if (tokenError) {
+    logger.error('[CREATE-TRANSACTION] Token generation error:', tokenError);
+    throw new Error('Failed to generate secure token');
+  }
+
+  const shareToken = tokenData as string;
+  const shareExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+  // Insert transaction with share token
   const { data: transaction, error: insertError } = await supabaseClient!
     .from('transactions')
     .insert({
@@ -64,6 +76,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       seller_display_name: sellerDisplayName,
       buyer_display_name: buyer_display_name || null,
       fee_ratio_client: fee_ratio_client || null,
+      shared_link_token: shareToken,
+      shared_link_expires_at: shareExpiresAt.toISOString(),
     })
     .select()
     .single();
@@ -74,6 +88,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   }
 
   logger.log('[CREATE-TRANSACTION] Transaction created:', transaction.id);
+
+  // Build share link URL
+  const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '') || '';
+  const shareLink = `https://slthyxqruhfuyfmextwr.lovable.app/payment/${transaction.id}?token=${shareToken}`;
 
   // Send email if client_email provided
   if (client_email) {
@@ -110,7 +128,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       }
     });
 
-  return successResponse({ transaction });
+  return successResponse({ 
+    transaction: {
+      ...transaction,
+      shareLink
+    }
+  });
 };
 
 // Compose all middlewares and serve
