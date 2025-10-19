@@ -77,11 +77,16 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
       onSuccess?.();
     } catch (error: any) {
       logger.error('Error creating admin proposal:', error);
-      const ctx = (error as any)?.context;
-      const serverBody = ctx?.body;
-      const serverMsg = typeof serverBody === 'string' ? serverBody : serverBody?.error;
-      const msg = serverMsg || error?.message || 'Erreur lors de la création de la proposition';
-      toast.error('Création de la proposition échouée', { description: String(msg).slice(0, 300) });
+      let serverMsg = '';
+      try {
+        const resp = (error as any)?.context?.response;
+        if (resp && typeof resp.text === 'function') {
+          const raw = await resp.text();
+          serverMsg = raw;
+        }
+      } catch {}
+      const fallback = error?.message || 'Erreur lors de la création de la proposition';
+      toast.error('Création de la proposition échouée', { description: (serverMsg || fallback).toString().slice(0, 400) });
     } finally {
       setIsSubmitting(false);
     }
