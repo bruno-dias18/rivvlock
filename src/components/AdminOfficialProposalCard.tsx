@@ -53,8 +53,7 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         },
       });
 
-      // Check if there's an actual error or if it's a false negative
-      let actuallySucceeded = !fnError;
+      // Check if there's an actual error by reading the response
       if (fnError) {
         try {
           const resp = (fnError as any)?.context?.response;
@@ -66,30 +65,10 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
             text = await resp.text().catch(() => null);
           }
           const msg = json?.error || text || '';
-          // If the payload or message indicates acceptance/idempotent success, treat as success
-          if (json?.success || json?.status === 'accepted' || json?.both_validated === true || /no longer pending/i.test(msg) || /already accepted/i.test(msg)) {
-            actuallySucceeded = true;
-          }
-        } catch {
-          // If we can't read the response, assume it's a real error
-        }
-      }
-
-      // If not actually succeeded, attempt state verification fallback
-      if (!actuallySucceeded) {
-        try {
-          const { data: fresh } = await supabase
-            .from('dispute_proposals')
-            .select('status,buyer_validated,seller_validated')
-            .eq('id', proposal.id)
-            .maybeSingle();
-
-          const bothNow = !!(fresh?.buyer_validated && fresh?.seller_validated);
-          const acceptedNow = fresh?.status === 'accepted';
-
-          // Only treat as success if BOTH validated OR proposal is accepted
-          // (not just if one party validated)
-          if (!(bothNow || acceptedNow)) {
+          // Only treat as success if the payload explicitly says so, or idempotent message
+          if (json?.success || json?.status === 'accepted' || json?.both_validated === true || /already accepted/i.test(msg)) {
+            // OK, it's actually a success despite the error flag
+          } else {
             throw fnError;
           }
         } catch {

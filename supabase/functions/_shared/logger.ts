@@ -1,7 +1,7 @@
 // Production-safe logger for Edge Functions
 // Logs only in development to prevent information leakage in production
 
-const isDevelopment = Deno.env.get('DENO_DEPLOYMENT_ID') === undefined;
+const isDevelopment = true; // Temporarily enable logs in production for debugging
 
 export const logger = {
   log: (...args: any[]) => {
