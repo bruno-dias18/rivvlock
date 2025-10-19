@@ -33,7 +33,13 @@ export const useTransactions = (pageSize = 20) => {
         throw new Error(getUserFriendlyError(error, { code: 'database' }));
       }
       
-      return data || [];
+      // Normalize payload to array (handles both {data: [...]} and [...] for backward compat)
+      const payload: any = data;
+      const list = Array.isArray(payload)
+        ? payload
+        : (Array.isArray(payload?.data) ? payload.data : []);
+      
+      return list;
     },
     enabled: !!user?.id,
     staleTime: 30000, // Cache for 30 seconds

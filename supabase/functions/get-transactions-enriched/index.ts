@@ -31,7 +31,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     }
 
     if (!transactions || transactions.length === 0) {
-      return successResponse([]);
+      return successResponse({ data: [] });
     }
 
     logger.info('[get-transactions-enriched] Processing transactions:', transactions.length);
@@ -87,7 +87,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
     logger.info('[get-transactions-enriched] Processed transactions:', processedTransactions.length);
 
-    return successResponse(processedTransactions);
+    return successResponse({ data: processedTransactions });
   } catch (error) {
     logger.error('[get-transactions-enriched] Error:', error);
     return errorResponse(error instanceof Error ? error.message : String(error), 500);
