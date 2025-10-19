@@ -228,6 +228,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   };
 
   const onSubmit = async (data: TransactionFormData) => {
+    console.log('[NewTransactionDialog] onSubmit called with data:', data);
     setIsLoading(true);
     try {
       let finalPrice: number;
@@ -337,7 +338,20 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 overflow-hidden flex flex-col">
+          <form 
+            onSubmit={(e) => {
+              console.log('[NewTransactionDialog] Form submit event triggered');
+              console.log('[NewTransactionDialog] Form errors:', form.formState.errors);
+              form.handleSubmit(
+                onSubmit,
+                (errors) => {
+                  console.error('[NewTransactionDialog] Validation errors:', errors);
+                  toast.error('Veuillez vérifier tous les champs du formulaire');
+                }
+              )(e);
+            }}
+            className="flex-1 overflow-hidden flex flex-col"
+          >
             <div className="overflow-y-auto space-y-6 px-1 pb-[40vh]">
             <FormField
               control={form.control}
