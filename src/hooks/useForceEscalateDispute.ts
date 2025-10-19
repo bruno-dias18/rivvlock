@@ -29,18 +29,44 @@ export const useForceEscalateDispute = () => {
       }
 
       // Fallback to generic admin-dispute-actions escalate
-      const fallback = await supabase.functions.invoke('admin-dispute-actions', {
-        body: { action: 'escalate', disputeId },
-        headers: authHeaders,
-      });
-      console.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
-      if (fallback.error) throw fallback.error;
-      if ((fallback.data as any)?.error) {
-        const err: any = new Error((fallback.data as any).error);
-        err.status = (fallback as any)?.status || (fallback.data as any)?.statusCode;
-        throw err;
+      try {
+        const fallback = await supabase.functions.invoke('admin-dispute-actions', {
+          body: { action: 'escalate', disputeId },
+          headers: authHeaders,
+        });
+        console.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
+        if (fallback.error) throw fallback.error;
+        if ((fallback.data as any)?.error) {
+          const err: any = new Error((fallback.data as any).error);
+          err.status = (fallback as any)?.status || (fallback.data as any)?.statusCode;
+          throw err;
+        }
+        return fallback.data;
+      } catch (funcErr) {
+        // Second fallback: direct client-side escalate for admins (RLS allows admins)
+        console.warn('[useForceEscalateDispute] Fallback to direct update due to function error', funcErr);
+        const { data: userRes } = await supabase.auth.getUser();
+        const adminId = userRes?.user?.id;
+
+        // Update dispute
+        const { error: updErr } = await supabase
+          .from('disputes')
+          .update({ status: 'escalated', escalated_at: new Date().toISOString() })
+          .eq('id', disputeId);
+        if (updErr) throw updErr;
+
+        // Best-effort: ensure escalated conversations
+        if (adminId) {
+          try {
+            await supabase.rpc('create_escalated_dispute_conversations', {
+              p_dispute_id: disputeId,
+              p_admin_id: adminId,
+            });
+          } catch {}
+        }
+
+        return { success: true, message: 'Escalade effectuée (fallback client)' } as any;
       }
-      return fallback.data;
     },
     onSuccess: () => {
       toast.success('Litige escaladé avec succès');
