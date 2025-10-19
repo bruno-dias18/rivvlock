@@ -185,26 +185,36 @@ export const useRealtimeActivityRefresh = () => {
           ]);
         }
       )
-      // 6. Nouveaux messages sur les litiges
+      // 6. Nouveaux messages sur les litiges (unified system)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'dispute_messages',
+          table: 'messages',
+          filter: 'conversation_id=in.(select id from conversations where dispute_id is not null)'
         },
-        (payload) => {
+        async (payload) => {
           const message = payload.new as any;
           // Ignorer ses propres messages
           if (message.sender_id === user.id) return;
           
-          logger.debug('Realtime: New dispute message', payload);
-          invalidateMultiple([
-            ['dispute-messages', message.dispute_id],
-            ['unread-dispute-messages', message.dispute_id, user.id],
-            ['unread-disputes-global', user.id],
-            ['unread-admin-messages', user.id],
-          ]);
+          // Récupérer le dispute_id depuis la conversation
+          const { data: conversation } = await supabase
+            .from('conversations')
+            .select('dispute_id')
+            .eq('id', message.conversation_id)
+            .single();
+          
+          if (conversation?.dispute_id) {
+            logger.debug('Realtime: New dispute message (unified)', payload);
+            invalidateMultiple([
+              ['conversation-messages', message.conversation_id],
+              ['unread-conversation-messages', message.conversation_id, user.id],
+              ['unread-disputes-global', user.id],
+              ['unread-admin-messages', user.id],
+            ]);
+          }
         }
       )
       .subscribe((status) => {
