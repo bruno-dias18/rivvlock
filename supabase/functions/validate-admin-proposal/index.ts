@@ -419,6 +419,19 @@ const handler = async (_req: Request, ctx: any) => {
         logger.warn("Could not insert confirmation messages", msgError);
       }
 
+      // ✅ Update proposal status to accepted (critical)
+      const { error: proposalUpdateError } = await adminClient
+        .from("dispute_proposals")
+        .update({ 
+          status: 'accepted',
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", proposalId);
+      
+      if (proposalUpdateError) {
+        logger.error("❌ Error updating proposal status:", proposalUpdateError);
+      }
+
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
 
       return successResponse({
