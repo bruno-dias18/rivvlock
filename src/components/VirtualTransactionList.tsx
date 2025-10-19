@@ -53,8 +53,9 @@ export const VirtualTransactionList: React.FC<VirtualTransactionListProps> = ({
   const virtualizer = useVirtualizer({
     count: transactions.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 280, // Estimated height of TransactionCard
-    overscan: 3, // Render 3 extra items above and below viewport
+    estimateSize: () => 320, // Base estimate; actual size measured dynamically
+    measureElement: (el) => el.getBoundingClientRect().height, // Enable dynamic heights
+    overscan: 6, // Slightly increase to avoid visual gaps while measuring
   });
 
   return (
@@ -80,6 +81,8 @@ export const VirtualTransactionList: React.FC<VirtualTransactionListProps> = ({
               <div
                 key={transaction.id}
                 id={`transaction-${transaction.id}`}
+                ref={virtualizer.measureElement}
+                data-index={virtualItem.index}
                 style={{
                   position: 'absolute',
                   top: 0,
