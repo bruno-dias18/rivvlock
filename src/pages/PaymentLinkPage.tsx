@@ -36,6 +36,7 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
+  const [autoJoined, setAutoJoined] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -113,7 +114,28 @@ export default function PaymentLinkPage() {
         setError(errorMsg);
       } finally {
         setLoading(false);
-      }
+  };
+
+  const autoJoinTransaction = async () => {
+    if (!user || !transaction || autoJoined) return;
+    
+    try {
+      const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
+        body: { 
+          transaction_id: transaction.id,
+          linkToken: token || new URLSearchParams(window.location.search).get('txId')
+        }
+      });
+
+      if (joinError) throw joinError;
+      if (joinData.error) throw new Error(joinData.error);
+      
+      setAutoJoined(true);
+      logger.log('User automatically joined transaction');
+    } catch (err: any) {
+      logger.error('Error auto-joining transaction:', err);
+      // Don't show error to user for auto-join, they can still manually join
+    }
   };
 
   const handlePayNow = async () => {
@@ -140,16 +162,18 @@ export default function PaymentLinkPage() {
 
     setProcessingPayment(true);
     try {
-      // 1. Join the transaction first
-      const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-        body: { 
-          transaction_id: transaction.id,
-          linkToken: token || new URLSearchParams(window.location.search).get('txId')
-        }
-      });
+      // 1. Join the transaction first (if not already done)
+      if (!autoJoined) {
+        const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
+          body: { 
+            transaction_id: transaction.id,
+            linkToken: token || new URLSearchParams(window.location.search).get('txId')
+          }
+        });
 
-      if (joinError) throw joinError;
-      if (joinData.error) throw new Error(joinData.error);
+        if (joinError) throw joinError;
+        if (joinData.error) throw new Error(joinData.error);
+      }
 
       // 2. Create Stripe Checkout session immediately
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
@@ -175,6 +199,13 @@ export default function PaymentLinkPage() {
       setProcessingPayment(false);
     }
   };
+
+  // Auto-join transaction when user is authenticated
+  useEffect(() => {
+    if (user && transaction && !autoJoined) {
+      autoJoinTransaction();
+    }
+  }, [user, transaction]);
 
   const handleAuthRedirect = () => {
     const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;

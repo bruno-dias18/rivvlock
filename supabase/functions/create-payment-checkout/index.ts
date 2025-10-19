@@ -46,15 +46,38 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     throw new Error('Only the buyer can create a payment');
   }
 
-  // Verify buyer has Stripe customer
+  // Verify buyer has or create Stripe customer
   const { data: buyerProfile } = await adminClient!
     .from('profiles')
     .select('stripe_customer_id')
     .eq('user_id', user!.id)
     .single();
 
-  if (!buyerProfile?.stripe_customer_id) {
-    throw new Error('Buyer must have a Stripe customer ID');
+  let customerId = buyerProfile?.stripe_customer_id as string | undefined;
+
+  // Initialize Stripe (needed for customer ops too)
+  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    apiVersion: "2025-08-27.basil",
+  });
+
+  if (!customerId) {
+    // Try to find existing customer by email
+    const userEmail = user!.email;
+    if (!userEmail) {
+      throw new Error('Buyer email is required to create a Stripe customer');
+    }
+    const existing = await stripe.customers.list({ email: userEmail, limit: 1 });
+    if (existing.data.length > 0) {
+      customerId = existing.data[0].id;
+    } else {
+      const created = await stripe.customers.create({ email: userEmail });
+      customerId = created.id;
+    }
+    // Persist on profile for future
+    await adminClient!
+      .from('profiles')
+      .update({ stripe_customer_id: customerId })
+      .eq('user_id', user!.id);
   }
 
   // Verify seller has Stripe account
@@ -68,10 +91,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     throw new Error('Seller must have a configured Stripe account');
   }
 
-  // Initialize Stripe
-  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-    apiVersion: "2025-08-27.basil",
-  });
+  // (Stripe already initialized above)
 
   const amount = Math.round(transaction.price * 100);
   const currency = transaction.currency.toLowerCase();
@@ -82,9 +102,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     || Deno.env.get("SITE_URL") 
     || "https://app.rivvlock.com";
 
-  // Create Checkout Session
   const session = await stripe.checkout.sessions.create({
-    customer: buyerProfile.stripe_customer_id,
+    customer: customerId,
     payment_method_types: ['card'],
     line_items: [{
       price_data: {
