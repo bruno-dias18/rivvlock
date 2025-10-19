@@ -42,9 +42,10 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
       setSelectedType('partial_refund');
       setPercentage(50);
       setMessage('');
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating proposal:', error);
-      toast.error('Erreur lors de l\'envoi de la proposition');
+      const message = error?.message || "Erreur lors de l'envoi de la proposition";
+      toast.error(message);
     }
   };
 

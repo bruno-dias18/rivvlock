@@ -62,17 +62,23 @@ export const useDisputeProposals = (disputeId: string) => {
       refundPercentage?: number; 
       message?: string;
     }) => {
-      const { data, error } = await supabase.functions.invoke('create-proposal', {
-        body: {
-          disputeId,
-          proposalType,
-          refundPercentage,
-          message,
-        },
-      });
+      try {
+        const { data, error } = await supabase.functions.invoke('create-proposal', {
+          body: {
+            disputeId,
+            proposalType,
+            refundPercentage,
+            message,
+          },
+        });
 
-      if (error) throw error;
-      return data;
+        if (error) throw error;
+        return data;
+      } catch (err: any) {
+        // Surface a user-friendly message so UI can display the cause
+        const { getUserFriendlyError } = await import('@/lib/errorMessages');
+        throw new Error(getUserFriendlyError(err, { details: err }));
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
@@ -94,6 +100,11 @@ export const useDisputeProposals = (disputeId: string) => {
         });
       });
     },
+    onError: async (err: any) => {
+      const { toast } = await import('sonner');
+      const { getUserFriendlyError } = await import('@/lib/errorMessages');
+      toast.error(getUserFriendlyError(err, { details: err }));
+    }
   });
 
   const acceptProposal = useMutation({
