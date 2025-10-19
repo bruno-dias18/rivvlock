@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +41,35 @@ export default function DashboardPage() {
   }, [isAdmin, navigate]);
 
   const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
-  const { data: stripeAccount } = useStripeAccount();
+  const { data: stripeAccount, isLoading: isStripeLoading, error: stripeError } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
+  
+  // Fallback: Check if Stripe account exists in DB even if hook fails
+  const [hasStripeAccountInDB, setHasStripeAccountInDB] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    if (stripeError && user?.id) {
+      // If hook fails, check DB directly
+      supabase
+        .from('stripe_accounts')
+        .select('stripe_account_id, account_status, charges_enabled, payouts_enabled, details_submitted, onboarding_completed')
+        .eq('user_id', user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            const isActive = data.account_status === 'active' && 
+                           data.charges_enabled && 
+                           data.payouts_enabled && 
+                           data.details_submitted &&
+                           data.onboarding_completed;
+            setHasStripeAccountInDB(isActive);
+            logger.info('Stripe account found in DB (fallback)', { isActive, data });
+          } else {
+            setHasStripeAccountInDB(false);
+          }
+        });
+    }
+  }, [stripeError, user?.id]);
   const { data: disputes } = useDisputes();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
@@ -149,7 +177,10 @@ export default function DashboardPage() {
                              stripeAccount?.charges_enabled && 
                              stripeAccount?.details_submitted;
         
-        if (!isStripeReady) {
+        // Fallback: If hook failed but we have a verified account in DB, allow transaction creation
+        const canCreateTransaction = isStripeReady || hasStripeAccountInDB === true;
+        
+        if (!canCreateTransaction) {
           setIsBankAccountDialogOpen(true);
         } else {
           setIsNewTransactionOpen(true);

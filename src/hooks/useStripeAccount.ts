@@ -51,14 +51,18 @@ export const useStripeAccount = () => {
         throw new Error('User not authenticated');
       }
       
+      console.log('[useStripeAccount] Fetching Stripe status for user:', user.id);
+      
       let lastError: Error | null = null;
       
       // Retry logic with backoff
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
+          console.log('[useStripeAccount] Attempt', attempt, '- Invoking check-stripe-account-status');
           const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
           
           if (error) {
+            console.error('[useStripeAccount] Error:', error);
             lastError = error;
             
             // Don't retry for authentication errors (401/403)
@@ -71,12 +75,14 @@ export const useStripeAccount = () => {
             // Retry for server errors (500) with exponential backoff
             if (attempt < 3) {
               const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+              console.log('[useStripeAccount] Retrying in', delay, 'ms');
               await sleep(delay);
               continue;
             }
             
             throw error;
           }
+          console.log('[useStripeAccount] Success:', data);
           return {
             ...data,
             last_check: new Date().toISOString()

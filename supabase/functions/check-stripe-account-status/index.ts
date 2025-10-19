@@ -55,7 +55,7 @@ const handler = async (ctx: any) => {
 
     // Initialize Stripe and fetch account details
     const stripe = new Stripe(stripeKey, {
-      apiVersion: "2025-08-27.basil",
+      apiVersion: "2024-06-20",
     });
 
     logStep("Fetching Stripe account details", { accountId: stripeAccount.stripe_account_id });

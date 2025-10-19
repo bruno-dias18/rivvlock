@@ -83,7 +83,7 @@ const handler = async (ctx: any) => {
 
   // Retrieve live status from Stripe
   const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-  const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" as any });
+  const stripe = new Stripe(stripeKey, { apiVersion: "2024-06-20" as any });
   let account;
   try {
     account = await stripe.accounts.retrieve(sa.stripe_account_id);
