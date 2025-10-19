@@ -48,15 +48,47 @@ export const useForceEscalateDispute = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
     },
     onError: (error: any) => {
-      // Show raw error details to the user to avoid generic messages
+      // Attempt to extract precise server details from supabase-js error context
+      const ctx = (error as any)?.context;
+      const resp = ctx?.response;
+      let statusCode = (error as any)?.status || (error as any)?.statusCode || resp?.status;
+      let serverBody: any = ctx?.body;
+      try {
+        if (!serverBody && resp && typeof resp.text === 'function') {
+          // best-effort: supabase-js may expose the raw Response
+          // Note: cannot await here; keep fallback below
+        }
+      } catch {}
       const raw = typeof error === 'string' ? error : (error?.message || JSON.stringify(error));
-      console.error('Force escalate error details:', error);
-      // Fallback to our friendly toast but include the raw message inline for visibility
-      const statusCode = (error as any)?.status || (error as any)?.statusCode;
       const code = (error as any)?.code;
+
+      // Map common statuses to friendly messages
+      let friendly = '';
+      switch (statusCode) {
+        case 422:
+          friendly = 'Requête invalide: identifiant de litige non valide.';
+          break;
+        case 403:
+          friendly = "Accès refusé: action réservée aux administrateurs.";
+          break;
+        case 404:
+          friendly = 'Litige introuvable.';
+          break;
+        case 429:
+          friendly = 'Trop de requêtes. Réessayez dans une minute.';
+          break;
+        default:
+          friendly = 'Erreur lors de l’escalade du litige.';
+      }
+
+      const serverMsg = serverBody
+        ? (typeof serverBody === 'string' ? serverBody : (serverBody.error || JSON.stringify(serverBody)))
+        : '';
+
+      console.error('Force escalate error details:', { error, statusCode, serverBody });
       import('sonner').then(({ toast }) => {
         toast.error('Erreur escalade', {
-          description: `${raw}${statusCode ? ` (HTTP ${statusCode})` : ''}${code ? ` [${code}]` : ''}`.slice(0, 400),
+          description: `${friendly} ${serverMsg ? `- ${serverMsg}` : ''} ${raw ? `(${raw})` : ''}${statusCode ? ` (HTTP ${statusCode})` : ''}${code ? ` [${code}]` : ''}`.trim().slice(0, 400),
         });
       });
     }

@@ -238,13 +238,19 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const handleForceEscalate = () => {
     if (!confirm('Êtes-vous sûr de vouloir escalader ce litige maintenant ? Les parties ne pourront plus négocier directement.')) return;
 
+    // Validate UUID to avoid backend 422 with generic error
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(dispute.id);
+    if (!isUuid) {
+      toast.error('Identifiant de litige invalide (UUID requis)');
+      return;
+    }
+
     forceEscalate(dispute.id, {
       onSuccess: () => {
         onRefetch?.();
       }
     });
   };
-
   const isResolved = dispute.status.startsWith('resolved');
 
   // Version condensée pour les litiges résolus
