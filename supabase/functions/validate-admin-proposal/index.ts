@@ -17,7 +17,7 @@ const validateProposalSchema = z.object({
   action: z.enum(["accept", "reject"]),
 });
 
-const handler = async (ctx: any) => {
+const handler = async (_req: Request, ctx: any) => {
   try {
     const { user, supabaseClient, adminClient, body } = ctx;
     const { proposalId, action } = body;

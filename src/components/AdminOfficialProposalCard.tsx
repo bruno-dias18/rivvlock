@@ -39,6 +39,13 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
   const handleValidation = async (action: 'accept' | 'reject') => {
     setIsValidating(true);
     try {
+      // Basic UUID guard to avoid server 500
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(proposal.id)) {
+        toast.error("ID de proposition invalide");
+        return;
+      }
+
       const { error } = await supabase.functions.invoke('validate-admin-proposal', {
         body: {
           proposalId: proposal.id,
@@ -63,9 +70,20 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
       
       // Garder le callback existant pour compatibilité
       onRefetch?.();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error validating proposal:', error);
-      toast.error("Erreur lors de la validation");
+      try {
+        const resp = (error as any)?.context?.response;
+        if (resp && typeof resp.text === 'function') {
+          const raw = await resp.text();
+          toast.error('Erreur lors de la validation', { description: raw.slice(0, 400) });
+        } else {
+          const msg = error?.message || 'Erreur lors de la validation';
+          toast.error('Erreur lors de la validation', { description: String(msg) });
+        }
+      } catch {
+        toast.error('Erreur lors de la validation');
+      }
     } finally {
       setIsValidating(false);
     }
