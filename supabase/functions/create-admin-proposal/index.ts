@@ -95,6 +95,11 @@ const handler = async (ctx: any) => {
         apiVersion: "2024-06-20",
       });
 
+      // Validate payment intent exists
+      if (!transaction.stripe_payment_intent_id) {
+        throw new Error("Transaction has no payment intent - cannot execute arbitration");
+      }
+
       const totalAmount = Math.round(transaction.price * 100);
       const platformFee = Math.round(totalAmount * 0.05);
       const currency = String(transaction.currency).toLowerCase();
