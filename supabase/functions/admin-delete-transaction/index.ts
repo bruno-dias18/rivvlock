@@ -45,10 +45,40 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     .single();
 
   // Delete all related records first
-  await adminClient!.from('transaction_messages').delete().eq('transaction_id', transactionId);
+  // 1. Delete messages via conversations
+  const { data: conversations } = await adminClient!
+    .from('conversations')
+    .select('id')
+    .eq('transaction_id', transactionId);
+
+  if (conversations && conversations.length > 0) {
+    const conversationIds = conversations.map(c => c.id);
+    
+    // Delete message_reads for messages in these conversations
+    const { data: messages } = await adminClient!
+      .from('messages')
+      .select('id')
+      .in('conversation_id', conversationIds);
+    
+    if (messages && messages.length > 0) {
+      await adminClient!.from('message_reads').delete().in('message_id', messages.map(m => m.id));
+    }
+    
+    // Delete messages
+    await adminClient!.from('messages').delete().in('conversation_id', conversationIds);
+    
+    // Delete conversation_reads
+    await adminClient!.from('conversation_reads').delete().in('conversation_id', conversationIds);
+    
+    // Delete conversations
+    await adminClient!.from('conversations').delete().in('id', conversationIds);
+  }
+
+  // 2. Delete disputes (cascade will handle dispute_proposals and dispute-related conversations)
   await adminClient!.from('disputes').delete().eq('transaction_id', transactionId);
+  
+  // 3. Delete invoices
   await adminClient!.from('invoices').delete().eq('transaction_id', transactionId);
-  await adminClient!.from('message_reads').delete().eq('message_id', transactionId);
 
   // Delete the transaction
   const { error: deleteError } = await adminClient!

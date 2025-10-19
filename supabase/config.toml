@@ -123,7 +123,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.fix-blocked-transaction]
-verify_jwt = false
+verify_jwt = true
 
 [functions.fix-reactivated-transactions]
 verify_jwt = false
@@ -151,6 +151,9 @@ verify_jwt = false
 
 [functions.get-transaction-by-token]
 verify_jwt = false
+
+[functions.get-transactions-enriched]
+verify_jwt = true
 
 [functions.get-user-emails]
 verify_jwt = true
@@ -223,6 +226,9 @@ verify_jwt = false
 
 [functions.sync-stripe-payments]
 verify_jwt = false
+
+[functions.update-quote]
+verify_jwt = true
 
 [functions.update-stripe-account-info]
 verify_jwt = true

@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { 
   compose, 
-  withCors, 
+  withCors,
+  withAuth, 
   withRateLimit, 
   withValidation,
   successResponse, 
@@ -78,6 +79,7 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
 
 const composedHandler = compose(
   withCors,
+  withAuth,
   withRateLimit(),
   withValidation(fixTransactionSchema)
 )(handler);

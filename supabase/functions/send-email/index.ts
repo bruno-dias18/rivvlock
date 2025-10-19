@@ -36,6 +36,15 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
   const { body } = ctx;
   const { type, to, data } = body as { type: EmailType; to: string; data: Record<string, any> };
 
+  // Security: Only allow calls from service role (internal edge functions)
+  const authHeader = _req.headers.get('authorization');
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!authHeader || !authHeader.includes(serviceRoleKey || '')) {
+    logger.error("[SEND-EMAIL] Unauthorized call attempt");
+    return errorResponse('Unauthorized', 403);
+  }
+
   try {
     logger.log('[SEND-EMAIL] Rendering email template', { type, to: maskEmail(to) });
 

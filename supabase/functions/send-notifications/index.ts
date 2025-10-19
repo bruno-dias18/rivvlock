@@ -23,6 +23,15 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
   const { body } = ctx;
   const { type, transactionId, message, recipients } = body as { type: string; transactionId?: string; message?: string; recipients?: string[] };
 
+  // Security: Only allow calls from service role (internal edge functions)
+  const authHeader = _req.headers.get('authorization');
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  if (!authHeader || !authHeader.includes(serviceRoleKey || '')) {
+    logger.error("Unauthorized send-notifications call");
+    return errorResponse('Unauthorized', 403);
+  }
+
   try {
     // Create anon client just to fetch transaction context if needed
     const supabaseClient = createClient(

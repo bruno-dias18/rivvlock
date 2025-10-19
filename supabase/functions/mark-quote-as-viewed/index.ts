@@ -15,7 +15,7 @@ const markQuoteSchema = z.object({
 });
 
 const handler: Handler = async (req, ctx: HandlerContext) => {
-  const { user, supabaseClient, body } = ctx;
+  const { user, supabaseClient, adminClient, body } = ctx;
   const { quoteId } = body;
 
   // Get the quote to verify the user is the client
@@ -34,8 +34,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     return errorResponse('Not authorized - only the client can mark as viewed', 403);
   }
 
-  // Update the client_last_viewed_at timestamp
-  const { error: updateError } = await supabaseClient!
+  // Update using adminClient to bypass RLS (client can't UPDATE quotes)
+  const { error: updateError } = await adminClient!
     .from('quotes')
     .update({ client_last_viewed_at: new Date().toISOString() })
     .eq('id', quoteId);
