@@ -148,11 +148,7 @@ const handler: Handler = async (req, ctx) => {
     if (alreadyProcessed) {
       logger.log('Idempotency: operations already completed, skipping Stripe actions');
     } else {
-
-  let newTransactionStatus = transaction.status;
-  let disputeStatus: 'resolved' | 'resolved_refund' | 'resolved_release' = 'resolved';
-
-  // Process the refund based on proposal type
+      // Process the refund based on proposal type
   if (proposal.proposal_type === 'partial_refund' || proposal.proposal_type === 'full_refund') {
     if (!transaction.stripe_payment_intent_id) {
       return errorResponse("No payment intent found for this transaction", 400);
@@ -209,19 +205,33 @@ const handler: Handler = async (req, ctx) => {
         const refreshedPI = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
         const chargeId = typeof refreshedPI.latest_charge === 'string' ? refreshedPI.latest_charge : null;
 
-        // Transfer seller's share
-        await stripe.transfers.create({
-          amount: sellerAmount,
-          currency,
-          destination: sellerAccount.stripe_account_id,
-          transfer_group: `txn_${transaction.id}`,
-          ...(chargeId ? { source_transaction: chargeId } : {}),
-          metadata: {
-            transaction_id: transaction.id,
-            type: 'partial_refund_seller_share'
-          }
+        // Transfer seller's share (with idempotency check)
+        const transferGroup = `txn_${transaction.id}`;
+        const existingTransfers = await stripe.transfers.list({ 
+          transfer_group: transferGroup, 
+          limit: 10 
         });
-        logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller`);
+        const alreadyTransferred = existingTransfers.data.find(t => 
+          t.metadata?.type === 'partial_refund_seller_share' && 
+          t.destination === sellerAccount.stripe_account_id
+        );
+
+        if (!alreadyTransferred) {
+          await stripe.transfers.create({
+            amount: sellerAmount,
+            currency,
+            destination: sellerAccount.stripe_account_id,
+            transfer_group: transferGroup,
+            ...(chargeId ? { source_transaction: chargeId } : {}),
+            metadata: {
+              transaction_id: transaction.id,
+              type: 'partial_refund_seller_share'
+            }
+          });
+          logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller`);
+        } else {
+          logger.log(`⏭️ Transfer already exists (${alreadyTransferred.id}), skipping`);
+        }
 
         // Calculate and refund buyer's share
         const buyerRefund = Math.round((totalAmount * (refundPercentage / 100)) - (platformFee * (refundPercentage / 100)));
@@ -280,19 +290,34 @@ const handler: Handler = async (req, ctx) => {
           throw new Error('Seller Stripe account not found');
         }
 
-        await stripe.transfers.create({
-          amount: sellerAmount,
-          currency,
-          destination: sellerAccount.stripe_account_id,
-          transfer_group: `txn_${transaction.id}`,
-          ...(chargeId ? { source_transaction: chargeId } : {}),
-          metadata: {
-            dispute_id: dispute.id,
-            proposal_id: proposalId,
-            type: 'partial_refund_seller_share'
-          }
+        // Transfer seller's share with idempotency check
+        const transferGroup = `txn_${transaction.id}`;
+        const existingTransfers = await stripe.transfers.list({ 
+          transfer_group: transferGroup, 
+          limit: 10 
         });
-        logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+        const alreadyTransferred = existingTransfers.data.find(t => 
+          t.metadata?.type === 'partial_refund_seller_share' && 
+          t.destination === sellerAccount.stripe_account_id
+        );
+
+        if (!alreadyTransferred) {
+          await stripe.transfers.create({
+            amount: sellerAmount,
+            currency,
+            destination: sellerAccount.stripe_account_id,
+            transfer_group: transferGroup,
+            ...(chargeId ? { source_transaction: chargeId } : {}),
+            metadata: {
+              dispute_id: dispute.id,
+              proposal_id: proposalId,
+              type: 'partial_refund_seller_share'
+            }
+          });
+          logger.log(`✅ Transferred ${sellerAmount / 100} ${currency} to seller (partial refund)`);
+        } else {
+          logger.log(`⏭️ Transfer already exists (${alreadyTransferred.id}), skipping`);
+        }
       }
 
       // Idempotency: avoid double refunds if already refunded previously
@@ -371,23 +396,42 @@ const handler: Handler = async (req, ctx) => {
       throw new Error(`PaymentIntent not capturable (status=${pi.status})`);
     }
 
-    // Transfer net amount to seller
+    // Transfer net amount to seller with idempotency check
     const transferAmount = totalAmount - platformFee;
     if (transferAmount > 0) {
-      await stripe.transfers.create({
-        amount: transferAmount,
-        currency,
-        destination: sellerAccount.stripe_account_id,
-        transfer_group: `txn_${transaction.id}`,
-        ...(chargeId ? { source_transaction: chargeId } : {}),
+      const transferGroup = `txn_${transaction.id}`;
+      const existingTransfers = await stripe.transfers.list({ 
+        transfer_group: transferGroup, 
+        limit: 10 
       });
-      logger.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+      const alreadyTransferred = existingTransfers.data.find(t => 
+        t.metadata?.type === 'no_refund_release' && 
+        t.destination === sellerAccount.stripe_account_id
+      );
+
+      if (!alreadyTransferred) {
+        await stripe.transfers.create({
+          amount: transferAmount,
+          currency,
+          destination: sellerAccount.stripe_account_id,
+          transfer_group: transferGroup,
+          ...(chargeId ? { source_transaction: chargeId } : {}),
+          metadata: {
+            transaction_id: transaction.id,
+            type: 'no_refund_release'
+          }
+        });
+        logger.log(`✅ Transferred ${transferAmount / 100} ${currency} to seller (net after fees)`);
+      } else {
+        logger.log(`⏭️ Transfer already exists (${alreadyTransferred.id}), skipping`);
+      }
     }
 
     disputeStatus = 'resolved_release';
     newTransactionStatus = 'validated';
     logger.log(`✅ Funds released to seller (no refund)`);
   }
+    }  // Close else block from line 150
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return errorResponse(message || 'Erreur lors du traitement Stripe', 400);

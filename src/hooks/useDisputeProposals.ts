@@ -137,19 +137,42 @@ export const useDisputeProposals = (disputeId: string) => {
         }
 
         if (data?.error) throw new Error(data.error);
-        return data;
+        
+        // Check for partial success with warnings
+        if (data?.partial_success && data?.warnings?.length > 0) {
+          return { 
+            success: true, 
+            partial: true,
+            warnings: data.warnings,
+            message: 'Paiement Stripe effectué avec succès, mais certaines mises à jour de statut ont échoué.'
+          };
+        }
+        
+        return { success: true, partial: false };
       } catch (err: any) {
         // Normalize to a friendly error with details if available
         const { getUserFriendlyError } = await import('@/lib/errorMessages');
         throw new Error(getUserFriendlyError(err, { details: err }));
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['messages'] });
+      
+      // Show appropriate toast based on result
+      import('sonner').then(({ toast }) => {
+        if (result.partial) {
+          toast.success('Paiement effectué', {
+            description: result.message,
+            duration: 6000,
+          });
+        } else {
+          toast.success('Proposition acceptée avec succès');
+        }
+      });
     },
   });
 
