@@ -41,8 +41,17 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
       return;
     }
 
+    // Validation UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(disputeId)) {
+      logger.error('[AdminOfficialProposal] Invalid disputeId format:', disputeId);
+      toast.error(`ID de litige invalide: ${disputeId}`);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      logger.log('[AdminOfficialProposal] Submitting with disputeId:', disputeId);
       const { error } = await supabase.functions.invoke('create-admin-proposal', {
         body: {
           disputeId,

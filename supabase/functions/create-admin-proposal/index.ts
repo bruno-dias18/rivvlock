@@ -24,6 +24,13 @@ const handler = async (ctx: any) => {
     const { user, supabaseClient, adminClient, body } = ctx;
     const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = body;
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(disputeId)) {
+      logger.error("[ADMIN-PROPOSAL] Invalid UUID format for disputeId:", disputeId);
+      return errorResponse(`Invalid dispute ID format: ${disputeId}`, 422);
+    }
+
     // Verify user is admin via secure RPC
     const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
       check_user_id: user.id
