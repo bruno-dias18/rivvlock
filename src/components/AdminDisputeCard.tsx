@@ -556,7 +556,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
                 variant="destructive"
                 size="sm"
                 onClick={handleForceEscalate}
-                disabled={isProcessing || isEscalating || dispute.status === 'escalated'}
+                disabled={isEscalating || dispute.status === 'escalated'}
                 className="w-full"
               >
                 {dispute.status === 'escalated' ? 'Déjà escaladé' : (isEscalating ? 'Escalade...' : 'Escalader maintenant')}
