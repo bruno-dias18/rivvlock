@@ -34,7 +34,7 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
   const [loadedNotes, setLoadedNotes] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showOfficialProposal, setShowOfficialProposal] = useState(false);
-  const { mutate: forceEscalate } = useForceEscalateDispute();
+  const { mutate: forceEscalate, isPending: isEscalating } = useForceEscalateDispute();
 
   const { proposals } = useDisputeProposals(dispute.id);
   
@@ -235,25 +235,14 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
     }
   };
 
-  const handleForceEscalate = async () => {
+  const handleForceEscalate = () => {
     if (!confirm('Êtes-vous sûr de vouloir escalader ce litige maintenant ? Les parties ne pourront plus négocier directement.')) return;
 
-    setIsProcessing(true);
-    try {
-      forceEscalate(dispute.id, {
-        onSuccess: () => {
-          onRefetch?.();
-          setIsProcessing(false);
-        },
-        onError: () => {
-          setIsProcessing(false);
-        }
-      });
-    } catch (error) {
-      logger.error('Error force escalating dispute:', error);
-      toast.error('Erreur lors de l\'escalade du litige');
-      setIsProcessing(false);
-    }
+    forceEscalate(dispute.id, {
+      onSuccess: () => {
+        onRefetch?.();
+      }
+    });
   };
 
   const isResolved = dispute.status.startsWith('resolved');
@@ -567,10 +556,10 @@ export const AdminDisputeCard: React.FC<AdminDisputeCardProps> = ({ dispute, onR
                 variant="destructive"
                 size="sm"
                 onClick={handleForceEscalate}
-                disabled={isProcessing || dispute.status === 'escalated'}
+                disabled={isProcessing || isEscalating || dispute.status === 'escalated'}
                 className="w-full"
               >
-                {dispute.status === 'escalated' ? 'Déjà escaladé' : (isProcessing ? 'Escalade...' : 'Escalader maintenant')}
+                {dispute.status === 'escalated' ? 'Déjà escaladé' : (isEscalating ? 'Escalade...' : 'Escalader maintenant')}
               </Button>
             </div>
           </div>
