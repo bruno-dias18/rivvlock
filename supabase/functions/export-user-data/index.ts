@@ -1,9 +1,8 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { 
   compose, 
   withCors, 
   withAuth, 
-  successResponse,
-  errorResponse,
   Handler,
   HandlerContext 
 } from "../_shared/middleware.ts";
@@ -126,4 +125,4 @@ const composedHandler = compose(
   withAuth
 )(handler);
 
-Deno.serve(composedHandler);
+serve(composedHandler);

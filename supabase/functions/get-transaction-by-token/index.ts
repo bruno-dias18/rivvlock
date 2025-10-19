@@ -4,7 +4,6 @@ import {
   withCors, 
   successResponse,
   errorResponse,
-  getCorsHeaders,
   Handler 
 } from "../_shared/middleware.ts";
 import { createServiceClient } from "../_shared/supabase-utils.ts";

@@ -1,6 +1,23 @@
-import { compose, withCors, successResponse, errorResponse, getCorsHeaders } from "../_shared/middleware.ts";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler,
+  HandlerContext
+} from "../_shared/middleware.ts";
 import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
+
+const confirmDateSchema = z.object({
+  transactionId: z.string().uuid(),
+  token: z.string(),
+  proposedDate: z.string(),
+  proposedEndDate: z.string().optional(),
+});
 
 // Safe calculation with fallbacks
 const calculatePaymentDeadline = (serviceDate: string): string => {
@@ -24,15 +41,9 @@ const calculatePaymentDeadline = (serviceDate: string): string => {
   }
 };
 
-const handler = compose(
-  withCors
-)(async (req) => {
-  const { transactionId, token, proposedDate, proposedEndDate } = await req.json();
-  
-  // Validation
-  if (!transactionId || !token || !proposedDate) {
-    return errorResponse('Missing required fields', 400);
-  }
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { body } = ctx;
+  const { transactionId, token, proposedDate, proposedEndDate } = body;
   
   const supabaseAdmin = createServiceClient();
   
@@ -50,12 +61,10 @@ const handler = compose(
   
   // RACE CONDITION PROTECTION: verify exact status
   if (transaction.status !== 'pending_date_confirmation') {
-    return new Response(
-      JSON.stringify({ 
-        error: 'Transaction already confirmed or invalid status',
-        current_status: transaction.status 
-      }), 
-      { status: 409, headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' } }
+    return errorResponse(
+      'Transaction already confirmed or invalid status',
+      409,
+      { current_status: transaction.status }
     );
   }
   
@@ -103,6 +112,11 @@ const handler = compose(
   
   logger.log(`Date confirmed for transaction ${transactionId}`);
   return successResponse({ success: true, payment_deadline: paymentDeadline });
-});
+};
 
-Deno.serve(handler);
+const composedHandler = compose(
+  withCors,
+  withValidation(confirmDateSchema)
+)(handler);
+
+serve(composedHandler);
