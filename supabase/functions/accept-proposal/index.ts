@@ -17,10 +17,11 @@ const acceptProposalSchema = z.object({
 });
 
 const handler = async (_req: Request, ctx: any) => {
-  const { user, adminClient, body } = ctx;
-  const { proposalId } = body;
+  try {
+    const { user, adminClient, body } = ctx;
+    const { proposalId } = body;
 
-  logger.log("Accepting proposal:", proposalId, "by user:", user.id);
+    logger.log("Accepting proposal:", proposalId, "by user:", user.id);
 
   // Get the proposal with admin client to bypass RLS
   const { data: proposal, error: proposalError } = await adminClient
@@ -351,6 +352,7 @@ const handler = async (_req: Request, ctx: any) => {
     return errorResponse(message || 'Erreur lors du traitement Stripe', 400);
   }
 
+  // ✅ Update proposal status (critical - must succeed)
   const { error: proposalUpdateError } = await adminClient
     .from("dispute_proposals")
     .update({ 
@@ -359,10 +361,12 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", proposalId);
   if (proposalUpdateError) {
-    logger.error("Error updating proposal status:", proposalUpdateError);
+    logger.error("❌ CRITICAL: Error updating proposal status:", proposalUpdateError);
+    throw new Error(`Échec mise à jour proposition: ${proposalUpdateError.message}`);
   }
+  logger.log("✅ Proposal status updated");
 
-  // Update dispute status
+  // ✅ Update dispute status (critical - must succeed)
   const { error: disputeUpdateError } = await adminClient
     .from("disputes")
     .update({ 
@@ -373,8 +377,10 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", dispute.id);
   if (disputeUpdateError) {
-    logger.error("Error updating dispute:", disputeUpdateError);
+    logger.error("❌ CRITICAL: Error updating dispute:", disputeUpdateError);
+    throw new Error(`Échec mise à jour dispute: ${disputeUpdateError.message}`);
   }
+  logger.log("✅ Dispute status updated");
 
   // Update transaction status (keep original price, use refund_status instead)
   // Déterminer le refund_status
@@ -395,8 +401,10 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", transaction.id);
   if (txUpdateError) {
-    logger.error("Error updating transaction:", txUpdateError);
+    logger.error("❌ CRITICAL: Error updating transaction:", txUpdateError);
+    throw new Error(`Échec mise à jour transaction: ${txUpdateError.message}`);
   }
+  logger.log("✅ Transaction status updated");
 
   // Create confirmation message in conversation
   const confirmationText = proposal.proposal_type === 'partial_refund'
@@ -455,10 +463,15 @@ const handler = async (_req: Request, ctx: any) => {
     }
   }
 
-  return successResponse({
-    dispute_status: disputeStatus,
-    transaction_status: newTransactionStatus
-  });
+    return successResponse({
+      dispute_status: disputeStatus,
+      transaction_status: newTransactionStatus
+    });
+  } catch (error) {
+    logger.error('❌ Critical error in accept-proposal:', error);
+    const message = error instanceof Error ? error.message : 'Erreur interne lors du traitement de la proposition';
+    return errorResponse(message, 500);
+  }
 };
 
 const composedHandler = compose(
