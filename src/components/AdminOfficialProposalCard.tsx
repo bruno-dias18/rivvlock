@@ -75,9 +75,25 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
         }
       }
 
-      // If not actually succeeded, throw the error
+      // If not actually succeeded, attempt state verification fallback
       if (!actuallySucceeded) {
-        throw fnError;
+        try {
+          const { data: fresh } = await supabase
+            .from('dispute_proposals')
+            .select('status,buyer_validated,seller_validated')
+            .eq('id', proposal.id)
+            .maybeSingle();
+
+          const validatedNow = isSeller ? fresh?.seller_validated : fresh?.buyer_validated;
+          const bothNow = !!(fresh?.buyer_validated && fresh?.seller_validated);
+          const acceptedNow = fresh?.status === 'accepted';
+
+          if (!(validatedNow || bothNow || acceptedNow)) {
+            throw fnError;
+          }
+        } catch {
+          throw fnError;
+        }
       }
 
       if (action === 'accept') {
@@ -97,6 +113,30 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
       onRefetch?.();
     } catch (error: any) {
       logger.error('Error validating proposal:', error);
+      // Final fallback: re-check server state before showing an error
+      try {
+        const { data: fresh } = await supabase
+          .from('dispute_proposals')
+          .select('status,buyer_validated,seller_validated')
+          .eq('id', proposal.id)
+          .maybeSingle();
+
+        const validatedNow = isSeller ? fresh?.seller_validated : fresh?.buyer_validated;
+        const bothNow = !!(fresh?.buyer_validated && fresh?.seller_validated);
+        const acceptedNow = fresh?.status === 'accepted';
+
+        if (validatedNow || bothNow || acceptedNow) {
+          toast.success('Validation enregistrée avec succès');
+          queryClient.invalidateQueries({ queryKey: ['dispute-proposals', proposal.dispute_id] });
+          queryClient.invalidateQueries({ queryKey: ['disputes'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          queryClient.invalidateQueries({ queryKey: ['messages'] });
+          onRefetch?.();
+          return;
+        }
+      } catch {}
+
       try {
         const resp = (error as any)?.context?.response;
         if (resp && typeof resp.text === 'function') {
