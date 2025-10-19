@@ -1,49 +1,36 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const adminProposalSchema = z.object({
+  disputeId: z.string().uuid(),
+  proposalType: z.enum(['full_refund', 'partial_refund', 'no_refund']),
+  refundPercentage: z.number().min(0).max(100).optional(),
+  message: z.string().optional(),
+  immediateExecution: z.boolean().optional(),
+});
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+const handler = async (ctx: any) => {
+  const { user, supabaseClient, adminClient, body } = ctx;
+  const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = body;
+
+  // Verify user is admin via secure RPC
+  const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
+    check_user_id: user.id
+  });
+
+  if (!isAdmin) {
+    return errorResponse("Unauthorized: admin access required", 403);
   }
-
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    }
-  );
-
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
-  try {
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    const user = userData.user;
-    
-    if (!user?.id) {
-      throw new Error("User not authenticated");
-    }
-
-    // Verify user is admin via secure RPC
-    const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
-      check_user_id: user.id
-    });
-
-    if (!isAdmin) {
-      throw new Error("Unauthorized: admin access required");
-    }
 
     const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = await req.json();
 
@@ -406,20 +393,20 @@ serve(async (req) => {
       logger.error("[ADMIN-PROPOSAL] Error invoking send-notifications:", notificationError);
     }
 
-    return new Response(JSON.stringify({
-      success: true,
-      proposal
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return successResponse({ proposal });
 
   } catch (error) {
     logger.error("[ADMIN-PROPOSAL] Error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit({ maxRequests: 30, windowMs: 60000 }),
+  withValidation(adminProposalSchema)
+)(handler);
+
+serve(composedHandler);

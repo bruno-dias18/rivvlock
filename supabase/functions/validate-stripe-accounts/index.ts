@@ -1,48 +1,37 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { 
+  compose, 
+  withCors, 
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[VALIDATE-STRIPE-ACCOUNTS] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler = async (ctx: any) => {
+  const { adminClient } = ctx;
+  
   try {
     logStep("Function started");
 
     // Verify environment variables
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     
-    if (!supabaseUrl || !supabaseKey || !stripeKey) {
+    if (!stripeKey) {
       throw new Error("Missing required environment variables");
     }
-
-    // Initialize clients
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseKey,
-      { auth: { persistSession: false } }
-    );
 
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2024-06-20",
     });
 
     // Get all Stripe accounts from database
-    const { data: stripeAccounts, error: accountsError } = await supabaseClient
+    const { data: stripeAccounts, error: accountsError } = await adminClient
       .from('stripe_accounts')
       .select('*')
       .neq('account_status', 'inactive'); // Skip already inactive accounts
@@ -64,7 +53,7 @@ serve(async (req) => {
           const stripeAccount = await stripe.accounts.retrieve(dbAccount.stripe_account_id);
           
           // Update database with current status
-          const { error: updateError } = await supabaseClient
+          const { error: updateError } = await adminClient
             .from('stripe_accounts')
             .update({
               account_status: stripeAccount.charges_enabled && stripeAccount.payouts_enabled ? 'active' : 'pending',
@@ -98,7 +87,7 @@ serve(async (req) => {
           if (isMissing) {
             logStep("Account not found on Stripe, marking as inactive", { accountId: dbAccount.stripe_account_id });
             // Mark account as inactive ONLY when Stripe confirms it's missing
-            const { error: updateError } = await supabaseClient
+            const { error: updateError } = await adminClient
               .from('stripe_accounts')
               .update({
                 account_status: 'inactive',
@@ -129,8 +118,7 @@ serve(async (req) => {
       errors: errorCount
     });
 
-    return new Response(JSON.stringify({
-      success: true,
+    return successResponse({
       summary: {
         total_accounts: stripeAccounts?.length || 0,
         validated: validatedCount,
@@ -138,17 +126,18 @@ serve(async (req) => {
         errors: errorCount
       },
       message: `Validation terminée: ${validatedCount} comptes validés, ${inactiveCount} marqués comme inactifs, ${errorCount} erreurs`
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors
+  // No auth: CRON job
+)(handler);
+
+serve(composedHandler);

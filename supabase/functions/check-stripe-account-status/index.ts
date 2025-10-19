@@ -1,90 +1,39 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[CHECK-STRIPE-STATUS] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler = async (ctx: any) => {
+  const { user, adminClient } = ctx;
+  
   try {
     logStep("Function started");
 
     // Verify environment variables
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     
-    if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey || !stripeKey) {
+    if (!stripeKey) {
       logStep("ERROR - Missing environment variables");
       throw new Error("Missing required environment variables");
     }
     logStep("Environment variables verified");
 
-    // Client 1: ANON_KEY for user authentication
-    const supabaseAuth = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      { auth: { persistSession: false } }
-    );
-
-    // Client 2: SERVICE_ROLE_KEY to bypass RLS for reading stripe_accounts
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      supabaseServiceKey,
-      { auth: { persistSession: false } }
-    );
-
-    // Authenticate user with ANON client
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("ERROR - No authorization header");
-      throw new Error("No authorization header provided");
-    }
-    
-    const token = authHeader.replace("Bearer ", "");
-    logStep("Attempting user authentication with ANON_KEY");
-    
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
-    if (userError) {
-      logStep("ERROR - Authentication failed", { error: userError.message });
-      return new Response(
-        JSON.stringify({ error: 'Auth session missing!' }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401
-        }
-      );
-    }
-    
-    const user = userData.user;
-    if (!user?.email) {
-      logStep("ERROR - No user email found");
-      return new Response(
-        JSON.stringify({ error: 'User not authenticated or email not available' }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 401
-        }
-      );
-    }
     logStep("User authenticated successfully", { userId: user.id, email: user.email });
 
     // Get Stripe account from database using SERVICE_ROLE client (bypasses RLS)
     logStep("Fetching Stripe account with SERVICE_ROLE_KEY", { userId: user.id });
-    const { data: stripeAccount, error: accountError } = await supabaseAdmin
+    const { data: stripeAccount, error: accountError } = await adminClient
       .from('stripe_accounts')
       .select('*')
       .eq('user_id', user.id)
@@ -97,13 +46,10 @@ serve(async (req) => {
     
     if (!stripeAccount) {
       logStep("No Stripe account found");
-      return new Response(JSON.stringify({
+      return successResponse({
         has_account: false,
         account_status: null,
         onboarding_required: true
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -129,7 +75,7 @@ serve(async (req) => {
       });
 
       // Mark account as inactive in database using SERVICE_ROLE client
-      await supabaseAdmin
+      await adminClient
         .from('stripe_accounts')
         .update({
           account_status: 'inactive',
@@ -139,19 +85,16 @@ serve(async (req) => {
         })
         .eq('user_id', user.id);
 
-      return new Response(JSON.stringify({
+      return successResponse({
         has_account: false,
         account_status: 'inactive',
         onboarding_required: true,
         error: "Votre compte Stripe n'existe plus. Veuillez recréer votre compte."
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
     // Update database with latest status using SERVICE_ROLE client
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await adminClient
       .from('stripe_accounts')
       .update({
         account_status: account.charges_enabled && account.payouts_enabled ? 'active' : 'pending',
@@ -174,7 +117,7 @@ serve(async (req) => {
 
     // Create onboarding link if needed
     if (needsOnboarding) {
-      const origin = req.headers.get("origin") || "https://app.rivvlock.com";
+      const origin = "https://app.rivvlock.com"; // Fixed origin in middleware context
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.stripe_account_id,
         refresh_url: `${origin}/dashboard/profile`,
@@ -185,7 +128,7 @@ serve(async (req) => {
       logStep("Onboarding URL created", { url: onboardingUrl });
     }
 
-    return new Response(JSON.stringify({
+    return successResponse({
       has_account: true,
       stripe_account_id: stripeAccount.stripe_account_id,
       account_status: account.charges_enabled && account.payouts_enabled ? 'active' : 'pending',
@@ -194,17 +137,18 @@ serve(async (req) => {
       payouts_enabled: account.payouts_enabled,
       onboarding_required: needsOnboarding,
       onboarding_url: onboardingUrl
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth
+)(handler);
+
+serve(composedHandler);

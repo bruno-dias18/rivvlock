@@ -1,56 +1,40 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[UPDATE-STRIPE-ACCOUNT] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler = async (ctx: any) => {
+  const { user, adminClient } = ctx;
+  
   try {
     logStep("Function started");
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
 
-    if (!supabaseUrl || !supabaseServiceKey || !stripeSecretKey) {
+    if (!stripeSecretKey) {
       throw new Error('Missing environment variables');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
 
-    // Authenticate user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      throw new Error(`Authentication failed: ${userError?.message}`);
-    }
-
-    const userId = userData.user.id;
-    logStep("User authenticated", { userId });
+    logStep("User authenticated", { userId: user.id });
 
     // Get user's Stripe account
-    const { data: stripeAccount, error: accountError } = await supabase
+    const { data: stripeAccount, error: accountError } = await adminClient
       .from('stripe_accounts')
       .select('stripe_account_id, account_status')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .maybeSingle();
 
     if (accountError) {
@@ -74,10 +58,10 @@ serve(async (req) => {
       logStep("Stripe account created", { accountId: account.id });
 
       // Save to database
-      await supabase
+      await adminClient
         .from('stripe_accounts')
         .insert({
-          user_id: userId,
+          user_id: user.id,
           stripe_account_id: account.id,
           account_status: 'pending',
           country: 'FR',
@@ -88,19 +72,15 @@ serve(async (req) => {
       // Now create onboarding link for the new account
       const accountLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
-        return_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
+        refresh_url: 'https://app.rivvlock.com/dashboard/profile',
+        return_url: 'https://app.rivvlock.com/dashboard/profile',
         type: 'account_onboarding',
       });
 
       logStep("Onboarding link created for new account", { url: accountLink.url });
 
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         url: accountLink.url
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
       });
     }
 
@@ -129,12 +109,8 @@ serve(async (req) => {
       
       logStep("Account is fully active, returning dashboard URL", { url: dashboardUrl });
       
-      return new Response(JSON.stringify({
-        success: true,
+      return successResponse({
         url: dashboardUrl
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
       });
     }
 
@@ -149,31 +125,28 @@ serve(async (req) => {
     // Create account link with appropriate type
     const accountLink = await stripe.accountLinks.create({
       account: stripeAccount.stripe_account_id,
-      refresh_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
-      return_url: `${req.headers.get('origin') || 'https://app.rivvlock.com'}/dashboard/profile`,
+      refresh_url: 'https://app.rivvlock.com/dashboard/profile',
+      return_url: 'https://app.rivvlock.com/dashboard/profile',
       type: linkType,
     });
 
     logStep("Account update link created successfully", { url: accountLink.url });
 
-    return new Response(JSON.stringify({
-      success: true,
+    return successResponse({
       url: accountLink.url
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
     });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logStep("ERROR", { error: errorMessage });
     
-    return new Response(JSON.stringify({
-      success: false,
-      error: errorMessage
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    });
+    return errorResponse(errorMessage, 400);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth
+)(handler);
+
+serve(composedHandler);

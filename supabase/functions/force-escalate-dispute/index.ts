@@ -56,12 +56,6 @@ serve(async (req) => {
 
     const { disputeId } = await req.json();
     logStep('INPUT_VALIDATED_START', { disputeId });
-    if (!disputeId || typeof disputeId !== 'string' || !/^[0-9a-fA-F-]{36}$/.test(disputeId)) {
-      return new Response(JSON.stringify({ error: 'Invalid disputeId' }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
 
     logger.log("Force escalating dispute:", disputeId, "by admin:", user.id);
 
@@ -84,12 +78,8 @@ serve(async (req) => {
 
     // If already escalated, return idempotent success
     if (dispute.status === 'escalated') {
-      return new Response(JSON.stringify({ 
-        success: true,
+      return successResponse({ 
         message: "Déjà escaladé",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -124,12 +114,8 @@ serve(async (req) => {
         throw updateError;
       }
 
-      return new Response(JSON.stringify({ 
-        success: true,
+      return successResponse({ 
         message: "Litige escaladé (contexte transaction indisponible)",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -221,21 +207,23 @@ serve(async (req) => {
       logger.error("Error sending notification:", notificationError);
     }
 
-    return new Response(JSON.stringify({ 
-      success: true,
+    return successResponse({ 
       message: "Litige escaladé avec succès",
       conversations
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
 
   } catch (error) {
     logger.error("Error in force-escalate-dispute:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withRateLimit({ maxRequests: 10, windowMs: 60000 }),
+  withValidation(forceEscalateSchema)
+)(handler);
+
+serve(composedHandler);

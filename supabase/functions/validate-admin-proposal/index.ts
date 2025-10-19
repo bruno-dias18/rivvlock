@@ -1,43 +1,25 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withRateLimit, 
+  withValidation,
+  successResponse,
+  errorResponse 
+} from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const validateProposalSchema = z.object({
+  proposalId: z.string().uuid(),
+  action: z.enum(['accept', 'reject']),
+});
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-    {
-      global: { headers: { Authorization: authHeader } },
-      auth: { persistSession: false },
-    }
-  );
-
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
-  try {
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData } = await supabaseClient.auth.getUser(token);
-    const user = userData.user;
-    
-    if (!user?.id) {
-      throw new Error("User not authenticated");
-    }
-
-    const { proposalId, action } = await req.json(); // action: 'accept' or 'reject'
+const handler = async (ctx: any) => {
+  const { user, supabaseClient, adminClient, body } = ctx;
+  const { proposalId, action } = body;
 
     logger.log("[VALIDATE-ADMIN-PROPOSAL] User", user.id, action, "proposal", proposalId);
 
@@ -141,12 +123,8 @@ serve(async (req) => {
 
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal rejected by", isSeller ? 'seller' : 'buyer');
 
-      return new Response(JSON.stringify({ 
-        success: true,
+      return successResponse({ 
         status: 'rejected'
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
