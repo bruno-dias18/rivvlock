@@ -1,42 +1,26 @@
 /**
- * Feature Flags for Progressive Rollout
+ * Feature Flags
  * 
- * PHASE 5: Disputes Migration to Unified Architecture
+ * ✅ PHASE 5 COMPLETE: Disputes Migration to Unified Architecture
  * 
- * Usage:
- * - UNIFIED_DISPUTES: Toggle between legacy and unified dispute system
- * - DOUBLE_RUNNING: Run both systems in parallel for validation
+ * The unified messaging system is now the permanent architecture.
+ * All disputes use conversations + messages for optimal performance.
+ * 
+ * Migration completed and legacy system removed.
  */
 
 export const FEATURES = {
   /**
-   * Enable unified dispute architecture
+   * Unified dispute architecture (PERMANENT)
    * 
-   * @default false - Use legacy dispute system
+   * ✅ Migration completed - This is now the only system
    * 
-   * Rollout plan:
-   * - Week 1: false (Preparation)
-   * - Week 2: false (Data migration)
-   * - Week 3: false (Code implementation)
-   * - Week 4 Day 1: true (Admin only - Alpha) ← ACTUELLEMENT ICI
-   * - Week 4 Day 3: true (10% users - Beta)
-   * - Week 4 Day 5: true (100% users - Production)
+   * Benefits:
+   * - Single messaging architecture for all conversations
+   * - Reduced API requests and improved caching
+   * - Consistent UX across transaction and dispute messages
    */
   UNIFIED_DISPUTES: true,
-
-  /**
-   * Enable double-running mode for validation
-   * Runs both legacy and unified systems in parallel
-   * Logs mismatches for debugging
-   * 
-   * @default true during migration, false after
-   * 
-   * Performance impact: ~20% additional queries
-   * Only active when UNIFIED_DISPUTES is true
-   * 
-   * ✅ PRODUCTION: Disabled after successful migration
-   */
-  DOUBLE_RUNNING: false,
 } as const;
 
 export type FeatureFlags = typeof FEATURES;
