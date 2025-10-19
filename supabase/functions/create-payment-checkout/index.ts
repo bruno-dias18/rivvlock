@@ -70,11 +70,17 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   // Initialize Stripe
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-    apiVersion: "2024-06-20",
+    apiVersion: "2025-08-27.basil",
   });
 
   const amount = Math.round(transaction.price * 100);
   const currency = transaction.currency.toLowerCase();
+
+  // Use request origin as fallback for redirect URLs
+  const origin = req.headers.get("origin") 
+    || Deno.env.get("APP_URL") 
+    || Deno.env.get("SITE_URL") 
+    || "https://app.rivvlock.com";
 
   // Create Checkout Session
   const session = await stripe.checkout.sessions.create({
@@ -100,15 +106,17 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         buyer_id: user!.id,
       },
     },
-    success_url: `${Deno.env.get("APP_URL")}/payment-success?transaction_id=${transactionId}`,
-    cancel_url: `${Deno.env.get("APP_URL")}/transactions?tab=pending`,
+    success_url: `${origin}/payment-success?transaction_id=${transactionId}`,
+    cancel_url: `${origin}/transactions?tab=pending`,
   });
 
   logger.log('[PAYMENT-CHECKOUT] Session created:', session.id);
 
   return successResponse({ 
-    session_id: session.id, 
-    session_url: session.url 
+    session_id: session.id,
+    session_url: session.url,
+    url: session.url,
+    sessionUrl: session.url
   });
 };
 
