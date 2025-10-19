@@ -63,15 +63,17 @@ export function withAuth(handler: Handler): Handler {
       });
     }
 
+    // User client: uses ANON_KEY with user's JWT for authentication
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: { headers: { Authorization: authHeader } },
         auth: { persistSession: false },
       }
     );
 
+    // Admin client: uses SERVICE_ROLE_KEY to bypass RLS for authorized operations
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
