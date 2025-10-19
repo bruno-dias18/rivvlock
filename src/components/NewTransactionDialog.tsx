@@ -284,12 +284,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       });
 
       if (error) {
-        throw new Error(getUserFriendlyError(error, { 
-          code: (result as any)?.error || error.code 
-        }));
+        console.error('[NewTransactionDialog] Edge function error:', error);
+        throw error;
       }
-      if ((result as any)?.error) {
-        throw new Error(ErrorMessages.TRANSACTION_CREATE_FAILED);
+
+      console.log('[NewTransactionDialog] Edge function result:', result);
+
+      if (!(result as any)?.transaction) {
+        throw new Error('Réponse inattendue du serveur (transaction manquante)');
       }
 
       // Show success and share link
@@ -320,7 +322,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       toast.success('Transaction créée avec succès !');
     } catch (error: any) {
       logger.error('Error creating transaction:', error);
-      toast.error(getUserFriendlyError(error));
+      const friendly = getUserFriendlyError(error, { statusCode: error?.status });
+      toast.error(friendly);
     } finally {
       setIsLoading(false);
     }
