@@ -5,6 +5,7 @@ import {
   compose, 
   withCors, 
   withAuth, 
+  withRateLimit,
   successResponse, 
   errorResponse,
   Handler, 
@@ -265,5 +266,5 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   }
 };
 
-const composedHandler = compose(withCors, withAuth)(handler);
+const composedHandler = compose(withCors, withAuth, withRateLimit())(handler);
 serve(composedHandler);

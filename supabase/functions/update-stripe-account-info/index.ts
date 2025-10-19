@@ -4,8 +4,11 @@ import {
   compose, 
   withCors, 
   withAuth, 
+  withRateLimit,
   successResponse,
-  errorResponse 
+  errorResponse,
+  Handler,
+  HandlerContext
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
@@ -14,7 +17,7 @@ const logStep = (step: string, details?: any) => {
   logger.log(`[UPDATE-STRIPE-ACCOUNT] ${step}${detailsStr}`);
 };
 
-const handler = async (ctx: any) => {
+const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, adminClient } = ctx;
   
   try {
@@ -28,13 +31,13 @@ const handler = async (ctx: any) => {
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
 
-    logStep("User authenticated", { userId: user.id });
+    logStep("User authenticated", { userId: user!.id });
 
     // Get user's Stripe account
-    const { data: stripeAccount, error: accountError } = await adminClient
+    const { data: stripeAccount, error: accountError } = await adminClient!
       .from('stripe_accounts')
       .select('stripe_account_id, account_status')
-      .eq('user_id', user.id)
+      .eq('user_id', user!.id)
       .maybeSingle();
 
     if (accountError) {
@@ -58,10 +61,10 @@ const handler = async (ctx: any) => {
       logStep("Stripe account created", { accountId: account.id });
 
       // Save to database
-      await adminClient
+      await adminClient!
         .from('stripe_accounts')
         .insert({
-          user_id: user.id,
+          user_id: user!.id,
           stripe_account_id: account.id,
           account_status: 'pending',
           country: 'FR',
@@ -144,9 +147,5 @@ const handler = async (ctx: any) => {
   }
 };
 
-const composedHandler = compose(
-  withCors,
-  withAuth
-)(handler);
-
+const composedHandler = compose(withCors, withAuth, withRateLimit())(handler);
 serve(composedHandler);

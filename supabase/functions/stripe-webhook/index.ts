@@ -3,14 +3,16 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/production-logger.ts";
 import { 
+  compose,
   withCors, 
   successResponse, 
   errorResponse,
-  Handler 
+  Handler,
+  HandlerContext
 } from "../_shared/middleware.ts";
 
 // Note: No withAuth for webhooks - Stripe calls this directly
-const handler: Handler = async (req) => {
+const handler: Handler = async (req, ctx: HandlerContext) => {
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -156,4 +158,5 @@ const handler: Handler = async (req) => {
   }
 };
 
-serve(withCors(handler));
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

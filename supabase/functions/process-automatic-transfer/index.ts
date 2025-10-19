@@ -8,7 +8,9 @@ import {
   withRateLimit, 
   withValidation,
   successResponse,
-  errorResponse 
+  errorResponse,
+  Handler,
+  HandlerContext
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
@@ -21,14 +23,14 @@ const logStep = (step: string, details?: any) => {
   logger.log(`[AUTOMATIC-TRANSFER] ${step}${detailsStr}`);
 };
 
-const handler = async (ctx: any) => {
+const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, adminClient, body } = ctx;
   const { transaction_id } = body;
 
   logStep("Function started");
 
   // Get transaction details
-  const { data: transaction, error: transactionError } = await adminClient
+  const { data: transaction, error: transactionError } = await adminClient!
     .from('transactions')
     .select('*')
     .eq('id', transaction_id)
@@ -42,7 +44,7 @@ const handler = async (ctx: any) => {
   }
 
   // Verify user is the buyer and transaction is paid
-  if (transaction.buyer_id !== user.id) {
+  if (transaction.buyer_id !== user!.id) {
     return errorResponse("Only the buyer can trigger the transfer", 403);
   }
 
@@ -62,7 +64,7 @@ const handler = async (ctx: any) => {
   });
 
   // Get seller's Stripe account
-  const { data: sellerStripeAccount, error: accountError } = await adminClient
+  const { data: sellerStripeAccount, error: accountError } = await adminClient!
     .from('stripe_accounts')
     .select('*')
     .eq('user_id', transaction.user_id)
@@ -125,7 +127,7 @@ const handler = async (ctx: any) => {
   logStep("Transfer created", { transferId: transfer.id });
 
   // Update transaction status
-  const { error: updateError } = await adminClient
+  const { error: updateError } = await adminClient!
     .from('transactions')
     .update({
       status: 'validated',
@@ -139,7 +141,7 @@ const handler = async (ctx: any) => {
   }
 
   // Log the activity
-  await adminClient.from('activity_logs').insert([
+  await adminClient!.from('activity_logs').insert([
     {
       user_id: transaction.user_id,
       activity_type: 'funds_released',

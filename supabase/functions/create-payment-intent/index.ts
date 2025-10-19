@@ -6,6 +6,7 @@ import {
   compose, 
   withCors, 
   withAuth, 
+  withRateLimit,
   withValidation,
   successResponse, 
   errorResponse,
@@ -144,6 +145,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 const composedHandler = compose(
   withCors,
   withAuth,
+  withRateLimit(),
   withValidation(schema)
 )(handler);
 
