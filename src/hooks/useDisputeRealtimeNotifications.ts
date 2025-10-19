@@ -37,15 +37,19 @@ export const useDisputeRealtimeNotifications = () => {
 
           // Only notify for relevant dispute events
           const type = msg.message_type as string | undefined;
-          const text = (msg.message as string) || '';
+          const raw = msg.message;
+          const text = typeof raw === 'string' ? raw : (raw == null ? '' : (() => {
+            try { return JSON.stringify(raw); } catch { return String(raw); }
+          })());
 
           let title: string | null = null;
           let description: string | undefined;
 
           if (type === 'proposal') {
             title = 'Nouvelle proposition officielle';
-            description = text.length > 120 ? text.slice(0, 117) + '…' : text;
-          } else if (type === 'system' && (text.includes('Proposition refusée') || text.startsWith('❌'))) {
+            const safe = typeof text === 'string' ? text : String(text ?? '');
+            description = safe.length > 120 ? safe.slice(0, 117) + '…' : safe;
+          } else if (type === 'system' && typeof text === 'string' && (text.includes('Proposition refusée') || text.startsWith('❌'))) {
             title = 'Proposition refusée';
             description = text;
           }
