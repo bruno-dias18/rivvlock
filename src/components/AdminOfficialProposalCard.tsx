@@ -30,6 +30,23 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
   const hasUserValidated = isSeller ? proposal.seller_validated : proposal.buyer_validated;
   const otherPartyValidated = isSeller ? proposal.buyer_validated : proposal.seller_validated;
 
+  // Auto-finalize safeguard: if both parties validated an admin proposal still pending, finalize it (idempotent)
+  React.useEffect(() => {
+    if (proposal?.admin_created && proposal?.status === 'pending' && proposal?.buyer_validated && proposal?.seller_validated) {
+      (async () => {
+        try {
+          await supabase.functions.invoke('finalize-admin-proposal', { body: { proposalId: proposal.id } });
+          queryClient.invalidateQueries({ queryKey: ['disputes'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['dispute-proposals', proposal.dispute_id] });
+        } catch (e) {
+          logger.warn('Auto-finalize safeguard failed (ignored):', e);
+        }
+      })();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proposal?.id, proposal?.status, proposal?.buyer_validated, proposal?.seller_validated]);
+
   const proposalText = proposal.proposal_type === 'partial_refund'
     ? `Remboursement de ${proposal.refund_percentage}%`
     : proposal.proposal_type === 'full_refund'
@@ -78,6 +95,26 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
 
       if (action === 'accept') {
         toast.success("Validation enregistrée avec succès");
+
+        // If both parties validated but proposal still pending, trigger backend finalization (idempotent)
+        try {
+          const { data: freshProposal } = await supabase
+            .from('dispute_proposals')
+            .select('status,buyer_validated,seller_validated,admin_created')
+            .eq('id', proposal.id)
+            .maybeSingle();
+
+          const bothValidated = !!(freshProposal?.buyer_validated && freshProposal?.seller_validated);
+          const needsFinalize = freshProposal?.admin_created && freshProposal?.status !== 'accepted';
+
+          if (bothValidated && needsFinalize) {
+            await supabase.functions.invoke('finalize-admin-proposal', {
+              body: { proposalId: proposal.id }
+            });
+          }
+        } catch (e) {
+          logger.warn('Finalize-admin-proposal fallback failed (ignored):', e);
+        }
       } else {
         toast.success("Proposition rejetée");
       }
