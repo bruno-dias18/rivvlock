@@ -11,9 +11,9 @@ export const useForceEscalateDispute = () => {
       const { data, error } = await supabase.functions.invoke('admin-dispute-actions', {
         body: { action: 'escalate', disputeId }
       });
-
+      console.debug('[useForceEscalateDispute] invoke result', { data, error, disputeId });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if ((data as any)?.error) throw new Error((data as any).error);
       return data;
     },
     onSuccess: () => {
@@ -22,8 +22,10 @@ export const useForceEscalateDispute = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-disputes'] });
     },
     onError: (error: any) => {
-      console.error('Force escalate error:', error);
-      toast.error(error.message || 'Une erreur inattendue est survenue');
+      console.error('Force escalate error details:', error);
+      const statusCode = (error as any)?.status || (error as any)?.statusCode;
+      const code = (error as any)?.code;
+      toast.error(error, { statusCode, code, details: error });
     }
   });
 };
