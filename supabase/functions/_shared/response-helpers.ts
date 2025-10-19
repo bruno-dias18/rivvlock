@@ -14,7 +14,10 @@ const corsHeaders = {
  * Create success response with CORS headers
  */
 export function successResponse<T>(data: T, status: number = 200): Response {
-  return new Response(JSON.stringify(data), {
+  const payload = (data !== null && typeof data === 'object')
+    ? { success: true, ...(data as any) }
+    : { success: true, data };
+  return new Response(JSON.stringify(payload), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status,
   });
