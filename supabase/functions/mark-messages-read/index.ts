@@ -43,7 +43,7 @@ const handler = compose(
   }
 
   if (!messages || messages.length === 0) {
-    return successResponse({ success: true, marked: 0 });
+    return successResponse({ marked: 0 });
   }
 
   // Mark all messages as read
@@ -58,7 +58,7 @@ const handler = compose(
   }
 
   logger.log(`Marked ${messages.length} messages as read for transaction ${transactionId}`);
-  return successResponse({ success: true, marked: messages.length });
+  return successResponse({ marked: messages.length });
 });
 
 Deno.serve(handler);

@@ -167,22 +167,15 @@ export function compose(...middlewares: Array<(handler: Handler) => Handler>): (
   };
 }
 
-/**
- * Helper to create a standardized success response
- */
-export function successResponse(data: any, status = 200): Response {
-  return new Response(JSON.stringify({ success: true, ...data }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
-}
-
-/**
- * Helper to create a standardized error response
- */
-export function errorResponse(error: string, status = 500): Response {
-  return new Response(JSON.stringify({ error }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status,
-  });
-}
+// Re-export response helpers from response-helpers.ts for convenience
+export { 
+  successResponse, 
+  errorResponse,
+  corsPreflightResponse,
+  validationErrorResponse,
+  unauthorizedResponse,
+  notFoundResponse,
+  rateLimitResponse,
+  extractErrorMessage,
+  getCorsHeaders
+} from "./response-helpers.ts";

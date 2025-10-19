@@ -111,7 +111,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   });
   
   logger.log(`Date confirmed for transaction ${transactionId}`);
-  return successResponse({ success: true, payment_deadline: paymentDeadline });
+  return successResponse({ payment_deadline: paymentDeadline });
 };
 
 const composedHandler = compose(

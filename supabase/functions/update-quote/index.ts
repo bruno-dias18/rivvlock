@@ -85,7 +85,7 @@ const handler = compose(
   }
 
   logger.log(`Quote ${quote_id} updated successfully by user ${ctx.user!.id}`);
-  return successResponse({ success: true, quote_id });
+  return successResponse({ quote_id });
 });
 
 Deno.serve(handler);

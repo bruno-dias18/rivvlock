@@ -119,7 +119,6 @@ const handler = async (ctx: any) => {
   }
 
   return successResponse({ 
-    success: true,
     message: "Proposition refusée avec succès"
   });
 };

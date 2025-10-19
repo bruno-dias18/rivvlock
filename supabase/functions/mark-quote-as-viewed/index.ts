@@ -45,7 +45,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     return errorResponse('Failed to update view timestamp', 500);
   }
 
-  return successResponse({ success: true });
+  return successResponse({});
 };
 
 const composedHandler = compose(

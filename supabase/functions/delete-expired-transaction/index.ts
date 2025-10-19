@@ -79,7 +79,7 @@ const handler = compose(
   }
 
   logger.log(`[DELETE-TRANSACTION] Successfully deleted transaction ${transactionId}`);
-  return successResponse({ success: true, message: 'Transaction deleted successfully' });
+  return successResponse({ message: 'Transaction deleted successfully' });
 });
 
 Deno.serve(handler);

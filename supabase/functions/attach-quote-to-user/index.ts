@@ -44,7 +44,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   // Verify user is not the seller
   if (quote.seller_id === user!.id) {
     logger.log('[attach-quote] User is the seller, no attachment needed');
-    return successResponse({ success: true, message: 'Vous êtes le vendeur de ce devis' });
+    return successResponse({ message: 'Vous êtes le vendeur de ce devis' });
   }
 
   // CRITICAL SECURITY: Verify email matches
@@ -88,7 +88,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       logger.log(`[attach-quote] Updated conversation ${quoteWithConv.conversation_id}`);
     }
     
-    return successResponse({ success: true, message: 'Devis déjà rattaché à votre compte' });
+    return successResponse({ message: 'Devis déjà rattaché à votre compte' });
   }
 
   // If already attached to another user
@@ -139,7 +139,6 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   });
 
   return successResponse({ 
-    success: true, 
     message: 'Devis rattaché avec succès',
     quote_id: quoteId 
   });
