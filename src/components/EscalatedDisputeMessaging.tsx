@@ -101,6 +101,7 @@ export const EscalatedDisputeMessaging = ({
         onOpenChange={onClose}
         otherParticipantName={t('Administration')}
         title="" // Titre déjà affiché dans le header
+        inline={true} // Évite la double Dialog
       />
 
       {isResolved && (

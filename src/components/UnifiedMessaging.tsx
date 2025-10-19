@@ -25,6 +25,7 @@ interface UnifiedMessagingProps {
   otherParticipantName?: string;
   title?: string;
   disputeId?: string;
+  inline?: boolean; // If true, render without Dialog wrapper (for nested dialogs)
 }
 
 export const UnifiedMessaging = ({ 
@@ -33,7 +34,8 @@ export const UnifiedMessaging = ({
   onOpenChange,
   otherParticipantName,
   title,
-  disputeId
+  disputeId,
+  inline = false
 }: UnifiedMessagingProps) => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
@@ -296,6 +298,165 @@ export const UnifiedMessaging = ({
     }
   };
 
+  const messagingContent = (
+    <>
+      <DialogHeader className="bg-background p-4 border-b shrink-0 relative">
+        <DialogTitle className="pr-10">
+          {title || (otherParticipantName 
+            ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
+            : t('conversation.title', 'Messagerie')
+          )}
+        </DialogTitle>
+        {!inline && (
+          <DialogClose asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-2 top-2"
+              aria-label={t('common.close', 'Fermer')}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </DialogClose>
+        )}
+      </DialogHeader>
+
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-background"
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-muted-foreground">{t('common.loading', 'Chargement...')}</div>
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+            <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
+            <p>{t('conversation.noMessages', 'Aucun message pour le moment')}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {messages.map((message) => {
+              const proposalData = messageToProposal.get(message.id);
+              const isProposal = !!proposalData;
+
+              return (
+                <div
+                  key={message.id}
+                  className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-lg p-3 ${
+                      isProposal
+                        ? 'bg-amber-50 dark:bg-amber-950 border-2 border-amber-300 dark:border-amber-700'
+                        : message.sender_id === user?.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-card border'
+                    }`}
+                  >
+                    {isProposal && (
+                      <Badge className="mb-2 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-700">
+                        💰 Proposition officielle
+                      </Badge>
+                    )}
+                    <div className="text-xs opacity-70 mb-1">
+                      {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
+                    
+                    {isProposal && proposalData && (() => {
+                      const shouldShowButtons = proposalData.status === 'pending' && proposalData.proposer_id !== user?.id;
+                      console.log('🔘 Button visibility check:', {
+                        messageId: message.id,
+                        proposalId: proposalData.id,
+                        status: proposalData.status,
+                        proposer_id: proposalData.proposer_id,
+                        current_user_id: user?.id,
+                        shouldShowButtons
+                      });
+                      return shouldShowButtons;
+                    })() && (
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="default"
+                          onClick={() => handleAcceptProposal(proposalData.id)}
+                          disabled={isAccepting || isRejecting}
+                          className="flex-1"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Accepter
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRejectProposal(proposalData.id)}
+                          disabled={isAccepting || isRejecting}
+                          className="flex-1"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Refuser
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {isProposal && proposalData && proposalData.status !== 'pending' && (
+                      <Badge 
+                        className="mt-2" 
+                        variant={proposalData.status === 'accepted' ? 'default' : 'destructive'}
+                      >
+                        {proposalData.status === 'accepted' ? '✓ Acceptée' : '✗ Refusée'}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      <div className="border-t p-3 shrink-0 bg-background" 
+        style={isMobile ? { paddingBottom: '12px' } : undefined}
+      >
+        <div className="flex gap-2 items-end">
+          <Textarea
+            ref={textareaRef}
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+            onFocus={() => setTimeout(ensureBottom, 100)}
+            placeholder={t('conversation.placeholder', 'Écrivez votre message...')}
+            className="flex-1 h-14 resize-none"
+            rows={2}
+            maxLength={500}
+            enterKeyHint="send"
+          />
+          <Button
+             ref={sendButtonRef}
+             type="button"
+             onClick={handleSendMessage}
+             onMouseDown={(e) => e.preventDefault()}
+             onTouchStart={(e) => e.preventDefault()}
+             disabled={!newMessage.trim() || isSendingMessage}
+             size="icon"
+             className="h-14 w-14 shrink-0"
+           >
+             <Send className="h-4 w-4" />
+           </Button>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1 text-right">
+          {newMessage.length}/500
+        </div>
+      </div>
+    </>
+  );
+
+  if (inline) {
+    return messagingContent;
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -317,154 +478,7 @@ export const UnifiedMessaging = ({
           })
         }}
       >
-        <DialogHeader className="bg-background p-4 border-b shrink-0 relative">
-          <DialogTitle className="pr-10">
-            {title || (otherParticipantName 
-              ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
-              : t('conversation.title', 'Messagerie')
-            )}
-          </DialogTitle>
-          <DialogClose asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-2"
-              aria-label={t('common.close', 'Fermer')}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </DialogClose>
-        </DialogHeader>
-
-        <div 
-          ref={messagesContainerRef}
-          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-muted/20"
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-muted-foreground">{t('common.loading', 'Chargement...')}</div>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-              <MessageSquare className="h-12 w-12 mb-2 opacity-50" />
-              <p>{t('conversation.noMessages', 'Aucun message pour le moment')}</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => {
-                const proposalData = messageToProposal.get(message.id);
-                const isProposal = !!proposalData;
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex w-full ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[85%] rounded-lg p-3 ${
-                        isProposal
-                          ? 'bg-amber-50 dark:bg-amber-950 border-2 border-amber-300 dark:border-amber-700'
-                          : message.sender_id === user?.id
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-background border'
-                      }`}
-                    >
-                      {isProposal && (
-                        <Badge className="mb-2 bg-amber-500 dark:bg-amber-600 hover:bg-amber-600 dark:hover:bg-amber-700">
-                          💰 Proposition officielle
-                        </Badge>
-                      )}
-                      <div className="text-xs opacity-70 mb-1">
-                        {getSenderName(message.sender_id)} • {formatMessageTime(message.created_at)}
-                      </div>
-                      <div className="text-sm whitespace-pre-wrap break-all">{message.message}</div>
-                      
-                      {isProposal && proposalData && (() => {
-                        const shouldShowButtons = proposalData.status === 'pending' && proposalData.proposer_id !== user?.id;
-                        console.log('🔘 Button visibility check:', {
-                          messageId: message.id,
-                          proposalId: proposalData.id,
-                          status: proposalData.status,
-                          proposer_id: proposalData.proposer_id,
-                          current_user_id: user?.id,
-                          shouldShowButtons
-                        });
-                        return shouldShowButtons;
-                      })() && (
-                        <div className="mt-3 flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleAcceptProposal(proposalData.id)}
-                            disabled={isAccepting || isRejecting}
-                            className="flex-1"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Accepter
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRejectProposal(proposalData.id)}
-                            disabled={isAccepting || isRejecting}
-                            className="flex-1"
-                          >
-                            <XCircle className="h-4 w-4 mr-1" />
-                            Refuser
-                          </Button>
-                        </div>
-                      )}
-                      
-                      {isProposal && proposalData && proposalData.status !== 'pending' && (
-                        <Badge 
-                          className="mt-2" 
-                          variant={proposalData.status === 'accepted' ? 'default' : 'destructive'}
-                        >
-                          {proposalData.status === 'accepted' ? '✓ Acceptée' : '✗ Refusée'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        <div className="border-t p-3 shrink-0 bg-background" 
-          style={isMobile ? { paddingBottom: '12px' } : undefined}
-        >
-          <div className="flex gap-2 items-end">
-            <Textarea
-              ref={textareaRef}
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              onFocus={() => setTimeout(ensureBottom, 100)}
-              placeholder={t('conversation.placeholder', 'Écrivez votre message...')}
-              className="flex-1 h-14 resize-none"
-              rows={2}
-              maxLength={500}
-              enterKeyHint="send"
-            />
-            <Button
-               ref={sendButtonRef}
-               type="button"
-               onClick={handleSendMessage}
-               onMouseDown={(e) => e.preventDefault()}
-               onTouchStart={(e) => e.preventDefault()}
-               disabled={!newMessage.trim() || isSendingMessage}
-               size="icon"
-               className="h-14 w-14 shrink-0"
-             >
-               <Send className="h-4 w-4" />
-             </Button>
-          </div>
-          <div className="text-xs text-muted-foreground mt-1 text-right">
-            {newMessage.length}/500
-          </div>
-        </div>
+        {messagingContent}
       </DialogContent>
     </Dialog>
   );

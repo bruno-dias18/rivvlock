@@ -330,29 +330,27 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         />
       </CardContent>
 
-      {showMessaging && (
-        dispute.status === 'escalated' ? (
-          <Dialog open={showMessaging} onOpenChange={setShowMessaging}>
-            <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
-              <EscalatedDisputeMessaging
-                disputeId={dispute.id}
-                transactionId={transaction.id}
-                status={dispute.status}
-                onClose={() => setShowMessaging(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        ) : (
-          dispute.conversation_id && (
-            <UnifiedMessaging
-              conversationId={dispute.conversation_id}
-              open={showMessaging}
-              onOpenChange={setShowMessaging}
-              title="Discussion du litige"
+      {showMessaging && dispute.status === 'escalated' && (
+        <Dialog open={showMessaging} onOpenChange={setShowMessaging}>
+          <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0">
+            <EscalatedDisputeMessaging
               disputeId={dispute.id}
+              transactionId={transaction.id}
+              status={dispute.status}
+              onClose={() => setShowMessaging(false)}
             />
-          )
-        )
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showMessaging && dispute.status !== 'escalated' && dispute.conversation_id && (
+        <UnifiedMessaging
+          conversationId={dispute.conversation_id}
+          open={showMessaging}
+          onOpenChange={setShowMessaging}
+          title="Discussion du litige"
+          disputeId={dispute.id}
+        />
       )}
 
       <CreateProposalDialog
