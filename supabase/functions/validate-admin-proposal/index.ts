@@ -419,17 +419,28 @@ const handler = async (_req: Request, ctx: any) => {
         logger.warn("Could not insert confirmation messages", msgError);
       }
 
-      // ✅ Update proposal status to accepted (critical)
-      const { error: proposalUpdateError } = await adminClient
-        .from("dispute_proposals")
-        .update({ 
-          status: 'accepted',
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", proposalId);
-      
-      if (proposalUpdateError) {
-        logger.error("❌ Error updating proposal status:", proposalUpdateError);
+      // ✅ Update proposal status to accepted BEFORE returning success
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Updating proposal status to accepted");
+      try {
+        const { error: proposalUpdateError } = await adminClient
+          .from("dispute_proposals")
+          .update({ 
+            status: 'accepted',
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", proposalId)
+          .eq("status", "pending"); // Only update if still pending
+        
+        if (proposalUpdateError) {
+          logger.error("❌ Error updating proposal status:", proposalUpdateError);
+          // Don't fail the whole operation if proposal update fails
+          // The Stripe processing already succeeded
+        } else {
+          logger.log("✅ Proposal status updated to accepted");
+        }
+      } catch (updateError) {
+        logger.error("❌ Exception updating proposal:", updateError);
+        // Continue anyway - Stripe processing succeeded
       }
 
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
