@@ -34,27 +34,29 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify this is an admin or cron job
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
-        authHeader.replace('Bearer ', '')
-      );
-      
-      if (authError || !user) {
-        return errorResponse('Unauthorized', 401);
-      }
+    // Strict authorization: require service role or admin token
+    const header = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    if (!header) {
+      return errorResponse('Unauthorized', 401);
+    }
+
+    // Allow direct service role calls (cron/internal)
+    if (!header.includes(serviceRoleKey)) {
+      // Otherwise, verify the user is admin
+      const token = header.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      if (authError || !user) return errorResponse('Unauthorized', 401);
 
       const { data: adminCheck } = await supabaseAdmin
         .from('admin_roles')
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
 
-      if (!adminCheck) {
-        return errorResponse('Admin access required', 403);
-      }
+      if (!adminCheck) return errorResponse('Admin access required', 403);
     }
 
     logger.log('🧹 Starting GDPR data retention cleanup...');

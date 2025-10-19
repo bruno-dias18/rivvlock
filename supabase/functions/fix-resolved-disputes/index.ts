@@ -10,8 +10,14 @@ import {
 import { createServiceClient } from "../_shared/supabase-utils.ts";
 import { logger } from "../_shared/logger.ts";
 
-const handler: Handler = async () => {
+const handler: Handler = async (req) => {
   try {
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const header = req.headers.get('authorization') || req.headers.get('Authorization') || '';
+    if (!header.includes(serviceRoleKey)) {
+      return errorResponse('Unauthorized', 403);
+    }
+
     const supabaseAdmin = createServiceClient();
 
     logger.log("🔍 Starting migration to fix resolved disputes...");

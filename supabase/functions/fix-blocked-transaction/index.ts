@@ -26,6 +26,12 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
   try {
     const adminClient = createServiceClient();
 
+    // Only super admins can run this maintenance action
+    const { data: isAdmin, error: adminErr } = await ctx.supabaseClient!.rpc('is_super_admin');
+    if (adminErr || !isAdmin) {
+      return errorResponse('Admin access required', 403);
+    }
+
     logger.log(`[FIX-TRANSACTION] Starting fix for transaction: ${transactionId}`);
 
     // Update status first
