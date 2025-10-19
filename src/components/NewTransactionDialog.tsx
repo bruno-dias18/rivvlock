@@ -271,16 +271,21 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
         finalPrice = data.price + clientFees;
       }
 
+      // Build payload with only allowed keys and without nulls
+      const payload: any = {
+        title: data.title,
+        description: data.description,
+        price: finalPrice,
+        currency: data.currency,
+        service_date: data.serviceDate.toISOString(),
+        fee_ratio_client: feeRatio,
+      };
+      if (data.clientEmail && data.clientEmail.trim() !== '') {
+        payload.client_email = data.clientEmail.trim();
+      }
+
       const { data: result, error } = await supabase.functions.invoke('create-transaction', {
-        body: {
-          title: data.title,
-          description: data.description,
-          price: finalPrice,
-          currency: data.currency,
-          service_date: data.serviceDate.toISOString(),
-          client_email: data.clientEmail || null,
-          fee_ratio_client: feeRatio,
-        }
+        body: payload,
       });
 
       if (error) {
