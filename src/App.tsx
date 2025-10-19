@@ -18,7 +18,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const TransactionsPage = lazy(() => import("./pages/TransactionsPage"));
 const QuotesPage = lazy(() => import("./pages/QuotesPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
-import PaymentLinkPage from "./pages/PaymentLinkPage";
+const PaymentLinkPage = lazy(() => import("./pages/PaymentLinkPage"));
 const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
 const ActivityHistoryPage = lazy(() => import("./pages/ActivityHistoryPage"));
 const AnnualReportsPage = lazy(() => import("./pages/AnnualReportsPage"));

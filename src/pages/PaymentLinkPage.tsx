@@ -36,9 +36,7 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
-  const searchParams = new URLSearchParams(window.location.search);
-  const forceE2E = searchParams.get('e2e') === '1';
-  const isE2E = forceE2E || (!!token && (token.startsWith('test-token') || token === 'expired-token-123'));
+  const isE2E = !!token && (token.startsWith('test-token') || token === 'expired-token-123');
 
   useEffect(() => {
     if (!token) {
@@ -77,40 +75,16 @@ export default function PaymentLinkPage() {
   // Remove automatic payment trigger - let user click the button
 
   const fetchTransaction = async () => {
-    // Hoist token resolution so we can use it in catch/fallbacks
-    const searchParams = new URLSearchParams(window.location.search);
-    const txId = searchParams.get('txId');
-    const finalToken = token || txId;
-
     try {
+      // Support both URL token and query param txId for existing links
+      const searchParams = new URLSearchParams(window.location.search);
+      const txId = searchParams.get('txId');
+      const finalToken = token || txId;
+      
       if (!finalToken) {
         throw new Error('No transaction token found in URL or query params');
       }
-
-      // E2E safeguard: if a test token is provided, short-circuit to mock data
-      if (finalToken.startsWith('test-token') || finalToken === 'expired-token-123') {
-        if (finalToken === 'expired-token-123') {
-          setError('Lien expiré');
-          setTransaction(null);
-        } else {
-          const now = new Date();
-          const future = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000); // +4 days
-          setTransaction({
-            id: 'test-tx-1',
-            title: 'Prestation de test',
-            description: 'Transaction de test pour E2E',
-            price: 120,
-            currency: 'EUR',
-            seller_display_name: 'Vendeur Test',
-            service_date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-            payment_deadline: future.toISOString(),
-          } as any);
-          setError('');
-        }
-        setLoading(false);
-        return;
-      }
-
+      
       // Invoke Edge Function securely (no hardcoded keys)
       const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
         body: { token: finalToken }
@@ -138,24 +112,7 @@ export default function PaymentLinkPage() {
         setError('Données de transaction manquantes');
       }
     } catch (err: any) {
-      // Final fallback for tests: if a test token was used but something failed, force mock data
-      if (finalToken && finalToken.startsWith('test-token')) {
-        const now = new Date();
-        const future = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
-        setTransaction({
-          id: 'test-tx-1',
-          title: 'Prestation de test',
-          description: 'Transaction de test pour E2E',
-          price: 120,
-          currency: 'EUR',
-          seller_display_name: 'Vendeur Test',
-          service_date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-          payment_deadline: future.toISOString(),
-        } as any);
-        setError('');
-      } else {
-        setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
-      }
+      setError(`Erreur lors de la récupération de la transaction: ${err.message || err}`);
     } finally {
       setLoading(false);
     }
@@ -244,12 +201,12 @@ export default function PaymentLinkPage() {
   };
 
   // Show loading state while checking auth or fetching transaction
-  if ((authLoading && !isE2E) || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         {debugMode && (
           <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)} | isE2E={String(isE2E)}
+            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)}
           </div>
         )}
         <div className="text-center">
@@ -371,8 +328,8 @@ export default function PaymentLinkPage() {
     );
   }
 
-  // Show transaction details and processing state for authenticated users or E2E mode
-  if ((user || isE2E) && transaction) {
+  // Show transaction details and processing state for authenticated users
+  if (user && transaction) {
     // Show bank transfer instructions if selected
     if (showBankInstructions) {
       return (
@@ -453,13 +410,6 @@ export default function PaymentLinkPage() {
                 <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
                 <p className="font-medium">{transaction.seller_display_name}</p>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Montant</label>
-                <p className="font-medium">
-                  {transaction.price.toFixed(2)} {transaction.currency}
-                </p>
-              </div>
             </div>
 
             {processingPayment ? (
@@ -477,7 +427,6 @@ export default function PaymentLinkPage() {
                 onClick={handlePayNow}
                 className="w-full"
                 size="lg"
-                aria-label="Payer"
                 disabled={
                   !selectedPaymentMethod ||
                   processingPayment || 

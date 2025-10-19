@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-test.setTimeout(60_000);
-test.use({ expect: { timeout: 30_000 } });
 /**
  * E2E tests for the complete payment flow
  * 
@@ -11,25 +9,26 @@ test.use({ expect: { timeout: 30_000 } });
  * 3. Redirects to Stripe or shows bank instructions
  * 4. Payment is processed
  */
-test.describe.skip('Payment Flow', () => {
+test.describe('Payment Flow', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the payment link page
     // Note: This would need a valid test transaction token
-    await page.goto('/payment-link/test-token-123?e2e=1');
+    await page.goto('/payment-link/test-token-123');
   });
 
   test('should display payment method selector', async ({ page }) => {
-    // Wait for the page to load (allow initial dev compile)
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
 
-    // Check that selector is visible (don’t assert inner texts to avoid flakiness)
-    const selector = page.locator('[data-testid="payment-method-selector"]');
-    await expect(selector).toBeVisible();
+    // Check that payment method selector is visible
+    await expect(page.getByText(/choisissez votre méthode de paiement/i)).toBeVisible();
+    await expect(page.getByText(/carte bancaire/i)).toBeVisible();
+    await expect(page.getByText(/virement bancaire/i)).toBeVisible();
   });
 
   test('should enable pay button only after selecting payment method', async ({ page }) => {
-    // Wait for the page to load (allow initial dev compile)
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
 
     // Pay button should be disabled initially
     const payButton = page.getByRole('button', { name: /payer/i });
@@ -43,8 +42,8 @@ test.describe.skip('Payment Flow', () => {
   });
 
   test('should redirect to Stripe for card payment', async ({ page }) => {
-    // Wait for the page to load (allow initial dev compile)
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
 
     // Select card payment method
     await page.getByText(/carte bancaire/i).click();
@@ -63,8 +62,8 @@ test.describe.skip('Payment Flow', () => {
   });
 
   test('should display bank transfer instructions', async ({ page }) => {
-    // Wait for the page to load (allow initial dev compile)
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
 
     // Select bank transfer payment method
     await page.getByText(/virement bancaire/i).click();
@@ -78,8 +77,8 @@ test.describe.skip('Payment Flow', () => {
   });
 
   test('should show transaction details', async ({ page }) => {
-    // Wait for the page to load (allow initial dev compile)
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    // Wait for the page to load
+    await page.waitForLoadState('networkidle');
 
     // Should display transaction information
     await expect(page.getByText(/montant/i)).toBeVisible();
@@ -89,7 +88,7 @@ test.describe.skip('Payment Flow', () => {
 
   test('should handle expired payment links', async ({ page }) => {
     // Navigate to an expired payment link
-    await page.goto('/payment-link/expired-token-123?e2e=1');
+    await page.goto('/payment-link/expired-token-123');
 
     // Should display error message
     await expect(page.getByText(/lien expiré/i)).toBeVisible();
@@ -106,8 +105,8 @@ test.describe('Mobile Payment Flow', () => {
   });
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
-    await page.goto('/payment-link/test-token-123?e2e=1');
-    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
+    await page.goto('/payment-link/test-token-123');
+    await page.waitForLoadState('networkidle');
 
     // Check that layout is mobile-friendly
     const paymentSelector = page.locator('[data-testid="payment-method-selector"]');

@@ -68,7 +68,7 @@ export const PaymentMethodSelector = ({
             <div className="flex items-start gap-3">
               <CreditCard className="h-5 w-5 mt-0.5 text-primary" />
               <div className="flex-1">
-                <p className="font-medium leading-10 md:leading-normal">Carte bancaire</p>
+                <p className="font-medium">Carte bancaire</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Paiement et blocage des fonds immédiats
                 </p>
@@ -98,7 +98,7 @@ export const PaymentMethodSelector = ({
               <Building2 className="h-5 w-5 mt-0.5 text-primary" />
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium leading-10 md:leading-normal">Virement bancaire</p>
+                  <p className="font-medium">Virement bancaire</p>
                   {!bankTransferAllowed && (
                     <Badge variant="destructive" className="text-xs">
                       Non disponible
