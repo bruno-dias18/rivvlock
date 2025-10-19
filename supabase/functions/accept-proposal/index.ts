@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { 
+  Handler,
+  HandlerContext,
   compose, 
   withCors, 
   withAuth, 
@@ -16,7 +18,7 @@ const acceptProposalSchema = z.object({
   proposalId: z.string().uuid(),
 });
 
-const handler = async (_req: Request, ctx: any) => {
+const handler: Handler = async (req, ctx) => {
   try {
     const { user, adminClient, body } = ctx;
     const { proposalId } = body;
@@ -74,17 +76,52 @@ const handler = async (_req: Request, ctx: any) => {
     return errorResponse("User not authorized to accept this proposal", 403);
   }
 
-  if (proposal.status !== 'pending') {
+  // --- Idempotency & state priming ---
+  let alreadyProcessed = false;
+  let newTransactionStatus = transaction.status;
+  let disputeStatus: 'resolved' | 'resolved_refund' | 'resolved_release' = 'resolved';
+
+  try {
+    // Probe Stripe to detect if funds/refunds were already processed for this transaction
+    if (transaction.stripe_payment_intent_id) {
+      const probeStripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+        apiVersion: "2024-06-20",
+      });
+
+      const transferGroup = `txn_${transaction.id}`;
+      const existingTransfers = await probeStripe.transfers.list({ transfer_group: transferGroup, limit: 1 });
+      const existingRefunds = await probeStripe.refunds.list({ payment_intent: transaction.stripe_payment_intent_id, limit: 1 });
+      const hasTransfer = existingTransfers.data.length > 0;
+      const hasRefund = existingRefunds.data.some((r) => r.status !== 'failed');
+
+      if (hasTransfer || hasRefund) {
+        alreadyProcessed = true;
+        if (proposal.proposal_type === 'no_refund') {
+          disputeStatus = 'resolved_release';
+          newTransactionStatus = 'validated';
+        } else {
+          disputeStatus = 'resolved_refund';
+          newTransactionStatus = 'validated';
+        }
+      }
+    }
+  } catch (_) {
+    // If idempotency probing fails, continue normally
+  }
+
+  // If proposal is no longer pending but processing seems already done, treat as success
+  if (proposal.status !== 'pending' && !alreadyProcessed) {
     return errorResponse("Proposal is no longer pending", 400);
   }
 
-  if (!['open', 'responded', 'negotiating'].includes(dispute.status)) {
+  // Dispute might already be resolved by a previous successful attempt; allow idempotent success
+  if (!['open', 'responded', 'negotiating'].includes(dispute.status) && !alreadyProcessed) {
     return errorResponse("Dispute is no longer open", 400);
   }
 
-  // Prefetch seller account if transfer might be needed
+  // Prefetch seller account if transfer might be needed (only if we will actually operate on Stripe)
   let sellerAccountId: string | null = null;
-  if (proposal.proposal_type === 'no_refund' || (proposal.proposal_type === 'partial_refund' && (proposal.refund_percentage || 0) < 100)) {
+  if (!alreadyProcessed && (proposal.proposal_type === 'no_refund' || (proposal.proposal_type === 'partial_refund' && (proposal.refund_percentage || 0) < 100))) {
     const { data: sellerAccount, error: sellerAccountError } = await adminClient
       .from('stripe_accounts')
       .select('stripe_account_id, charges_enabled, payouts_enabled, onboarding_completed')
@@ -107,6 +144,10 @@ const handler = async (_req: Request, ctx: any) => {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2024-06-20",
     });
+
+    if (alreadyProcessed) {
+      logger.log('Idempotency: operations already completed, skipping Stripe actions');
+    } else {
 
   let newTransactionStatus = transaction.status;
   let disputeStatus: 'resolved' | 'resolved_refund' | 'resolved_release' = 'resolved';
