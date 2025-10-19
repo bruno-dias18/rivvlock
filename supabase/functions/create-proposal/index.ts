@@ -18,7 +18,7 @@ const createProposalSchema = z.object({
   message: z.string().optional(),
 });
 
-const handler = async (ctx: any) => {
+const handler = async (_req: Request, ctx: any) => {
   const { user, adminClient, body } = ctx;
   const { disputeId, proposalType, refundPercentage, message } = body;
 
