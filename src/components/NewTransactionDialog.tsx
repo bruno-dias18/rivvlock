@@ -110,6 +110,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     }
   }, [profile?.country, form]);
 
+  // Sync price field with detailed items total
+  useEffect(() => {
+    if (detailedMode && items.length > 0) {
+      const total = items.reduce((sum, item) => sum + item.total, 0);
+      form.setValue('price', total, { shouldValidate: true });
+    }
+  }, [detailedMode, items, form]);
+
   // Watch price and currency for net amount calculation
   const watchedPrice = useWatch({
     control: form.control,
@@ -269,12 +277,9 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
           description: data.description,
           price: finalPrice,
           currency: data.currency,
-          paymentDeadlineHours: parseInt(data.paymentDeadlineHours),
-          serviceDate: data.serviceDate.toISOString(),
-          serviceEndDate: data.serviceEndDate?.toISOString(),
-          clientEmail: data.clientEmail || null,
+          service_date: data.serviceDate.toISOString(),
+          client_email: data.clientEmail || null,
           fee_ratio_client: feeRatio,
-          items: itemsToSend.length > 0 ? itemsToSend : null
         }
       });
 
@@ -346,7 +351,8 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                 onSubmit,
                 (errors) => {
                   console.error('[NewTransactionDialog] Validation errors:', errors);
-                  toast.error('Veuillez vérifier tous les champs du formulaire');
+                  const firstError = Object.values(errors)[0]?.message;
+                  toast.error(firstError || 'Veuillez vérifier tous les champs du formulaire');
                 }
               )(e);
             }}
