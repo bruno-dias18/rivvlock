@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { z } from "https://deno.sh/x/zod@v3.22.4/mod.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { 
   compose, 
   withCors, 
