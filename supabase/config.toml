@@ -239,6 +239,9 @@ verify_jwt = true
 [functions.validate-admin-proposal]
 verify_jwt = true
 
+[functions.finalize-admin-proposal]
+verify_jwt = true
+
 [functions.validate-stripe-accounts]
 verify_jwt = true
 
