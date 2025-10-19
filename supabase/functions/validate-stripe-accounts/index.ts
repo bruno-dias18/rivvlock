@@ -3,8 +3,11 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { 
   compose, 
   withCors, 
+  withAuth,
   successResponse,
-  errorResponse 
+  errorResponse,
+  Handler,
+  HandlerContext
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
@@ -13,11 +16,22 @@ const logStep = (step: string, details?: any) => {
   logger.log(`[VALIDATE-STRIPE-ACCOUNTS] ${step}${detailsStr}`);
 };
 
-const handler = async (ctx: any) => {
-  const { adminClient } = ctx;
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, adminClient } = ctx;
   
   try {
     logStep("Function started");
+
+    // Verify user is admin
+    const { data: isAdminUser, error: roleError } = await adminClient!
+      .rpc('is_admin', { check_user_id: user!.id });
+
+    if (roleError || !isAdminUser) {
+      logStep("Unauthorized access attempt", { userId: user!.id });
+      return errorResponse("Unauthorized: Admin access required", 403);
+    }
+
+    logStep("Admin user verified", { userId: user!.id });
 
     // Verify environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
@@ -136,8 +150,8 @@ const handler = async (ctx: any) => {
 };
 
 const composedHandler = compose(
-  withCors
-  // No auth: CRON job
+  withCors,
+  withAuth
 )(handler);
 
 serve(composedHandler);
