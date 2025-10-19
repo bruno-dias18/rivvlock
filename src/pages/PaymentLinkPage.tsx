@@ -114,6 +114,7 @@ export default function PaymentLinkPage() {
         setError(errorMsg);
       } finally {
         setLoading(false);
+      }
   };
 
   const autoJoinTransaction = async () => {
