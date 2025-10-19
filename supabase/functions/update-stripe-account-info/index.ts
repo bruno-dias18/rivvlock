@@ -29,7 +29,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       throw new Error('Missing environment variables');
     }
 
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
+    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2025-08-27.basil" });
 
     logStep("User authenticated", { userId: user!.id });
 
@@ -48,10 +48,21 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     if (!stripeAccount?.stripe_account_id) {
       logStep("No Stripe account found, creating one first");
       
+      // Get user profile to get country
+      const { data: profile, error: profileError } = await adminClient!
+        .from('profiles')
+        .select('country')
+        .eq('user_id', user!.id)
+        .single();
+
+      if (profileError || !profile) {
+        throw new Error('User profile not found');
+      }
+
       // Create Stripe Connect account
       const account = await stripe.accounts.create({
         type: 'express',
-        country: 'FR',
+        country: profile.country,
         capabilities: {
           card_payments: { requested: true },
           transfers: { requested: true },
@@ -67,7 +78,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           user_id: user!.id,
           stripe_account_id: account.id,
           account_status: 'pending',
-          country: 'FR',
+          country: profile.country,
         });
 
       logStep("Account saved to database");
