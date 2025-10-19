@@ -20,19 +20,18 @@ const adminProposalSchema = z.object({
 });
 
 const handler = async (ctx: any) => {
-  const { user, supabaseClient, adminClient, body } = ctx;
-  const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = body;
+  try {
+    const { user, supabaseClient, adminClient, body } = ctx;
+    const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = body;
 
-  // Verify user is admin via secure RPC
-  const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
-    check_user_id: user.id
-  });
+    // Verify user is admin via secure RPC
+    const { data: isAdmin } = await supabaseClient.rpc('is_admin', {
+      check_user_id: user.id
+    });
 
-  if (!isAdmin) {
-    return errorResponse("Unauthorized: admin access required", 403);
-  }
-
-    const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = await req.json();
+    if (!isAdmin) {
+      return errorResponse("Unauthorized: admin access required", 403);
+    }
 
     logger.log("[ADMIN-PROPOSAL] Creating official admin proposal:", {
       disputeId,
@@ -269,13 +268,10 @@ const handler = async (ctx: any) => {
         });
       }
 
-      return new Response(JSON.stringify({
+      return successResponse({
         success: true,
         immediate_execution: true,
         dispute_status: disputeStatus,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
       });
     }
 
@@ -394,7 +390,6 @@ const handler = async (ctx: any) => {
     }
 
     return successResponse({ proposal });
-
   } catch (error) {
     logger.error("[ADMIN-PROPOSAL] Error:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
