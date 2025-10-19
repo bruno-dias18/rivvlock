@@ -114,6 +114,7 @@ export const useDisputeProposals = (disputeId: string) => {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       return data;
     },
     onSuccess: () => {

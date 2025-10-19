@@ -81,10 +81,31 @@ const handler = async (_req: Request, ctx: any) => {
     return errorResponse("Dispute is no longer open", 400);
   }
 
-  // Initialize Stripe
-  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-    apiVersion: "2024-06-20",
-  });
+  // Prefetch seller account if transfer might be needed
+  let sellerAccountId: string | null = null;
+  if (proposal.proposal_type === 'no_refund' || (proposal.proposal_type === 'partial_refund' && (proposal.refund_percentage || 0) < 100)) {
+    const { data: sellerAccount, error: sellerAccountError } = await adminClient
+      .from('stripe_accounts')
+      .select('stripe_account_id, charges_enabled, payouts_enabled, onboarding_completed')
+      .eq('user_id', transaction.user_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (sellerAccountError) {
+      logger.error('Stripe account lookup failed:', sellerAccountError);
+      return errorResponse('Impossible de vérifier le compte Stripe du vendeur', 400);
+    }
+    if (!sellerAccount?.stripe_account_id || !sellerAccount.charges_enabled || !sellerAccount.payouts_enabled || !sellerAccount.onboarding_completed) {
+      return errorResponse("Le vendeur doit finaliser son compte Stripe avant d'accepter cette proposition", 400);
+    }
+    sellerAccountId = sellerAccount.stripe_account_id;
+  }
+
+  // Initialize Stripe and process
+  try {
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2024-06-20",
+    });
 
   let newTransactionStatus = transaction.status;
   let disputeStatus: 'resolved' | 'resolved_refund' | 'resolved_release' = 'resolved';
@@ -325,8 +346,11 @@ const handler = async (_req: Request, ctx: any) => {
     newTransactionStatus = 'validated';
     logger.log(`✅ Funds released to seller (no refund)`);
   }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return errorResponse(message || 'Erreur lors du traitement Stripe', 400);
+  }
 
-  // Update proposal status
   const { error: proposalUpdateError } = await adminClient
     .from("dispute_proposals")
     .update({ 
