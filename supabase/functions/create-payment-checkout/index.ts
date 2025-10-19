@@ -41,10 +41,34 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     throw new Error(`Transaction not found: ${txError?.message || 'Unknown error'}`);
   }
 
-  // Verify user is buyer
-  if (transaction.buyer_id !== user!.id) {
-    throw new Error('Only the buyer can create a payment');
+  // Assign buyer from shared link if not set, else enforce ownership
+  let effectiveTransaction = transaction;
+  if (!transaction.buyer_id) {
+    logger.log('[PAYMENT-CHECKOUT] No buyer on transaction, attempting to claim for current user');
+    const { data: claimed, error: claimError } = await adminClient!
+      .from('transactions')
+      .update({
+        buyer_id: user!.id,
+        client_email: transaction.client_email || user!.email || null,
+        buyer_display_name: transaction.buyer_display_name || user!.email || null,
+      })
+      .eq('id', transactionId)
+      .is('buyer_id', null)
+      .select('*')
+      .single();
+
+    if (claimError || !claimed) {
+      logger.error('[PAYMENT-CHECKOUT] Failed to claim transaction', { error: claimError?.message });
+      throw new Error('Ce lien de paiement a déjà été revendiqué par un autre acheteur.');
+    }
+
+    logger.log('[PAYMENT-CHECKOUT] Transaction successfully claimed by user', { userId: user!.id });
+    effectiveTransaction = claimed;
+  } else if (transaction.buyer_id !== user!.id) {
+    throw new Error('Ce lien de paiement est attribué à un autre acheteur.');
   }
+
+  const sellerId = effectiveTransaction.user_id;
 
   // Verify buyer has or create Stripe customer
   const { data: buyerProfile } = await adminClient!
@@ -56,8 +80,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   let customerId = buyerProfile?.stripe_customer_id as string | undefined;
 
   // Initialize Stripe (needed for customer ops too)
-  const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-    apiVersion: "2025-08-27.basil",
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    apiVersion: "2024-06-20",
   });
 
   if (!customerId) {
@@ -84,7 +108,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   const { data: sellerAccount } = await adminClient!
     .from('stripe_accounts')
     .select('stripe_account_id')
-    .eq('user_id', transaction.user_id)
+    .eq('user_id', sellerId)
     .single();
 
   if (!sellerAccount?.stripe_account_id) {
@@ -93,8 +117,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   // (Stripe already initialized above)
 
-  const amount = Math.round(transaction.price * 100);
-  const currency = transaction.currency.toLowerCase();
+const amount = Math.round(effectiveTransaction.price * 100);
+  const currency = effectiveTransaction.currency.toLowerCase();
 
   // Use request origin as fallback for redirect URLs
   const origin = req.headers.get("origin") 
@@ -109,8 +133,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       price_data: {
         currency,
         product_data: {
-          name: transaction.title,
-          description: transaction.description || undefined,
+name: effectiveTransaction.title,
+          description: effectiveTransaction.description || undefined,
         },
         unit_amount: amount,
       },
@@ -121,7 +145,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       capture_method: 'manual',
       metadata: {
         transaction_id: transactionId,
-        seller_id: transaction.user_id,
+        seller_id: sellerId,
         buyer_id: user!.id,
       },
     },
