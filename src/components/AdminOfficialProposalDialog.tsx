@@ -47,7 +47,7 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
         body: {
           disputeId,
           proposalType,
-          refundPercentage: proposalType === 'partial_refund' ? refundPercentage : null,
+          refundPercentage: proposalType === 'partial_refund' ? refundPercentage : undefined,
           message: message.trim(),
           immediateExecution,
         },
@@ -66,9 +66,13 @@ export const AdminOfficialProposalDialog: React.FC<AdminOfficialProposalDialogPr
       setProposalType('partial_refund');
       setImmediateExecution(false);
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error creating admin proposal:', error);
-      toast.error("Erreur lors de la création de la proposition");
+      const ctx = (error as any)?.context;
+      const serverBody = ctx?.body;
+      const serverMsg = typeof serverBody === 'string' ? serverBody : serverBody?.error;
+      const msg = serverMsg || error?.message || 'Erreur lors de la création de la proposition';
+      toast.error('Création de la proposition échouée', { description: String(msg).slice(0, 300) });
     } finally {
       setIsSubmitting(false);
     }

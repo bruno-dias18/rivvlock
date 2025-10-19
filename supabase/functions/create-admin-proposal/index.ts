@@ -14,7 +14,7 @@ import { logger } from "../_shared/logger.ts";
 const adminProposalSchema = z.object({
   disputeId: z.string().uuid(),
   proposalType: z.enum(['full_refund', 'partial_refund', 'no_refund']),
-  refundPercentage: z.number().min(0).max(100).optional(),
+  refundPercentage: z.number().min(0).max(100).nullable().optional(),
   message: z.string().optional(),
   immediateExecution: z.boolean().optional(),
 });
@@ -55,7 +55,7 @@ const handler = async (ctx: any) => {
     // Get transaction details separately
     const { data: transaction, error: transactionError } = await adminClient
       .from("transactions")
-      .select("id, user_id, buyer_id, title")
+      .select("id, user_id, buyer_id, title, price, currency, stripe_payment_intent_id")
       .eq("id", dispute.transaction_id)
       .single();
 
