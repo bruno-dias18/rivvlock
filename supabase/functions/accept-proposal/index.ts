@@ -353,6 +353,7 @@ const handler = async (_req: Request, ctx: any) => {
   }
 
   // ✅ Update proposal status (critical - must succeed)
+  const postDbWarnings: string[] = [];
   const { error: proposalUpdateError } = await adminClient
     .from("dispute_proposals")
     .update({ 
@@ -361,12 +362,13 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", proposalId);
   if (proposalUpdateError) {
-    logger.error("❌ CRITICAL: Error updating proposal status:", proposalUpdateError);
-    throw new Error(`Échec mise à jour proposition: ${proposalUpdateError.message}`);
+    logger.error("❌ Error updating proposal status:", proposalUpdateError);
+    postDbWarnings.push(`proposal_update_failed:${proposalUpdateError.message}`);
+  } else {
+    logger.log("✅ Proposal status updated");
   }
-  logger.log("✅ Proposal status updated");
 
-  // ✅ Update dispute status (critical - must succeed)
+  // ✅ Update dispute status (attempt, do not fail HTTP if it errors)
   const { error: disputeUpdateError } = await adminClient
     .from("disputes")
     .update({ 
@@ -377,10 +379,11 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", dispute.id);
   if (disputeUpdateError) {
-    logger.error("❌ CRITICAL: Error updating dispute:", disputeUpdateError);
-    throw new Error(`Échec mise à jour dispute: ${disputeUpdateError.message}`);
+    logger.error("❌ Error updating dispute:", disputeUpdateError);
+    postDbWarnings.push(`dispute_update_failed:${disputeUpdateError.message}`);
+  } else {
+    logger.log("✅ Dispute status updated");
   }
-  logger.log("✅ Dispute status updated");
 
   // Update transaction status (keep original price, use refund_status instead)
   // Déterminer le refund_status
@@ -401,10 +404,11 @@ const handler = async (_req: Request, ctx: any) => {
     })
     .eq("id", transaction.id);
   if (txUpdateError) {
-    logger.error("❌ CRITICAL: Error updating transaction:", txUpdateError);
-    throw new Error(`Échec mise à jour transaction: ${txUpdateError.message}`);
+    logger.error("❌ Error updating transaction:", txUpdateError);
+    postDbWarnings.push(`transaction_update_failed:${txUpdateError.message}`);
+  } else {
+    logger.log("✅ Transaction status updated");
   }
-  logger.log("✅ Transaction status updated");
 
   // Create confirmation message in conversation
   const confirmationText = proposal.proposal_type === 'partial_refund'
@@ -465,7 +469,9 @@ const handler = async (_req: Request, ctx: any) => {
 
     return successResponse({
       dispute_status: disputeStatus,
-      transaction_status: newTransactionStatus
+      transaction_status: newTransactionStatus,
+      partial_success: postDbWarnings.length > 0,
+      warnings: postDbWarnings
     });
   } catch (error) {
     logger.error('❌ Critical error in accept-proposal:', error);
