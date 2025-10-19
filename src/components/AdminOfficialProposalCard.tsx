@@ -58,9 +58,16 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
       if (fnError) {
         try {
           const resp = (fnError as any)?.context?.response;
-          const json = resp && typeof resp.json === 'function' ? await resp.clone().json().catch(() => null) : null;
-          // If the JSON payload indicates success, treat it as success
-          if (json?.success || json?.status === 'accepted' || json?.both_validated === true) {
+          let json: any = null;
+          let text: string | null = null;
+          if (resp && typeof resp.clone === 'function') {
+            const clone = resp.clone();
+            json = await clone.json().catch(() => null);
+            text = await resp.text().catch(() => null);
+          }
+          const msg = json?.error || text || '';
+          // If the payload or message indicates acceptance/idempotent success, treat as success
+          if (json?.success || json?.status === 'accepted' || json?.both_validated === true || /no longer pending/i.test(msg) || /already accepted/i.test(msg)) {
             actuallySucceeded = true;
           }
         } catch {

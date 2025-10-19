@@ -73,6 +73,10 @@ const handler = async (_req: Request, ctx: any) => {
     }
 
     if (proposal.status !== "pending") {
+      // Idempotency: if already accepted and user clicks accept again, treat as success
+      if (action === "accept" && proposal.status === "accepted") {
+        return successResponse({ success: true, status: "accepted", both_validated: true });
+      }
       return errorResponse("Proposal is no longer pending", 400);
     }
 
