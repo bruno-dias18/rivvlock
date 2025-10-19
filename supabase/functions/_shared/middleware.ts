@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { logger } from "./logger.ts";
 import { checkRateLimit, getClientIp } from "./rate-limiter.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";

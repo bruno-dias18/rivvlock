@@ -21,17 +21,24 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, adminClient, body } = ctx;
   const { transactionId } = body;
 
-  logger.log('[PAYMENT-CHECKOUT] Processing for:', transactionId);
+  logger.log('[PAYMENT-CHECKOUT] Starting handler');
+  logger.log('[PAYMENT-CHECKOUT] User ID:', user?.id);
+  logger.log('[PAYMENT-CHECKOUT] AdminClient defined:', !!adminClient);
+  logger.log('[PAYMENT-CHECKOUT] Transaction ID:', transactionId);
 
   // Get transaction
+  logger.log('[PAYMENT-CHECKOUT] Fetching transaction with adminClient');
   const { data: transaction, error: txError } = await adminClient!
     .from('transactions')
     .select('*')
     .eq('id', transactionId)
     .single();
 
+  logger.log('[PAYMENT-CHECKOUT] Transaction query result:', { found: !!transaction, error: txError?.message });
+
   if (txError || !transaction) {
-    throw new Error('Transaction not found');
+    logger.error('[PAYMENT-CHECKOUT] Transaction error:', txError);
+    throw new Error(`Transaction not found: ${txError?.message || 'Unknown error'}`);
   }
 
   // Verify user is buyer
