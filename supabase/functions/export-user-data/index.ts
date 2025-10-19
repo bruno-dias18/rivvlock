@@ -41,14 +41,14 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     exportData.transactions = transactions;
   }
 
-  // 3. Transaction messages
+  // 3. Messages (unified messaging system)
   const { data: messages } = await supabaseClient!
-    .from('transaction_messages')
-    .select('*')
+    .from('messages')
+    .select('*, conversations!inner(transaction_id, quote_id, dispute_id)')
     .eq('sender_id', user!.id);
   
   if (messages) {
-    exportData.transaction_messages = messages;
+    exportData.messages = messages;
   }
 
   // 4. Disputes
@@ -59,16 +59,6 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   
   if (disputes) {
     exportData.disputes = disputes;
-  }
-
-  // 5. Dispute messages
-  const { data: disputeMessages } = await supabaseClient!
-    .from('dispute_messages')
-    .select('*')
-    .eq('sender_id', user!.id);
-  
-  if (disputeMessages) {
-    exportData.dispute_messages = disputeMessages;
   }
 
   // 6. Stripe account info (non-sensitive)

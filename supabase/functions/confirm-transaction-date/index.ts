@@ -89,17 +89,19 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     return errorResponse('Failed to confirm date', 500);
   }
   
-  // System confirmation message
-  await supabaseAdmin.from('transaction_messages').insert({
-    transaction_id: transactionId,
-    sender_id: transaction.user_id,
-    message: `✅ Date confirmée : ${new Date(proposedDate).toLocaleDateString('fr-FR')}`,
-    message_type: 'date_confirmed',
-    metadata: { 
-      confirmed_date: proposedDate,
-      confirmed_end_date: proposedEndDate 
-    }
-  });
+  // System confirmation message in unified messaging
+  if (transaction.conversation_id) {
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: transaction.conversation_id,
+      sender_id: transaction.user_id,
+      message: `✅ Date confirmée : ${new Date(proposedDate).toLocaleDateString('fr-FR')}`,
+      message_type: 'date_confirmed',
+      metadata: { 
+        confirmed_date: proposedDate,
+        confirmed_end_date: proposedEndDate 
+      }
+    });
+  }
   
   // Log activity
   await supabaseAdmin.from('activity_logs').insert({

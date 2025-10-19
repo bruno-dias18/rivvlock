@@ -134,10 +134,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       results.errors.push(msg);
     }
 
-    // 4. Delete old transaction messages (10 years)
+    // 4. Delete old messages (10 years) - unified system
     try {
       const { data: oldMessages, error: msgError } = await supabaseAdmin
-        .from('transaction_messages')
+        .from('messages')
         .delete()
         .lt('created_at', tenYearsAgo.toISOString())
         .select('id');

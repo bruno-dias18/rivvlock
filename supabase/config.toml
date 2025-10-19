@@ -163,6 +163,8 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.mark-messages-read]
+# LEGACY - Now using conversation_reads table
+# This function is deprecated and will be removed
 verify_jwt = true
 
 [functions.mark-payment-authorized]

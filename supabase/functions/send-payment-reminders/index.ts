@@ -20,14 +20,14 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     logStep('Cron job started');
 
-    const supabaseAdmin = createClient(
+    const adminClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
     // Get all pending transactions with client_email and valid service_date
-    const { data: pendingTransactions, error: fetchError } = await supabaseAdmin
+    const { data: pendingTransactions, error: fetchError } = await adminClient
       .from('transactions')
       .select('*')
       .eq('status', 'pending')
@@ -88,7 +88,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           });
 
           // Send reminder email
-          const { error: emailError } = await supabaseAdmin.functions.invoke('send-email', {
+          const { error: emailError } = await adminClient.functions.invoke('send-email', {
             body: {
               type: 'payment_reminder',
               to: transaction.client_email,
@@ -115,7 +115,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
           // Update checkpoints to mark this reminder as sent
           checkpoints[urgencyLevel] = true;
-          await supabaseAdmin
+          await adminClient
             .from('transactions')
             .update({ reminder_checkpoints: checkpoints })
             .eq('id', transaction.id);
