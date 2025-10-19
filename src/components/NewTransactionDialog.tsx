@@ -299,9 +299,15 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
         throw new Error('Réponse inattendue du serveur (transaction manquante)');
       }
 
+      const createdTransaction = (result as any).transaction;
+      
+      // Build shareLink if not provided by backend (for backward compatibility)
+      const finalShareLink = createdTransaction.shareLink || 
+        `https://app.rivvlock.com/join/${createdTransaction.shared_link_token}`;
+
       // Show success and share link
-      setTransactionTitle((result as any).transaction.title);
-      setShareLink((result as any).transaction.shareLink);
+      setTransactionTitle(createdTransaction.title);
+      setShareLink(finalShareLink);
       
       // Log the activity
       await logActivity({

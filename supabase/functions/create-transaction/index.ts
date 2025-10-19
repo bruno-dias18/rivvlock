@@ -89,9 +89,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   logger.log('[CREATE-TRANSACTION] Transaction created:', transaction.id);
 
-  // Build share link URL
-  const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '') || '';
-  const shareLink = `https://slthyxqruhfuyfmextwr.lovable.app/payment/${transaction.id}?token=${shareToken}`;
+  // Build share link URL with correct format
+  const shareLink = `https://app.rivvlock.com/join/${shareToken}`;
 
   // Send email if client_email provided
   if (client_email) {
