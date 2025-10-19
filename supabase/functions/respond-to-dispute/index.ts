@@ -55,22 +55,41 @@ const handler = async (ctx: any) => {
     return errorResponse("Only the seller can respond to this dispute", 403);
   }
 
-  // Update dispute with seller response
+  // Send response as a message in the dispute conversation (unified system)
+  if (!dispute.conversation_id) {
+    logger.log('[RESPOND-TO-DISPUTE] No conversation linked to dispute');
+    return errorResponse("No conversation found for this dispute", 404);
+  }
+
+  const { error: messageError } = await adminClient
+    .from('messages')
+    .insert({
+      conversation_id: dispute.conversation_id,
+      sender_id: user.id,
+      message: response.trim(),
+      message_type: 'text'
+    });
+
+  if (messageError) {
+    logger.log('[RESPOND-TO-DISPUTE] Error sending message', messageError);
+    throw messageError;
+  }
+
+  // Update dispute status to 'responded'
   const { error: updateError } = await adminClient
     .from("disputes")
     .update({
-      resolution: response.trim(),
       status: 'responded',
       updated_at: new Date().toISOString()
     })
     .eq("id", disputeId);
 
   if (updateError) {
-    logger.log('[RESPOND-TO-DISPUTE] Error updating dispute', updateError);
+    logger.log('[RESPOND-TO-DISPUTE] Error updating dispute status', updateError);
     throw updateError;
   }
 
-  logger.log('[RESPOND-TO-DISPUTE] Dispute updated successfully');
+  logger.log('[RESPOND-TO-DISPUTE] Response sent successfully via unified messaging');
 
   // Log activity
   const { error: activityError } = await adminClient
