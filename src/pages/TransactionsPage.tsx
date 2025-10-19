@@ -259,11 +259,22 @@ export default function TransactionsPage() {
   };
 
   // Filter and sort transactions by status
+  // Treat transactions with a resolved dispute as completed, regardless of refund type
+  const resolvedTxIds = new Set(
+    (disputes || [])
+      .filter((d: any) => d?.status && String(d.status).startsWith('resolved'))
+      .map((d: any) => d.transaction_id)
+      .filter(Boolean)
+  );
+
   const pendingTransactions = sortTransactions(transactions.filter(t => t.status === 'pending'));
   const blockedTransactions = sortTransactions(transactions.filter(t => t.status === 'paid'));
-  const completedTransactions = sortTransactions(transactions.filter(t => t.status === 'validated' && t.refund_status !== 'full'));
-  const disputedTransactions = sortTransactions(transactions.filter(t => t.status === 'disputed'));
-  
+  const completedTransactions = sortTransactions(
+    transactions.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id))
+  );
+  const disputedTransactions = sortTransactions(
+    transactions.filter(t => t.status === 'disputed' && !resolvedTxIds.has(t.id))
+  );
   // Get unread messages counts per tab with unified system
   const tabCounts = useUnreadTransactionTabCounts(transactions);
 
