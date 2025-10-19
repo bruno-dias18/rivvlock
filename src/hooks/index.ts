@@ -11,7 +11,6 @@ export { useValidationStatus } from './useValidationStatus';
 export { useForceEscalateDispute } from './useForceEscalateDispute';
 export { useAnnualTransactions } from './useAnnualTransactions';
 export { usePaginatedTransactions } from './usePaginatedTransactions';
-export { useDashboardData } from './useDashboardData';
 
 // Dispute Hooks
 export { useDisputes } from './useDisputes';

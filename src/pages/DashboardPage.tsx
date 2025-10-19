@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, MessageSquare, FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSyncStripePayments } from '@/hooks/useTransactions';
+import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
+import { useDisputes } from '@/hooks/useDisputes';
+import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
-import { useDashboardData } from '@/hooks/useDashboardData';
+import { useQuotes } from '@/hooks/useQuotes';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
@@ -37,23 +39,17 @@ export default function DashboardPage() {
     }
   }, [isAdmin, navigate]);
 
-  // Optimized: Single API call for all dashboard data
-  const { data: dashboardData, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useDashboardData();
+  const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
+  const { data: stripeAccount } = useStripeAccount();
   const { syncPayments } = useSyncStripePayments();
+  const { data: disputes } = useDisputes();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
   const { unreadCount: unreadQuoteMessages } = useUnreadQuotesGlobal();
+  const { quotes } = useQuotes();
 
-  // Extract data from optimized dashboard response
-  const counts = dashboardData?.counts || { pending: 0, paid: 0, validated: 0 };
-  const disputes = dashboardData?.disputes || [];
-  const quotes = dashboardData?.quotes || [];
-  const stripeAccount = dashboardData?.stripeAccount;
-  const transactionIds = dashboardData?.transactionIds || [];
-
-  // Message counts - now we only use transaction IDs (limited to 100)
-  // This is for badge display, not critical for full accuracy
+  // Optimized: Message counts are calculated on demand, not loaded for all transactions
   const messageCounts = { pending: 0, blocked: 0, disputed: 0, completed: 0 };
 
   const handleSyncPayments = async () => {
@@ -74,8 +70,8 @@ export default function DashboardPage() {
     {
       title: 'Devis',
       description: 'Devis en attente de réponse',
-      count: String(quotes.length),
-      isLoading: countsLoading,
+      count: String(quotes?.filter(q => ['pending', 'negotiating'].includes(q.status)).length || 0),
+      isLoading: false,
       icon: FileText,
       category: 'quotes' as const,
       badgeColor: 'bg-purple-500 text-white hover:bg-purple-600',
@@ -114,8 +110,8 @@ export default function DashboardPage() {
     {
       title: t('transactions.disputed'),
       description: t('transactions.disputedDescription'),
-      count: String(disputes.length),
-      isLoading: countsLoading,
+      count: String(disputes?.length || 0),
+      isLoading: false,
       icon: AlertTriangle,
       category: 'disputed' as const,
       badgeColor: 'bg-red-500 text-white hover:bg-red-600',
@@ -149,9 +145,9 @@ export default function DashboardPage() {
       onClick: () => {
         // Check if Stripe account is properly configured
         const isStripeReady = stripeAccount?.has_account && 
-                             stripeAccount.payouts_enabled && 
-                             stripeAccount.charges_enabled && 
-                             stripeAccount.details_submitted;
+                             stripeAccount?.payouts_enabled && 
+                             stripeAccount?.charges_enabled && 
+                             stripeAccount?.details_submitted;
         
         if (!isStripeReady) {
           setIsBankAccountDialogOpen(true);
