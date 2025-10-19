@@ -196,6 +196,11 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     setAutoDistributionApplied(false);
   };
 
+  // Utility function to round to nearest 5 cents (up)
+  const roundToNearestFiveCents = (value: number): number => {
+    return Math.ceil(value * 20) / 20;
+  };
+
   const applyAutoDistribution = () => {
     if (feeRatio === 0 || items.length === 0) {
       toast.info('Aucune répartition à appliquer (frais client à 0%)');
@@ -208,11 +213,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     const finalPrice = currentTotal + clientFees;
     const ratio = finalPrice / currentTotal;
 
-    const adjustedItems = items.map(item => ({
-      ...item,
-      unit_price: item.unit_price * ratio,
-      total: item.quantity * (item.unit_price * ratio)
-    }));
+    const adjustedItems = items.map(item => {
+      const newUnitPrice = roundToNearestFiveCents(item.unit_price * ratio);
+      return {
+        ...item,
+        unit_price: newUnitPrice,
+        total: roundToNearestFiveCents(item.quantity * newUnitPrice)
+      };
+    });
 
     setItems(adjustedItems);
     setAutoDistributionApplied(true);
@@ -487,6 +495,11 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                             step="1"
                             placeholder="1"
                             value={item.quantity}
+                            onFocus={(e) => {
+                              if (item.quantity === 1) {
+                                e.target.value = '';
+                              }
+                            }}
                             onChange={(e) => updateItem(index, 'quantity', parseFloat(e.target.value) || 1)}
                             className="mt-1 md:mt-0"
                           />
@@ -500,6 +513,11 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                             step="0.01"
                             placeholder="0.00"
                             value={item.unit_price}
+                            onFocus={(e) => {
+                              if (item.unit_price === 0) {
+                                e.target.value = '';
+                              }
+                            }}
                             onChange={(e) => updateItem(index, 'unit_price', parseFloat(e.target.value) || 0)}
                             className="mt-1 md:mt-0"
                           />
@@ -606,7 +624,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
                     className="w-full"
                   />
 
-                  {detailedMode && feeRatio > 0 && !autoDistributionApplied && (
+                  {detailedMode && feeRatio > 0 && (
                     <Button
                       type="button"
                       variant="outline"
