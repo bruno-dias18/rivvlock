@@ -1,16 +1,16 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { 
+  compose, 
+  withCors, 
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -216,20 +216,16 @@ serve(async (req) => {
       metadata: { quote_id: quoteId, transaction_id: transaction.id }
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        transaction,
-        payment_link: `${req.headers.get('origin')}/payment-link/${transaction.shared_link_token}`
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return successResponse({
+      transaction,
+      payment_link: `${req.headers.get('origin')}/payment-link/${transaction.shared_link_token}`
+    });
 
   } catch (error) {
     console.error('accept-quote error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error.message, 400);
   }
-});
+};
+
+const composedHandler = compose(withCors)(handler);
+serve(composedHandler);

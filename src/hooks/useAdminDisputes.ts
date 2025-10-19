@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePagination } from './usePagination';
 
 
-export const useAdminDisputes = (status?: string) => {
+export const useAdminDisputes = (status?: string, pageSize = 20) => {
   const { user } = useAuth();
 
-  return useQuery({
+  const queryResult = useQuery({
     queryKey: ['admin-disputes', status],
     queryFn: async () => {
       if (!user?.id) {
@@ -42,6 +43,14 @@ export const useAdminDisputes = (status?: string) => {
     },
     enabled: !!user?.id,
   });
+
+  // Add client-side pagination
+  const pagination = usePagination(queryResult.data, { pageSize });
+
+  return {
+    ...queryResult,
+    ...pagination,
+  };
 };
 
 export const useAdminDisputeStats = () => {

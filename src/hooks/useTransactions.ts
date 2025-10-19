@@ -2,11 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAutoSync } from './useAutoSync';
+import { usePagination } from './usePagination';
 import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
 import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
 
-export const useTransactions = () => {
+export const useTransactions = (pageSize = 20) => {
   const { user } = useAuth();
   
   // Initialize auto-sync functionality
@@ -41,7 +42,13 @@ export const useTransactions = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  return queryResult;
+  // Add client-side pagination
+  const pagination = usePagination(queryResult.data, { pageSize });
+
+  return {
+    ...queryResult,
+    ...pagination,
+  };
 };
 
 export const useTransactionCounts = () => {

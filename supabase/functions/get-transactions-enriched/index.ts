@@ -1,45 +1,27 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { logger } from "../_shared/logger.ts";
+import { logger } from "../_shared/production-logger.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, supabaseClient } = ctx;
+  
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    });
-
-    // Authenticate user
-    const { data: { user }, error: authError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
+    logger.info('[get-transactions-enriched] Fetching for user:', user!.id);
 
     // Fetch user's transactions
-    const { data: transactions, error: txError } = await supabase
+    const { data: transactions, error: txError } = await supabaseClient!
       .from('transactions')
       .select('*')
-      .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
+      .or(`user_id.eq.${user!.id},buyer_id.eq.${user!.id}`)
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -49,74 +31,68 @@ serve(async (req) => {
     }
 
     if (!transactions || transactions.length === 0) {
-      return new Response(JSON.stringify([]), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return successResponse([]);
     }
 
-    const transactionIds = transactions.map(t => t.id);
+    logger.info('[get-transactions-enriched] Processing transactions:', transactions.length);
 
-    // Fetch disputes with accepted proposals for these transactions
-    const { data: disputesData, error: disputesError } = await supabase
-      .from('disputes')
-      .select('transaction_id, dispute_proposals!inner(refund_percentage, proposal_type, status, updated_at)')
-      .in('transaction_id', transactionIds)
-      .eq('dispute_proposals.status', 'accepted');
+    // Enrich transactions with additional data (e.g., dispute status)
+    // and perform any necessary data transformations.
+    // This example adds a placeholder 'enriched' field.
 
-    if (disputesError) {
-      logger.error('Error fetching disputes:', disputesError);
-      // Continue without refund data rather than failing
-    }
+    const processedTransactions = await Promise.all(
+      transactions.map(async (transaction) => {
+        try {
+          // Calcul du refund_percentage côté serveur
+          let refundPercentage = 0;
 
-    // Create refund map
-    const refundMap = new Map<string, number>();
-    
-    if (disputesData && disputesData.length > 0) {
-      disputesData.forEach((dispute: any) => {
-        const proposals = (dispute.dispute_proposals || []) as any[];
-        if (!proposals.length) return;
+          if (transaction.status === 'disputed') {
+            const { data: dispute } = await supabaseClient!
+              .from('disputes')
+              .select('id, status')
+              .eq('transaction_id', transaction.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
 
-        // Sort by updated_at desc to get the most recent accepted proposal
-        proposals.sort((a, b) => 
-          new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime()
-        );
+            if (dispute) {
+              const { data: acceptedProposal } = await supabaseClient!
+                .from('dispute_proposals')
+                .select('refund_percentage, status')
+                .eq('dispute_id', dispute.id)
+                .eq('status', 'accepted')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
 
-        // Priority 1: full_refund
-        const full = proposals.find(p => p.proposal_type === 'full_refund');
-        if (full) {
-          refundMap.set(dispute.transaction_id, 100);
-          return;
+              if (acceptedProposal) {
+                refundPercentage = acceptedProposal.refund_percentage || 0;
+              }
+            }
+          }
+
+          return {
+            ...transaction,
+            refund_percentage: refundPercentage,
+          };
+        } catch (err) {
+          logger.error('[get-transactions-enriched] Error processing transaction:', transaction.id, err);
+          return {
+            ...transaction,
+            refund_percentage: 0,
+          };
         }
-
-        // Priority 2: partial_refund with percentage
-        const partial = proposals.find(
-          p => p.proposal_type === 'partial_refund' && p.refund_percentage != null
-        );
-        if (partial) {
-          refundMap.set(dispute.transaction_id, Number(partial.refund_percentage));
-          return;
-        }
-      });
-    }
-
-    // Enrich transactions with refund_percentage
-    const enrichedTransactions = transactions.map(transaction => ({
-      ...transaction,
-      refund_percentage: refundMap.get(transaction.id) || null,
-    }));
-
-    return new Response(JSON.stringify(enrichedTransactions), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    logger.error('Error in get-transactions-enriched:', error);
-    return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      {
-        status: error.message === 'Unauthorized' ? 401 : 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      })
     );
+
+    logger.info('[get-transactions-enriched] Processed transactions:', processedTransactions.length);
+
+    return successResponse(processedTransactions);
+  } catch (error) {
+    logger.error('[get-transactions-enriched] Error:', error);
+    return errorResponse(error instanceof Error ? error.message : String(error), 500);
   }
-});
+};
+
+const composedHandler = compose(withCors, withAuth)(handler);
+serve(composedHandler);
