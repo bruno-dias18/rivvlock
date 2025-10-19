@@ -95,39 +95,55 @@ const handler = async (ctx: any) => {
 
   // Write to unified conversations/messages if a conversation exists
   if (dispute.conversation_id) {
-    await adminClient
-      .from('messages')
-      .insert({
-        conversation_id: dispute.conversation_id,
-        sender_id: user.id,
-        message: proposalText + (message ? `\n${message}` : ''),
-        message_type: 'system',
-        metadata: {
-          proposal_id: proposal.id,
-          proposal_type: proposalType,
-          refund_percentage: refundPercentage,
-          dispute_id: disputeId,
-          transaction_id: transaction.id,
-        },
-      });
+    try {
+      const { error: msgError } = await adminClient
+        .from('messages')
+        .insert({
+          conversation_id: dispute.conversation_id,
+          sender_id: user.id,
+          message: proposalText + (message ? `\n${message}` : ''),
+          message_type: 'system',
+          metadata: {
+            proposal_id: proposal.id,
+            proposal_type: proposalType,
+            refund_percentage: refundPercentage,
+            dispute_id: disputeId,
+            transaction_id: transaction.id,
+          },
+        });
+      
+      if (msgError) {
+        logger.error("Error inserting message:", msgError);
+      }
+    } catch (error) {
+      logger.error("Exception inserting message:", error);
+    }
   }
 
   // Log activity for all other participants
   const participants = [transaction.user_id, transaction.buyer_id].filter(id => id && id !== user.id);
   
   for (const participantId of participants) {
-    await adminClient.from('activity_logs').insert({
-      user_id: participantId,
-      activity_type: 'dispute_proposal_created',
-      title: `Nouvelle proposition dans le litige "${transaction.title}"`,
-      description: proposalText,
-      metadata: {
-        dispute_id: disputeId,
-        transaction_id: transaction.id,
-        proposal_id: proposal.id,
-        proposal_type: proposalType
+    try {
+      const { error: logError } = await adminClient.from('activity_logs').insert({
+        user_id: participantId,
+        activity_type: 'dispute_proposal_created',
+        title: `Nouvelle proposition dans le litige "${transaction.title}"`,
+        description: proposalText,
+        metadata: {
+          dispute_id: disputeId,
+          transaction_id: transaction.id,
+          proposal_id: proposal.id,
+          proposal_type: proposalType
+        }
+      });
+      
+      if (logError) {
+        logger.error("Error inserting activity log:", logError);
       }
-    });
+    } catch (error) {
+      logger.error("Exception inserting activity log:", error);
+    }
   }
 
   // Send notification to all other participants
