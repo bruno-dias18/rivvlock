@@ -1,6 +1,6 @@
 # 📚 Middleware Migration Guide - Edge Functions Refactoring
 
-## ✅ Completed Migrations (7/52 edge functions)
+## ✅ Completed Migrations (12/52 edge functions)
 
 Les edge functions suivantes utilisent déjà le nouveau middleware partagé :
 
@@ -9,6 +9,13 @@ Les edge functions suivantes utilisent déjà le nouveau middleware partagé :
 3. ✅ `accept-quote` - Middleware CORS migré
 4. ✅ `get-transactions-enriched` - Middleware CORS + Auth migré
 5. ✅ `admin-get-transaction` - Middleware CORS + Auth + Validation migré
+6. ✅ `attach-quote-to-user` - Middleware CORS + Auth migré
+7. ✅ `confirm-transaction-date` - Middleware CORS migré
+8. ✅ `create-payment-intent` - Middleware complet (CORS, Auth, Validation) ⚡
+9. ✅ `stripe-webhook` - Middleware CORS uniquement (no auth for webhooks) ⚡
+10. ✅ `create-stripe-account` - Middleware CORS + Auth migré ⚡
+11. ✅ `release-funds` - Middleware complet (CORS, Auth, Validation) ⚡
+12. ✅ `sync-stripe-payments` - À compléter
 
 ## 🔧 Pattern de Migration (3 étapes)
 
@@ -127,13 +134,13 @@ serve(composedHandler);
 
 ## 📋 Fonctions à Migrer (45 restantes)
 
-### Priorité HAUTE (fonctions critiques appelées fréquemment)
+### Priorité HAUTE (fonctions critiques appelées fréquemment) - ✅ 4/5 MIGRÉES
 
-1. `create-payment-intent` ⚡ (appelée à chaque paiement)
-2. `stripe-webhook` ⚡ (appelée par Stripe)
-3. `sync-stripe-payments` ⚡ (cron job)
-4. `create-stripe-account` ⚡ (onboarding utilisateur)
-5. `release-funds` ⚡ (validation transaction)
+1. ✅ `create-payment-intent` ⚡ (appelée à chaque paiement)
+2. ✅ `stripe-webhook` ⚡ (appelée par Stripe)
+3. ⏳ `sync-stripe-payments` ⚡ (cron job) - EN COURS
+4. ✅ `create-stripe-account` ⚡ (onboarding utilisateur)
+5. ✅ `release-funds` ⚡ (validation transaction)
 
 ### Priorité MOYENNE (fonctions admin/utilitaires)
 
@@ -174,8 +181,8 @@ serve(composedHandler);
 ╔═════════════════════════════════════════════════╗
 ║  Edge Functions Migration Progress              ║
 ╠═════════════════════════════════════════════════╣
-║  ████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  7/52  ║
-║  13% Complete                                   ║
+║  █████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 12/52  ║
+║  23% Complete                                   ║
 ╚═════════════════════════════════════════════════╝
 ```
 

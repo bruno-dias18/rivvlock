@@ -1,62 +1,33 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const schema = z.object({
+  transactionId: z.string().uuid(),
+  paymentMethod: z.string().optional(),
+});
 
-// Security: Never log auth errors that might expose token info
-function sanitizeAuthError(error: any): string {
-  if (!error) return 'Authentication failed';
-  // Only log generic error message, never the actual error details
-  return 'Invalid or expired authentication token';
-}
-
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  // User client for authentication
-  const userClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
-  // Admin client for database operations
-  const adminClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-  );
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, adminClient, body } = ctx;
+  const { transactionId, paymentMethod } = body;
+  
   try {
-    const { transactionId, paymentMethod } = await req.json();
-    
     logger.log("🔍 [CREATE-PAYMENT-INTENT] Creating payment intent for transaction:", transactionId);
-    
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logger.error("❌ [CREATE-PAYMENT-INTENT] No authorization header provided");
-      throw new Error("Authentication required");
-    }
-    
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await userClient.auth.getUser(token);
-    
-    if (userError || !userData.user) {
-      logger.error("❌ [CREATE-PAYMENT-INTENT]", sanitizeAuthError(userError));
-      throw new Error("Invalid authentication token");
-    }
-    
-    logger.log("✅ [CREATE-PAYMENT-INTENT] User authenticated:", userData.user.id);
+    logger.log("✅ [CREATE-PAYMENT-INTENT] User authenticated:", user!.id);
 
     // Get transaction details (using admin client)
-    const { data: transaction, error: transactionError } = await adminClient
+    const { data: transaction, error: transactionError } = await adminClient!
       .from("transactions")
       .select("*")
       .eq("id", transactionId)
@@ -64,13 +35,13 @@ serve(async (req) => {
 
     if (transactionError || !transaction) {
       logger.error("❌ [CREATE-PAYMENT-INTENT] Transaction not found:", transactionError);
-      throw new Error("Transaction not found");
+      return errorResponse("Transaction not found", 404);
     }
 
     // Verify user is the buyer
-    if (transaction.buyer_id !== userData.user.id) {
+    if (transaction.buyer_id !== user!.id) {
       logger.error("❌ [CREATE-PAYMENT-INTENT] User is not the buyer");
-      throw new Error("Only the buyer can create payment intent");
+      return errorResponse("Only the buyer can create payment intent", 403);
     }
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Transaction found, buyer verified");
@@ -90,10 +61,10 @@ serve(async (req) => {
     });
 
     // Get buyer profile to check for existing Stripe customer
-    const { data: buyerProfile, error: profileError } = await adminClient
+    const { data: buyerProfile, error: profileError } = await adminClient!
       .from("profiles")
       .select("stripe_customer_id, first_name, last_name")
-      .eq("user_id", userData.user.id)
+      .eq("user_id", user!.id)
       .single();
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
@@ -120,7 +91,7 @@ serve(async (req) => {
         transaction_id: transactionId,
         transactionId: transactionId, // Alternative key for compatibility
         seller_id: transaction.user_id,
-        buyer_id: userData.user.id,
+        buyer_id: user!.id,
         service_date: transaction.service_date,
         platform: 'rivvlock',
         rivvlock_escrow: 'true',
@@ -143,7 +114,7 @@ serve(async (req) => {
     logger.log("✅ [CREATE-PAYMENT-INTENT] Payment intent created:", paymentIntent.id);
 
     // Update transaction with payment intent ID and payment method (using admin client)
-    const { error: updateError } = await adminClient
+    const { error: updateError } = await adminClient!
       .from("transactions")
       .update({ 
         stripe_payment_intent_id: paymentIntent.id,
@@ -153,27 +124,27 @@ serve(async (req) => {
 
     if (updateError) {
       logger.error("❌ [CREATE-PAYMENT-INTENT] Error updating transaction:", updateError);
-      throw new Error("Failed to update transaction");
+      return errorResponse("Failed to update transaction", 500);
     }
 
     // Mock notification
     logger.log(`📧 EMAIL: Payment intent created for transaction ${transaction.title}`);
     logger.log(`📱 SMS: Payment authorization requested for ${transaction.price} ${transaction.currency}`);
 
-    return new Response(JSON.stringify({ 
+    return successResponse({ 
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
     });
-
   } catch (error) {
     logger.error("Error creating payment intent:", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(error instanceof Error ? error.message : String(error), 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withValidation(schema)
+)(handler);
+
+serve(composedHandler);

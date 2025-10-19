@@ -1,57 +1,47 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
+import { 
+  compose, 
+  withCors, 
+  withAuth, 
+  withValidation,
+  successResponse, 
+  errorResponse,
+  Handler, 
+  HandlerContext 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const schema = z.object({
+  transactionId: z.string().uuid(),
+});
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   logger.log(`[RELEASE-FUNDS] ${step}${detailsStr}`);
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+const handler: Handler = async (req, ctx: HandlerContext) => {
+  const { user, adminClient, body } = ctx;
+  const { transactionId } = body;
+  
   try {
     logStep("Function started");
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.id) throw new Error("User not authenticated");
-    logStep("User authenticated", { userId: user.id });
-
-    const { transactionId } = await req.json();
-    if (!transactionId) throw new Error("Transaction ID is required");
+    logStep("User authenticated", { userId: user!.id });
     logStep("Request data parsed", { transactionId });
 
     // Get transaction details
-    const { data: transaction, error: transactionError } = await supabaseClient
+    const { data: transaction, error: transactionError } = await adminClient!
       .from("transactions")
       .select("*")
       .eq("id", transactionId)
-      .eq("buyer_id", user.id) // Only buyer can release funds
+      .eq("buyer_id", user!.id) // Only buyer can release funds
       .eq("status", "paid")
       .single();
 
     if (transactionError || !transaction) {
-      throw new Error("Transaction not found or not authorized");
+      return errorResponse("Transaction not found or not authorized", 404);
     }
     logStep("Transaction found", { transactionId, sellerId: transaction.user_id });
 
@@ -65,7 +55,7 @@ serve(async (req) => {
     });
 
     // Get seller's Stripe account details
-    const { data: sellerStripeAccount, error: accountError } = await supabaseClient
+    const { data: sellerStripeAccount, error: accountError } = await adminClient!
       .from('stripe_accounts')
       .select('*')
       .eq('user_id', transaction.user_id)
@@ -94,7 +84,7 @@ serve(async (req) => {
       }
 
       // Update our database with the latest status
-      await supabaseClient
+      await adminClient!
         .from('stripe_accounts')
         .update({
           account_status: stripeAccount.payouts_enabled && stripeAccount.charges_enabled ? 'active' : 'pending',
@@ -111,7 +101,7 @@ serve(async (req) => {
       });
 
       // Mark the account as inactive in our database
-      await supabaseClient
+      await adminClient!
         .from('stripe_accounts')
         .update({
           account_status: 'inactive',
@@ -121,23 +111,17 @@ serve(async (req) => {
         })
         .eq('user_id', transaction.user_id);
 
-      throw new Error(`Le compte Stripe du vendeur n'existe plus ou n'est plus actif. Veuillez contacter le support.`);
+      return errorResponse(`Le compte Stripe du vendeur n'existe plus ou n'est plus actif. Veuillez contacter le support.`, 400);
     }
 
     // Check if funds have already been released to avoid duplicate transfers
     if (transaction.funds_released) {
       logStep("Funds already released for this transaction");
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Funds were already released for this transaction",
-          transactionId: transaction.id
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
+      return successResponse({ 
+        success: true, 
+        message: "Funds were already released for this transaction",
+        transactionId: transaction.id
+      });
     }
 
     // Retrieve the payment intent to check its current status
@@ -198,7 +182,7 @@ serve(async (req) => {
     logStep("Transfer created", { transferId: transfer.id });
 
     // Update transaction status to validated and mark funds as released
-    const { error: updateError } = await supabaseClient
+    const { error: updateError } = await adminClient!
       .from("transactions")
       .update({
         status: "validated",
@@ -214,7 +198,7 @@ serve(async (req) => {
     logStep("Transaction updated to validated and funds marked as released");
 
     // Generate invoice if it doesn't exist yet
-    const { data: existingInvoice } = await supabaseClient
+    const { data: existingInvoice } = await adminClient!
       .from('invoices')
       .select('id')
       .eq('transaction_id', transactionId)
@@ -223,7 +207,7 @@ serve(async (req) => {
     if (!existingInvoice) {
       logStep("Generating invoice for validated transaction");
       try {
-        const { data: invoiceData, error: invoiceError } = await supabaseClient.functions.invoke(
+        const { data: invoiceData, error: invoiceError } = await adminClient!.functions.invoke(
           'generate-invoice-number',
           {
             body: {
@@ -246,7 +230,7 @@ serve(async (req) => {
     }
 
     // Log the activity for seller
-    await supabaseClient
+    await adminClient!
       .from('activity_logs')
       .insert({
         user_id: transaction.user_id,
@@ -263,7 +247,7 @@ serve(async (req) => {
       });
 
     // Log for buyer as well
-    await supabaseClient
+    await adminClient!
       .from('activity_logs')
       .insert({
         user_id: transaction.buyer_id,
@@ -280,27 +264,26 @@ serve(async (req) => {
 
     logStep("Activity logs created");
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Funds released and transferred successfully",
-        transactionId,
-        transferId: transfer.id,
-        amountTransferred: transferAmount,
-        currency: transaction.currency,
-        platformFee: platformFee
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
-    );
+    return successResponse({ 
+      success: true, 
+      message: "Funds released and transferred successfully",
+      transactionId,
+      transferId: transfer.id,
+      amountTransferred: transferAmount,
+      currency: transaction.currency,
+      platformFee: platformFee
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    return errorResponse(errorMessage, 500);
   }
-});
+};
+
+const composedHandler = compose(
+  withCors,
+  withAuth,
+  withValidation(schema)
+)(handler);
+
+serve(composedHandler);

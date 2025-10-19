@@ -2,17 +2,15 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { logger } from "../_shared/production-logger.ts";
+import { 
+  withCors, 
+  successResponse, 
+  errorResponse,
+  Handler 
+} from "../_shared/middleware.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-};
-
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// Note: No withAuth for webhooks - Stripe calls this directly
+const handler: Handler = async (req) => {
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -101,10 +99,7 @@ serve(async (req) => {
 
       logger.info("Transaction updated to paid", { transactionId, paymentMethod });
 
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return successResponse({ received: true });
     }
 
     if (event.type === "payment_intent.payment_failed") {
@@ -148,26 +143,17 @@ serve(async (req) => {
 
       logger.info("Transaction updated to expired after payment failure", { transactionId });
 
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+      return successResponse({ received: true });
     }
 
     // Unhandled event type
     logger.debug("Unhandled webhook event type", { eventType: event.type });
     
-    return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-
+    return successResponse({ received: true });
   } catch (error) {
     logger.error("Stripe webhook error", error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return errorResponse(error instanceof Error ? error.message : String(error), 400);
   }
-});
+};
+
+serve(withCors(handler));
