@@ -24,15 +24,15 @@ function logStep(step: string, data?: any) {
 }
 
 const handler = async (ctx: any) => {
-  const { user, adminClient, body } = ctx;
+  const { user, adminClient, supabaseClient, body } = ctx;
   const { action, disputeId, message, notes, recipientId } = body;
 
   logStep('Function started');
   logStep('User authenticated', { userId: user.id });
 
-  // Check if user is admin
-  const { data: adminCheck, error: adminError } = await adminClient
-    .rpc('is_admin', { check_user_id: user.id });
+  // Check if user is admin (use secure current-user RPC)
+  const { data: adminCheck, error: adminError } = await supabaseClient
+    .rpc('get_current_user_admin_status');
 
   if (adminError || !adminCheck) {
     logStep('Admin check failed', { error: adminError, isAdmin: adminCheck });
