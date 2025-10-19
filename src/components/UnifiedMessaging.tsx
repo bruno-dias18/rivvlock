@@ -189,10 +189,24 @@ export const UnifiedMessaging = ({
     return otherParticipantName || t('common.otherParticipant', 'Autre participant');
   };
 
-  // Map messages to their corresponding proposals using useMemo
+  // Map messages to proposals robustly (metadata, time proximity, and content parsing)
   const messageToProposal = useMemo(() => {
     const map = new Map<string, any>();
     if (!disputeId || !proposals || proposals.length === 0 || messages.length === 0) return map;
+
+    const parseFromText = (text: string) => {
+      const lower = text.toLowerCase();
+      let proposal_type: 'partial_refund' | 'full_refund' | 'no_refund' | null = null;
+      let refund_percentage: number | null = null;
+
+      if (lower.includes('intégral') || lower.includes('100%')) proposal_type = 'full_refund';
+      else if (lower.includes('aucun remboursement') || lower.includes('pas de remboursement')) proposal_type = 'no_refund';
+      else if (lower.includes('remboursement')) proposal_type = 'partial_refund';
+
+      const pctMatch = text.match(/(\d{1,3})%/);
+      if (pctMatch) refund_percentage = Math.min(100, Math.max(0, parseInt(pctMatch[1])));
+      return { proposal_type, refund_percentage };
+    };
 
     messages.forEach((message) => {
       // 1) Prefer explicit metadata link
@@ -200,44 +214,58 @@ export const UnifiedMessaging = ({
       if (proposalId) {
         const found = proposals.find((p: any) => p.id === proposalId);
         if (found) {
-          console.log('✅ Found proposal via metadata:', { 
-            messageId: message.id, 
-            proposalId: found.id,
-            proposer_id: found.proposer_id 
-          });
           map.set(message.id, found);
           return;
-        } else {
-          console.warn('⚠️ Proposal ID in metadata but not found:', proposalId);
         }
       }
 
-      // 2) Fallback: match on known system text within a tolerance window
+      // 2) Only consider system proposal messages
       const isSystemProposalText = message.message_type === 'system' &&
         message.message.includes('Proposition officielle');
       if (!isSystemProposalText) return;
 
       const messageTime = new Date(message.created_at).getTime();
-      const matchingProposal = proposals.find((p: any) => {
-        const proposalTime = new Date(p.created_at).getTime();
-        const timeDiff = Math.abs(proposalTime - messageTime);
-        return timeDiff < 10000; // 10s tolerance
-      });
+      const { proposal_type, refund_percentage } = parseFromText(message.message);
 
-      if (matchingProposal) {
-        console.log('✅ Found proposal via fallback:', { 
-          messageId: message.id, 
-          proposalId: matchingProposal.id 
-        });
-        map.set(message.id, matchingProposal);
-      } else {
-        console.warn('⚠️ System proposal message but no matching proposal found:', message.message);
+      // 3) Wide time window match (5 minutes)
+      const WIDE_WINDOW_MS = 5 * 60 * 1000;
+      let best: any | null = null;
+      let bestDiff = Number.POSITIVE_INFINITY;
+
+      for (const p of proposals as any[]) {
+        // must be pending to act upon
+        if (p.status !== 'pending') continue;
+        const pTime = new Date(p.created_at).getTime();
+        const timeDiff = Math.abs(pTime - messageTime);
+        if (timeDiff > WIDE_WINDOW_MS) continue;
+
+        // extra scoring by type/percentage if available
+        let score = timeDiff;
+        if (proposal_type && p.proposal_type === proposal_type) score *= 0.5;
+        if (typeof refund_percentage === 'number' && typeof p.refund_percentage === 'number') {
+          if (Math.abs(p.refund_percentage - refund_percentage) <= 5) score *= 0.5; // fuzzy match
+        }
+        if (score < bestDiff) {
+          best = p;
+          bestDiff = score;
+        }
+      }
+
+      // 4) Fallback: most recent pending by other participant before message time
+      if (!best) {
+        best = (proposals as any[])
+          .filter(p => p.status === 'pending' && p.proposer_id !== user?.id)
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .find(p => new Date(p.created_at).getTime() <= messageTime);
+      }
+
+      if (best) {
+        map.set(message.id, best);
       }
     });
 
-    console.log('🗺️ Final messageToProposal map:', map.size, 'entries');
     return map;
-  }, [disputeId, proposals, messages]);
+  }, [disputeId, proposals, messages, user?.id]);
 
   const handleAcceptProposal = async (proposalId: string) => {
     try {
