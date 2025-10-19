@@ -39,12 +39,13 @@ serve(async (req) => {
       quotesResult,
       stripeAccountResult,
     ] = await Promise.all([
-      // Get transactions with counts
+      // Get transactions with counts (limit to recent ones)
       supabaseClient
         .from("transactions")
         .select("id, status, created_at")
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
-        .order("created_at", { ascending: false }),
+        .order("created_at", { ascending: false })
+        .limit(100), // Only fetch recent 100 for performance
       
       // Get disputes
       supabaseClient

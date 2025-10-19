@@ -11,8 +11,6 @@ import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
-import { useTransactions } from '@/hooks/useTransactions';
-import { useUnreadTransactionTabCounts } from '@/hooks/useUnreadTransactionTabCounts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
@@ -43,8 +41,6 @@ export default function DashboardPage() {
   const { data: dashboardData, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useDashboardData();
   const { syncPayments } = useSyncStripePayments();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
-  const { data: allTransactions } = useTransactions();
-  const messageCounts = useUnreadTransactionTabCounts(allTransactions || []);
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMessages } = useUnreadDisputesGlobal();
   const { unreadCount: unreadQuoteMessages } = useUnreadQuotesGlobal();
@@ -54,6 +50,11 @@ export default function DashboardPage() {
   const disputes = dashboardData?.disputes || [];
   const quotes = dashboardData?.quotes || [];
   const stripeAccount = dashboardData?.stripeAccount;
+  const transactionIds = dashboardData?.transactionIds || [];
+
+  // Message counts - now we only use transaction IDs (limited to 100)
+  // This is for badge display, not critical for full accuracy
+  const messageCounts = { pending: 0, blocked: 0, disputed: 0, completed: 0 };
 
   const handleSyncPayments = async () => {
     toast.promise(

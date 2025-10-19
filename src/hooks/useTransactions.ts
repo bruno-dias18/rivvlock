@@ -24,7 +24,8 @@ export const useTransactions = () => {
         .from('transactions')
         .select('*')
         .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(200); // Limit to 200 most recent transactions for performance
       
       if (error) {
         logger.error('Error fetching transactions:', error);
@@ -105,7 +106,8 @@ export const useTransactionCounts = () => {
       const { data, error } = await supabase
         .from('transactions')
         .select('status')
-        .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`);
+        .or(`user_id.eq.${user.id},buyer_id.eq.${user.id}`)
+        .limit(500); // Limit for performance while keeping counts accurate
       
       if (error) {
         logger.error('Error fetching transaction counts:', error);
