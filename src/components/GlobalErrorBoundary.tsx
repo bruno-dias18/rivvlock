@@ -38,9 +38,14 @@ export class GlobalErrorBoundary extends React.Component<React.PropsWithChildren
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="max-w-lg w-full text-center border rounded-lg p-8 bg-card">
           <h1 className="text-2xl font-bold mb-2">Une erreur s'est produite</h1>
-          <p className="text-muted-foreground mb-6">
+          <p className="text-muted-foreground mb-2">
             {this.state.error?.message || "L'application a rencontré un problème inattendu."}
           </p>
+          {this.state.error?.stack && (
+            <pre className="text-xs text-left whitespace-pre-wrap bg-muted/30 rounded p-2 mb-4 max-h-40 overflow-auto">
+              {this.state.error.stack.split('\n').slice(0, 3).join('\n')}
+            </pre>
+          )}
           <div className="flex items-center justify-center gap-3">
             <button onClick={this.handleReload} className="inline-flex items-center justify-center rounded-md px-4 py-2 border">
               Recharger la page
