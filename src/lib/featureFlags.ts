@@ -33,8 +33,10 @@ export const FEATURES = {
    * 
    * Performance impact: ~20% additional queries
    * Only active when UNIFIED_DISPUTES is true
+   * 
+   * ✅ PRODUCTION: Disabled after successful migration
    */
-  DOUBLE_RUNNING: true,
+  DOUBLE_RUNNING: false,
 } as const;
 
 export type FeatureFlags = typeof FEATURES;

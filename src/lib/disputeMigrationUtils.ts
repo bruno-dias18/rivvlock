@@ -239,18 +239,18 @@ export function validateFeatureFlags(): ValidationResult[] {
     // During preparation phase, both should be false
     results.push({
       check: 'UNIFIED_DISPUTES flag',
-      passed: !FEATURES.UNIFIED_DISPUTES,
+      passed: FEATURES.UNIFIED_DISPUTES === true,
       count: FEATURES.UNIFIED_DISPUTES ? 1 : 0,
-      expected: 0,
-      details: 'Should be false during preparation phase',
+      expected: 1,
+      details: 'Production: Unified disputes architecture active',
     });
 
     results.push({
       check: 'DOUBLE_RUNNING flag',
-      passed: FEATURES.DOUBLE_RUNNING === true,
+      passed: FEATURES.DOUBLE_RUNNING === false,
       count: FEATURES.DOUBLE_RUNNING ? 1 : 0,
-      expected: 1,
-      details: 'Should be true for validation',
+      expected: 0,
+      details: 'Production: Double-running disabled after successful migration',
     });
   });
 
