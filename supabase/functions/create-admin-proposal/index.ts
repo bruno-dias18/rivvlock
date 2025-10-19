@@ -19,7 +19,7 @@ const adminProposalSchema = z.object({
   immediateExecution: z.boolean().optional(),
 });
 
-const handler = async (ctx: any) => {
+const handler = async (_req: Request, ctx: any) => {
   try {
     const { user, supabaseClient, adminClient, body } = ctx;
     const { disputeId, proposalType, refundPercentage, message, immediateExecution = false } = body;
