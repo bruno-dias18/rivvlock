@@ -7,7 +7,9 @@ import {
   withAuth, 
   withValidation,
   successResponse,
-  errorResponse 
+  errorResponse,
+  Handler,
+  HandlerContext
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
@@ -20,7 +22,7 @@ const logStep = (step: string, details?: unknown) => {
   logger.log(`[REFRESH-COUNTERPARTY-STRIPE-STATUS] ${step}${d}`);
 };
 
-const handler = async (ctx: any) => {
+const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   const { seller_id } = body;
 
