@@ -50,15 +50,15 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Faire une proposition officielle</DialogTitle>
           <DialogDescription>
             Proposez une solution de remboursement. L'autre partie pourra accepter ou refuser votre proposition.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 overflow-y-auto flex-1 px-1 -mx-1">
           <div className="space-y-3">
             <Label>Type de proposition</Label>
             
@@ -157,7 +157,7 @@ export const CreateProposalDialog: React.FC<CreateProposalDialogProps> = ({
           </div>
         </div>
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex gap-2 justify-end pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isCreating}>
             Annuler
           </Button>
