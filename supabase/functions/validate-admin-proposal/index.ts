@@ -20,11 +20,11 @@ const validateProposalSchema = z.object({
 const handler = async (ctx: any) => {
   try {
     const { user, supabaseClient, adminClient, body } = ctx;
-    const { proposalId, action } = body as z.infer<typeof validateProposalSchema>;
+    const { proposalId, action } = body;
 
     logger.log("[VALIDATE-ADMIN-PROPOSAL] User", user.id, action, "proposal", proposalId);
 
-    // Load proposal
+    // Get proposal
     const { data: proposal, error: proposalError } = await supabaseClient
       .from("dispute_proposals")
       .select("*")
@@ -40,10 +40,10 @@ const handler = async (ctx: any) => {
       return errorResponse("This is not an admin official proposal", 400);
     }
 
-    // Load dispute
+    // Get dispute
     const { data: dispute, error: disputeError } = await supabaseClient
       .from("disputes")
-      .select("id, status, transaction_id, conversation_id")
+      .select("id, status, transaction_id")
       .eq("id", proposal.dispute_id)
       .single();
 
@@ -52,12 +52,10 @@ const handler = async (ctx: any) => {
       return errorResponse("Dispute not found", 404);
     }
 
-    // Load transaction
+    // Get transaction
     const { data: transaction, error: transactionError } = await supabaseClient
       .from("transactions")
-      .select(
-        "id, user_id, buyer_id, stripe_payment_intent_id, price, currency, status, title"
-      )
+      .select("id, user_id, buyer_id, stripe_payment_intent_id, price, currency, status, title")
       .eq("id", dispute.transaction_id)
       .single();
 
@@ -66,8 +64,10 @@ const handler = async (ctx: any) => {
       return errorResponse("Transaction not found", 404);
     }
 
+    // Check user authorization
     const isSeller = user.id === transaction.user_id;
     const isBuyer = user.id === transaction.buyer_id;
+
     if (!isSeller && !isBuyer) {
       return errorResponse("User not authorized to validate this proposal", 403);
     }
@@ -76,6 +76,7 @@ const handler = async (ctx: any) => {
       return errorResponse("Proposal is no longer pending", 400);
     }
 
+    // Handle rejection
     if (action === "reject") {
       await adminClient
         .from("dispute_proposals")
@@ -86,13 +87,15 @@ const handler = async (ctx: any) => {
         })
         .eq("id", proposalId);
 
-      // Return dispute to escalated state
       await adminClient
         .from("disputes")
-        .update({ status: "escalated", updated_at: new Date().toISOString() })
+        .update({
+          status: "escalated",
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", dispute.id);
 
-      // Notify in appropriate admin conversation
+      // Send rejection message
       try {
         const { data: conversation } = await adminClient
           .from("conversations")
@@ -110,129 +113,178 @@ const handler = async (ctx: any) => {
           });
         }
       } catch (msgError) {
-        logger.warn("Non-critical: Could not insert rejection message", msgError);
+        logger.warn("Could not insert rejection message", msgError);
       }
 
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal rejected by", isSeller ? "seller" : "buyer");
       return successResponse({ status: "rejected" });
     }
 
-    // Accept flow: mark party as validated
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() };
-    if (isSeller) updates.seller_validated = true;
-    if (isBuyer) updates.buyer_validated = true;
+    // Handle acceptance
+    const updates: any = { updated_at: new Date().toISOString() };
+    if (isSeller) {
+      updates.seller_validated = true;
+    } else if (isBuyer) {
+      updates.buyer_validated = true;
+    }
 
     await adminClient.from("dispute_proposals").update(updates).eq("id", proposalId);
 
-    // Re-fetch proposal to ensure flags are current
-    const { data: updatedProposal } = await adminClient
+    // Send validation message
+    try {
+      const { data: conversation } = await adminClient
+        .from("conversations")
+        .select("id")
+        .eq("dispute_id", dispute.id)
+        .eq("conversation_type", isSeller ? "admin_seller_dispute" : "admin_buyer_dispute")
+        .maybeSingle();
+
+      if (conversation) {
+        await adminClient.from("messages").insert({
+          conversation_id: conversation.id,
+          sender_id: user.id,
+          message: `✅ ${isSeller ? "Le vendeur" : "L'acheteur"} a validé la proposition officielle.`,
+          message_type: isSeller ? "seller_to_admin" : "buyer_to_admin",
+        });
+      }
+    } catch (msgError) {
+      logger.warn("Could not insert validation message", msgError);
+    }
+
+    // Re-fetch proposal to check if both parties validated
+    const { data: updatedProposal, error: refetchError } = await adminClient
       .from("dispute_proposals")
       .select("*")
       .eq("id", proposalId)
       .single();
 
-    // If both parties validated, execute decision
-    if (updatedProposal?.buyer_validated && updatedProposal?.seller_validated) {
+    if (refetchError || !updatedProposal) {
+      logger.error("Error refetching proposal:", refetchError);
+      return errorResponse("Could not verify proposal status", 500);
+    }
+
+    // Check if both parties validated
+    if (updatedProposal.buyer_validated && updatedProposal.seller_validated) {
       logger.log("[VALIDATE-ADMIN-PROPOSAL] Both parties validated - processing Stripe");
 
       const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
         apiVersion: "2024-06-20",
       });
 
-      let disputeStatus: "resolved_refund" | "resolved_release" | "resolved" = "resolved";
-      let newTransactionStatus = transaction.status as string;
+      let disputeStatus: "resolved" | "resolved_refund" | "resolved_release" = "resolved";
+      let newTransactionStatus = transaction.status;
 
-      const totalAmount = Math.round((transaction.price ?? 0) * 100);
-      const platformFee = Math.round(totalAmount * 0.05);
-      const currency = String(transaction.currency).toLowerCase();
-
+      // Process based on proposal type
       if (
-        updatedProposal.proposal_type === "full_refund" ||
-        updatedProposal.proposal_type === "partial_refund"
+        proposal.proposal_type === "partial_refund" ||
+        proposal.proposal_type === "full_refund"
       ) {
         if (!transaction.stripe_payment_intent_id) {
-          return errorResponse("No payment intent found for this transaction", 400);
+          return errorResponse("No payment intent found", 400);
         }
 
-        const refundPercentage =
-          updatedProposal.proposal_type === "full_refund"
-            ? 100
-            : updatedProposal.refund_percentage ?? 0;
-        const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
-        const sellerAmount = totalAmount - refundAmount - platformFee;
+        const totalAmount = Math.round(transaction.price * 100);
+        const refundPercentage = proposal.refund_percentage || 100;
+        const isFullRefund = proposal.proposal_type === "full_refund" || refundPercentage === 100;
 
-        const pi = await stripe.paymentIntents.retrieve(
+        logger.log(`Processing ${refundPercentage}% refund`);
+
+        const paymentIntent = await stripe.paymentIntents.retrieve(
           transaction.stripe_payment_intent_id
         );
 
-        if (pi.status === "requires_capture") {
-          if (refundPercentage === 100) {
+        if (paymentIntent.status === "requires_capture") {
+          if (isFullRefund) {
             await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
+            logger.log("Full refund - authorization cancelled");
           } else {
-            // Partial: capture seller share + platform fee, then transfer sellerAmount
+            // Partial refund: capture partial amount
+            const platformFee = Math.round(totalAmount * 0.05);
+            const capturePercentage = 100 - refundPercentage;
+            const sellerShare = capturePercentage / 100;
+            const sellerAmount = Math.round(totalAmount * sellerShare - platformFee * sellerShare);
+            const captureAmount = sellerAmount + platformFee;
+            const currency = String(transaction.currency).toLowerCase();
+
             const { data: sellerAccount } = await adminClient
               .from("stripe_accounts")
               .select("stripe_account_id")
               .eq("user_id", transaction.user_id)
               .maybeSingle();
 
-            await stripe.paymentIntents.capture(
-              transaction.stripe_payment_intent_id,
-              { amount_to_capture: sellerAmount + platformFee }
-            );
+            if (!sellerAccount?.stripe_account_id) {
+              return errorResponse("Seller Stripe account not found", 400);
+            }
 
-            if (sellerAmount > 0 && sellerAccount?.stripe_account_id) {
+            logger.log(`Capturing ${captureAmount / 100} ${currency}`);
+            await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
+              amount_to_capture: captureAmount,
+            });
+
+            if (sellerAmount > 0) {
+              logger.log(`Transferring ${sellerAmount / 100} ${currency} to seller`);
               await stripe.transfers.create({
                 amount: sellerAmount,
                 currency,
                 destination: sellerAccount.stripe_account_id,
                 transfer_group: `txn_${transaction.id}`,
-                metadata: {
-                  dispute_id: dispute.id,
-                  type: "admin_partial_refund_transfer",
-                },
+                metadata: { dispute_id: dispute.id, type: "admin_partial_refund" },
               });
             }
+
+            logger.log(`Partial refund processed: ${refundPercentage}%`);
           }
-        } else if (pi.status === "succeeded") {
-          await stripe.refunds.create({
-            payment_intent: transaction.stripe_payment_intent_id,
-            amount: refundAmount,
-            reason: "requested_by_customer",
-            metadata: {
-              dispute_id: dispute.id,
-              type: refundPercentage === 100 ? "admin_full_refund" : "admin_partial_refund",
-              refund_percentage: refundPercentage,
-            },
-          });
+        } else if (paymentIntent.status === "succeeded") {
+          // Already captured - create refund
+          const platformFee = Math.round(totalAmount * 0.05);
+          const currency = String(transaction.currency).toLowerCase();
+          const refundAmount = Math.round((totalAmount * refundPercentage) / 100);
+          const sellerAmount = totalAmount - refundAmount - platformFee;
 
-          if (refundPercentage < 100 && sellerAmount > 0) {
-            const { data: sellerAccount } = await adminClient
-              .from("stripe_accounts")
-              .select("stripe_account_id")
-              .eq("user_id", transaction.user_id)
-              .maybeSingle();
+          if (isFullRefund) {
+            await stripe.refunds.create({
+              payment_intent: transaction.stripe_payment_intent_id,
+              amount: refundAmount,
+              reason: "requested_by_customer",
+              metadata: { dispute_id: dispute.id, type: "admin_full_refund" },
+            });
+          } else {
+            await stripe.refunds.create({
+              payment_intent: transaction.stripe_payment_intent_id,
+              amount: refundAmount,
+              reason: "requested_by_customer",
+              metadata: {
+                dispute_id: dispute.id,
+                type: "admin_partial_refund",
+                refund_percentage: refundPercentage,
+              },
+            });
 
-            // Ensure we have a charge to link the transfer
-            let chargeId = pi.latest_charge as string | null;
-            if (!chargeId) {
-              const refreshed = await stripe.paymentIntents.retrieve(
-                transaction.stripe_payment_intent_id
-              );
-              chargeId = refreshed.latest_charge as string | null;
-            }
+            if (sellerAmount > 0) {
+              const { data: sellerAccount } = await adminClient
+                .from("stripe_accounts")
+                .select("stripe_account_id")
+                .eq("user_id", transaction.user_id)
+                .maybeSingle();
 
-            if (sellerAccount?.stripe_account_id && chargeId) {
-              await stripe.transfers.create({
-                amount: sellerAmount,
-                currency,
-                destination: sellerAccount.stripe_account_id,
-                source_transaction: chargeId,
-                transfer_group: `txn_${transaction.id}`,
-                metadata: {
-                  dispute_id: dispute.id,
-                  type: "admin_partial_refund_transfer",
-                },
-              });
+              let chargeId = paymentIntent.latest_charge as string | null;
+              if (!chargeId) {
+                const refreshed = await stripe.paymentIntents.retrieve(
+                  transaction.stripe_payment_intent_id
+                );
+                chargeId = refreshed.latest_charge as string | null;
+              }
+
+              if (sellerAccount?.stripe_account_id && chargeId) {
+                await stripe.transfers.create({
+                  amount: sellerAmount,
+                  currency,
+                  destination: sellerAccount.stripe_account_id,
+                  source_transaction: chargeId,
+                  transfer_group: `txn_${transaction.id}`,
+                  metadata: { dispute_id: dispute.id, type: "admin_partial_refund_transfer" },
+                });
+              }
             }
           }
         }
@@ -240,9 +292,9 @@ const handler = async (ctx: any) => {
         disputeStatus = "resolved_refund";
         newTransactionStatus = "disputed";
       } else {
-        // No refund => release funds to seller
+        // No refund - release funds to seller
         if (!transaction.stripe_payment_intent_id) {
-          return errorResponse("No payment intent found for this transaction", 400);
+          return errorResponse("No payment intent found", 400);
         }
 
         const { data: sellerAccount } = await adminClient
@@ -255,13 +307,9 @@ const handler = async (ctx: any) => {
           return errorResponse("Seller Stripe account not found", 400);
         }
 
-        let pi = await stripe.paymentIntents.retrieve(
-          transaction.stripe_payment_intent_id
-        );
+        let pi = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
         if (pi.status === "requires_capture") {
-          pi = await stripe.paymentIntents.capture(
-            transaction.stripe_payment_intent_id
-          );
+          pi = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id);
         }
 
         let chargeId = pi.latest_charge as string | null;
@@ -272,10 +320,14 @@ const handler = async (ctx: any) => {
           chargeId = refreshed.latest_charge as string | null;
         }
         if (!chargeId) {
-          return errorResponse("No charge ID found in payment intent", 400);
+          return errorResponse("No charge ID found", 400);
         }
 
+        const totalAmount = Math.round(transaction.price * 100);
+        const platformFee = Math.round(totalAmount * 0.05);
         const transferAmount = totalAmount - platformFee;
+        const currency = String(transaction.currency).toLowerCase();
+
         if (transferAmount > 0) {
           await stripe.transfers.create({
             amount: transferAmount,
@@ -292,7 +344,7 @@ const handler = async (ctx: any) => {
         newTransactionStatus = "validated";
       }
 
-      // Persist dispute + transaction updates
+      // Update dispute
       await adminClient
         .from("disputes")
         .update({
@@ -302,32 +354,35 @@ const handler = async (ctx: any) => {
         })
         .eq("id", dispute.id);
 
-      const txUpdate: Record<string, any> = {
+      // Update transaction
+      const transactionUpdate: any = {
         status: newTransactionStatus,
         updated_at: new Date().toISOString(),
       };
+
       if (disputeStatus === "resolved_release") {
-        txUpdate.funds_released = true;
-        txUpdate.funds_released_at = new Date().toISOString();
+        transactionUpdate.funds_released = true;
+        transactionUpdate.funds_released_at = new Date().toISOString();
       }
+
       if (disputeStatus === "resolved_refund") {
-        txUpdate.refund_status =
-          updatedProposal.proposal_type === "full_refund" ? "full" : "partial";
-        txUpdate.refund_amount = Math.round(
-          (transaction.price * (updatedProposal.refund_percentage ?? 100)) / 100
+        transactionUpdate.refund_status =
+          proposal.proposal_type === "full_refund" ? "full" : "partial";
+        transactionUpdate.refund_amount = Math.round(
+          (transaction.price * (proposal.refund_percentage || 100)) / 100
         );
       }
 
-      await adminClient.from("transactions").update(txUpdate).eq("id", transaction.id);
+      await adminClient.from("transactions").update(transactionUpdate).eq("id", transaction.id);
 
-      // Notify both parties via admin conversations if present
+      // Send confirmation messages
       try {
         const confirmationText =
-          updatedProposal.proposal_type === "partial_refund"
-            ? `✅ Proposition officielle appliquée: remboursement de ${updatedProposal.refund_percentage}%`
-            : updatedProposal.proposal_type === "full_refund"
+          proposal.proposal_type === "partial_refund"
+            ? `✅ Proposition officielle appliquée: remboursement de ${proposal.refund_percentage}%`
+            : proposal.proposal_type === "full_refund"
             ? "✅ Proposition officielle appliquée: remboursement complet (100%)"
-            : "✅ Proposition officielle appliquée: pas de remboursement (fonds libérés)";
+            : "✅ Proposition officielle appliquée: pas de remboursement";
 
         const { data: sellerConv } = await adminClient
           .from("conversations")
@@ -351,6 +406,7 @@ const handler = async (ctx: any) => {
             message_type: "admin_to_seller",
           });
         }
+
         if (buyerConv) {
           await adminClient.from("messages").insert({
             conversation_id: buyerConv.id,
@@ -360,8 +416,10 @@ const handler = async (ctx: any) => {
           });
         }
       } catch (msgError) {
-        logger.warn("Non-critical: Could not insert confirmation messages", msgError);
+        logger.warn("Could not insert confirmation messages", msgError);
       }
+
+      logger.log("[VALIDATE-ADMIN-PROPOSAL] Proposal fully accepted and processed");
 
       return successResponse({
         success: true,
@@ -371,9 +429,12 @@ const handler = async (ctx: any) => {
       });
     }
 
-    // One party validated only
+    // Only one party validated
+    logger.log("[VALIDATE-ADMIN-PROPOSAL] Validation recorded, waiting for other party");
+
     const otherParticipantId =
       user.id === transaction.user_id ? transaction.buyer_id : transaction.user_id;
+
     if (otherParticipantId) {
       await adminClient.from("activity_logs").insert({
         user_id: otherParticipantId,
@@ -393,8 +454,8 @@ const handler = async (ctx: any) => {
       success: true,
       status: "pending",
       both_validated: false,
-      seller_validated: updatedProposal?.seller_validated ?? false,
-      buyer_validated: updatedProposal?.buyer_validated ?? false,
+      seller_validated: updatedProposal.seller_validated,
+      buyer_validated: updatedProposal.buyer_validated,
     });
   } catch (error) {
     logger.error("[VALIDATE-ADMIN-PROPOSAL] Error:", error);
