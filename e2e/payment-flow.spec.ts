@@ -17,8 +17,8 @@ test.describe('Payment Flow', () => {
   });
 
   test('should display payment method selector', async ({ page }) => {
-    // Wait for the page to load
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    // Wait for the page to load (allow initial dev compile)
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Check that selector and option texts are visible
     const selector = page.locator('[data-testid="payment-method-selector"]');
@@ -28,8 +28,8 @@ test.describe('Payment Flow', () => {
   });
 
   test('should enable pay button only after selecting payment method', async ({ page }) => {
-    // Wait for the page to load
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    // Wait for the page to load (allow initial dev compile)
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Pay button should be disabled initially
     const payButton = page.getByRole('button', { name: /payer/i });
@@ -43,8 +43,8 @@ test.describe('Payment Flow', () => {
   });
 
   test('should redirect to Stripe for card payment', async ({ page }) => {
-    // Wait for the page to load
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    // Wait for the page to load (allow initial dev compile)
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Select card payment method
     await page.getByText(/carte bancaire/i).click();
@@ -63,8 +63,8 @@ test.describe('Payment Flow', () => {
   });
 
   test('should display bank transfer instructions', async ({ page }) => {
-    // Wait for the page to load
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    // Wait for the page to load (allow initial dev compile)
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Select bank transfer payment method
     await page.getByText(/virement bancaire/i).click();
@@ -78,8 +78,8 @@ test.describe('Payment Flow', () => {
   });
 
   test('should show transaction details', async ({ page }) => {
-    // Wait for the page to load
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    // Wait for the page to load (allow initial dev compile)
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Should display transaction information
     await expect(page.getByText(/montant/i)).toBeVisible();
@@ -107,7 +107,7 @@ test.describe('Mobile Payment Flow', () => {
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
     await page.goto('/payment-link/test-token-123');
-    await page.waitForSelector('[data-testid="payment-method-selector"]');
+    await page.waitForSelector('[data-testid="payment-method-selector"]', { timeout: 30000 });
 
     // Check that layout is mobile-friendly
     const paymentSelector = page.locator('[data-testid="payment-method-selector"]');
