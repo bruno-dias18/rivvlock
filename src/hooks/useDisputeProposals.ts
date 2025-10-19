@@ -76,7 +76,8 @@ export const useDisputeProposals = (disputeId: string) => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
-      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
       
       // 🔥 NOTIFICATION IMMÉDIATE pour nouvelle proposition
       const proposalText = data?.proposal?.proposal_type === 'partial_refund'
@@ -108,7 +109,8 @@ export const useDisputeProposals = (disputeId: string) => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
   });
 
@@ -168,7 +170,8 @@ export const useDisputeProposals = (disputeId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', disputeId] });
-      queryClient.invalidateQueries({ queryKey: ['dispute-messages', disputeId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
   });
 

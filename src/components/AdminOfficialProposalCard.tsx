@@ -58,7 +58,8 @@ export const AdminOfficialProposalCard: React.FC<AdminOfficialProposalCardProps>
       queryClient.invalidateQueries({ queryKey: ['dispute-proposals', proposal.dispute_id] });
       queryClient.invalidateQueries({ queryKey: ['disputes'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['dispute-messages', proposal.dispute_id] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
       
       // Garder le callback existant pour compatibilité
       onRefetch?.();
