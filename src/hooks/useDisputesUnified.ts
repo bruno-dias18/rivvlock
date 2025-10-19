@@ -76,6 +76,22 @@ export const useDisputesUnified = () => {
         }
       }
 
+      // CRITICAL FALLBACK: Fetch disputes without conversation_id (orphan disputes)
+      // This handles cases where triggers haven't fired or data is inconsistent
+      const { data: orphanDisputesWithoutConv } = await supabase
+        .from('disputes')
+        .select('*')
+        .is('conversation_id', null)
+        .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
+      
+      if (orphanDisputesWithoutConv && orphanDisputesWithoutConv.length > 0) {
+        logger.warn('Found orphan disputes without conversation_id', {
+          count: orphanDisputesWithoutConv.length,
+          ids: orphanDisputesWithoutConv.map((d: any) => d.id),
+        });
+        disputes = [...disputes, ...orphanDisputesWithoutConv];
+      }
+
       if (disputes.length === 0) return [];
 
       // Build quick lookup to recover participants if transactions query is restricted by RLS

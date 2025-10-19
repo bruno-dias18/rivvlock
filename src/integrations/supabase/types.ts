@@ -1209,6 +1209,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      repair_orphan_disputes: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          conversation_id: string
+          dispute_id: string
+          status: string
+        }[]
+      }
       scheduled_security_cleanup: {
         Args: Record<PropertyKey, never>
         Returns: undefined

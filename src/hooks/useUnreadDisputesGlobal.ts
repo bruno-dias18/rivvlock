@@ -10,12 +10,11 @@ export const useUnreadDisputesGlobal = () => {
     queryFn: async () => {
       if (!user?.id) return 0;
 
-      // Get all active disputes with their conversation_id
+      // Get all active disputes (including those without conversation_id for resilience)
       const { data: disputes, error: disputesError } = await supabase
         .from('disputes')
         .select('id, conversation_id, status')
-        .not('status', 'in', '(resolved,resolved_refund,resolved_release)')
-        .not('conversation_id', 'is', null);
+        .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
       
       if (disputesError) throw disputesError;
       if (!disputes || !disputes.length) return 0;
