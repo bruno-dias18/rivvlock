@@ -8,9 +8,15 @@ export const useForceEscalateDispute = () => {
 
   return useMutation({
     mutationFn: async (disputeId: string) => {
+      // Ensure Authorization header is always present
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+
       // Try the dedicated robust function first
       const first = await supabase.functions.invoke('force-escalate-dispute', {
-        body: { disputeId }
+        body: { disputeId },
+        headers: authHeaders,
       });
       console.debug('[useForceEscalateDispute] force-escalate-dispute result', { data: first.data, error: first.error, disputeId });
       if (!first.error) {
@@ -24,7 +30,8 @@ export const useForceEscalateDispute = () => {
 
       // Fallback to generic admin-dispute-actions escalate
       const fallback = await supabase.functions.invoke('admin-dispute-actions', {
-        body: { action: 'escalate', disputeId }
+        body: { action: 'escalate', disputeId },
+        headers: authHeaders,
       });
       console.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
       if (fallback.error) throw fallback.error;

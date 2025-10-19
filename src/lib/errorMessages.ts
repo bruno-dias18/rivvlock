@@ -79,6 +79,12 @@ export const getUserFriendlyError = (error: any, context?: ErrorContext): string
     });
   }
   
+  if (errorMessage.toLowerCase().includes('no authorization header') || errorMessage.toLowerCase().includes('user not authenticated')) {
+    return i18n.t('errors.auth.sessionExpired', {
+      defaultValue: 'Votre session a expiré. Veuillez vous reconnecter.'
+    });
+  }
+  
   if (statusCode === 408 || errorMessage.includes('timeout')) {
     return i18n.t('errors.network.timeout', { 
       defaultValue: 'Request timed out. Please try again.' 
