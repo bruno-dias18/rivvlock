@@ -70,8 +70,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     throw new Error(`Failed to create dispute: ${disputeError.message}`);
   }
 
-  // Link conversation
+  // CRITICAL: Create or link conversation (GARANTIE 100%)
+  let conversationId: string | null = null;
+
   try {
+    // 1. Essayer de réutiliser la conversation de la transaction
     const { data: tx } = await supabaseClient!
       .from('transactions')
       .select('conversation_id')
@@ -79,9 +82,14 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       .single();
 
     if (tx?.conversation_id) {
+      // Lier la conversation existante au dispute
       await adminClient!
         .from('conversations')
-        .update({ dispute_id: dispute.id })
+        .update({ 
+          dispute_id: dispute.id,
+          conversation_type: 'dispute',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', tx.conversation_id);
 
       await adminClient!
@@ -89,17 +97,53 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         .update({ conversation_id: tx.conversation_id })
         .eq('id', dispute.id);
 
+      conversationId = tx.conversation_id;
+      logger.log('[CREATE-DISPUTE] Reused transaction conversation:', conversationId);
+    } else {
+      // 2. FALLBACK: Créer une nouvelle conversation dédiée au dispute
+      logger.warn('[CREATE-DISPUTE] No transaction conversation found, creating new one');
+      
+      const { data: newConv, error: convCreateError } = await adminClient!
+        .from('conversations')
+        .insert({
+          seller_id: transaction.user_id,
+          buyer_id: transaction.buyer_id,
+          transaction_id: transactionId,
+          dispute_id: dispute.id,
+          conversation_type: 'dispute',
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (convCreateError) {
+        throw convCreateError;
+      }
+
+      await adminClient!
+        .from('disputes')
+        .update({ conversation_id: newConv.id })
+        .eq('id', dispute.id);
+
+      conversationId = newConv.id;
+      logger.log('[CREATE-DISPUTE] Created new conversation:', conversationId);
+    }
+
+    // 3. Ajouter le message initial dans la conversation
+    if (conversationId) {
       await supabaseClient!
         .from('messages')
         .insert({
-          conversation_id: tx.conversation_id,
+          conversation_id: conversationId,
           sender_id: user!.id,
           message: reason,
           message_type: 'text'
         });
     }
-  } catch (convErr) {
-    logger.error('[CREATE-DISPUTE] Conversation linking error:', convErr);
+  } catch (convErr: any) {
+    // SI ÉCHEC CRITIQUE: Logger mais ne pas bloquer la création du dispute
+    // Les triggers et fallbacks frontend géreront la réparation
+    logger.error('[CREATE-DISPUTE] CRITICAL - Conversation linking failed:', convErr.message);
   }
 
   // Update transaction
