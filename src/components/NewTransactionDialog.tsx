@@ -154,17 +154,27 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
   // Detailed mode functions
   const addItem = () => {
-    setItems([...items, {
+    const newItems = [...items, {
       id: crypto.randomUUID(),
       description: '',
       quantity: 1,
       unit_price: 0,
       total: 0
-    }]);
+    }];
+    setItems(newItems);
+    // If no distribution applied, sync base items
+    if (!autoDistributionApplied) {
+      setBaseItems(newItems);
+    }
   };
 
   const removeItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
+    const newItems = items.filter((_, i) => i !== index);
+    setItems(newItems);
+    // If no distribution applied, sync base items
+    if (!autoDistributionApplied) {
+      setBaseItems(newItems);
+    }
   };
 
   const updateItem = (index: number, field: keyof typeof items[0], value: any) => {
@@ -176,6 +186,10 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     }
 
     setItems(newItems);
+    // If no distribution applied, sync base items
+    if (!autoDistributionApplied) {
+      setBaseItems(newItems);
+    }
   };
 
   const switchToDetailedMode = () => {
@@ -183,21 +197,25 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     const currentTitle = form.getValues('title');
     
     if (currentPrice > 0) {
-      setItems([{
+      const newItems = [{
         id: crypto.randomUUID(),
         description: currentTitle || 'Prestation',
         quantity: 1,
         unit_price: currentPrice,
         total: currentPrice
-      }]);
+      }];
+      setItems(newItems);
+      setBaseItems(newItems); // Initialize base snapshot
     } else {
-      setItems([{
+      const newItems = [{
         id: crypto.randomUUID(),
         description: '',
         quantity: 1,
         unit_price: 0,
         total: 0
-      }]);
+      }];
+      setItems(newItems);
+      setBaseItems(newItems); // Initialize base snapshot
     }
     setDetailedMode(true);
     setAutoDistributionApplied(false);
@@ -207,6 +225,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     const total = items.reduce((sum, item) => sum + item.total, 0);
     form.setValue('price', total);
     setItems([]);
+    setBaseItems([]); // Clear base snapshot
     setDetailedMode(false);
     setAutoDistributionApplied(false);
   };
@@ -217,32 +236,31 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   };
 
   const applyAutoDistribution = () => {
-    if (items.length === 0) {
-      return;
-    }
+    if (items.length === 0) return;
 
-    if (feeRatio === 0) {
-      // Reset to base prices
-      if (baseItems.length > 0) {
-        setItems([...baseItems]);
-        setAutoDistributionApplied(false);
-        toast.success('Prix réinitialisés à la base');
-      }
-      return;
-    }
-
-    // Save base items before first distribution
-    if (!autoDistributionApplied) {
+    // Save base snapshot if not already saved
+    if (baseItems.length === 0) {
       setBaseItems([...items]);
     }
 
-    const currentTotal = items.reduce((sum, item) => sum + item.total, 0);
-    const totalFees = currentTotal * 0.05263;
-    const clientFees = totalFees * (feeRatio / 100);
-    const finalPrice = currentTotal + clientFees;
-    const ratio = finalPrice / currentTotal;
+    // Always calculate from base items (idempotent)
+    const sourceItems = baseItems.length > 0 ? baseItems : items;
+    
+    if (feeRatio === 0) {
+      // Restore base prices
+      setItems([...sourceItems]);
+      setAutoDistributionApplied(false);
+      toast.success('Prix réinitialisés à la base');
+      return;
+    }
 
-    const adjustedItems = items.map(item => {
+    const baseTotal = sourceItems.reduce((sum, item) => sum + item.total, 0);
+    const totalFees = baseTotal * 0.05263;
+    const clientFees = totalFees * (feeRatio / 100);
+    const finalPrice = baseTotal + clientFees;
+    const ratio = finalPrice / baseTotal;
+
+    const adjustedItems = sourceItems.map(item => {
       const newUnitPrice = roundToNearestFiveCents(item.unit_price * ratio);
       return {
         ...item,
@@ -253,7 +271,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
     setItems(adjustedItems);
     setAutoDistributionApplied(true);
-    toast.success('Frais répartis automatiquement sur toutes les lignes');
+    toast.success(`Frais de ${feeRatio}% appliqués`);
   };
 
   const onSubmit = async (data: TransactionFormData) => {
