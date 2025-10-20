@@ -14,11 +14,40 @@ import {
   HandlerContext 
 } from "../_shared/middleware.ts";
 
+/**
+ * Validation schema for payment intent creation
+ * @property {string} transactionId - UUID of the transaction to create payment for
+ * @property {string} [paymentMethod] - Optional payment method preference ('card', 'bank_transfer')
+ */
 const schema = z.object({
   transactionId: z.string().uuid(),
   paymentMethod: z.string().optional(),
 });
 
+/**
+ * Create Stripe Payment Intent with escrow configuration
+ * 
+ * This function creates a Stripe Payment Intent with manual capture for escrow:
+ * - Validates buyer authorization
+ * - Calculates available payment methods based on deadline
+ * - Creates Payment Intent with capture_method='manual' (key for escrow)
+ * - Links Payment Intent to transaction
+ * 
+ * Payment method availability:
+ * - Card: Always available
+ * - Bank transfer: Only if deadline >= 72 hours (SEPA processing time)
+ * 
+ * @param {Request} req - HTTP request
+ * @param {HandlerContext} ctx - Context with user, clients, and validated body
+ * @returns {Promise<Response>} Success with clientSecret or error
+ * 
+ * @example
+ * // Create payment intent for transaction
+ * POST /create-payment-intent
+ * { transactionId: "uuid", paymentMethod: "card" }
+ * 
+ * Response: { clientSecret: "pi_xxx_secret_yyy", paymentIntentId: "pi_xxx" }
+ */
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, adminClient, body } = ctx;
   const { transactionId, paymentMethod } = body;
@@ -70,7 +99,26 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
     logger.log("✅ [CREATE-PAYMENT-INTENT] Buyer profile found:", buyerProfile?.stripe_customer_id ? "with Stripe customer" : "without Stripe customer");
 
-    // Determine available payment methods based on deadline
+    /**
+     * PAYMENT METHOD AVAILABILITY LOGIC
+     * 
+     * Card: Always available (instant processing)
+     * 
+     * Bank Transfer (SEPA): Only if deadline >= 72 hours
+     * Rationale:
+     * - SEPA transfers can take 1-3 business days to process
+     * - We need buffer time to ensure payment arrives before deadline
+     * - 72h = 3 days minimum ensures safe processing window
+     * 
+     * Example:
+     * - Transaction created Monday 10:00
+     * - Payment deadline Friday 10:00 (96 hours)
+     * - Bank transfer available: YES (96h > 72h)
+     * 
+     * - Transaction created Wednesday 10:00
+     * - Payment deadline Friday 10:00 (48 hours)
+     * - Bank transfer available: NO (48h < 72h), only card
+     */
     const paymentMethodTypes = ['card'];
     
     // Only allow bank transfer if deadline is >= 72 hours (3 days) away
@@ -82,7 +130,21 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       logger.log("⚠️ [CREATE-PAYMENT-INTENT] Bank transfer blocked (deadline < 3 days)");
     }
 
-    // Prepare payment intent data
+    /**
+     * PAYMENT INTENT CONFIGURATION FOR ESCROW
+     * 
+     * capture_method: 'manual' is CRITICAL for escrow functionality:
+     * - Authorizes funds on buyer's card immediately
+     * - Does NOT charge the buyer yet
+     * - Funds held for up to 7 days (Stripe limit)
+     * - We capture later after service validation
+     * - Or cancel if dispute/expiration
+     * 
+     * This ensures buyer protection and seller security:
+     * - Buyer: Money not taken until service validated
+     * - Seller: Guaranteed funds are available
+     * - Platform: Can manage disputes and refunds
+     */
     const paymentIntentData: any = {
       amount: Math.round(transaction.price * 100), // Convert to cents
       currency: transaction.currency.toLowerCase(),
