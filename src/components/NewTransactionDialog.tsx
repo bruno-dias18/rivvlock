@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { DateTimePicker } from '@/components/DateTimePicker';
 import { ShareLinkDialog } from './ShareLinkDialog';
+import { FeeDistributionSection } from './FeeDistributionSection';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activityLogger';
 import { logger } from '@/lib/logger';
@@ -71,7 +72,6 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   const [shareLink, setShareLink] = useState('');
   const [transactionTitle, setTransactionTitle] = useState('');
   const [feeRatio, setFeeRatio] = useState(0); // 0-100
-  const [showFeeDetails, setShowFeeDetails] = useState(false);
   
   // Detailed mode states
   const [detailedMode, setDetailedMode] = useState(false);
@@ -613,96 +613,16 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               </>
             )}
 
-            {/* Fee distribution slider */}
+            {/* Fee distribution section */}
             {((detailedMode && items.reduce((sum, item) => sum + item.total, 0) > 0) || (!detailedMode && watchedPrice > 0)) && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="fee-distribution" className="text-sm font-medium">
-                    Répartition des frais de plateforme (5%)
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowFeeDetails(!showFeeDetails)}
-                  >
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {showFeeDetails && (
-                  <Alert className="text-xs">
-                    <AlertDescription>
-                      Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
-                      le support client et la médiation. Vous pouvez choisir de les répartir entre 
-                      vous et votre client selon votre stratégie commerciale.
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Client paie</span>
-                    <Badge variant="secondary" className="font-mono">
-                      {feeRatio}%
-                    </Badge>
-                  </div>
-
-                  <Slider
-                    id="fee-distribution"
-                    value={[feeRatio]}
-                    onValueChange={([value]) => setFeeRatio(value)}
-                    min={0}
-                    max={100}
-                    step={10}
-                    className="w-full"
-                  />
-
-                  {detailedMode && feeRatio > 0 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={applyAutoDistribution}
-                      className="w-full"
-                    >
-                      Répartir automatiquement les frais sur les lignes
-                    </Button>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Frais à charge du client</p>
-                      <p className="font-semibold text-base">
-                        {(((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263) * (feeRatio / 100)).toFixed(2)} {watchedCurrency}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Frais à votre charge</p>
-                      <p className="font-semibold text-base">
-                        {(((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263) * (1 - feeRatio / 100)).toFixed(2)} {watchedCurrency}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2 rounded-lg border p-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Prix final pour le client</span>
-                      <span className="font-medium">
-                        {((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) + ((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263 * feeRatio / 100)).toFixed(2)} {watchedCurrency}
-                      </span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-medium">Vous recevrez</span>
-                      <span className="font-bold text-lg text-green-600">
-                        {((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) - ((detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice) * 0.05263 * (1 - feeRatio / 100))).toFixed(2)} {watchedCurrency}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <FeeDistributionSection
+                baseAmount={detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice}
+                currency={watchedCurrency}
+                feeRatio={feeRatio}
+                onFeeRatioChange={setFeeRatio}
+                detailedMode={detailedMode}
+                onAutoDistribute={detailedMode ? applyAutoDistribution : undefined}
+              />
             )}
 
             <FormField

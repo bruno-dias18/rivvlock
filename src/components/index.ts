@@ -20,6 +20,7 @@ export { VirtualTransactionList } from './VirtualTransactionList';
 export { NewTransactionDialog } from './NewTransactionDialog';
 export { RenewTransactionDialog } from './RenewTransactionDialog';
 export { ShareLinkDialog } from './ShareLinkDialog';
+export { FeeDistributionSection } from './FeeDistributionSection';
 
 // Dispute Components
 export { DisputeCard } from './DisputeCard';
