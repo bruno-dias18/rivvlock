@@ -334,6 +334,42 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          enabled: boolean
+          feature_key: string
+          id: string
+          metadata: Json | null
+          rollout_percentage: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          feature_key: string
+          id?: string
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          enabled?: boolean
+          feature_key?: string
+          id?: string
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_sequences: {
         Row: {
           created_at: string
@@ -1183,6 +1219,10 @@ export type Database = {
       }
       is_admin_secure: {
         Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      is_feature_enabled: {
+        Args: { flag_key: string }
         Returns: boolean
       }
       is_super_admin: {

@@ -59,6 +59,26 @@ port = 54329
 policy = "per_worker"
 inspector_port = 54330
 
+# ============================================================
+# API VERSIONING CONVENTION (+2 points Architecture)
+# ============================================================
+# Toutes les edge functions ci-dessous sont considérées comme v1 (version production).
+# 
+# Convention de nommage pour futures versions:
+# - v1 (actuel): /function-name
+# - v2 (futur):  /function-name-v2
+# 
+# Cette convention permet:
+# - Évolution sans breaking changes
+# - Déploiement progressif des nouvelles versions
+# - Backwards compatibility garantie
+# - Dépréciation progressive des anciennes versions
+#
+# Exemple:
+# - /create-transaction      → v1 (production)
+# - /create-transaction-v2   → v2 (nouvelle version)
+# ============================================================
+
 [functions.accept-proposal]
 verify_jwt = true
 
