@@ -103,8 +103,10 @@ const handler = async (_req: Request, ctx: any) => {
     let disputeStatus: "resolved_refund" | "resolved_release" = "resolved_refund";
 
     if (action === "refund") {
-      const refundAmount = Math.round((totalAmount * (refundPercentage ?? 100)) / 100);
-      const sellerAmount = totalAmount - refundAmount - platformFee;
+      // ✅ CORRECT: Déduire frais AVANT partage
+      const baseCents = totalAmount - platformFee;
+      const refundAmount = Math.round(baseCents * (refundPercentage ?? 100) / 100);
+      const sellerAmount = baseCents - refundAmount;
 
       if (paymentIntent.status === "requires_capture") {
         // Full vs partial refund handling on uncaptured PI

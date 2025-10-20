@@ -61,8 +61,10 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
     let disputeStatus: 'resolved_refund' | 'resolved_release' = 'resolved_refund';
 
     if (action === 'refund') {
-      const refundAmount = Math.round((totalAmount * (refundPercentage ?? 100)) / 100);
-      const sellerAmount = totalAmount - refundAmount - platformFee;
+      // ✅ CORRECT: Déduire frais AVANT partage
+      const baseCents = totalAmount - platformFee;
+      const refundAmount = Math.round(baseCents * (refundPercentage ?? 100) / 100);
+      const sellerAmount = baseCents - refundAmount;
 
       if (paymentIntent.status === 'requires_capture') {
         await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
@@ -192,7 +194,7 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
     };
     if (action === 'refund') {
       transactionUpdate.refund_status = (refundPercentage ?? 100) === 100 ? 'full' : 'partial';
-      transactionUpdate.refund_amount = Math.round((transaction.price * (refundPercentage ?? 100)) / 100);
+      transactionUpdate.refund_percentage = refundPercentage ?? 100;
     }
     const { error: transactionUpdateError } = await adminClient!
       .from('transactions')

@@ -33,21 +33,26 @@ const TransactionPricingComponent = ({ transaction, userRole }: TransactionPrici
             ) : (
               <>
                 {userRole === 'seller' ? (
-                  // Seller: net amount received after refund and RivvLock fees (5%)
+                  // Seller: net amount received after refund
+                  // Logic: (price * 0.95) * (100 - refund_percentage) / 100
                   (() => {
-                    const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
-                    const amountAfterRefund = transaction.price - refundAmount;
-                    const netAmount = amountAfterRefund * 0.95; // 5% RivvLock fees
-                    return `${netAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                    const priceCents = Math.round(Number(transaction.price) * 100);
+                    const feeCents = Math.round(priceCents * 5 / 100);
+                    const baseCents = priceCents - feeCents; // Déduire frais AVANT partage
+                    const r = Number(transaction.refund_percentage ?? 0);
+                    const sellerNetCents = Math.floor(baseCents * (100 - r) / 100);
+                    return `${(sellerNetCents / 100).toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                   })()
                 ) : (
-                  // Buyer: total amount paid (including RivvLock fees 5%)
+                  // Buyer: amount paid after refund
+                  // Logic: (price * 0.95) * refund_percentage / 100
                   (() => {
-                    const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
-                    const amountAfterRefund = transaction.price - refundAmount;
-                    const buyerFees = amountAfterRefund * 0.05; // 5% RivvLock fees
-                    const totalPaid = amountAfterRefund + buyerFees;
-                    return `${totalPaid.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                    const priceCents = Math.round(Number(transaction.price) * 100);
+                    const feeCents = Math.round(priceCents * 5 / 100);
+                    const baseCents = priceCents - feeCents; // Déduire frais AVANT partage
+                    const r = Number(transaction.refund_percentage ?? 0);
+                    const buyerPaidCents = Math.floor(baseCents * r / 100);
+                    return `${(buyerPaidCents / 100).toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                   })()
                 )}
               </>
