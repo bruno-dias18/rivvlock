@@ -193,7 +193,7 @@ const handler = async (_req: Request, ctx: any) => {
         return errorResponse(`PaymentIntent not refundable in status: ${paymentIntent.status}`, 400);
       }
 
-      newTransactionStatus = "disputed";
+      newTransactionStatus = "validated";
       disputeStatus = "resolved_refund";
     } else {
       // release
@@ -261,7 +261,6 @@ const handler = async (_req: Request, ctx: any) => {
     };
     if (action === "refund") {
       txUpdate.refund_status = (refundPercentage ?? 100) === 100 ? "full" : "partial";
-      txUpdate.refund_amount = Math.round((Number(tx.price) * (refundPercentage ?? 100)) / 100);
     }
     const { error: txErr } = await adminClient.from("transactions").update(txUpdate).eq("id", tx.id);
     if (txErr) {
