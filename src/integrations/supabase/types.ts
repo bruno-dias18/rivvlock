@@ -1024,13 +1024,6 @@ export type Database = {
       }
     }
     Views: {
-      dispute_migration_status: {
-        Row: {
-          count: string | null
-          metric: string | null
-        }
-        Relationships: []
-      }
       dispute_system_health: {
         Row: {
           count: string | null

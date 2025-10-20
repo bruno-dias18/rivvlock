@@ -1,14 +1,15 @@
 /**
- * Unified Disputes Hook (Phase 5)
+ * ✅ SYSTÈME UNIFIÉ DE DISPUTES (Production)
  * 
- * This is the NEW unified implementation using conversations architecture.
- * Used when UNIFIED_DISPUTES feature flag is true.
+ * Tous les disputes utilisent l'architecture conversations.
+ * conversation_id est obligatoire en base de données.
+ * Le système legacy a été complètement supprimé.
  * 
- * Benefits:
- * - Leverages unified messaging optimizations
- * - Consistent with transactions/quotes architecture
- * - Better performance (70-80% fewer queries)
- * - Shared caching strategy
+ * Avantages:
+ * - Performance optimale (70-80% moins de requêtes)
+ * - Architecture cohérente avec transactions/quotes
+ * - Caching unifié et réutilisable
+ * - Messagerie intégrée par défaut
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -28,10 +29,10 @@ export const useDisputesUnified = () => {
         throw new Error(ErrorMessages.UNAUTHORIZED);
       }
 
-      logger.info('Fetching disputes (unified architecture)', { userId: user.id });
+      logger.info('Fetching disputes (système unifié)', { userId: user.id });
 
-      // Fetch disputes through conversations (unified architecture)
-      // Primary query: conversations with dispute_id set
+      // ✅ REQUÊTE UNIQUE: conversations avec disputes
+      // conversation_id est garanti en base (contrainte NOT NULL)
       const { data: conversationsData, error: conversationsError } = await supabase
         .from('conversations')
         .select(`
@@ -39,59 +40,26 @@ export const useDisputesUnified = () => {
           dispute:disputes!conversations_dispute_id_fkey(*),
           messages(count)
         `)
-        .in('conversation_type', ['transaction', 'dispute', 'admin_seller_dispute', 'admin_buyer_dispute'])
+        .in('conversation_type', ['dispute', 'admin_seller_dispute', 'admin_buyer_dispute'])
         .order('updated_at', { ascending: false });
 
       if (conversationsError) {
-        logger.error('Error fetching dispute conversations (unified):', conversationsError);
+        logger.error('Error fetching dispute conversations:', conversationsError);
         throw new Error(getUserFriendlyError(conversationsError, { code: 'database' }));
       }
 
       const conversations = conversationsData || [];
       if (conversations.length === 0) return [];
 
-      // Extract disputes from conversations directly
-      // Use Map to deduplicate disputes by ID (multiple conversations can reference same dispute)
+      // Extraire et dédupliquer les disputes
       const disputeMap = new Map();
       conversations.forEach((conv: any) => {
         if (conv.dispute && !disputeMap.has(conv.dispute.id)) {
           disputeMap.set(conv.dispute.id, conv.dispute);
         }
       });
-      let disputes = Array.from(disputeMap.values());
-
-      // Fallback: if some conversations have conversation_type='dispute' but dispute is null,
-      // fetch disputes by conversation_id (resilience for old data)
-      const orphanConvs = conversations.filter(
-        (c: any) => c.conversation_type === 'dispute' && c.dispute === null
-      );
-      if (orphanConvs.length > 0) {
-        const orphanConvIds = orphanConvs.map((c: any) => c.id);
-        const { data: orphanDisputes } = await supabase
-          .from('disputes')
-          .select('*')
-          .in('conversation_id', orphanConvIds);
-        if (orphanDisputes && orphanDisputes.length > 0) {
-          disputes = [...disputes, ...orphanDisputes];
-        }
-      }
-
-      // CRITICAL FALLBACK: Fetch disputes without conversation_id (orphan disputes)
-      // This handles cases where triggers haven't fired or data is inconsistent
-      const { data: orphanDisputesWithoutConv } = await supabase
-        .from('disputes')
-        .select('*')
-        .is('conversation_id', null)
-        .not('status', 'in', '(resolved,resolved_refund,resolved_release)');
       
-      if (orphanDisputesWithoutConv && orphanDisputesWithoutConv.length > 0) {
-        logger.warn('Found orphan disputes without conversation_id', {
-          count: orphanDisputesWithoutConv.length,
-          ids: orphanDisputesWithoutConv.map((d: any) => d.id),
-        });
-        disputes = [...disputes, ...orphanDisputesWithoutConv];
-      }
-
+      const disputes = Array.from(disputeMap.values());
       if (disputes.length === 0) return [];
 
       // Build quick lookup to recover participants if transactions query is restricted by RLS
@@ -155,7 +123,7 @@ export const useDisputesUnified = () => {
           return true;
         });
 
-      logger.info('Disputes fetched (unified)', {
+      logger.info('✅ Disputes fetched (système unifié)', {
         count: enriched.length,
         conversationsCount: conversations.length,
       });

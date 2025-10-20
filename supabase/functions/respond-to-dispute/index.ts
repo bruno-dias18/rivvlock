@@ -22,7 +22,7 @@ const handler = async (ctx: any) => {
   
   logger.log('[RESPOND-TO-DISPUTE] Processing dispute response', { disputeId, responseLength: response.length });
 
-  // Get dispute without join (avoid FK relationship error)
+  // ✅ SYSTÈME UNIFIÉ: Récupérer le dispute (conversation_id garanti)
   const { data: dispute, error: disputeError } = await adminClient
     .from("disputes")
     .select("*")
@@ -55,10 +55,10 @@ const handler = async (ctx: any) => {
     return errorResponse("Only the seller can respond to this dispute", 403);
   }
 
-  // Send response as a message in the dispute conversation (unified system)
+  // ✅ Envoyer la réponse via la conversation unifiée (garantie d'exister)
   if (!dispute.conversation_id) {
-    logger.log('[RESPOND-TO-DISPUTE] No conversation linked to dispute');
-    return errorResponse("No conversation found for this dispute", 404);
+    logger.log('[RESPOND-TO-DISPUTE] ERREUR: conversation_id manquant (ne devrait jamais arriver)');
+    return errorResponse("Erreur système: conversation manquante", 500);
   }
 
   const { error: messageError } = await adminClient
@@ -89,7 +89,7 @@ const handler = async (ctx: any) => {
     throw updateError;
   }
 
-  logger.log('[RESPOND-TO-DISPUTE] Response sent successfully via unified messaging');
+  logger.log('[RESPOND-TO-DISPUTE] ✅ Response sent via unified messaging');
 
   // Log activity
   const { error: activityError } = await adminClient
