@@ -11,6 +11,7 @@ import {
   errorResponse,
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
+import { calculateRefund, formatRefundCalculation } from "../_shared/refund-calculator.ts";
 
 /**
  * Validation schema for admin proposal finalization
@@ -131,38 +132,20 @@ const handler = async (_req: Request, ctx: any) => {
 
     let paymentIntent = await stripe.paymentIntents.retrieve(tx.stripe_payment_intent_id);
 
-    const totalAmount = Math.round(Number(tx.price) * 100);
-    const platformFee = Math.round(totalAmount * 0.05);
+    // Use centralized refund calculator for consistency with process-dispute
+    const refundCalc = calculateRefund(Number(tx.price), refundPercentage ?? 100);
+    
+    log("Refund calculation", { 
+      formatted: formatRefundCalculation(refundCalc, String(tx.currency))
+    });
+
+    const { refundAmount, sellerAmount, platformFee, totalAmount } = refundCalc;
     const currency = String(tx.currency).toLowerCase();
 
     let newTransactionStatus: "validated" | "disputed" = "disputed";
     let disputeStatus: "resolved_refund" | "resolved_release" = "resolved_refund";
 
     if (action === "refund") {
-      /**
-       * REFUND CALCULATION (DO NOT MODIFY - VERIFIED CORRECT)
-       * 
-       * Same calculation as process-dispute to ensure consistency:
-       * 
-       * Example with 100 CHF transaction, 50% refund:
-       * - totalAmount = 10000 cents (100 CHF)
-       * - platformFee = 500 cents (5% of 100 CHF)
-       * - refundPercentage = 50
-       * 
-       * Step 1: Calculate refund to buyer
-       * refundAmount = 10000 * 50 / 100 = 5000 cents (50 CHF)
-       * 
-       * Step 2: Calculate seller share
-       * sellerAmount = 10000 - 5000 - 500 = 4500 cents (45 CHF)
-       * 
-       * Result:
-       * - Buyer: 50 CHF refund
-       * - Seller: 45 CHF (95% of remaining 50 CHF)
-       * - Platform: 5 CHF (5% fee)
-       * Total: 100 CHF ✅
-       */
-      const refundAmount = Math.round((totalAmount * (refundPercentage ?? 100)) / 100);
-      const sellerAmount = totalAmount - refundAmount - platformFee;
 
       if (paymentIntent.status === "requires_capture") {
         // Full vs partial refund handling on uncaptured PI

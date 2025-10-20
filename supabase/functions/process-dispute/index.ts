@@ -12,6 +12,7 @@ import {
   HandlerContext 
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
+import { calculateRefund, formatRefundCalculation } from "../_shared/refund-calculator.ts";
 
 /**
  * Validation schema for dispute processing request
@@ -89,36 +90,18 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
 
     let paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
 
-    const totalAmount = Math.round(transaction.price * 100);
-    const platformFee = Math.round(totalAmount * 0.05);
+    // Use centralized refund calculator for consistency
+    const refundCalc = calculateRefund(transaction.price, refundPercentage ?? 100);
+    
+    logger.log('[PROCESS-DISPUTE] Refund calculation:', formatRefundCalculation(refundCalc, String(transaction.currency)));
+
+    const { refundAmount, sellerAmount, platformFee, totalAmount } = refundCalc;
     const currency = String(transaction.currency).toLowerCase();
 
     let newTransactionStatus: 'validated' | 'disputed' = 'disputed';
     let disputeStatus: 'resolved_refund' | 'resolved_release' = 'resolved_refund';
 
     if (action === 'refund') {
-      /**
-       * REFUND CALCULATION (DO NOT MODIFY - VERIFIED CORRECT)
-       * 
-       * Example with 100 CHF transaction, 50% refund:
-       * - totalAmount = 10000 cents (100 CHF)
-       * - platformFee = 500 cents (5% of 100 CHF)
-       * - refundPercentage = 50
-       * 
-       * Step 1: Calculate refund to buyer
-       * refundAmount = 10000 * 50 / 100 = 5000 cents (50 CHF to buyer)
-       * 
-       * Step 2: Calculate seller share (remaining after refund and platform fee)
-       * sellerAmount = 10000 - 5000 - 500 = 4500 cents (45 CHF to seller)
-       * 
-       * Result:
-       * - Buyer receives: 50 CHF (refund)
-       * - Seller receives: 45 CHF (95% of remaining 50 CHF)
-       * - Platform keeps: 5 CHF (5% of original 100 CHF)
-       * Total: 50 + 45 + 5 = 100 CHF ✅
-       */
-      const refundAmount = Math.round((totalAmount * (refundPercentage ?? 100)) / 100);
-      const sellerAmount = totalAmount - refundAmount - platformFee;
 
       if (paymentIntent.status === 'requires_capture') {
         await stripe.paymentIntents.cancel(transaction.stripe_payment_intent_id);
