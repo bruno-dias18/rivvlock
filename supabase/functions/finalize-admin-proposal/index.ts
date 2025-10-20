@@ -147,7 +147,6 @@ const handler = async (_req: Request, ctx: any) => {
             }
           }
         }
-      }
       } else if (paymentIntent.status === "succeeded") {
         // Avoid over-refund by clamping to remaining refundable amount
         const refundsList = await stripe.refunds.list({ payment_intent: tx.stripe_payment_intent_id, limit: 100 });
@@ -189,8 +188,6 @@ const handler = async (_req: Request, ctx: any) => {
               metadata: { dispute_id: dispute.id, type: "partial_refund_seller_share", refund_percentage: String(refundPercentage) },
             });
           }
-        }
-      }
         }
       } else {
         return errorResponse(`PaymentIntent not refundable in status: ${paymentIntent.status}`, 400);
