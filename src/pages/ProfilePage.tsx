@@ -18,6 +18,7 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
+import { FAQSection } from '@/components/FAQSection';
 import { logger } from '@/lib/logger';
 
 export default function ProfilePage() {
@@ -399,6 +400,18 @@ export default function ProfilePage() {
                 <span>{t('profile.website')}</span>
               </Button>
             </a>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle>{t('faq.title')}</CardTitle>
+            <CardDescription>
+              {t('faq.description')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <FAQSection />
           </CardContent>
         </Card>
 

@@ -53,6 +53,7 @@ export { EditProfileDialog } from './EditProfileDialog';
 export { DeleteAccountDialog } from './DeleteAccountDialog';
 export { ChangePasswordDialog } from './ChangePasswordDialog';
 export { ProfileAccessLogsCard } from './ProfileAccessLogsCard';
+export { FAQSection } from './FAQSection';
 
 // Stripe & Banking
 export { BankAccountRequiredDialog } from './BankAccountRequiredDialog';

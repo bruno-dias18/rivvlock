@@ -884,6 +884,71 @@
       }
     }
   },
+  "faq": {
+    "title": "Questions fréquentes (FAQ)",
+    "subtitle": "Trouvez rapidement des réponses à vos questions",
+    "description": "Consultez notre FAQ pour en savoir plus sur le fonctionnement de RivvLock",
+    "whatIsRivvlock": {
+      "question": "Qu'est-ce que RivvLock ?",
+      "answer": "RivvLock est une plateforme de paiement sécurisé qui protège acheteurs et vendeurs. Les fonds sont bloqués jusqu'à la validation du service, garantissant une transaction équitable pour tous."
+    },
+    "howItWorks": {
+      "question": "Comment ça marche ?",
+      "answer": "1. Le vendeur crée une transaction\n2. L'acheteur paie (les fonds sont bloqués)\n3. Le vendeur fournit le service\n4. L'acheteur valide ou déclare un litige sous 48h\n5. Les fonds sont libérés au vendeur (ou remboursés en cas de litige validé)"
+    },
+    "whoCanUse": {
+      "question": "Qui peut utiliser RivvLock ?",
+      "answer": "Particuliers, indépendants, freelances, PME et entreprises. Idéal pour services à la personne, coaching, prestations freelance, ventes entre particuliers, etc."
+    },
+    "fees": {
+      "question": "Quels sont les frais ?",
+      "answer": "• Acheteur : 0 frais RivvLock + frais Stripe standard\n• Vendeur : 3,5% du montant TTC + frais Stripe standard\n• Pas de frais cachés, pas d'abonnement"
+    },
+    "stripeAccount": {
+      "question": "Dois-je créer un compte Stripe ?",
+      "answer": "Oui, pour recevoir des paiements en tant que vendeur. C'est gratuit, sécurisé et prend 5 minutes. RivvLock vous guide dans le processus."
+    },
+    "paymentMethods": {
+      "question": "Quels moyens de paiement sont acceptés ?",
+      "answer": "Cartes bancaires (Visa, Mastercard, American Express), virements SEPA, Apple Pay, Google Pay."
+    },
+    "fundsRelease": {
+      "question": "Quand les fonds sont-ils libérés ?",
+      "answer": "Le prestataire choisit si l'acheteur bloque les fonds 24h, 3 jours ou 7 jours avant la prestation (suivant ses besoins, achat matériel, etc.). Après la prestation :\n• Si l'acheteur valide : libération immédiate\n• Si aucune action sous 48h : libération automatique\n• Si litige : résolution sous 10 jours maximum"
+    },
+    "paymentSecurity": {
+      "question": "Mon paiement est-il sécurisé ?",
+      "answer": "Oui. RivvLock utilise Stripe, leader mondial du paiement en ligne (conforme PCI-DSS niveau 1). Nous ne stockons jamais vos données bancaires."
+    },
+    "dispute": {
+      "question": "Comment déclarer un litige ?",
+      "answer": "Si le service n'est pas conforme, l'acheteur peut déclarer un litige dans les 48h après la prestation. Il doit fournir des justificatifs (photos, messages, etc.)."
+    },
+    "disputeResolution": {
+      "question": "Comment est résolu un litige ?",
+      "answer": "1. L'acheteur déclare le litige avec preuves\n2. Le vendeur a 48h pour répondre avec ses justificatifs\n3. Si pas d'accord, RivvLock analyse les preuves et rend une décision finale sous 10 jours\n4. Décision : remboursement total, partiel, ou aucun remboursement"
+    },
+    "paymentCancellation": {
+      "question": "Puis-je annuler un paiement ?",
+      "answer": "• Avant paiement : Oui, gratuitement\n• Après paiement : Oui, via un remboursement complet (sans frais) si un litige est déclaré et que la raison est donnée à l'acheteur"
+    },
+    "invoices": {
+      "question": "Les factures sont-elles conformes fiscalement ?",
+      "answer": "Oui. Elles incluent : numéros séquentiels, TVA/TTC, mentions légales (SIRET, UID pour Suisse, TVA intracommunautaire pour France)."
+    },
+    "availability": {
+      "question": "RivvLock est-il disponible dans mon pays ?",
+      "answer": "RivvLock est disponible en France, Suisse et dans tous les pays supportés par Stripe Connect. L'interface est disponible en français, anglais et allemand."
+    },
+    "forBusiness": {
+      "question": "Puis-je utiliser RivvLock pour mon entreprise ?",
+      "answer": "Oui, RIVVLOCK PRO est spécialement conçu pour les professionnels, indépendants, freelances, PME et entreprises avec devis, facturation et comptabilité automatique."
+    },
+    "customerSupport": {
+      "question": "Comment contacter le support ?",
+      "answer": "Email : contact@rivvlock.com\nRéponse sous 24h (jours ouvrés)"
+    }
+  },
   "footer": {
     "terms": "Conditions Générales",
     "privacy": "Confidentialité",
