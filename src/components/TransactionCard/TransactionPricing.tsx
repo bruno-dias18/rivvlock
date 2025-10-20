@@ -33,24 +33,21 @@ const TransactionPricingComponent = ({ transaction, userRole }: TransactionPrici
             ) : (
               <>
                 {userRole === 'seller' ? (
-                  // Seller: fees are taken first (5%), then the remainder is split
+                  // Seller: net amount received after refund and RivvLock fees (5%)
                   (() => {
-                    const priceCents = Math.round(Number(transaction.price) * 100);
-                    const feeCents = Math.round(priceCents * 5 / 100);
-                    const baseCents = priceCents - feeCents; // amount to split
-                    const r = Number(transaction.refund_percentage ?? 0); // buyer refund share in %
-                    const sellerNetCents = Math.max(0, Math.floor(baseCents * (100 - r) / 100));
-                    return `${(sellerNetCents / 100).toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                    const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
+                    const amountAfterRefund = transaction.price - refundAmount;
+                    const netAmount = amountAfterRefund * 0.95; // 5% RivvLock fees
+                    return `${netAmount.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                   })()
                 ) : (
-                  // Buyer: total effectively paid after refund when fees are shared first
+                  // Buyer: total amount paid (including RivvLock fees 5%)
                   (() => {
-                    const priceCents = Math.round(Number(transaction.price) * 100);
-                    const feeCents = Math.round(priceCents * 5 / 100);
-                    const baseCents = priceCents - feeCents; // amount to split
-                    const r = Number(transaction.refund_percentage ?? 0); // buyer refund share in %
-                    const buyerPaidCents = Math.max(0, Math.floor(baseCents * r / 100));
-                    return `${(buyerPaidCents / 100).toFixed(2)} ${transaction.currency?.toUpperCase()}`;
+                    const refundAmount = transaction.price * ((transaction.refund_percentage || 0) / 100);
+                    const amountAfterRefund = transaction.price - refundAmount;
+                    const buyerFees = amountAfterRefund * 0.05; // 5% RivvLock fees
+                    const totalPaid = amountAfterRefund + buyerFees;
+                    return `${totalPaid.toFixed(2)} ${transaction.currency?.toUpperCase()}`;
                   })()
                 )}
               </>
