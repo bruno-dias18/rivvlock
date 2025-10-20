@@ -261,6 +261,7 @@ const handler = async (_req: Request, ctx: any) => {
     };
     if (action === "refund") {
       txUpdate.refund_status = (refundPercentage ?? 100) === 100 ? "full" : "partial";
+      txUpdate.refund_percentage = refundPercentage ?? 100;
     }
     const { error: txErr } = await adminClient.from("transactions").update(txUpdate).eq("id", tx.id);
     if (txErr) {

@@ -380,6 +380,7 @@ const handler = async (_req: Request, ctx: any) => {
       if (disputeStatus === "resolved_refund") {
         transactionUpdate.refund_status =
           proposal.proposal_type === "full_refund" ? "full" : "partial";
+        transactionUpdate.refund_percentage = proposal.refund_percentage || 100;
       }
 
       await adminClient.from("transactions").update(transactionUpdate).eq("id", transaction.id);

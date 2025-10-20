@@ -885,6 +885,7 @@ export type Database = {
           price: number
           proposed_service_date: string | null
           proposed_service_end_date: string | null
+          refund_percentage: number | null
           refund_status: string
           reminder_checkpoints: Json | null
           renewal_count: number
@@ -928,6 +929,7 @@ export type Database = {
           price: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
+          refund_percentage?: number | null
           refund_status?: string
           reminder_checkpoints?: Json | null
           renewal_count?: number
@@ -971,6 +973,7 @@ export type Database = {
           price?: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
+          refund_percentage?: number | null
           refund_status?: string
           reminder_checkpoints?: Json | null
           renewal_count?: number
