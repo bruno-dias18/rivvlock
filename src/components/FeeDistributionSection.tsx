@@ -25,7 +25,7 @@ export function FeeDistributionSection({
     onFeeRatioChange(value);
   };
 
-  const totalFees = baseAmount * 0.05263;
+  const totalFees = baseAmount * 0.05;
   const clientFees = totalFees * (feeRatio / 100);
   const sellerFees = totalFees * (1 - feeRatio / 100);
   const finalClientPrice = baseAmount + clientFees;
@@ -35,7 +35,7 @@ export function FeeDistributionSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">
-          Répartition des frais de plateforme (5,263%)
+          Répartition des frais de plateforme (5%)
         </span>
         <Button
           type="button"
@@ -50,7 +50,7 @@ export function FeeDistributionSection({
       {showFeeDetails && (
         <Alert className="text-xs">
           <AlertDescription>
-            Les frais de plateforme RivvLock (5,263%) couvrent la sécurisation des paiements, 
+            Les frais de plateforme RivvLock (5%) couvrent la sécurisation des paiements, 
             le support client et la médiation. Déplacez le curseur pour répartir les frais 
             entre vous et votre client : 0% = vous payez tout, 100% = client paie tout.
           </AlertDescription>

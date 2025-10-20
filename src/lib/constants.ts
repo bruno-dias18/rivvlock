@@ -53,10 +53,11 @@ export const DISPUTE_LIMITS = {
   AUTO_ESCALATION_DAYS: 7,
 } as const;
 
-// Platform Fees (Stripe Connect)
+// Platform Fees
 export const FEES = {
-  PLATFORM_FEE_RATE: 0.029, // 2.9%
-  PLATFORM_FEE_FIXED: 0.25, // €0.25
+  RIVVLOCK_FEE_RATE: 0.05, // 5% - Frais de plateforme RivvLock
+  STRIPE_FEE_RATE: 0.029, // 2.9% - Frais Stripe Connect
+  STRIPE_FEE_FIXED: 0.25, // €0.25 - Frais fixe Stripe
 } as const;
 
 // URL Configuration

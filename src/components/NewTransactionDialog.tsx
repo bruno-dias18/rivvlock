@@ -216,7 +216,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     }
 
     const baseTotal = baseItems.reduce((sum, item) => sum + item.total, 0);
-    const totalFees = baseTotal * 0.05263;
+    const totalFees = baseTotal * 0.05;
     const clientFees = totalFees * (feeRatio / 100);
     const finalPrice = baseTotal + clientFees;
     const ratio = finalPrice / baseTotal;
@@ -257,14 +257,14 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
         // Calculate from base items and apply fees
         const baseTotal = baseItems.reduce((sum, item) => sum + item.total, 0);
-        const totalFees = baseTotal * 0.05263;
+        const totalFees = baseTotal * 0.05;
         const clientFees = totalFees * (feeRatio / 100);
         finalPrice = baseTotal + clientFees;
         
         itemsToSend = items.map(({ id, ...rest }) => rest);
       } else {
         // Mode simple : utiliser le prix du formulaire
-        const totalFees = data.price * 0.05263;
+        const totalFees = data.price * 0.05;
         const clientFees = totalFees * (feeRatio / 100);
         finalPrice = data.price + clientFees;
       }

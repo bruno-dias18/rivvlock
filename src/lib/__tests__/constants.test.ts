@@ -64,9 +64,9 @@ describe('Constants', () => {
 
   describe('FEES', () => {
     it('should have correct platform fee rate', () => {
-      expect(FEES.PLATFORM_FEE_RATE).toBe(0.05); // 5%
-      expect(FEES.PLATFORM_FEE_RATE).toBeGreaterThan(0);
-      expect(FEES.PLATFORM_FEE_RATE).toBeLessThan(1);
+      expect(FEES.RIVVLOCK_FEE_RATE).toBe(0.05); // 5%
+      expect(FEES.RIVVLOCK_FEE_RATE).toBeGreaterThan(0);
+      expect(FEES.RIVVLOCK_FEE_RATE).toBeLessThan(1);
     });
   });
 
