@@ -221,16 +221,24 @@ const handler = async (_req: Request, ctx: any) => {
             }
 
             logger.log(`Capturing ${captureAmount / 100} ${currency}`);
-            await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
+            const captured = await stripe.paymentIntents.capture(transaction.stripe_payment_intent_id, {
               amount_to_capture: captureAmount,
             });
 
-            if (sellerAmount > 0) {
+            // Retrieve charge id to fund transfer directly from the charge
+            let chargeId = captured.latest_charge as string | null;
+            if (!chargeId) {
+              const refreshed = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
+              chargeId = refreshed.latest_charge as string | null;
+            }
+
+            if (sellerAmount > 0 && chargeId) {
               logger.log(`Transferring ${sellerAmount / 100} ${currency} to seller`);
               await stripe.transfers.create({
                 amount: sellerAmount,
                 currency,
                 destination: sellerAccount.stripe_account_id,
+                source_transaction: chargeId,
                 transfer_group: `txn_${transaction.id}`,
                 metadata: { dispute_id: dispute.id, type: "admin_partial_refund" },
               });

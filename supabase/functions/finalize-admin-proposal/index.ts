@@ -107,45 +107,90 @@ const handler = async (_req: Request, ctx: any) => {
       const sellerAmount = totalAmount - refundAmount - platformFee;
 
       if (paymentIntent.status === "requires_capture") {
-        await stripe.paymentIntents.cancel(tx.stripe_payment_intent_id);
+        // Full vs partial refund handling on uncaptured PI
+        if ((refundPercentage ?? 100) === 100) {
+          // Full refund: cancel authorization
+          await stripe.paymentIntents.cancel(tx.stripe_payment_intent_id);
+        } else {
+          // Partial refund: capture seller share + platform fee, then transfer seller share from the charge
+          const capturePercentage = 100 - (refundPercentage ?? 100);
+          const sellerShare = capturePercentage / 100;
+          const sellerAmount = Math.max(0, Math.round(totalAmount * sellerShare - Math.round(platformFee * sellerShare)));
+          const captureAmount = sellerAmount + platformFee;
+
+          const captured = await stripe.paymentIntents.capture(tx.stripe_payment_intent_id, {
+            amount_to_capture: captureAmount,
+          });
+
+          // Retrieve charge id for source_transaction based transfer
+          let chargeId = captured.latest_charge as string | null;
+          if (!chargeId) {
+            const refreshed = await stripe.paymentIntents.retrieve(tx.stripe_payment_intent_id);
+            chargeId = refreshed.latest_charge as string | null;
+          }
+
+          if (sellerAmount > 0 && chargeId) {
+            const { data: sellerAccount } = await adminClient
+              .from("stripe_accounts")
+              .select("stripe_account_id")
+              .eq("user_id", tx.user_id)
+              .maybeSingle();
+            if (sellerAccount?.stripe_account_id) {
+              await stripe.transfers.create({
+                amount: sellerAmount,
+                currency,
+                destination: sellerAccount.stripe_account_id,
+                source_transaction: chargeId,
+                transfer_group: `txn_${tx.id}`,
+                metadata: { dispute_id: dispute.id, type: "partial_refund_seller_share", refund_percentage: String(refundPercentage) },
+              });
+            }
+          }
+        }
+      }
+      } else if (paymentIntent.status === "succeeded") {
+        // Avoid over-refund by clamping to remaining refundable amount
+        const refundsList = await stripe.refunds.list({ payment_intent: tx.stripe_payment_intent_id, limit: 100 });
+        const alreadyRefunded = refundsList.data.reduce((sum, r) => sum + (r.amount || 0), 0);
+        const amountReceived = paymentIntent.amount_received ?? totalAmount;
+        const remainingRefundable = Math.max(0, amountReceived - alreadyRefunded);
+        const effectiveRefund = Math.min(refundAmount, remainingRefundable);
+
+        if (effectiveRefund > 0) {
+          await stripe.refunds.create({
+            payment_intent: tx.stripe_payment_intent_id,
+            amount: effectiveRefund,
+            reason: "requested_by_customer",
+            metadata: { dispute_id: dispute.id, admin_official: "true", type: (refundPercentage ?? 100) === 100 ? "admin_full_refund" : "admin_partial_refund", refund_percentage: String(refundPercentage) },
+          });
+        }
+
         if ((refundPercentage ?? 100) < 100 && sellerAmount > 0) {
           const { data: sellerAccount } = await adminClient
             .from("stripe_accounts")
             .select("stripe_account_id")
             .eq("user_id", tx.user_id)
             .maybeSingle();
-          if (sellerAccount?.stripe_account_id) {
+
+          // Use source_transaction to avoid platform balance dependency
+          let chargeId = paymentIntent.latest_charge as string | null;
+          if (!chargeId) {
+            const refreshed = await stripe.paymentIntents.retrieve(tx.stripe_payment_intent_id);
+            chargeId = refreshed.latest_charge as string | null;
+          }
+
+          if (sellerAccount?.stripe_account_id && chargeId) {
             await stripe.transfers.create({
               amount: sellerAmount,
               currency,
               destination: sellerAccount.stripe_account_id,
+              source_transaction: chargeId,
               transfer_group: `txn_${tx.id}`,
               metadata: { dispute_id: dispute.id, type: "partial_refund_seller_share", refund_percentage: String(refundPercentage) },
             });
           }
         }
-      } else if (paymentIntent.status === "succeeded") {
-        await stripe.refunds.create({
-          payment_intent: tx.stripe_payment_intent_id,
-          amount: refundAmount,
-          reason: "requested_by_customer",
-          metadata: { dispute_id: dispute.id, admin_official: "true", type: (refundPercentage ?? 100) === 100 ? "admin_full_refund" : "admin_partial_refund", refund_percentage: String(refundPercentage) },
-        });
-        if ((refundPercentage ?? 100) < 100 && sellerAmount > 0) {
-          const { data: sellerAccount } = await adminClient
-            .from("stripe_accounts")
-            .select("stripe_account_id")
-            .eq("user_id", tx.user_id)
-            .maybeSingle();
-          if (sellerAccount?.stripe_account_id) {
-            await stripe.transfers.create({
-              amount: sellerAmount,
-              currency,
-              destination: sellerAccount.stripe_account_id,
-              transfer_group: `txn_${tx.id}`,
-              metadata: { dispute_id: dispute.id, type: "partial_refund_seller_share", refund_percentage: String(refundPercentage) },
-            });
-          }
+      }
         }
       } else {
         return errorResponse(`PaymentIntent not refundable in status: ${paymentIntent.status}`, 400);
