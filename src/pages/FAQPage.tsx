@@ -4,6 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FAQSection } from '@/components/FAQSection';
 import { HelpCircle } from 'lucide-react';
 
+/**
+ * FAQ Page
+ * Displays frequently asked questions in a dedicated page
+ * Optimized with lazy loading and proper SEO structure
+ */
 export default function FAQPage() {
   const { t } = useTranslation();
 
@@ -20,7 +25,6 @@ export default function FAQPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t('faq.title')}</CardTitle>
             <CardDescription>{t('faq.description')}</CardDescription>
           </CardHeader>
           <CardContent>
