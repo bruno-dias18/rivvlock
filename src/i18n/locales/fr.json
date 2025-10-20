@@ -814,8 +814,8 @@
           "duration": "10 ans (Suisse, France, Allemagne)"
         },
         "logs": {
-          "title": "Logs d'activité",
-          "duration": "90 jours"
+          "title": "Logs d'activité et d'accès",
+          "duration": "1 an"
         },
         "note": "Après suppression de compte, les transactions sont anonymisées mais conservées pour obligations légales."
       },
@@ -871,7 +871,7 @@
         "noTracking": "Aucun cookie de tracking publicitaire."
       },
       "international": {
-        "hosting": "Vos données sont hébergées en Europe (Supabase/AWS eu-west-1).",
+        "hosting": "Vos données sont hébergées en Europe (Frankfurt, Allemagne).",
         "adequacy": "Conformité RGPD et Swiss-US Data Privacy Framework."
       },
       "changes": {

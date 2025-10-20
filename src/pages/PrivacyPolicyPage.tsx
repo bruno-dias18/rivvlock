@@ -34,7 +34,7 @@ const PrivacyPolicyPage: React.FC = () => {
             </h1>
           </div>
           <p className="text-muted-foreground">
-            {t('privacy.lastUpdated')}: {new Date().toLocaleDateString()}
+            {t('privacy.lastUpdated')}: 15 octobre 2025
           </p>
         </div>
 
