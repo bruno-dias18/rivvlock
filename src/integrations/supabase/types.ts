@@ -264,7 +264,7 @@ export type Database = {
           archived_by_buyer: boolean
           archived_by_seller: boolean
           buyer_archived_at: string | null
-          conversation_id: string | null
+          conversation_id: string
           created_at: string
           dispute_deadline: string | null
           dispute_type: string
@@ -283,7 +283,7 @@ export type Database = {
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null
-          conversation_id?: string | null
+          conversation_id: string
           created_at?: string
           dispute_deadline?: string | null
           dispute_type?: string
@@ -302,7 +302,7 @@ export type Database = {
           archived_by_buyer?: boolean
           archived_by_seller?: boolean
           buyer_archived_at?: string | null
-          conversation_id?: string | null
+          conversation_id?: string
           created_at?: string
           dispute_deadline?: string | null
           dispute_type?: string
@@ -1031,6 +1031,13 @@ export type Database = {
         }
         Relationships: []
       }
+      dispute_system_health: {
+        Row: {
+          count: string | null
+          metric: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       are_transaction_counterparties: {
@@ -1211,14 +1218,6 @@ export type Database = {
       purge_old_activity_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      repair_orphan_disputes: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          conversation_id: string
-          dispute_id: string
-          status: string
-        }[]
       }
       scheduled_security_cleanup: {
         Args: Record<PropertyKey, never>
