@@ -1,0 +1,1325 @@
+openapi: 3.0.3
+info:
+  title: RivvLock API
+  description: |
+    API REST complète pour la plateforme d'escrow RivvLock.
+    
+    ## 🔐 Authentification
+    La plupart des endpoints nécessitent un JWT token Supabase dans le header `Authorization: Bearer <token>`.
+    
+    ## 🌍 Base URL
+    - Production: `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1`
+    - Les Edge Functions sont déployées sur Supabase Edge Runtime (Deno)
+    
+    ## 📊 Catégories
+    - **Transactions**: Création, gestion, et lifecycle des transactions
+    - **Payments**: Intégration Stripe pour paiements escrow
+    - **Disputes**: Système de résolution de litiges
+    - **Quotes**: Système de devis
+    - **Admin**: Opérations administratives
+    - **User**: Gestion des comptes utilisateurs
+    
+    ## 🔒 Sécurité
+    - Rate limiting: 10 req/min par utilisateur sur endpoints publics
+    - RLS (Row Level Security) activé sur toutes les tables
+    - Validation Zod sur tous les inputs
+    - CORS configuré pour cross-origin requests
+  version: 2.0.0
+  contact:
+    name: RivvLock Support
+    url: https://rivvlock.com/contact
+  license:
+    name: Proprietary
+    url: https://rivvlock.com/terms
+
+servers:
+  - url: https://slthyxqruhfuyfmextwr.supabase.co/functions/v1
+    description: Production Server (Lovable Cloud)
+
+tags:
+  - name: Transactions
+    description: Gestion du cycle de vie des transactions
+  - name: Payments
+    description: Traitement des paiements Stripe
+  - name: Disputes
+    description: Système de résolution de litiges
+  - name: Quotes
+    description: Système de devis
+  - name: Admin
+    description: Opérations administratives
+  - name: User
+    description: Gestion des comptes utilisateurs
+  - name: Stripe
+    description: Intégration Stripe Connect
+  - name: Maintenance
+    description: Tâches de maintenance automatisées
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token Supabase obtenu via authentification
+    
+    TokenAuth:
+      type: apiKey
+      in: query
+      name: token
+      description: Token sécurisé pour accès public (payment links)
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Message d'erreur détaillé
+          example: "Transaction not found"
+        code:
+          type: string
+          description: Code d'erreur (optionnel)
+          example: "TRANSACTION_NOT_FOUND"
+
+    Transaction:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - amount
+        - status
+        - seller_id
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Identifiant unique de la transaction
+        title:
+          type: string
+          maxLength: 200
+          description: Titre de la transaction
+          example: "Développement site web"
+        description:
+          type: string
+          description: Description détaillée
+          example: "Site vitrine avec 5 pages"
+        amount:
+          type: number
+          minimum: 10
+          maximum: 1000000
+          description: Montant en EUR
+          example: 1500.00
+        currency:
+          type: string
+          enum: [EUR, CHF, USD]
+          default: EUR
+          description: Devise de la transaction
+        status:
+          type: string
+          enum: 
+            - pending
+            - awaiting_payment
+            - payment_authorized
+            - validation_period
+            - completed
+            - disputed
+            - expired
+          description: État actuel de la transaction
+        payment_method:
+          type: string
+          enum: [card, bank_transfer]
+          description: Méthode de paiement choisie
+        seller_id:
+          type: string
+          format: uuid
+          description: ID du vendeur
+        buyer_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID de l'acheteur (null si pas encore rejoint)
+        stripe_payment_intent_id:
+          type: string
+          nullable: true
+          description: ID du PaymentIntent Stripe
+        validation_deadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: Date limite de validation
+        payment_link_token:
+          type: string
+          nullable: true
+          description: Token sécurisé pour le lien de paiement
+        invoice_number:
+          type: string
+          nullable: true
+          description: Numéro de facture généré
+          example: "INV-2025-001234"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateTransactionRequest:
+      type: object
+      required:
+        - title
+        - description
+        - amount
+        - currency
+        - payment_method
+        - buyer_name
+        - buyer_email
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        amount:
+          type: number
+          minimum: 10
+          maximum: 1000000
+        currency:
+          type: string
+          enum: [EUR, CHF, USD]
+        payment_method:
+          type: string
+          enum: [card, bank_transfer]
+        buyer_name:
+          type: string
+        buyer_email:
+          type: string
+          format: email
+        buyer_phone:
+          type: string
+          nullable: true
+        validation_days:
+          type: integer
+          minimum: 1
+          maximum: 30
+          default: 14
+
+    Dispute:
+      type: object
+      required:
+        - id
+        - transaction_id
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        transaction_id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+          description: ID de la conversation unifiée
+        status:
+          type: string
+          enum: [open, resolved, escalated]
+        reason:
+          type: string
+          description: Raison du litige
+        resolution:
+          type: string
+          nullable: true
+          description: Résolution finale
+        escalated_at:
+          type: string
+          format: date-time
+          nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    Quote:
+      type: object
+      required:
+        - id
+        - title
+        - amount
+        - currency
+        - seller_id
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+          enum: [EUR, CHF, USD]
+        seller_id:
+          type: string
+          format: uuid
+        buyer_email:
+          type: string
+          format: email
+          nullable: true
+        status:
+          type: string
+          enum: [draft, sent, viewed, accepted, rejected, expired]
+        secure_token:
+          type: string
+          description: Token pour accès public
+        valid_until:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    StripeAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Stripe Connect Account ID
+          example: "acct_1234567890"
+        charges_enabled:
+          type: boolean
+        payouts_enabled:
+          type: boolean
+        details_submitted:
+          type: boolean
+        requirements:
+          type: object
+          description: Informations manquantes pour activation
+
+paths:
+  # ==========================================
+  # TRANSACTIONS
+  # ==========================================
+  /create-transaction:
+    post:
+      tags: [Transactions]
+      summary: Créer une nouvelle transaction
+      description: |
+        Crée une transaction escrow avec génération automatique du lien de paiement.
+        Le vendeur doit avoir un compte Stripe Connect actif.
+      operationId: createTransaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+            examples:
+              card_payment:
+                summary: Paiement par carte
+                value:
+                  title: "Développement site web"
+                  description: "Site vitrine avec 5 pages"
+                  amount: 1500
+                  currency: "EUR"
+                  payment_method: "card"
+                  buyer_name: "Jean Dupont"
+                  buyer_email: "jean@example.com"
+                  buyer_phone: "+33612345678"
+                  validation_days: 14
+              bank_transfer:
+                summary: Virement bancaire
+                value:
+                  title: "Consulting Marketing"
+                  description: "Audit SEO complet"
+                  amount: 2500
+                  currency: "EUR"
+                  payment_method: "bank_transfer"
+                  buyer_name: "Marie Martin"
+                  buyer_email: "marie@example.com"
+                  validation_days: 7
+      responses:
+        '200':
+          description: Transaction créée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+                  payment_link:
+                    type: string
+                    description: URL du lien de paiement
+                    example: "https://rivvlock.com/payment/abc123xyz"
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Non authentifié
+        '429':
+          description: Rate limit dépassé
+
+  /get-transaction-by-token:
+    post:
+      tags: [Transactions]
+      summary: Récupérer une transaction par token
+      description: |
+        Endpoint public pour accéder à une transaction via son token sécurisé.
+        Utilisé pour les liens de paiement.
+      operationId: getTransactionByToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Token sécurisé de la transaction
+      responses:
+        '200':
+          description: Transaction trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+                  seller:
+                    type: object
+                    properties:
+                      full_name:
+                        type: string
+                      company_name:
+                        type: string
+                  buyer:
+                    type: object
+                    nullable: true
+        '404':
+          description: Transaction non trouvée
+
+  /join-transaction:
+    post:
+      tags: [Transactions]
+      summary: Rejoindre une transaction (acheteur)
+      description: |
+        Permet à un acheteur de rejoindre une transaction via le lien de paiement.
+        Crée un compte si nécessaire.
+      operationId: joinTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - email
+                - password
+              properties:
+                token:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                full_name:
+                  type: string
+      responses:
+        '200':
+          description: Acheteur rejoint avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+                  user:
+                    type: object
+        '400':
+          description: Token invalide ou transaction déjà rejointe
+
+  /renew-expired-transaction:
+    post:
+      tags: [Transactions]
+      summary: Renouveler une transaction expirée
+      description: Génère un nouveau lien de paiement pour une transaction expirée
+      operationId: renewExpiredTransaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transaction renouvelée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  payment_link:
+                    type: string
+
+  /request-date-change:
+    post:
+      tags: [Transactions]
+      summary: Demander un changement de date de validation
+      description: Le vendeur demande à modifier la date limite de validation
+      operationId: requestDateChange
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+                - new_validation_deadline
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+                new_validation_deadline:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Demande envoyée
+
+  /respond-to-date-change:
+    post:
+      tags: [Transactions]
+      summary: Répondre à une demande de changement de date
+      description: L'acheteur accepte ou refuse le changement de date
+      operationId: respondToDateChange
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+                - approved
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+                approved:
+                  type: boolean
+      responses:
+        '200':
+          description: Réponse enregistrée
+
+  # ==========================================
+  # PAYMENTS
+  # ==========================================
+  /create-payment-intent:
+    post:
+      tags: [Payments]
+      summary: Créer un PaymentIntent Stripe
+      description: |
+        Initialise un paiement escrow sur Stripe Connect.
+        Le paiement est créé `on_behalf_of` le compte du vendeur.
+      operationId: createPaymentIntent
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: PaymentIntent créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  client_secret:
+                    type: string
+                    description: Secret pour Stripe.js
+                  payment_intent_id:
+                    type: string
+
+  /create-payment-checkout:
+    post:
+      tags: [Payments]
+      summary: Créer une session Stripe Checkout
+      description: Crée une session de paiement hébergée par Stripe
+      operationId: createPaymentCheckout
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+                success_url:
+                  type: string
+                cancel_url:
+                  type: string
+      responses:
+        '200':
+          description: Session créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_url:
+                    type: string
+                    description: URL de redirection vers Stripe
+
+  /mark-payment-authorized:
+    post:
+      tags: [Payments]
+      summary: Capturer un paiement autorisé
+      description: |
+        Capture les fonds d'un PaymentIntent après autorisation.
+        Lance la période de validation.
+      operationId: markPaymentAuthorized
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Paiement capturé
+
+  /process-automatic-transfer:
+    post:
+      tags: [Payments]
+      summary: Transférer les fonds au vendeur
+      description: |
+        Transfère automatiquement les fonds au vendeur après validation.
+        Déduit les frais de la plateforme.
+      operationId: processAutomaticTransfer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transfert effectué
+
+  # ==========================================
+  # DISPUTES
+  # ==========================================
+  /create-dispute:
+    post:
+      tags: [Disputes]
+      summary: Créer un litige
+      description: |
+        Ouvre un litige sur une transaction en période de validation.
+        Crée automatiquement une conversation unifiée.
+      operationId: createDispute
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+                - reason
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Raison du litige
+      responses:
+        '200':
+          description: Litige créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dispute:
+                    $ref: '#/components/schemas/Dispute'
+        '400':
+          description: Transaction non éligible au litige
+
+  /respond-to-dispute:
+    post:
+      tags: [Disputes]
+      summary: Envoyer un message dans un litige
+      description: |
+        Envoie un message dans la conversation du litige.
+        Limite de 100 messages par litige.
+      operationId: respondToDispute
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dispute_id
+                - message
+              properties:
+                dispute_id:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                  maxLength: 1000
+      responses:
+        '200':
+          description: Message envoyé
+        '400':
+          description: Limite de messages atteinte
+
+  /create-proposal:
+    post:
+      tags: [Disputes]
+      summary: Créer une proposition de résolution
+      description: Propose un refund partiel ou total pour résoudre le litige
+      operationId: createProposal
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dispute_id
+                - proposed_refund_amount
+                - description
+              properties:
+                dispute_id:
+                  type: string
+                  format: uuid
+                proposed_refund_amount:
+                  type: number
+                  minimum: 0
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Proposition créée
+
+  /accept-proposal:
+    post:
+      tags: [Disputes]
+      summary: Accepter une proposition
+      description: |
+        Accepte la proposition de résolution.
+        Si les 2 parties acceptent, exécute le refund automatiquement.
+      operationId: acceptProposal
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - proposal_id
+              properties:
+                proposal_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Proposition acceptée
+
+  /reject-proposal:
+    post:
+      tags: [Disputes]
+      summary: Rejeter une proposition
+      operationId: rejectProposal
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - proposal_id
+              properties:
+                proposal_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Proposition rejetée
+
+  /force-escalate-dispute:
+    post:
+      tags: [Disputes, Admin]
+      summary: Escalader manuellement un litige
+      description: Admin force l'escalation d'un litige
+      operationId: forceEscalateDispute
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dispute_id
+              properties:
+                dispute_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Litige escaladé
+
+  /create-admin-proposal:
+    post:
+      tags: [Disputes, Admin]
+      summary: Créer une proposition officielle admin
+      description: L'admin crée une résolution officielle que les parties doivent valider
+      operationId: createAdminProposal
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dispute_id
+                - proposed_refund_amount
+                - admin_decision
+              properties:
+                dispute_id:
+                  type: string
+                  format: uuid
+                proposed_refund_amount:
+                  type: number
+                admin_decision:
+                  type: string
+      responses:
+        '200':
+          description: Proposition officielle créée
+
+  # ==========================================
+  # QUOTES
+  # ==========================================
+  /create-quote:
+    post:
+      tags: [Quotes]
+      summary: Créer un devis
+      description: Crée un devis avec génération d'un lien sécurisé
+      operationId: createQuote
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - amount
+                - currency
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                amount:
+                  type: number
+                currency:
+                  type: string
+                  enum: [EUR, CHF, USD]
+                buyer_email:
+                  type: string
+                  format: email
+                valid_days:
+                  type: integer
+                  default: 30
+      responses:
+        '200':
+          description: Devis créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote:
+                    $ref: '#/components/schemas/Quote'
+                  quote_url:
+                    type: string
+
+  /get-quote-by-token:
+    post:
+      tags: [Quotes]
+      summary: Récupérer un devis par token
+      operationId: getQuoteByToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Devis trouvé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quote:
+                    $ref: '#/components/schemas/Quote'
+
+  /accept-quote:
+    post:
+      tags: [Quotes]
+      summary: Accepter un devis
+      description: |
+        Accepte le devis et le convertit automatiquement en transaction.
+        Génère le lien de paiement.
+      operationId: acceptQuote
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quote_id
+              properties:
+                quote_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Devis accepté et converti
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+                  payment_link:
+                    type: string
+
+  # ==========================================
+  # STRIPE CONNECT
+  # ==========================================
+  /create-stripe-account:
+    post:
+      tags: [Stripe]
+      summary: Créer un compte Stripe Connect
+      description: |
+        Initialise le onboarding Stripe Connect pour un vendeur.
+        Retourne l'URL d'onboarding.
+      operationId: createStripeAccount
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - country
+                - email
+              properties:
+                country:
+                  type: string
+                  enum: [FR, CH, DE, BE, LU]
+                email:
+                  type: string
+                  format: email
+                return_url:
+                  type: string
+                refresh_url:
+                  type: string
+      responses:
+        '200':
+          description: Compte créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  account_id:
+                    type: string
+                  onboarding_url:
+                    type: string
+
+  /check-stripe-account-status:
+    post:
+      tags: [Stripe]
+      summary: Vérifier le statut d'un compte Stripe
+      operationId: checkStripeAccountStatus
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Statut du compte
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StripeAccount'
+
+  /validate-stripe-accounts:
+    post:
+      tags: [Stripe, Admin]
+      summary: Valider tous les comptes Stripe
+      description: Batch validation des comptes Stripe Connect (admin)
+      operationId: validateStripeAccounts
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Validation terminée
+
+  # ==========================================
+  # USER MANAGEMENT
+  # ==========================================
+  /delete-user-account:
+    post:
+      tags: [User]
+      summary: Supprimer un compte utilisateur
+      description: |
+        Suppression GDPR-compliant avec anonymisation des données.
+        Vérifie qu'aucune transaction active n'existe.
+      operationId: deleteUserAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Compte supprimé
+        '400':
+          description: Transactions actives en cours
+
+  /export-user-data:
+    post:
+      tags: [User]
+      summary: Exporter les données personnelles
+      description: GDPR data export - retourne un ZIP avec toutes les données
+      operationId: exportUserData
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Export généré
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+
+  # ==========================================
+  # ADMIN
+  # ==========================================
+  /admin-get-transaction:
+    post:
+      tags: [Admin]
+      summary: Récupérer n'importe quelle transaction (admin)
+      operationId: adminGetTransaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transaction trouvée
+
+  /admin-delete-transaction:
+    post:
+      tags: [Admin]
+      summary: Supprimer une transaction (admin)
+      operationId: adminDeleteTransaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transaction supprimée
+
+  /release-funds:
+    post:
+      tags: [Admin]
+      summary: Libérer manuellement les fonds
+      description: Admin force le transfert des fonds au vendeur
+      operationId: releaseFunds
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Fonds libérés
+
+  /fix-blocked-transaction:
+    post:
+      tags: [Admin, Maintenance]
+      summary: Débloquer une transaction bloquée
+      operationId: fixBlockedTransaction
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transaction_id
+              properties:
+                transaction_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Transaction débloquée
+
+  # ==========================================
+  # MAINTENANCE & CRON
+  # ==========================================
+  /process-validation-deadline:
+    post:
+      tags: [Maintenance]
+      summary: Traiter les deadlines de validation (CRON)
+      description: |
+        Tâche automatisée qui:
+        - Auto-complète les transactions après validation
+        - Déclenche les transferts automatiques
+        
+        Exécution: Toutes les 5 minutes
+      operationId: processValidationDeadline
+      responses:
+        '200':
+          description: Traitement effectué
+
+  /process-expired-payment-deadlines:
+    post:
+      tags: [Maintenance]
+      summary: Traiter les paiements expirés (CRON)
+      description: |
+        Auto-expire les transactions non payées après 72h.
+        
+        Exécution: Toutes les 5 minutes
+      operationId: processExpiredPaymentDeadlines
+      responses:
+        '200':
+          description: Traitement effectué
+
+  /process-dispute-deadlines:
+    post:
+      tags: [Maintenance]
+      summary: Escalader les litiges (CRON)
+      description: |
+        Auto-escalade les litiges non résolus après 7 jours.
+        
+        Exécution: Quotidienne
+      operationId: processDisputeDeadlines
+      responses:
+        '200':
+          description: Traitement effectué
+
+  /send-validation-reminders:
+    post:
+      tags: [Maintenance]
+      summary: Envoyer les rappels de validation (CRON)
+      description: |
+        Envoie des emails de rappel aux acheteurs.
+        
+        Exécution: Quotidienne
+      operationId: sendValidationReminders
+      responses:
+        '200':
+          description: Rappels envoyés
+
+  /gdpr-data-retention-cleanup:
+    post:
+      tags: [Maintenance]
+      summary: Nettoyage GDPR (CRON)
+      description: |
+        Supprime les données obsolètes conformément au GDPR:
+        - Transactions complétées > 7 ans
+        - Activity logs > 2 ans
+        
+        Exécution: Hebdomadaire
+      operationId: gdprDataRetentionCleanup
+      responses:
+        '200':
+          description: Nettoyage effectué
+
+  /clean-old-users:
+    post:
+      tags: [Maintenance]
+      summary: Nettoyer les comptes non vérifiés (CRON)
+      description: |
+        Supprime les comptes non vérifiés > 30 jours.
+        
+        Exécution: Quotidienne
+      operationId: cleanOldUsers
+      responses:
+        '200':
+          description: Nettoyage effectué
+
+  # ==========================================
+  # WEBHOOKS
+  # ==========================================
+  /stripe-webhook:
+    post:
+      tags: [Stripe]
+      summary: Webhook Stripe
+      description: |
+        Endpoint pour recevoir les événements Stripe:
+        - payment_intent.succeeded
+        - payment_intent.payment_failed
+        - account.updated
+        - transfer.created
+        
+        Signature vérifiée avec `stripe-signature` header.
+      operationId: stripeWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Event Stripe
+      responses:
+        '200':
+          description: Webhook traité
+        '400':
+          description: Signature invalide
+
+security:
+  - BearerAuth: []
