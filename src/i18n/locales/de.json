@@ -729,6 +729,166 @@
     "fees": "Gebühren",
     "net": "Netto"
   },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "lastUpdated": "Letzte Aktualisierung",
+    "tableOfContents": "Inhaltsverzeichnis",
+    "backToRegistration": "Zurück zur Registrierung",
+    "sections": {
+      "dataController": "Verantwortlicher für die Datenverarbeitung",
+      "dataCollected": "Erfasste Daten",
+      "purpose": "Zwecke der Verarbeitung",
+      "legalBasis": "Rechtsgrundlagen",
+      "retention": "Aufbewahrungsfristen",
+      "security": "Datensicherheit",
+      "yourRights": "Ihre Rechte",
+      "dataSharing": "Datenweitergabe",
+      "cookies": "Cookies",
+      "international": "Internationale Übermittlungen",
+      "changes": "Änderungen",
+      "contact": "Kontakt"
+    },
+    "content": {
+      "dataController": {
+        "intro": "Der Verantwortliche für die Verarbeitung Ihrer personenbezogenen Daten ist:"
+      },
+      "dataCollected": {
+        "intro": "Wir erfassen folgende Daten:",
+        "identity": {
+          "title": "Identitätsdaten",
+          "name": "Vor- und Nachname",
+          "email": "E-Mail-Adresse",
+          "phone": "Telefonnummer",
+          "address": "Postanschrift"
+        },
+        "professional": {
+          "title": "Berufliche Daten",
+          "company": "Firmenname",
+          "siret": "SIRET/UID",
+          "vat": "USt-IdNr.",
+          "avs": "AHV-Nummer (Schweizer Selbstständige)"
+        },
+        "financial": {
+          "title": "Finanzdaten",
+          "stripe": "Stripe-Kennungen (verbundenes Konto)",
+          "transactions": "Transaktionsverlauf"
+        },
+        "technical": {
+          "title": "Technische Daten",
+          "ip": "IP-Adresse",
+          "logs": "Verbindungs- und Zugriffsprotokolle"
+        }
+      },
+      "purpose": {
+        "service": "Bereitstellung des Treuhanddienstes und Transaktionsverwaltung",
+        "payment": "Zahlungsabwicklung über Stripe",
+        "compliance": "Einhaltung rechtlicher Verpflichtungen (Buchhaltung, Steuern, KYC)",
+        "security": "Betrugsprävention und Plattformsicherheit",
+        "support": "Kundensupport und Streitbeilegung",
+        "improvement": "Verbesserung unserer Dienstleistungen"
+      },
+      "legalBasis": {
+        "contract": {
+          "title": "Vertragserfüllung",
+          "desc": "Erforderlich für die Dienstleistungserbringung"
+        },
+        "legal": {
+          "title": "Rechtliche Verpflichtung",
+          "desc": "Rechnungsstellung, Buchhaltung, Geldwäschebekämpfung"
+        },
+        "consent": {
+          "title": "Einwilligung",
+          "desc": "Für Marketingkommunikation (falls zutreffend)"
+        },
+        "legitimate": {
+          "title": "Berechtigtes Interesse",
+          "desc": "Sicherheit, Betrugsprävention"
+        }
+      },
+      "retention": {
+        "account": {
+          "title": "Aktive Kontodaten",
+          "duration": "Solange das Konto aktiv ist"
+        },
+        "transactions": {
+          "title": "Transaktionen und Rechnungen",
+          "duration": "10 Jahre (gesetzliche Steuerpflicht)"
+        },
+        "invoices": {
+          "title": "Rechnungen",
+          "duration": "10 Jahre (Schweiz, Frankreich, Deutschland)"
+        },
+        "logs": {
+          "title": "Aktivitäts- und Zugriffsprotokolle",
+          "duration": "1 Jahr"
+        },
+        "note": "Nach Kontolöschung werden Transaktionen anonymisiert, aber für rechtliche Verpflichtungen aufbewahrt."
+      },
+      "security": {
+        "intro": "Wir setzen Sicherheitsmaßnahmen auf Bankniveau um:",
+        "encryption": "Datenverschlüsselung bei der Übertragung (HTTPS) und im Ruhezustand",
+        "rls": "Row Level Security (RLS) mit strengen Zugriffsrichtlinien",
+        "audit": "Audit-Protokolle für alle Zugriffe auf sensible Daten",
+        "access": "Rollenbasierte Zugriffskontrolle",
+        "stripe": "PCI-DSS-Konformität über Stripe"
+      },
+      "yourRights": {
+        "intro": "Gemäß DSGVO und Schweizer DSG haben Sie folgende Rechte:",
+        "access": {
+          "title": "Auskunftsrecht",
+          "desc": "Erhalten Sie eine Kopie Ihrer Daten (Schaltfläche 'Meine Daten herunterladen')"
+        },
+        "rectification": {
+          "title": "Recht auf Berichtigung",
+          "desc": "Korrigieren Sie ungenaue Daten (Profilseite)"
+        },
+        "erasure": {
+          "title": "Recht auf Löschung",
+          "desc": "Löschen Sie Ihr Konto (Schaltfläche 'Mein Konto löschen')"
+        },
+        "portability": {
+          "title": "Recht auf Datenübertragbarkeit",
+          "desc": "JSON-Export aller Ihrer Daten"
+        },
+        "restriction": {
+          "title": "Recht auf Einschränkung",
+          "desc": "Beschränken Sie die Verarbeitung Ihrer Daten"
+        },
+        "objection": {
+          "title": "Widerspruchsrecht",
+          "desc": "Widersprechen Sie bestimmten Verarbeitungen"
+        },
+        "exercise": "Um Ihre Rechte auszuüben: privacy@rivvlock.com"
+      },
+      "dataSharing": {
+        "stripe": "Zahlungsabwickler (PCI-DSS-konform)",
+        "supabase": "Sicheres Hosting (ISO 27001)",
+        "legal": {
+          "title": "Rechtsbehörden",
+          "desc": "Falls gesetzlich vorgeschrieben"
+        },
+        "noSale": "Wir verkaufen NIEMALS Ihre Daten an Dritte."
+      },
+      "cookies": {
+        "essential": "Wir verwenden nur essenzielle Cookies:",
+        "auth": "Authentifizierungs-Cookies (Benutzersitzung)",
+        "language": "Sprachpräferenz",
+        "noTracking": "Keine Werbe-Tracking-Cookies."
+      },
+      "international": {
+        "hosting": "Ihre Daten werden in Europa gehostet (Frankfurt, Deutschland).",
+        "adequacy": "DSGVO- und Swiss-US Data Privacy Framework-konform."
+      },
+      "changes": {
+        "update": "Wir können diese Richtlinie aktualisieren. Das Datum 'Letzte Aktualisierung' wird geändert.",
+        "notification": "Wesentliche Änderungen werden Ihnen per E-Mail mitgeteilt."
+      },
+      "contact": {
+        "intro": "Bei Fragen zu Ihren personenbezogenen Daten:",
+        "authority": "Aufsichtsbehörde: CNIL (Frankreich), EDÖB (Schweiz), BfDI (Deutschland)"
+      }
+    }
+  },
   "footer": {
     "terms": "Nutzungsbedingungen",
     "privacy": "Datenschutz",

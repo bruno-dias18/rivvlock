@@ -730,6 +730,166 @@
     "fees": "Fees",
     "net": "Net"
   },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated",
+    "tableOfContents": "Table of Contents",
+    "backToRegistration": "Back to Registration",
+    "sections": {
+      "dataController": "Data Controller",
+      "dataCollected": "Data Collected",
+      "purpose": "Processing Purposes",
+      "legalBasis": "Legal Basis",
+      "retention": "Retention Periods",
+      "security": "Data Security",
+      "yourRights": "Your Rights",
+      "dataSharing": "Data Sharing",
+      "cookies": "Cookies",
+      "international": "International Transfers",
+      "changes": "Changes",
+      "contact": "Contact"
+    },
+    "content": {
+      "dataController": {
+        "intro": "The data controller of your personal data is:"
+      },
+      "dataCollected": {
+        "intro": "We collect the following data:",
+        "identity": {
+          "title": "Identity Data",
+          "name": "First and last name",
+          "email": "Email address",
+          "phone": "Phone number",
+          "address": "Postal address"
+        },
+        "professional": {
+          "title": "Professional Data",
+          "company": "Company name",
+          "siret": "SIRET/UID",
+          "vat": "VAT number",
+          "avs": "AVS number (Swiss self-employed)"
+        },
+        "financial": {
+          "title": "Financial Data",
+          "stripe": "Stripe identifiers (connected account)",
+          "transactions": "Transaction history"
+        },
+        "technical": {
+          "title": "Technical Data",
+          "ip": "IP address",
+          "logs": "Connection and access logs"
+        }
+      },
+      "purpose": {
+        "service": "Providing escrow service and transaction management",
+        "payment": "Payment processing via Stripe",
+        "compliance": "Compliance with legal obligations (accounting, tax, KYC)",
+        "security": "Fraud prevention and platform security",
+        "support": "Customer support and dispute resolution",
+        "improvement": "Service improvement"
+      },
+      "legalBasis": {
+        "contract": {
+          "title": "Contract execution",
+          "desc": "Necessary for service delivery"
+        },
+        "legal": {
+          "title": "Legal obligation",
+          "desc": "Invoicing, accounting, anti-money laundering"
+        },
+        "consent": {
+          "title": "Consent",
+          "desc": "For marketing communications (if applicable)"
+        },
+        "legitimate": {
+          "title": "Legitimate interest",
+          "desc": "Security, fraud prevention"
+        }
+      },
+      "retention": {
+        "account": {
+          "title": "Active account data",
+          "duration": "As long as the account is active"
+        },
+        "transactions": {
+          "title": "Transactions and invoices",
+          "duration": "10 years (legal tax obligation)"
+        },
+        "invoices": {
+          "title": "Invoices",
+          "duration": "10 years (Switzerland, France, Germany)"
+        },
+        "logs": {
+          "title": "Activity and access logs",
+          "duration": "1 year"
+        },
+        "note": "After account deletion, transactions are anonymized but retained for legal obligations."
+      },
+      "security": {
+        "intro": "We implement banking-level security measures:",
+        "encryption": "Data encryption in transit (HTTPS) and at rest",
+        "rls": "Row Level Security (RLS) with strict access policies",
+        "audit": "Audit logs for all sensitive data access",
+        "access": "Role-based access control",
+        "stripe": "PCI-DSS compliance via Stripe"
+      },
+      "yourRights": {
+        "intro": "In accordance with GDPR and Swiss nLPD, you have the following rights:",
+        "access": {
+          "title": "Right of access",
+          "desc": "Get a copy of your data ('Download my data' button)"
+        },
+        "rectification": {
+          "title": "Right to rectification",
+          "desc": "Correct inaccurate data (Profile page)"
+        },
+        "erasure": {
+          "title": "Right to erasure",
+          "desc": "Delete your account ('Delete my account' button)"
+        },
+        "portability": {
+          "title": "Right to portability",
+          "desc": "JSON export of all your data"
+        },
+        "restriction": {
+          "title": "Right to restriction",
+          "desc": "Limit the processing of your data"
+        },
+        "objection": {
+          "title": "Right to object",
+          "desc": "Object to certain processing"
+        },
+        "exercise": "To exercise your rights: privacy@rivvlock.com"
+      },
+      "dataSharing": {
+        "stripe": "Payment processor (PCI-DSS compliant)",
+        "supabase": "Secure hosting (ISO 27001)",
+        "legal": {
+          "title": "Legal authorities",
+          "desc": "If required by law"
+        },
+        "noSale": "We NEVER sell your data to third parties."
+      },
+      "cookies": {
+        "essential": "We only use essential cookies:",
+        "auth": "Authentication cookies (user session)",
+        "language": "Language preference",
+        "noTracking": "No advertising tracking cookies."
+      },
+      "international": {
+        "hosting": "Your data is hosted in Europe (Frankfurt, Germany).",
+        "adequacy": "GDPR and Swiss-US Data Privacy Framework compliant."
+      },
+      "changes": {
+        "update": "We may update this policy. The 'Last updated' date will be modified.",
+        "notification": "Major changes will be notified to you by email."
+      },
+      "contact": {
+        "intro": "For any questions about your personal data:",
+        "authority": "Supervisory authority: CNIL (France), PFPDT (Switzerland), BfDI (Germany)"
+      }
+    }
+  },
   "footer": {
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
