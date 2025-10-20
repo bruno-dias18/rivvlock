@@ -840,10 +840,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading || !form.formState.isValid}
-              >
+              <Button type="submit" disabled={isLoading}>
                 {isLoading ? 'Création...' : 'Créer la transaction'}
               </Button>
             </DialogFooter>
