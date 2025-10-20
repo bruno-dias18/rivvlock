@@ -14,10 +14,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { DateTimePicker } from '@/components/DateTimePicker';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { FeeDistributionSection } from './FeeDistributionSection';
@@ -236,6 +232,13 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
 
     setItems(adjustedItems);
   };
+
+  // Auto-apply fee distribution when ratio changes
+  useEffect(() => {
+    if (detailedMode && baseItems.length > 0) {
+      applyAutoDistribution();
+    }
+  }, [feeRatio]);
 
   const onSubmit = async (data: TransactionFormData) => {
     console.log('[NewTransactionDialog] onSubmit called with data:', data);
@@ -609,14 +612,12 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
             )}
 
             {/* Fee distribution section */}
-            {((detailedMode && items.reduce((sum, item) => sum + item.total, 0) > 0) || (!detailedMode && watchedPrice > 0)) && (
+            {((detailedMode && baseItems.length > 0) || (!detailedMode && watchedPrice > 0)) && (
               <FeeDistributionSection
-                baseAmount={detailedMode ? items.reduce((sum, item) => sum + item.total, 0) : watchedPrice}
+                baseAmount={detailedMode ? baseItems.reduce((sum, item) => sum + item.total, 0) : watchedPrice}
                 currency={watchedCurrency}
                 feeRatio={feeRatio}
                 onFeeRatioChange={setFeeRatio}
-                detailedMode={detailedMode}
-                onAutoDistribute={detailedMode ? applyAutoDistribution : undefined}
               />
             )}
 

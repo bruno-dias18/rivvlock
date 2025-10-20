@@ -11,8 +11,6 @@ interface FeeDistributionSectionProps {
   currency: string;
   feeRatio: number;
   onFeeRatioChange: (ratio: number) => void;
-  detailedMode?: boolean;
-  onAutoDistribute?: () => void;
 }
 
 export function FeeDistributionSection({
@@ -20,14 +18,11 @@ export function FeeDistributionSection({
   currency,
   feeRatio,
   onFeeRatioChange,
-  detailedMode = false,
-  onAutoDistribute,
 }: FeeDistributionSectionProps) {
   const [showFeeDetails, setShowFeeDetails] = useState(false);
 
   const handleSliderChange = ([value]: number[]) => {
     onFeeRatioChange(value);
-    onAutoDistribute?.();
   };
 
   const totalFees = baseAmount * 0.05263;
@@ -79,18 +74,6 @@ export function FeeDistributionSection({
           step={1}
           className="w-full"
         />
-
-        {detailedMode && onAutoDistribute && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onAutoDistribute}
-            className="w-full"
-          >
-            Répartir les frais sur les lignes
-          </Button>
-        )}
 
         <div className="grid grid-cols-2 gap-4 p-3 rounded-lg bg-muted/50">
           <div className="space-y-1">
