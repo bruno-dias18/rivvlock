@@ -82,6 +82,13 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     unit_price: number;
     total: number;
   }>>([]);
+  const [baseItems, setBaseItems] = useState<Array<{
+    id: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }>>([]);
   const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
   
   const { data: profile } = useProfile();
@@ -210,9 +217,23 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
   };
 
   const applyAutoDistribution = () => {
-    if (feeRatio === 0 || items.length === 0) {
-      toast.info('Aucune répartition à appliquer (frais client à 0%)');
+    if (items.length === 0) {
       return;
+    }
+
+    if (feeRatio === 0) {
+      // Reset to base prices
+      if (baseItems.length > 0) {
+        setItems([...baseItems]);
+        setAutoDistributionApplied(false);
+        toast.success('Prix réinitialisés à la base');
+      }
+      return;
+    }
+
+    // Save base items before first distribution
+    if (!autoDistributionApplied) {
+      setBaseItems([...items]);
     }
 
     const currentTotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -327,6 +348,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
       form.reset();
       setDetailedMode(false);
       setItems([]);
+      setBaseItems([]);
       setAutoDistributionApplied(false);
       setShowShareDialog(true);
       
@@ -344,6 +366,7 @@ export function NewTransactionDialog({ open, onOpenChange }: NewTransactionDialo
     form.reset();
     setDetailedMode(false);
     setItems([]);
+    setBaseItems([]);
     setAutoDistributionApplied(false);
     onOpenChange(false);
   };

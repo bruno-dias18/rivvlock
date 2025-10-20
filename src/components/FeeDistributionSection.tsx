@@ -31,13 +31,12 @@ export function FeeDistributionSection({
   const handleCheckboxChange = (checked: boolean) => {
     setChargeFeesToClient(checked);
     if (!checked) {
-      // When unchecked, reset to 0% and trigger auto-distribute to recalculate lines
+      // Reset to 0% and restore base prices
       onFeeRatioChange(0);
       onAutoDistribute?.();
     } else {
-      // When checked, set to minimum 10% and trigger auto-distribute
+      // Set to minimum 10%
       onFeeRatioChange(10);
-      onAutoDistribute?.();
     }
   };
 
