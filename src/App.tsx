@@ -28,6 +28,7 @@ const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
+const FAQPage = lazy(() => import("./pages/FAQPage"));
 
 // Eager-loaded critical components (avoid loading screens)
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -68,6 +69,7 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/terms", element: React.createElement(TermsOfServicePage) }),
                React.createElement(Route, { path: "/privacy", element: React.createElement(PrivacyPolicyPage) }),
                React.createElement(Route, { path: "/contact", element: React.createElement(ContactPage) }),
+               React.createElement(Route, { path: "/faq", element: React.createElement(FAQPage) }),
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),

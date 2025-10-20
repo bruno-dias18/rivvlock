@@ -18,8 +18,8 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
 import { DeleteAccountDialog } from '@/components/DeleteAccountDialog';
 import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
-import { FAQSection } from '@/components/FAQSection';
 import { logger } from '@/lib/logger';
+import { HelpCircle } from 'lucide-react';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -388,6 +388,12 @@ export default function ProfilePage() {
                 <span>{t('profile.termsOfService')}</span>
               </Button>
             </Link>
+            <Link to="/faq">
+              <Button variant="ghost" className="w-full justify-start h-auto p-3">
+                <HelpCircle className="h-4 w-4 mr-3" />
+                <span>FAQ</span>
+              </Button>
+            </Link>
             <a href="mailto:contact@rivvlock.com">
               <Button variant="ghost" className="w-full justify-start h-auto p-3">
                 <Mail className="h-4 w-4 mr-3" />
@@ -400,18 +406,6 @@ export default function ProfilePage() {
                 <span>{t('profile.website')}</span>
               </Button>
             </a>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>{t('faq.title')}</CardTitle>
-            <CardDescription>
-              {t('faq.description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FAQSection />
           </CardContent>
         </Card>
 
