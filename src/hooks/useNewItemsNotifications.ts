@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ACTIVITY_TYPES_MAP = {
-  pending: ['transaction_created', 'buyer_joined_transaction'],
+  pending: ['transaction_created', 'buyer_joined_transaction', 'quote_accepted'],
   blocked: ['funds_blocked', 'seller_validation', 'buyer_validation'],
   disputed: [
     'dispute_created',
