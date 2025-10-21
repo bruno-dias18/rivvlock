@@ -127,7 +127,8 @@ export default function PaymentLinkPage() {
       userId: user.id,
       transactionId: transaction.id,
       currentBuyerId: transaction.buyer_id,
-      sellerId: transaction.user_id
+      sellerId: transaction.user_id,
+      token: token
     });
 
     // ✅ Si déjà attaché → redirection directe
@@ -137,32 +138,29 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    // ✅ UPDATE DIRECT
+    // ✅ Utiliser la fonction SECURITY DEFINER qui bypass RLS
     try {
-      console.log('🔄 Tentative UPDATE direct...');
+      console.log('🔄 Appel fonction assign_self_as_buyer...');
 
-      const { data, error: updateError } = await supabase
-        .from('transactions')
-        .update({ 
-          buyer_id: user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', transaction.id)
-        .select();
-
-      console.log('📊 Résultat UPDATE:', { data, error: updateError });
-
-      if (updateError) {
-        console.error('❌ UPDATE error:', updateError);
-        throw updateError;
+      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+      
+      if (!finalToken) {
+        throw new Error('Token manquant');
       }
 
-      if (!data || data.length === 0) {
-        console.error('❌ Aucune ligne mise à jour');
-        throw new Error('Transaction non mise à jour');
+      const { data, error } = await supabase.rpc('assign_self_as_buyer', {
+        p_transaction_id: transaction.id,
+        p_token: finalToken
+      });
+
+      console.log('📊 Résultat RPC:', { data, error });
+
+      if (error) {
+        console.error('❌ RPC error:', error);
+        throw error;
       }
       
-      console.log('✅ UPDATE réussi:', data);
+      console.log('✅ Assignation réussie');
       toast.success('Transaction ajoutée à votre compte');
       navigate('/transactions');
     } catch (err: any) {

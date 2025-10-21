@@ -1073,6 +1073,10 @@ export type Database = {
         Args: { user_a: string; user_b: string }
         Returns: boolean
       }
+      assign_self_as_buyer: {
+        Args: { p_token: string; p_transaction_id: string }
+        Returns: boolean
+      }
       can_access_full_profile: {
         Args: { profile_user_id: string }
         Returns: boolean
