@@ -128,7 +128,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('update-quote', {
+      const { error: updateError } = await supabase.functions.invoke('update-quote', {
         body: {
           quote_id: quote.id,
           title,
@@ -144,9 +144,19 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
         }
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      toast.success('Devis modifié et renvoyé au client');
+      // Optionally resend the email to the client after update
+      const { error: resendError } = await supabase.functions.invoke('resend-quote-email', {
+        body: { quote_id: quote.id }
+      });
+
+      if (resendError) {
+        toast.success('Devis modifié. Attention: l\'email n\'a pas pu être renvoyé.');
+      } else {
+        toast.success('Devis modifié et renvoyé au client');
+      }
+
       onSuccess();
       onOpenChange(false);
     } catch (error) {

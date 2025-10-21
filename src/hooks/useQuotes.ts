@@ -88,6 +88,7 @@ export const useQuotes = () => {
         valid_until: string;
         total_amount: number;
         fee_ratio_client: number;
+        discount_percentage?: number;
       }
     }) => {
       const { data, error } = await supabase.functions.invoke('update-quote', {
