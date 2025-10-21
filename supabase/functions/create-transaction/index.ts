@@ -14,23 +14,19 @@ import {
 
 const createTransactionSchema = z.object({
   title: z.string().min(1),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   price: z.number().positive(),
   currency: z.string().length(3),
   service_date: z.string(),
-  service_end_date: z.string().min(1).nullable().optional(), // ✅ Reject empty strings
-  client_email: z.string().email().optional(),
-  client_name: z.string().optional(),
-  buyer_display_name: z.string().optional(),
-  fee_ratio_client: z.number().min(0).max(100).optional(),
+  service_end_date: z.string().min(1).nullable().optional(),
+  client_email: z.string().email().nullable().optional(),
+  client_name: z.string().nullable().optional(),
+  buyer_display_name: z.string().nullable().optional(),
+  fee_ratio_client: z.number().min(0).max(100).nullable().optional(),
 });
 
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
-  
-  logger.log('[CREATE-TRANSACTION] ===== START =====');
-  logger.log('[CREATE-TRANSACTION] User:', user?.id);
-  logger.log('[CREATE-TRANSACTION] Body received:', JSON.stringify(body, null, 2));
   
   const { 
     title, description, price, currency, service_date, service_end_date,

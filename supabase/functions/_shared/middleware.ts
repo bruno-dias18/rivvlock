@@ -134,13 +134,11 @@ export function withValidation<T extends z.ZodType>(schema: T): (handler: Handle
     return async (req: Request, ctx: HandlerContext): Promise<Response> => {
       try {
         const body = await req.json();
-        logger.log('[VALIDATION] Body received:', JSON.stringify(body, null, 2));
         const validatedData = schema.parse(body);
-        logger.log('[VALIDATION] ✅ Validation passed');
         ctx.body = validatedData;
       } catch (error) {
         if (error instanceof z.ZodError) {
-          logger.error('[VALIDATION] ❌ Validation failed:', JSON.stringify(error.errors, null, 2));
+          logger.error('[VALIDATION] Failed:', error.errors);
           return new Response(
             JSON.stringify({ 
               error: "Validation failed", 
@@ -152,7 +150,6 @@ export function withValidation<T extends z.ZodType>(schema: T): (handler: Handle
             }
           );
         }
-        logger.error('[VALIDATION] ❌ Invalid request body:', error);
         return new Response(JSON.stringify({ error: "Invalid request body" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,

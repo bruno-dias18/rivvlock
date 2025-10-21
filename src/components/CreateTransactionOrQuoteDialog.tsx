@@ -260,17 +260,6 @@ export const CreateTransactionOrQuoteDialog = ({
           fee_ratio_client: feeRatio,
         });
 
-        console.log('📤 [TRANSACTION] Data to send:', {
-          title,
-          price: submittedTotalAmount,
-          currency: currency.toUpperCase(),
-          service_date: getFinalDateTime(serviceDate, serviceTime),
-          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
-          client_email: clientEmail || null,
-          client_name: clientName || null,
-          fee_ratio_client: feeRatio,
-        });
-
         const { data, error } = await supabase.functions.invoke('create-transaction', {
           body: {
             title,
@@ -305,19 +294,7 @@ export const CreateTransactionOrQuoteDialog = ({
       onOpenChange(false);
       resetForm();
     } catch (error: any) {
-      console.error('❌ [CREATE ERROR]', {
-        type: formType,
-        error: error,
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        context: error?.context,
-      });
-      
-      // Log plus de détails sur l'erreur
-      if (error?.details) {
-        console.error('❌ [VALIDATION DETAILS]', JSON.stringify(error.details, null, 2));
-      }
+      console.error('Error creating form:', error);
       
       const errorMessage = error?.message || error?.details || 'Erreur inconnue';
       toast.error(`Erreur : ${errorMessage}`);
