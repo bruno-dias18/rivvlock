@@ -121,19 +121,40 @@ export default function PaymentLinkPage() {
   const autoJoinTransaction = async () => {
     if (!user || !transaction || autoJoined) return;
     
+    // Vérifier que la transaction a un ID valide
+    if (!transaction.id) {
+      logger.error('Transaction ID is missing');
+      return;
+    }
+    
+    logger.log('🔄 Attempting to join transaction:', {
+      transactionId: transaction.id,
+      userId: user.id,
+      token: token || new URLSearchParams(window.location.search).get('txId')
+    });
+    
     try {
+      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+      
+      if (!finalToken) {
+        throw new Error('Token manquant');
+      }
+      
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
           transaction_id: transaction.id,
-          linkToken: token || new URLSearchParams(window.location.search).get('txId')
+          linkToken: finalToken
         }
       });
 
       if (joinError) throw joinError;
-      if (joinData.error) throw new Error(joinData.error);
+      if (joinData?.error) throw new Error(joinData.error);
       
       setAutoJoined(true);
       logger.log('✅ Transaction rejointe automatiquement');
+      
+      // Attendre que la mise à jour soit propagée dans la DB
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Rediriger vers le dashboard avec un message de succès
       toast.success('Transaction ajoutée à votre compte', {
@@ -142,13 +163,13 @@ export default function PaymentLinkPage() {
       
       setTimeout(() => {
         navigate('/dashboard?tab=pending');
-      }, 1000);
+      }, 800);
     } catch (err: any) {
       logger.error('Error auto-joining transaction:', err);
       // Si l'utilisateur est déjà assigné, rediriger quand même
       if (err.message?.includes('déjà assigné')) {
         toast.info('Transaction déjà dans votre compte');
-        navigate('/dashboard?tab=pending');
+        setTimeout(() => navigate('/dashboard?tab=pending'), 500);
       }
     }
   };
@@ -228,10 +249,14 @@ export default function PaymentLinkPage() {
 
   // Auto-join transaction when user is authenticated and redirect to dashboard
   useEffect(() => {
-    if (user && transaction && !autoJoined) {
-      autoJoinTransaction();
+    if (user && transaction && !autoJoined && transaction.id) {
+      // S'assurer que la transaction est complètement chargée
+      const timer = setTimeout(() => {
+        autoJoinTransaction();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [user, transaction]);
+  }, [user, transaction, autoJoined]);
 
   const handleAuthRedirect = () => {
     const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;

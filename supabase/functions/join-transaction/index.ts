@@ -10,7 +10,7 @@ import {
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
-// Join transaction with optimized payment deadline handling
+// Join transaction with optimized payment deadline handling and validation
 
 const joinTransactionSchema = z.object({
   transaction_id: z.string().uuid(),
