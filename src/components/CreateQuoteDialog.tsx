@@ -207,18 +207,25 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
       if (error) throw error;
 
-      // Construire l'URL de partage du devis
-      if (data?.view_token && data?.quote_id) {
-        const viewUrl = `${window.location.origin}/quote-view/${data.view_token}?quoteId=${data.quote_id}`;
+      // ✅ OPTIMISATION: Utiliser secure_token au lieu de view_token
+      if (data?.secure_token && data?.quote_id) {
+        const viewUrl = `${window.location.origin}/quote-view/${data.secure_token}?quoteId=${data.quote_id}`;
         
         toast.success('Devis créé avec succès !');
         
-        // Copier automatiquement le lien
+        // ✅ Copie automatique du lien dans le presse-papiers
         try {
           await navigator.clipboard.writeText(viewUrl);
-          toast.info(`Lien copié dans le presse-papiers !\n${viewUrl}`, { duration: 8000 });
-        } catch {
-          toast.info(`Lien du devis : ${viewUrl}`, { duration: 8000 });
+          toast.success('Lien copié dans le presse-papiers !', { 
+            description: viewUrl,
+            duration: 5000 
+          });
+        } catch (clipboardErr) {
+          // Fallback si clipboard API échoue
+          toast.info('Lien du devis créé', { 
+            description: viewUrl,
+            duration: 8000 
+          });
         }
       }
 

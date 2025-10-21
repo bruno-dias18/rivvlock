@@ -167,6 +167,9 @@ verify_jwt = true
 [functions.get-invoice-data]
 verify_jwt = true
 
+[functions.get-or-create-quote-conversation]
+verify_jwt = true
+
 [functions.get-quote-by-token]
 verify_jwt = false
 

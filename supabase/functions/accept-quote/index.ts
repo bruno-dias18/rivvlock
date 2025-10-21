@@ -163,52 +163,36 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       })
       .eq('id', quoteId);
 
-    // Lier/Créer la conversation unifiée
-    try {
-      const { data: quoteConv } = await supabaseAdmin
-        .from('quotes')
-        .select('conversation_id')
-        .eq('id', quoteId)
+    // ✅ OPTIMISATION: Créer/lier la conversation automatiquement
+    let conversationId = quote.conversation_id as string | null;
+
+    if (!conversationId) {
+      // Créer une nouvelle conversation pour ce devis accepté
+      const { data: conversation, error: convError } = await supabaseAdmin
+        .from('conversations')
+        .insert({
+          seller_id: quote.seller_id,
+          buyer_id: authenticatedUserId || null,
+          quote_id: quoteId,
+          transaction_id: transaction.id,
+          conversation_type: 'transaction',
+          status: 'active'
+        })
+        .select('id')
         .single();
 
-      let conversationId = quoteConv?.conversation_id as string | null;
+      if (convError) {
+        logger.error('[accept-quote] Failed to create conversation:', convError);
+      } else if (conversation) {
+        conversationId = conversation.id;
+        
+        // Mettre à jour le devis et la transaction avec le conversation_id
+        await Promise.all([
+          supabaseAdmin.from('quotes').update({ conversation_id: conversationId }).eq('id', quoteId),
+          supabaseAdmin.from('transactions').update({ conversation_id: conversationId }).eq('id', transaction.id)
+        ]);
 
-      if (!conversationId) {
-        // Créer la conversation si elle n'existe pas (compatibilité rétro)
-        const { data: conversation, error: convError } = await supabaseAdmin
-          .from('conversations')
-          .insert({
-            seller_id: quote.seller_id,
-            buyer_id: authenticatedUserId || null,
-            quote_id: quoteId,
-            transaction_id: transaction.id,
-            status: 'active'
-          })
-          .select()
-          .single();
-        if (!convError && conversation) {
-          conversationId = conversation.id;
-          await supabaseAdmin.from('quotes').update({ conversation_id: conversation.id }).eq('id', quoteId);
-        }
-      } else {
-        // Mettre à jour la conversation existante
-        await supabaseAdmin
-          .from('conversations')
-          .update({
-            buyer_id: authenticatedUserId || null,
-            transaction_id: transaction.id,
-          })
-          .eq('id', conversationId);
-      }
-
-      // Lier la transaction à la conversation
-      if (conversationId) {
-        await supabaseAdmin
-          .from('transactions')
-          .update({ conversation_id: conversationId })
-          .eq('id', transaction.id);
-
-        // Si pas de date, envoyer message automatique dans la conversation unifiée
+        // Message de bienvenue automatique
         if (!quote.service_date) {
           await supabaseAdmin.from('messages').insert({
             conversation_id: conversationId,
@@ -217,10 +201,25 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
             message_type: 'text'
           });
         }
+
+        logger.log(`[accept-quote] Conversation created: ${conversationId}`);
       }
-    } catch (convLinkErr) {
-      console.error('[accept-quote] Conversation link error:', convLinkErr);
-      // Ne pas faire échouer l'acceptation si la conversation échoue
+    } else {
+      // La conversation existe déjà (quote créé récemment), la lier à la transaction
+      await supabaseAdmin
+        .from('conversations')
+        .update({ 
+          buyer_id: authenticatedUserId || null,
+          transaction_id: transaction.id 
+        })
+        .eq('id', conversationId);
+
+      await supabaseAdmin
+        .from('transactions')
+        .update({ conversation_id: conversationId })
+        .eq('id', transaction.id);
+
+      logger.log(`[accept-quote] Existing conversation linked: ${conversationId}`);
     }
 
     // Log activité

@@ -1,5 +1,6 @@
-import { compose, withCors, withAuth, successResponse, errorResponse } from "../_shared/middleware.ts";
+import { compose, withCors, withAuth, successResponse, errorResponse, withValidation } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 interface QuoteItem {
   description: string;
@@ -8,15 +9,35 @@ interface QuoteItem {
   total: number;
 }
 
+// Validation Zod stricte
+const createQuoteSchema = z.object({
+  client_email: z.string().email().optional().nullable(),
+  client_name: z.string().max(200).optional().nullable(),
+  title: z.string().min(1).max(500),
+  description: z.string().max(5000).optional().nullable(),
+  items: z.array(z.object({
+    description: z.string().min(1).max(500),
+    quantity: z.number().positive(),
+    unit_price: z.number().nonnegative(),
+    total: z.number().nonnegative()
+  })).min(1).max(100),
+  currency: z.enum(['eur', 'chf']),
+  service_date: z.string().optional().nullable(),
+  service_end_date: z.string().optional().nullable(),
+  valid_until: z.string(),
+  total_amount: z.number().positive().optional(),
+  fee_ratio_client: z.number().min(0).max(100).optional()
+});
+
 interface CreateQuoteRequest {
-  client_email: string;
-  client_name?: string;
+  client_email?: string | null;
+  client_name?: string | null;
   title: string;
-  description?: string;
+  description?: string | null;
   items: QuoteItem[];
   currency: 'eur' | 'chf';
-  service_date?: string;
-  service_end_date?: string;
+  service_date?: string | null;
+  service_end_date?: string | null;
   valid_until: string;
   total_amount?: number;
   fee_ratio_client?: number;
@@ -24,38 +45,48 @@ interface CreateQuoteRequest {
 
 const handler = compose(
   withCors,
-  withAuth
+  withAuth,
+  withValidation(createQuoteSchema)
 )(async (req, ctx) => {
-  const body: CreateQuoteRequest = await req.json();
+  const body: CreateQuoteRequest = ctx.body!;
 
-  // Validation
-  if (!body.client_email || !body.title || !body.items || body.items.length === 0) {
-    return errorResponse('Missing required fields: client_email, title, items', 400);
+  logger.log(`[create-quote] Creating quote for user ${ctx.user!.id}`);
+
+  // Validation supplémentaire métier
+  if (!body.title || !body.items || body.items.length === 0) {
+    return errorResponse('Missing required fields: title, items', 400);
   }
 
   // Calculate totals
   const subtotal = body.items.reduce((sum, item) => sum + item.total, 0);
   
-  // Get seller's profile for tax rate
+  // Get seller's profile for tax rate (optimisé avec maybeSingle)
   const { data: profile } = await ctx.supabaseClient!
     .from('profiles')
     .select('vat_rate, tva_rate')
     .eq('user_id', ctx.user!.id)
-    .single();
+    .maybeSingle();
 
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
   const taxAmount = subtotal * (taxRate / 100);
   
-  // Use provided total_amount (including client fees) or calculate standard total
-  const totalAmount = body.total_amount || (subtotal + taxAmount);
+  // Validation: total_amount doit être >= subtotal + taxAmount
+  const calculatedTotal = subtotal + taxAmount;
+  const totalAmount = body.total_amount || calculatedTotal;
+  
+  if (totalAmount < calculatedTotal) {
+    return errorResponse('Invalid total_amount: must be >= subtotal + taxes', 400);
+  }
+  
   const feeRatioClient = body.fee_ratio_client || 0;
 
-  // Create the quote
+  // ✅ OPTIMISATION: Create quote + récupérer en 1 seule requête (pas 2)
+  // Le secure_token est auto-généré par la DB (default value)
   const { data: quote, error: quoteError } = await ctx.adminClient!
     .from('quotes')
     .insert({
       seller_id: ctx.user!.id,
-      client_email: body.client_email,
+      client_email: body.client_email || null,
       client_name: body.client_name || null,
       title: body.title,
       description: body.description || null,
@@ -69,35 +100,24 @@ const handler = compose(
       tax_amount: taxAmount,
       total_amount: totalAmount,
       fee_ratio_client: feeRatioClient,
-      status: 'draft'
+      status: 'pending' // ✅ CORRECTION: 'pending' au lieu de 'draft'
     })
-    .select()
+    .select('id, secure_token') // ✅ Récupérer le token auto-généré
     .single();
 
   if (quoteError || !quote) {
-    logger.error('Error creating quote:', quoteError);
+    logger.error('[create-quote] Error creating quote:', quoteError);
     return errorResponse('Failed to create quote', 500);
   }
 
-  // Generate secure viewing token
-  const viewToken = crypto.randomUUID();
+  logger.log(`[create-quote] Quote ${quote.id} created successfully`);
   
-  const { error: tokenError } = await ctx.adminClient!
-    .from('quotes')
-    .update({ view_token: viewToken })
-    .eq('id', quote.id);
-
-  if (tokenError) {
-    logger.error('Error adding token:', tokenError);
-  }
-
-  logger.log(`Quote ${quote.id} created successfully by user ${ctx.user!.id}`);
-  
+  // ✅ OPTIMISATION: Utiliser secure_token directement (pas de 2e requête)
   return successResponse({ 
     success: true, 
     quote_id: quote.id,
-    view_token: viewToken,
-    view_url: `${req.headers.get('origin')}/quote-view/${viewToken}?quoteId=${quote.id}`
+    secure_token: quote.secure_token, // ✅ Token DB auto-généré
+    view_url: `${req.headers.get('origin')}/quote-view/${quote.secure_token}?quoteId=${quote.id}`
   });
 });
 

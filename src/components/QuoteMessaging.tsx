@@ -22,21 +22,42 @@ export const QuoteMessaging = ({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(true);
 
-  // Fetch conversation_id from quote
+  // ✅ OPTIMISATION: Fetch or create conversation
   useEffect(() => {
-    const fetchConversation = async () => {
-      const { data } = await supabase
+    const fetchOrCreateConversation = async () => {
+      // D'abord essayer de récupérer la conversation existante
+      const { data: quoteData } = await supabase
         .from('quotes')
         .select('conversation_id')
         .eq('id', quoteId)
         .single();
       
-      setConversationId(data?.conversation_id || null);
+      if (quoteData?.conversation_id) {
+        setConversationId(quoteData.conversation_id);
+        setIsLoadingConversation(false);
+        return;
+      }
+
+      // Si pas de conversation et utilisateur connecté, la créer
+      if (user) {
+        try {
+          const { data, error } = await supabase.functions.invoke('get-or-create-quote-conversation', {
+            body: { quoteId }
+          });
+
+          if (!error && data?.conversation_id) {
+            setConversationId(data.conversation_id);
+          }
+        } catch (err) {
+          console.error('[QuoteMessaging] Error creating conversation:', err);
+        }
+      }
+
       setIsLoadingConversation(false);
     };
     
-    fetchConversation();
-  }, [quoteId]);
+    fetchOrCreateConversation();
+  }, [quoteId, user]);
 
   // Use unified messaging if conversation exists
   if (!isLoadingConversation && conversationId) {

@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/useToast';
+import { QuoteMessaging } from '@/components/QuoteMessaging';
 
 interface QuoteItem {
   description: string;
@@ -37,6 +38,7 @@ interface QuoteData {
   client_email?: string;
   seller_name: string;
   created_at: string;
+  conversation_id?: string;
 }
 
 export default function QuoteViewPage() {
@@ -47,6 +49,7 @@ export default function QuoteViewPage() {
   const [error, setError] = useState('');
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [messagingOpen, setMessagingOpen] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -93,15 +96,38 @@ export default function QuoteViewPage() {
     }
   };
 
-  const handleDiscuss = () => {
+  const handleDiscuss = async () => {
     if (!user) {
       toast.info('Veuillez vous connecter pour discuter du devis');
       navigate(`/auth?redirect=/quote-view/${token}?quoteId=${quote?.id}`);
       return;
     }
 
-    // TODO: Ouvrir la messagerie du devis
-    toast.info('Messagerie du devis à implémenter');
+    if (!quote) return;
+
+    // ✅ Si conversation existe déjà, ouvrir directement
+    if (quote.conversation_id) {
+      setMessagingOpen(true);
+      return;
+    }
+
+    // ✅ Sinon, créer/récupérer la conversation via edge function
+    try {
+      const { data, error } = await supabase.functions.invoke('get-or-create-quote-conversation', {
+        body: { quoteId: quote.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.conversation_id) {
+        // Mettre à jour le quote local avec le conversation_id
+        setQuote({ ...quote, conversation_id: data.conversation_id });
+        setMessagingOpen(true);
+      }
+    } catch (err: any) {
+      logger.error('Error creating conversation:', err);
+      toast.error('Impossible d\'ouvrir la messagerie');
+    }
   };
 
   const handleAccept = async () => {
@@ -181,8 +207,9 @@ export default function QuoteViewPage() {
   const canAccept = quote.status === 'pending' && !isExpired;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8 px-4">
+        <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card>
           <CardHeader>
@@ -314,6 +341,11 @@ export default function QuoteViewPage() {
                 <Badge variant="destructive">Expiré</Badge>
               )}
             </div>
+            {isExpired && (
+              <p className="text-sm text-muted-foreground mt-3">
+                ⚠️ Ce devis a expiré. Contactez le vendeur pour obtenir un nouveau devis ou prolonger la validité.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -325,7 +357,7 @@ export default function QuoteViewPage() {
                 onClick={handleDiscuss}
                 variant="outline"
                 className="flex-1"
-                disabled={!canAccept}
+                disabled={!user}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Discuter
@@ -356,7 +388,19 @@ export default function QuoteViewPage() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
-    </div>
+
+      {/* Messagerie unifiée */}
+      {quote && quote.conversation_id && (
+        <QuoteMessaging
+          quoteId={quote.id}
+          token={token}
+          open={messagingOpen}
+          onOpenChange={setMessagingOpen}
+          clientName={quote.client_name}
+        />
+      )}
+    </>
   );
 }

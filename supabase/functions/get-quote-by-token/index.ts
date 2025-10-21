@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { 
   compose, 
   withCors, 
@@ -21,12 +22,29 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   const { body } = ctx;
   const supabaseAdmin = createServiceClient();
 
+  // Récupérer l'utilisateur authentifié si présent
+  const authHeader = req.headers.get('Authorization');
+  let authenticatedUserId: string | null = null;
+
+  if (authHeader) {
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    authenticatedUserId = user?.id || null;
+  }
+
   logger.log('[GET-QUOTE-BY-TOKEN] Fetching quote:', body.quote_id);
 
-  // Récupérer le devis avec vérification du token
+  // ✅ OPTIMISATION: Récupérer quote + seller en 1 seule requête avec join
   const { data: quote, error: quoteError } = await supabaseAdmin
     .from('quotes')
-    .select('*')
+    .select(`
+      *,
+      seller:profiles!quotes_seller_id_fkey(first_name, last_name, company_name)
+    `)
     .eq('id', body.quote_id)
     .eq('secure_token', body.secure_token)
     .single();
@@ -53,13 +71,16 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     quote.status = 'expired';
   }
 
-  // Récupérer les informations publiques du vendeur
-  const { data: sellerProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('first_name, last_name, company_name')
-    .eq('user_id', quote.seller_id)
-    .single();
+  // ✅ OPTIMISATION: Mettre à jour client_last_viewed_at si utilisateur connecté et est le client
+  if (authenticatedUserId && quote.client_user_id === authenticatedUserId) {
+    await supabaseAdmin
+      .from('quotes')
+      .update({ client_last_viewed_at: new Date().toISOString() })
+      .eq('id', quote.id);
+  }
 
+  // Extraire le nom du vendeur depuis le join
+  const sellerProfile = quote.seller as any;
   const sellerName = sellerProfile?.company_name || 
                     `${sellerProfile?.first_name || ''} ${sellerProfile?.last_name || ''}`.trim() ||
                     'Le vendeur';
@@ -85,6 +106,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       client_email: quote.client_email,
       seller_name: sellerName,
       created_at: quote.created_at,
+      conversation_id: quote.conversation_id
     }
   });
 };
