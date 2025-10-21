@@ -208,9 +208,9 @@ export default function QuoteViewPage() {
     <>
       <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 py-8 px-4">
         <div className="max-w-4xl mx-auto space-y-6">
-        {/* Navigation buttons */}
-        <div className="flex justify-start">
-          {user ? (
+        {/* Navigation button */}
+        {user && (
+          <div className="flex justify-start">
             <Button
               variant="outline"
               onClick={() => navigate('/quotes')}
@@ -218,23 +218,8 @@ export default function QuoteViewPage() {
             >
               ← Mes devis
             </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/auth?mode=login')}
-              >
-                Se connecter
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => navigate('/auth?mode=signup')}
-              >
-                Créer un compte
-              </Button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Header */}
         <Card>
