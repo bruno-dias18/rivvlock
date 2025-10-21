@@ -101,15 +101,20 @@ export const FeeDistributionSlider = ({
         </div>
 
         {showApplyButton && onApplyDistribution && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onApplyDistribution}
-            className="w-full"
-          >
-            Appliquer la répartition automatique
-          </Button>
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onApplyDistribution}
+              className="w-full"
+            >
+              Appliquer la répartition automatique
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              💡 Vous pouvez aussi ajuster les prix manuellement ligne par ligne
+            </p>
+          </>
         )}
       </div>
     </div>
