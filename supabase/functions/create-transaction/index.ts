@@ -29,6 +29,10 @@ const createTransactionSchema = z.object({
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   
+  logger.log('[CREATE-TRANSACTION] ===== START =====');
+  logger.log('[CREATE-TRANSACTION] User:', user?.id);
+  logger.log('[CREATE-TRANSACTION] Body received:', JSON.stringify(body, null, 2));
+  
   const { 
     title, description, price, currency, service_date, service_end_date,
     client_email, client_name, buyer_display_name, fee_ratio_client 
