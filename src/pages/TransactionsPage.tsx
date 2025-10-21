@@ -11,7 +11,7 @@ import { Plus, CreditCard, ExternalLink, Copy, Clock, AlertCircle, Lock, CheckCi
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
 import { ValidationActionButtons } from '@/components/ValidationActionButtons';
-import { CreateProposalDialog } from '@/components/CreateProposalDialog';
+import { NewTransactionDialog } from '@/components/NewTransactionDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { CreateDisputeDialog } from '@/components/CreateDisputeDialog';
 import { TransactionCard } from '@/components/TransactionCard';
@@ -1036,11 +1036,9 @@ export default function TransactionsPage() {
         onSetupComplete={() => setIsNewTransactionOpen(true)}
       />
 
-      <CreateProposalDialog
-        mode="transaction"
+      <NewTransactionDialog 
         open={isNewTransactionOpen}
         onOpenChange={setIsNewTransactionOpen}
-        onSuccess={() => refetch()}
       />
 
       <CreateDisputeDialog

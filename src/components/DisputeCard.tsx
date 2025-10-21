@@ -13,7 +13,7 @@ import { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
 import { useIsMobile } from '@/lib/mobileUtils';
 import { useDisputeProposals } from '@/hooks/useDisputeProposals';
 import { AdminOfficialProposalCard } from './AdminOfficialProposalCard';
-import { CreateProposalDialog as DisputeProposalDialog } from './DisputeProposalDialog';
+import { CreateProposalDialog } from './CreateProposalDialog';
 import { logger } from '@/lib/logger';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
 import { useUnreadDisputeAdminMessages } from '@/hooks/useUnreadDisputeAdminMessages';
@@ -353,7 +353,7 @@ const DisputeCardComponent: React.FC<DisputeCardProps> = ({ dispute, onRefetch }
         />
       )}
 
-      <DisputeProposalDialog
+      <CreateProposalDialog
         open={showProposalDialog}
         onOpenChange={setShowProposalDialog}
         onCreateProposal={async (data) => {
