@@ -208,6 +208,11 @@ export const CreateTransactionOrQuoteDialog = ({
 
       if (formType === 'quote') {
         // Create quote
+        console.log('📤 [QUOTE] Sending to edge function:', {
+          service_date: getFinalDateTime(serviceDate, serviceTime),
+          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
+        });
+        
         const { data, error } = await supabase.functions.invoke('create-quote', {
           body: {
             client_email: clientEmail || null,
@@ -240,6 +245,15 @@ export const CreateTransactionOrQuoteDialog = ({
           toast.error('La date de prestation est requise');
           return;
         }
+
+        console.log('📤 [TRANSACTION] Sending to edge function:', {
+          title,
+          price: submittedTotalAmount,
+          currency: currency.toUpperCase(),
+          service_date: getFinalDateTime(serviceDate, serviceTime),
+          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
+          service_end_date_type: typeof getFinalDateTime(serviceEndDate, serviceEndTime),
+        });
 
         const { data, error } = await supabase.functions.invoke('create-transaction', {
           body: {

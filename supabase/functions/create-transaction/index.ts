@@ -28,10 +28,15 @@ const createTransactionSchema = z.object({
 
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
+  
+  logger.log('[CREATE-TRANSACTION] Request body:', JSON.stringify(body, null, 2));
+  
   const { 
     title, description, price, currency, service_date, service_end_date,
     client_email, client_name, buyer_display_name, fee_ratio_client 
   } = body;
+  
+  logger.log('[CREATE-TRANSACTION] service_end_date value:', service_end_date, 'type:', typeof service_end_date);
   
   // Use client_name if provided, fallback to buyer_display_name
   const finalBuyerDisplayName = client_name || buyer_display_name || null;
