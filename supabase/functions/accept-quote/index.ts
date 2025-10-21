@@ -116,13 +116,29 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
       : null;
 
-    // Créer la transaction
+    // ✅ Récupérer l'email du profil authentifié (pas celui du devis)
+    let finalClientEmail = quote.client_email;
+    
+    if (authenticatedUserId) {
+      const { data: buyerProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', authenticatedUserId)
+        .single();
+      
+      // Utiliser l'email de l'utilisateur authentifié (depuis auth.users)
+      if (authenticatedUser?.email) {
+        finalClientEmail = authenticatedUser.email;
+      }
+    }
+
+    // Créer la transaction avec l'email du profil authentifié
     const { data: transaction, error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         user_id: quote.seller_id,
         buyer_id: authenticatedUserId || null,
-        client_email: quote.client_email,
+        client_email: finalClientEmail, // ✅ Email du profil authentifié
         title: quote.title,
         description: quote.description,
         price: quote.total_amount,

@@ -154,7 +154,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!clientEmail || !title || items.length === 0) {
+    if (!title || items.length === 0) {
       toast.error('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -176,9 +176,9 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('create-quote', {
+      const { data, error } = await supabase.functions.invoke('create-quote', {
         body: {
-          client_email: clientEmail,
+          client_email: clientEmail || null,
           client_name: clientName || null,
           title,
           description: description || null,
@@ -194,7 +194,21 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
       if (error) throw error;
 
-      toast.success('Devis créé et envoyé au client');
+      // Construire l'URL de partage du devis
+      if (data?.view_token && data?.quote_id) {
+        const viewUrl = `${window.location.origin}/quote-view/${data.view_token}?quoteId=${data.quote_id}`;
+        
+        toast.success('Devis créé avec succès !');
+        
+        // Copier automatiquement le lien
+        try {
+          await navigator.clipboard.writeText(viewUrl);
+          toast.info(`Lien copié dans le presse-papiers !\n${viewUrl}`, { duration: 8000 });
+        } catch {
+          toast.info(`Lien du devis : ${viewUrl}`, { duration: 8000 });
+        }
+      }
+
       onSuccess();
       onOpenChange(false);
 
@@ -231,15 +245,17 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
             <h3 className="font-medium">Informations client</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="client-email">Email client *</Label>
+                <Label htmlFor="client-email">Email du client (optionnel)</Label>
                 <Input
                   id="client-email"
                   type="email"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   placeholder="client@example.com"
-                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  💡 Optionnel : partagez le lien du devis directement
+                </p>
               </div>
               <div>
                 <Label htmlFor="client-name">Nom client</Label>

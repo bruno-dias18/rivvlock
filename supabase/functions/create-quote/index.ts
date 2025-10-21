@@ -97,7 +97,7 @@ const handler = compose(
     success: true, 
     quote_id: quote.id,
     view_token: viewToken,
-    view_url: `${req.headers.get('origin')}/quote/${quote.id}/${viewToken}`
+    view_url: `${req.headers.get('origin')}/quote-view/${viewToken}?quoteId=${quote.id}`
   });
 });
 
