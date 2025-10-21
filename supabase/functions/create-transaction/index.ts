@@ -12,6 +12,7 @@ import {
   HandlerContext
 } from "../_shared/middleware.ts";
 
+// Transaction creation edge function with proper validation
 const createTransactionSchema = z.object({
   title: z.string().min(1),
   description: z.string().nullable().optional(),
