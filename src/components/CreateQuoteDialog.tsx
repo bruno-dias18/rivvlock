@@ -421,41 +421,38 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       <p className="text-sm text-muted-foreground">
                         {autoDistributionApplied 
                           ? "✓ Les frais ont été répartis automatiquement sur toutes les lignes"
-                          : "Choisissez comment gérer les frais :"}
+                          : "Choisissez comment gérer les frais de plateforme :"}
                       </p>
                       
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={autoDistributionApplied ? "outline" : "default"}
-                          size="sm"
-                          onClick={applyAutoDistribution}
-                          disabled={feeRatio === 0}
-                          className="flex-1"
-                        >
-                          {autoDistributionApplied ? "Réappliquer" : "Répartir automatiquement"}
-                        </Button>
-                        
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            if (autoDistributionApplied) {
-                              toast.info('Vous pouvez maintenant ajuster manuellement les lignes');
-                            }
-                          }}
-                        >
-                          Ajuster manuellement
-                        </Button>
-                      </div>
+                      {/* Bouton de répartition automatique */}
+                      <Button
+                        type="button"
+                        variant={autoDistributionApplied ? "outline" : "default"}
+                        size="sm"
+                        onClick={applyAutoDistribution}
+                        disabled={feeRatio === 0}
+                        className="w-full"
+                      >
+                        {autoDistributionApplied ? "Réappliquer la répartition" : "Répartir automatiquement"}
+                      </Button>
                       
+                      {/* Messages contextuels conditionnels */}
                       {!autoDistributionApplied && feeRatio > 0 && (
-                        <p className="text-xs text-muted-foreground italic">
-                          💡 Avec "Répartir automatiquement", les prix seront ajustés proportionnellement. 
-                          Avec "Ajuster manuellement", modifiez vous-même les lignes ci-dessus.
-                        </p>
+                        <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                          <AlertDescription className="text-xs">
+                            💡 <strong>Alternative :</strong> Vous pouvez aussi ajuster manuellement les prix dans les lignes ci-dessus, 
+                            ou créer une ligne dédiée "Frais de plateforme RivvLock" pour séparer les frais du montant principal.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      
+                      {autoDistributionApplied && (
+                        <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                          <AlertDescription className="text-xs">
+                            ℹ️ Les prix ont été ajustés proportionnellement. Vous pouvez encore les modifier manuellement 
+                            dans les lignes ci-dessus si vous le souhaitez.
+                          </AlertDescription>
+                        </Alert>
                       )}
                     </div>
 
