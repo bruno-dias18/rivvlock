@@ -366,7 +366,7 @@ export default function QuoteViewPage() {
                 onClick={handleAccept}
                 variant="default"
                 className="flex-1"
-                disabled={!canAccept || processing}
+                disabled={!user || !canAccept || processing}
               >
                 {processing ? (
                   <>
@@ -382,9 +382,18 @@ export default function QuoteViewPage() {
               </Button>
             </div>
             {!user && canAccept && (
-              <p className="text-sm text-muted-foreground text-center mt-4">
-                💡 Vous devez être connecté pour discuter ou accepter ce devis
-              </p>
+              <div className="space-y-3 mt-4">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 Vous devez être connecté pour discuter ou accepter ce devis
+                </p>
+                <Button
+                  onClick={() => navigate(`/auth?redirect=/quote-view/${token}?quoteId=${quote?.id}`)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Se connecter
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
