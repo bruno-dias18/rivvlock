@@ -196,8 +196,8 @@ export const CreateTransactionOrQuoteDialog = ({
 
     setIsLoading(true);
     try {
-      const getFinalDateTime = (date: Date | undefined, time: string): string | null => {
-        if (!date) return null;
+      const getFinalDateTime = (date: Date | undefined, time: string): string | undefined => {
+        if (!date) return undefined; // ✅ Return undefined instead of null
         if (!time) return date.toISOString();
         
         const [hours, minutes] = time.split(':').map(Number);
@@ -274,9 +274,18 @@ export const CreateTransactionOrQuoteDialog = ({
       if (onSuccess) onSuccess();
       onOpenChange(false);
       resetForm();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ [CREATE ERROR]', {
+        type: formType,
+        error: error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint
+      });
+      
+      const errorMessage = error?.message || error?.details || 'Erreur inconnue';
+      toast.error(`Erreur : ${errorMessage}`);
       logger.error('Error creating form:', error);
-      toast.error(`Erreur lors de la création ${formType === 'quote' ? 'du devis' : 'de la transaction'}`);
     } finally {
       setIsLoading(false);
     }

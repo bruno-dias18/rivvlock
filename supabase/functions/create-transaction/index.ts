@@ -19,7 +19,7 @@ const createTransactionSchema = z.object({
   price: z.number().positive(),
   currency: z.string().length(3),
   service_date: z.string(),
-  service_end_date: z.string().optional(),
+  service_end_date: z.string().nullable().optional(), // ✅ Accept null OR undefined
   client_email: z.string().email().optional(),
   client_name: z.string().optional(),
   buyer_display_name: z.string().optional(),
@@ -91,7 +91,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     .single();
 
   if (insertError) {
-    logger.error('[CREATE-TRANSACTION] Insert error:', insertError);
+    logger.error('[CREATE-TRANSACTION] Insert error:', {
+      code: insertError.code,
+      message: insertError.message,
+      details: insertError.details,
+      hint: insertError.hint
+    });
     throw new Error(`Failed to create transaction: ${insertError.message}`);
   }
 
