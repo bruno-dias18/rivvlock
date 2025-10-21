@@ -72,7 +72,6 @@ const handler = compose(
       tax_rate: taxRate,
       tax_amount: taxAmountAfterDiscount,
       discount_percentage: discount_percentage || null,
-      discount_amount: discountAmount || null,
       total_amount: total_amount || (subtotalAfterDiscount + taxAmountAfterDiscount),
       fee_ratio_client: fee_ratio_client || 0,
       updated_at: new Date().toISOString()
