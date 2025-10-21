@@ -234,6 +234,7 @@ export const CreateTransactionOrQuoteDialog = ({
             currency: currency.toUpperCase(),
             service_date: getFinalDateTime(serviceDate, serviceTime)!,
             client_email: clientEmail || null,
+            client_name: clientName || null,
             fee_ratio_client: feeRatio,
           }
         });
@@ -322,17 +323,15 @@ export const CreateTransactionOrQuoteDialog = ({
                         💡 Optionnel : partagez le lien directement
                       </p>
                     </div>
-                    {formType === 'quote' && (
-                      <div>
-                        <Label htmlFor="client-name">Nom client</Label>
-                        <Input
-                          id="client-name"
-                          value={clientName}
-                          onChange={(e) => setClientName(e.target.value)}
-                          placeholder="Jean Dupont"
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <Label htmlFor="client-name">Nom du client (optionnel)</Label>
+                      <Input
+                        id="client-name"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="Jean Dupont"
+                      />
+                    </div>
                   </div>
                 </div>
 

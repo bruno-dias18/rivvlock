@@ -20,6 +20,7 @@ const createTransactionSchema = z.object({
   currency: z.string().length(3),
   service_date: z.string(),
   client_email: z.string().email().optional(),
+  client_name: z.string().optional(),
   buyer_display_name: z.string().optional(),
   fee_ratio_client: z.number().min(0).max(100).optional(),
 });
@@ -28,8 +29,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   const { 
     title, description, price, currency, service_date, 
-    client_email, buyer_display_name, fee_ratio_client 
+    client_email, client_name, buyer_display_name, fee_ratio_client 
   } = body;
+  
+  // Use client_name if provided, fallback to buyer_display_name
+  const finalBuyerDisplayName = client_name || buyer_display_name || null;
 
   logger.log('[CREATE-TRANSACTION] Processing for user:', user!.id);
 
@@ -75,7 +79,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       validation_deadline: validationDeadline.toISOString(),
       status: 'pending',
       seller_display_name: sellerDisplayName,
-      buyer_display_name: buyer_display_name || null,
+      buyer_display_name: finalBuyerDisplayName,
+      client_email: client_email || null,
       fee_ratio_client: fee_ratio_client || null,
       shared_link_token: shareToken,
       shared_link_expires_at: shareExpiresAt.toISOString(),

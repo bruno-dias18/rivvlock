@@ -10,10 +10,10 @@ interface QuoteItem {
   total: number;
 }
 
-// Validation Zod stricte
+// Validation Zod stricte - client_email et client_name optionnels
 const createQuoteSchema = z.object({
   client_email: z.string().email().optional().nullable(),
-  client_name: z.string().max(200).optional().nullable(),
+  client_name: z.string().min(1).max(200).optional().nullable(),
   title: z.string().min(1).max(500),
   description: z.string().max(5000).optional().nullable(),
   items: z.array(z.object({
