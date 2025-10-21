@@ -123,56 +123,33 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    // Vérifier que transaction.id existe
-    if (!transaction.id) {
-      logger.error('❌ Transaction ID manquant');
-      toast.error('Transaction non chargée');
-      return;
-    }
-
-    // ✅ Si déjà attaché → redirection directe SANS appel API
+    // ✅ Si déjà attaché → redirection directe
     if (transaction.buyer_id === user.id) {
-      logger.log('✅ Transaction déjà attachée, redirection directe');
       navigate('/transactions');
       return;
     }
 
-    // ✅ Sinon → attacher puis rediriger
+    // ✅ UPDATE DIRECT - pas d'edge function
     try {
-      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
-      
-      if (!finalToken) {
-        toast.error('Token manquant');
-        return;
-      }
-      
-      logger.log('🔄 Attachement de la transaction:', transaction.id);
+      logger.log('🔄 Attachement direct de la transaction');
 
-      const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-        body: { 
-          transaction_id: transaction.id,
-          linkToken: finalToken
-        }
-      });
+      const { error: updateError } = await supabase
+        .from('transactions')
+        .update({ 
+          buyer_id: user.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', transaction.id);
 
-      if (joinError) {
-        logger.error('❌ Join error:', joinError);
-        throw new Error(joinError.message || 'Erreur réseau');
+      if (updateError) {
+        throw updateError;
       }
-      
-      if (joinData?.error) {
-        logger.error('❌ Join data error:', joinData.error);
-        throw new Error(joinData.error);
-      }
-      
-      logger.log('✅ Transaction attachée avec succès');
       
       toast.success('Transaction ajoutée à votre compte');
       navigate('/transactions');
     } catch (err: any) {
-      logger.error('❌ Erreur lors de l\'attachement:', err);
-      const errorMsg = err.message || 'Erreur inconnue';
-      toast.error(`Erreur: ${errorMsg}`);
+      logger.error('❌ Erreur:', err);
+      toast.error(err.message || 'Erreur lors de l\'ajout');
     }
   };
 
