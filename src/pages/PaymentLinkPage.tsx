@@ -37,7 +37,6 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
-  const [autoJoined, setAutoJoined] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -118,21 +117,18 @@ export default function PaymentLinkPage() {
       }
   };
 
-  const autoJoinTransaction = async () => {
-    if (!user || !transaction || autoJoined) return;
-    
-    // Vérifier que la transaction a un ID valide
-    if (!transaction.id) {
-      logger.error('Transaction ID is missing');
+  const handleReturnToDashboard = async () => {
+    if (!user || !transaction) {
+      navigate('/dashboard?tab=pending');
       return;
     }
-    
-    logger.log('🔄 Attempting to join transaction:', {
-      transactionId: transaction.id,
-      userId: user.id,
-      token: token || new URLSearchParams(window.location.search).get('txId')
-    });
-    
+
+    // Si déjà attaché, rediriger directement
+    if (transaction.buyer_id === user.id) {
+      navigate('/dashboard?tab=pending');
+      return;
+    }
+
     try {
       const finalToken = token || new URLSearchParams(window.location.search).get('txId');
       
@@ -140,6 +136,11 @@ export default function PaymentLinkPage() {
         throw new Error('Token manquant');
       }
       
+      logger.log('🔄 Attaching transaction to user:', {
+        transactionId: transaction.id,
+        userId: user.id
+      });
+
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
           transaction_id: transaction.id,
@@ -150,26 +151,23 @@ export default function PaymentLinkPage() {
       if (joinError) throw joinError;
       if (joinData?.error) throw new Error(joinData.error);
       
-      setAutoJoined(true);
-      logger.log('✅ Transaction rejointe automatiquement');
+      logger.log('✅ Transaction attachée avec succès');
       
-      // Attendre que la mise à jour soit propagée dans la DB
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Rediriger vers le dashboard avec un message de succès
       toast.success('Transaction ajoutée à votre compte', {
-        description: 'Vous pouvez maintenant effectuer le paiement depuis votre dashboard'
+        description: 'Vous pouvez la retrouver dans votre espace'
       });
       
+      // Attendre un peu puis rediriger
       setTimeout(() => {
         navigate('/dashboard?tab=pending');
       }, 800);
     } catch (err: any) {
-      logger.error('Error auto-joining transaction:', err);
-      // Si l'utilisateur est déjà assigné, rediriger quand même
+      logger.error('Error attaching transaction:', err);
+      // Si déjà assigné, rediriger quand même
       if (err.message?.includes('déjà assigné')) {
-        toast.info('Transaction déjà dans votre compte');
-        setTimeout(() => navigate('/dashboard?tab=pending'), 500);
+        navigate('/dashboard?tab=pending');
+      } else {
+        toast.error('Erreur lors de l\'ajout de la transaction');
       }
     }
   };
@@ -199,19 +197,17 @@ export default function PaymentLinkPage() {
     setProcessingPayment(true);
     try {
       // 1. Join the transaction first (best-effort, non-bloquant)
-      if (!autoJoined) {
-        try {
-          const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-            body: { 
-              transaction_id: transaction.id,
-              linkToken: token || new URLSearchParams(window.location.search).get('txId')
-            }
-          });
-          if (joinError) throw joinError;
-          if (joinData?.error) throw new Error(joinData.error);
-        } catch (joinErr) {
-          logger.warn('Join transaction skipped (continuing to checkout):', joinErr);
-        }
+      try {
+        const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
+          body: { 
+            transaction_id: transaction.id,
+            linkToken: token || new URLSearchParams(window.location.search).get('txId')
+          }
+        });
+        if (joinError) throw joinError;
+        if (joinData?.error) throw new Error(joinData.error);
+      } catch (joinErr) {
+        logger.warn('Join transaction skipped (continuing to checkout):', joinErr);
       }
 
       // 2. Create Stripe Checkout session immediately
@@ -247,16 +243,7 @@ export default function PaymentLinkPage() {
     }
   };
 
-  // Auto-join transaction when user is authenticated and redirect to dashboard
-  useEffect(() => {
-    if (user && transaction && !autoJoined && transaction.id) {
-      // S'assurer que la transaction est complètement chargée
-      const timer = setTimeout(() => {
-        autoJoinTransaction();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [user, transaction, autoJoined]);
+  // Remove auto-join - user must click button to attach transaction
 
   const handleAuthRedirect = () => {
     const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
@@ -270,11 +257,11 @@ export default function PaymentLinkPage() {
         <div className="p-4">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={handleReturnToDashboard}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Retour au dashboard
+            Revenir au dashboard
           </Button>
         </div>
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
@@ -302,11 +289,11 @@ export default function PaymentLinkPage() {
         <div className="p-4">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={handleReturnToDashboard}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Retour au dashboard
+            Revenir au dashboard
           </Button>
         </div>
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
@@ -458,16 +445,16 @@ export default function PaymentLinkPage() {
     if (showBankInstructions) {
       return (
         <div className="min-h-screen bg-background">
-          <div className="p-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/dashboard')}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Retour au dashboard
-            </Button>
-          </div>
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            onClick={handleReturnToDashboard}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Revenir au dashboard
+          </Button>
+        </div>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
             <div className="max-w-md w-full space-y-6">
               <div className="text-center">
@@ -497,11 +484,11 @@ export default function PaymentLinkPage() {
         <div className="p-4">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={handleReturnToDashboard}
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Retour au dashboard
+            Revenir au dashboard
           </Button>
         </div>
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
