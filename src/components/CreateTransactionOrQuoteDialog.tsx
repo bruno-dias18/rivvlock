@@ -186,12 +186,6 @@ export const CreateTransactionOrQuoteDialog = ({
       return;
     }
 
-    // Validate end time is required if end date is selected
-    if (serviceEndDate && !serviceEndTime) {
-      toast.error('L\'heure de fin est requise si vous sélectionnez une date de fin');
-      return;
-    }
-
     const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
     const currentTaxAmount = currentSubtotal * (taxRate / 100);
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
@@ -204,7 +198,13 @@ export const CreateTransactionOrQuoteDialog = ({
     try {
       const getFinalDateTime = (date: Date | undefined, time: string): string | undefined => {
         if (!date) return undefined;
-        if (!time || time.trim() === '') return undefined; // ✅ Return undefined if no time specified
+        
+        // Si pas d'heure spécifiée, utiliser minuit (00:00) par défaut
+        if (!time || time.trim() === '') {
+          const combined = new Date(date);
+          combined.setHours(0, 0, 0, 0);
+          return combined.toISOString();
+        }
         
         const [hours, minutes] = time.split(':').map(Number);
         const combined = new Date(date);
@@ -525,16 +525,15 @@ export const CreateTransactionOrQuoteDialog = ({
                         </div>
                          {serviceEndDate && (
                           <div>
-                            <Label htmlFor="service-end-time">Heure de fin *</Label>
+                            <Label htmlFor="service-end-time">Heure de fin (optionnel)</Label>
                             <Input
                               id="service-end-time"
                               type="time"
                               value={serviceEndTime}
                               onChange={(e) => setServiceEndTime(e.target.value)}
-                              required
                             />
                             <p className="text-xs text-muted-foreground mt-1">
-                              ⚠️ Obligatoire si date de fin sélectionnée
+                              💡 Par défaut : minuit (00:00)
                             </p>
                           </div>
                         )}
