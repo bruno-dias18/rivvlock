@@ -9,6 +9,7 @@ import {
   Handler, 
   HandlerContext 
 } from "../_shared/middleware.ts";
+import { logger } from "../_shared/logger.ts";
 
 const handler: Handler = async (req, ctx: HandlerContext) => {
   try {
@@ -116,15 +117,37 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       ? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
       : null;
 
-    // ✅ Récupérer l'email du profil authentifié (pas celui du devis)
+    // ✅ Récupérer les noms RÉELS des profils (vendeur + acheteur)
     let finalClientEmail = quote.client_email;
+    let buyerDisplayName = quote.client_name; // Fallback
+    let sellerDisplayName = 'Vendeur'; // Fallback
     
+    // Récupérer le nom du VENDEUR
+    const { data: sellerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('first_name, last_name, company_name')
+      .eq('user_id', quote.seller_id)
+      .single();
+    
+    if (sellerProfile) {
+      sellerDisplayName = sellerProfile.company_name || 
+        `${sellerProfile.first_name || ''} ${sellerProfile.last_name || ''}`.trim() || 
+        'Vendeur';
+    }
+    
+    // Récupérer le nom de l'ACHETEUR authentifié
     if (authenticatedUserId) {
       const { data: buyerProfile } = await supabaseAdmin
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, company_name')
         .eq('user_id', authenticatedUserId)
         .single();
+      
+      if (buyerProfile) {
+        buyerDisplayName = buyerProfile.company_name || 
+          `${buyerProfile.first_name || ''} ${buyerProfile.last_name || ''}`.trim() || 
+          'Client';
+      }
       
       // Utiliser l'email de l'utilisateur authentifié (depuis auth.users)
       if (authenticatedUser?.email) {
@@ -132,13 +155,13 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       }
     }
 
-    // Créer la transaction avec l'email du profil authentifié
+    // Créer la transaction avec les vrais noms
     const { data: transaction, error: transactionError } = await supabaseAdmin
       .from('transactions')
       .insert({
         user_id: quote.seller_id,
         buyer_id: authenticatedUserId || null,
-        client_email: finalClientEmail, // ✅ Email du profil authentifié
+        client_email: finalClientEmail,
         title: quote.title,
         description: quote.description,
         price: quote.total_amount,
@@ -147,7 +170,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         service_end_date: quote.service_end_date,
         status: 'pending',
         payment_deadline: paymentDeadline,
-        seller_display_name: quote.client_name,
+        seller_display_name: sellerDisplayName, // ✅ Nom du VENDEUR
+        buyer_display_name: buyerDisplayName,   // ✅ Nom du CLIENT
       })
       .select()
       .single();
