@@ -56,6 +56,11 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const [items, setItems] = useState<QuoteItem[]>([
     { description: '', quantity: 1, unit_price: 0, total: 0 }
   ]);
+  
+  // Conserver les prix de base AVANT toute répartition automatique
+  const [originalItems, setOriginalItems] = useState<QuoteItem[]>([
+    { description: '', quantity: 1, unit_price: 0, total: 0 }
+  ]);
 
   useEffect(() => {
     if (profile?.country) {
@@ -64,11 +69,14 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   }, [profile?.country]);
 
   const addItem = () => {
-    setItems([...items, { description: '', quantity: 1, unit_price: 0, total: 0 }]);
+    const newItem = { description: '', quantity: 1, unit_price: 0, total: 0 };
+    setItems([...items, newItem]);
+    setOriginalItems([...originalItems, newItem]);
   };
 
   const removeItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
+    setOriginalItems(originalItems.filter((_, i) => i !== index));
   };
 
   const updateItem = (index: number, field: keyof QuoteItem, value: any) => {
@@ -80,6 +88,16 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
     }
 
     setItems(newItems);
+    
+    // Synchroniser originalItems SEULEMENT si répartition pas encore appliquée
+    if (!autoDistributionApplied) {
+      const newOriginalItems = [...originalItems];
+      newOriginalItems[index] = { ...newOriginalItems[index], [field]: value };
+      if (field === 'quantity' || field === 'unit_price') {
+        newOriginalItems[index].total = newOriginalItems[index].quantity * newOriginalItems[index].unit_price;
+      }
+      setOriginalItems(newOriginalItems);
+    }
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -94,16 +112,35 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const finalPrice = totalAmount + clientFees;
 
   const applyAutoDistribution = () => {
-    if (feeRatio === 0 || totalAmount === 0) {
-      toast.info('Aucune répartition à appliquer (frais client à 0%)');
+    if (feeRatio === 0) {
+      // Si 0%, revenir aux prix de base originaux
+      setItems(originalItems.map(item => ({
+        ...item,
+        total: item.quantity * item.unit_price
+      })));
+      setAutoDistributionApplied(false);
+      toast.info('Frais client à 0% : prix de base restaurés');
       return;
     }
 
-    // Calculer le ratio d'augmentation à appliquer
-    const ratio = finalPrice / totalAmount;
+    if (totalAmount === 0) {
+      toast.info('Aucune répartition à appliquer (montant total à 0)');
+      return;
+    }
 
-    // Appliquer le ratio sur tous les prix unitaires
-    const adjustedItems = items.map(item => ({
+    // Calculer le ratio à partir du TOTAL DE BASE (originalItems)
+    const baseSubtotal = originalItems.reduce((sum, item) => sum + item.total, 0);
+    const baseTaxAmount = baseSubtotal * (taxRate / 100);
+    const baseTotalAmount = baseSubtotal + baseTaxAmount;
+    
+    const baseTotalFees = baseTotalAmount * PLATFORM_FEE_RATE;
+    const baseClientFees = baseTotalFees * (feeRatio / 100);
+    const baseFinalPrice = baseTotalAmount + baseClientFees;
+    
+    const ratio = baseFinalPrice / baseTotalAmount;
+
+    // Appliquer le ratio sur les prix ORIGINAUX (pas sur les prix actuels)
+    const adjustedItems = originalItems.map(item => ({
       ...item,
       unit_price: item.unit_price * ratio,
       total: item.quantity * (item.unit_price * ratio)
@@ -111,7 +148,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
     setItems(adjustedItems);
     setAutoDistributionApplied(true);
-    toast.success('Frais répartis automatiquement sur toutes les lignes');
+    toast.success(`Frais répartis automatiquement (${feeRatio}% client)`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,13 +199,17 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
       onOpenChange(false);
 
       // Reset form
+      const resetItem = { description: '', quantity: 1, unit_price: 0, total: 0 };
       setClientEmail('');
       setClientName('');
       setTitle('');
       setDescription('');
-      setItems([{ description: '', quantity: 1, unit_price: 0, total: 0 }]);
+      setItems([resetItem]);
+      setOriginalItems([resetItem]);
       setServiceDate(undefined);
       setServiceEndDate(undefined);
+      setFeeRatio(0);
+      setAutoDistributionApplied(false);
     } catch (error) {
       logger.error('Error creating quote:', error);
       toast.error('Erreur lors de la création du devis');
