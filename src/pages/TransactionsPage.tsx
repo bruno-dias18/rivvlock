@@ -612,12 +612,12 @@ export default function TransactionsPage() {
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
         <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} ${isMobile ? 'h-auto' : ''}`}>
-          <TabsTrigger value="pending" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''} relative`}>
-            <Clock className="h-4 w-4" />
-            <span className={isMobile ? 'text-xs' : ''}>
+          <TabsTrigger value="pending" className={`flex items-center ${isMobile ? 'flex-col py-2 px-1 gap-0.5' : 'gap-2'} relative`}>
+            <Clock className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+            <span className={isMobile ? 'text-[10px] leading-tight text-center' : ''}>
               {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
             </span>
-            <div className="flex items-center gap-1">
+            <div className={`flex items-center gap-0.5 ${isMobile ? 'scale-75' : ''}`}>
               {newCounts.pending > 0 && (
                 <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-300 hover:bg-blue-500/20">
                   <Bell className="h-3 w-3 mr-1" />
@@ -632,12 +632,12 @@ export default function TransactionsPage() {
               )}
             </div>
           </TabsTrigger>
-          <TabsTrigger value="blocked" className={`flex items-center gap-2 ${isMobile ? 'flex-col py-3' : ''} relative`}>
-            <Lock className="h-4 w-4" />
-            <span className={isMobile ? 'text-xs' : ''}>
+          <TabsTrigger value="blocked" className={`flex items-center ${isMobile ? 'flex-col py-2 px-1 gap-0.5' : 'gap-2'} relative`}>
+            <Lock className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+            <span className={isMobile ? 'text-[10px] leading-tight text-center' : ''}>
               {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
             </span>
-            <div className="flex items-center gap-1">
+            <div className={`flex items-center gap-0.5 ${isMobile ? 'scale-75' : ''}`}>
               {newCounts.blocked > 0 && (
                 <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-300 hover:bg-orange-500/20">
                   <Bell className="h-3 w-3 mr-1" />
