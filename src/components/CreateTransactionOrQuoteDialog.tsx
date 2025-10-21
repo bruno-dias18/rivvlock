@@ -186,6 +186,12 @@ export const CreateTransactionOrQuoteDialog = ({
       return;
     }
 
+    // Validate end time is required if end date is selected
+    if (serviceEndDate && !serviceEndTime) {
+      toast.error('L\'heure de fin est requise si vous sélectionnez une date de fin');
+      return;
+    }
+
     const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
     const currentTaxAmount = currentSubtotal * (taxRate / 100);
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
@@ -197,8 +203,8 @@ export const CreateTransactionOrQuoteDialog = ({
     setIsLoading(true);
     try {
       const getFinalDateTime = (date: Date | undefined, time: string): string | undefined => {
-        if (!date) return undefined; // ✅ Return undefined instead of null
-        if (!time) return date.toISOString();
+        if (!date) return undefined;
+        if (!time || time.trim() === '') return undefined; // ✅ Return undefined if no time specified
         
         const [hours, minutes] = time.split(':').map(Number);
         const combined = new Date(date);
@@ -208,10 +214,6 @@ export const CreateTransactionOrQuoteDialog = ({
 
       if (formType === 'quote') {
         // Create quote
-        console.log('📤 [QUOTE] Sending to edge function:', {
-          service_date: getFinalDateTime(serviceDate, serviceTime),
-          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
-        });
         
         const { data, error } = await supabase.functions.invoke('create-quote', {
           body: {
@@ -246,14 +248,6 @@ export const CreateTransactionOrQuoteDialog = ({
           return;
         }
 
-        console.log('📤 [TRANSACTION] Sending to edge function:', {
-          title,
-          price: submittedTotalAmount,
-          currency: currency.toUpperCase(),
-          service_date: getFinalDateTime(serviceDate, serviceTime),
-          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
-          service_end_date_type: typeof getFinalDateTime(serviceEndDate, serviceEndTime),
-        });
 
         const { data, error } = await supabase.functions.invoke('create-transaction', {
           body: {
@@ -529,15 +523,19 @@ export const CreateTransactionOrQuoteDialog = ({
                             </PopoverContent>
                           </Popover>
                         </div>
-                        {serviceEndDate && (
+                         {serviceEndDate && (
                           <div>
-                            <Label htmlFor="service-end-time">Heure de fin (optionnel)</Label>
+                            <Label htmlFor="service-end-time">Heure de fin *</Label>
                             <Input
                               id="service-end-time"
                               type="time"
                               value={serviceEndTime}
                               onChange={(e) => setServiceEndTime(e.target.value)}
+                              required
                             />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ⚠️ Obligatoire si date de fin sélectionnée
+                            </p>
                           </div>
                         )}
                       </div>

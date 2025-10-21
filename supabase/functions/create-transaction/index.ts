@@ -19,7 +19,7 @@ const createTransactionSchema = z.object({
   price: z.number().positive(),
   currency: z.string().length(3),
   service_date: z.string(),
-  service_end_date: z.string().nullable().optional(), // ✅ Accept null OR undefined
+  service_end_date: z.string().min(1).nullable().optional(), // ✅ Reject empty strings
   client_email: z.string().email().optional(),
   client_name: z.string().optional(),
   buyer_display_name: z.string().optional(),
@@ -29,14 +29,10 @@ const createTransactionSchema = z.object({
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   
-  logger.log('[CREATE-TRANSACTION] Request body:', JSON.stringify(body, null, 2));
-  
   const { 
     title, description, price, currency, service_date, service_end_date,
     client_email, client_name, buyer_display_name, fee_ratio_client 
   } = body;
-  
-  logger.log('[CREATE-TRANSACTION] service_end_date value:', service_end_date, 'type:', typeof service_end_date);
   
   // Use client_name if provided, fallback to buyer_display_name
   const finalBuyerDisplayName = client_name || buyer_display_name || null;
@@ -81,7 +77,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       price,
       currency,
       service_date,
-      service_end_date: service_end_date || null,
+      service_end_date: service_end_date ?? null,
       payment_deadline: paymentDeadline.toISOString(),
       validation_deadline: validationDeadline.toISOString(),
       status: 'pending',
