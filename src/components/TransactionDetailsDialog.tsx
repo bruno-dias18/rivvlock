@@ -7,12 +7,15 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, User, Package } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Copy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Transaction } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { getPublicBaseUrl } from '@/lib/appUrl';
+import { toast } from 'sonner';
 
 interface TransactionDetailsDialogProps {
   transaction: Transaction;
@@ -213,6 +216,38 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
           </div>
 
           <Separator />
+
+          {/* Share Link - Seller only when pending */}
+          {userRole === 'seller' && transaction.status === 'pending' && (
+            <>
+              <div>
+                <h3 className="font-semibold mb-2">Lien client</h3>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${getPublicBaseUrl()}/join/${transaction.shared_link_token}`}
+                    className="flex-1 px-3 py-2 text-sm border rounded-md bg-muted break-all"
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${getPublicBaseUrl()}/join/${transaction.shared_link_token}`);
+                      toast.success('Lien copié dans le presse-papier');
+                    }}
+                    className="shrink-0"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copier
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Ce lien permet au client de rejoindre la transaction
+                </p>
+              </div>
+              <Separator />
+            </>
+          )}
 
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

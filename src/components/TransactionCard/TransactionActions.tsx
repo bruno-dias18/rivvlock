@@ -58,19 +58,6 @@ const TransactionActionsComponent = ({
         <Eye className="h-4 w-4 mr-2" />
         {t('common.view', 'Voir')}
       </Button>
-
-      {/* Seller copy link */}
-      {userRole === 'seller' && transaction.status === 'pending' && (
-        <Button
-          variant="outline"
-          size={isMobile ? "default" : "sm"}
-          onClick={() => onCopyLink(`${getPublicBaseUrl()}/join/${transaction.shared_link_token}`)}
-          className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
-        >
-          <Copy className="h-4 w-4 mr-2" />
-          {isMobile ? t('common.copy') : t('common.copyLink')}
-        </Button>
-      )}
       
       {/* Buyer payment */}
       {userRole === 'buyer' && transaction.status === 'pending' && (
