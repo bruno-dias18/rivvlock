@@ -148,8 +148,15 @@ export default function PaymentLinkPage() {
         }
       });
 
-      if (joinError) throw joinError;
-      if (joinData?.error) throw new Error(joinData.error);
+      if (joinError) {
+        logger.error('❌ Join error:', joinError);
+        throw new Error(joinError.message || 'Erreur réseau');
+      }
+      
+      if (joinData?.error) {
+        logger.error('❌ Join data error:', joinData.error);
+        throw new Error(joinData.error);
+      }
       
       logger.log('✅ Transaction attachée avec succès');
       
@@ -157,7 +164,8 @@ export default function PaymentLinkPage() {
       navigate('/transactions');
     } catch (err: any) {
       logger.error('❌ Erreur lors de l\'attachement:', err);
-      toast.error('Erreur lors de l\'ajout de la transaction');
+      const errorMsg = err.message || 'Erreur inconnue';
+      toast.error(`Erreur: ${errorMsg}`);
     }
   };
 
@@ -454,7 +462,7 @@ export default function PaymentLinkPage() {
 
     return (
       <div className="min-h-screen bg-background">
-        <div className="p-4">
+        <div className="p-4 space-y-2">
           <Button
             variant="ghost"
             onClick={handleReturnToDashboard}
@@ -463,6 +471,9 @@ export default function PaymentLinkPage() {
             <ArrowLeft className="h-4 w-4" />
             Voir dans mon espace
           </Button>
+          <p className="text-xs text-muted-foreground pl-2">
+            💡 Transaction sauvegardée • Vous pourrez payer plus tard
+          </p>
         </div>
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
           {debugMode && (
@@ -554,10 +565,6 @@ export default function PaymentLinkPage() {
               </Button>
             )}
           </div>
-
-          <p className="text-xs text-center text-muted-foreground mt-3 mb-2">
-            💡 Transaction sauvegardée dans votre espace • Vous pourrez payer plus tard
-          </p>
 
           <p className="text-xs text-center text-muted-foreground">
             Paiement sécurisé par Stripe • Vos données sont protégées
