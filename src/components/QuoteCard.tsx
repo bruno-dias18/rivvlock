@@ -118,29 +118,31 @@ const QuoteCardComponent = ({ quote, onView, onArchive, onOpenMessaging, isSelle
             </div>
             {/* Masquer la messagerie pour les devis acceptés (conversation dans la transaction) */}
             {onOpenMessaging && quote.status !== 'accepted' && (
-              <Button
-                size="sm"
-                variant={unreadCount > 0 ? "default" : "outline"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenMessaging(quote.id, quote.client_name || undefined);
-                }}
-                className="flex-1 sm:flex-initial transition-all duration-200 hover:scale-105 active:scale-95"
-              >
-                {hasMessages ? (
-                  <MessageCircleMore className="h-4 w-4 sm:mr-2" />
-                ) : (
-                  <MessageCircle className="h-4 w-4 sm:mr-2" />
-                )}
-                <span className="hidden sm:inline">
-                  {hasMessages ? t('common.viewConversation', 'Voir la discussion') : t('common.contact', 'Contacter')}
-                </span>
+              <div className="relative flex-1 sm:flex-initial">
+                <Button
+                  size="sm"
+                  variant={unreadCount > 0 ? "default" : "outline"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenMessaging(quote.id, quote.client_name || undefined);
+                  }}
+                  className="w-full transition-all duration-200 hover:scale-105 active:scale-95"
+                >
+                  {hasMessages ? (
+                    <MessageCircleMore className="h-4 w-4 sm:mr-2" />
+                  ) : (
+                    <MessageCircle className="h-4 w-4 sm:mr-2" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {hasMessages ? t('common.viewConversation', 'Voir la discussion') : t('common.contact', 'Contacter')}
+                  </span>
+                </Button>
                 {unreadCount > 0 && (
-                  <Badge className="ml-2 bg-primary-foreground text-primary">
+                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white px-1.5 py-0.5 text-[10px] hover:scale-110 transition-transform">
                     {unreadCount}
                   </Badge>
                 )}
-              </Button>
+              </div>
             )}
             {canArchive && quote.status !== 'archived' && (
               <Button
