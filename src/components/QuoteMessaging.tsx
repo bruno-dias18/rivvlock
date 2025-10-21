@@ -38,7 +38,7 @@ export const QuoteMessaging = ({
         return;
       }
 
-      // Si pas de conversation et utilisateur connecté, la créer
+      // Si pas de conversation et utilisateur connecté, la créer (avec auto-liaison si devis ouvert)
       if (user) {
         try {
           const { data, error } = await supabase.functions.invoke('get-or-create-quote-conversation', {
@@ -47,9 +47,11 @@ export const QuoteMessaging = ({
 
           if (!error && data?.conversation_id) {
             setConversationId(data.conversation_id);
+          } else if (error) {
+            console.error('[QuoteMessaging] Error creating conversation:', error);
           }
         } catch (err) {
-          console.error('[QuoteMessaging] Error creating conversation:', err);
+          console.error('[QuoteMessaging] Unexpected error:', err);
         }
       }
 
