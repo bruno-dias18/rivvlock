@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Send, Inbox } from 'lucide-react';
-import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
+import { CreateProposalDialog } from '@/components/CreateProposalDialog';
 import { EditQuoteDialog } from '@/components/EditQuoteDialog';
 import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -150,7 +150,8 @@ export const QuotesPage = () => {
           </TabsContent>
         </Tabs>
 
-        <CreateQuoteDialog
+        <CreateProposalDialog
+          mode="quote"
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={() => {

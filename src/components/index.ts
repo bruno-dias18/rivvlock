@@ -17,7 +17,7 @@ export { default as CompleteTransactionButton } from './CompleteTransactionButto
 export { CompleteTransactionButtonWithStatus } from './CompleteTransactionButtonWithStatus';
 export { TransactionMessaging } from './TransactionMessaging';
 export { VirtualTransactionList } from './VirtualTransactionList';
-export { NewTransactionDialog } from './NewTransactionDialog';
+export { CreateProposalDialog } from './CreateProposalDialog';
 export { RenewTransactionDialog } from './RenewTransactionDialog';
 export { ShareLinkDialog } from './ShareLinkDialog';
 export { FeeDistributionSection } from './FeeDistributionSection';
@@ -25,7 +25,6 @@ export { FeeDistributionSection } from './FeeDistributionSection';
 // Dispute Components
 export { DisputeCard } from './DisputeCard';
 export { CreateDisputeDialog } from './CreateDisputeDialog';
-export { CreateProposalDialog } from './CreateProposalDialog';
 export { EscalatedDisputeMessaging } from './EscalatedDisputeMessaging';
 export { UnifiedMessaging } from './UnifiedMessaging';
 

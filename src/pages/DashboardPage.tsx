@@ -14,7 +14,7 @@ import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
 import { useQuotes } from '@/hooks/useQuotes';
-import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { CreateProposalDialog } from '@/components/CreateProposalDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
@@ -273,9 +273,13 @@ export default function DashboardPage() {
         onSetupComplete={() => setIsNewTransactionOpen(true)}
       />
 
-      <NewTransactionDialog
+      <CreateProposalDialog
+        mode="transaction"
         open={isNewTransactionOpen}
         onOpenChange={setIsNewTransactionOpen}
+        onSuccess={() => {
+          // Transactions will auto-refresh via React Query
+        }}
       />
     </DashboardLayoutWithSidebar>
   );
