@@ -17,7 +17,7 @@ export { default as CompleteTransactionButton } from './CompleteTransactionButto
 export { CompleteTransactionButtonWithStatus } from './CompleteTransactionButtonWithStatus';
 export { TransactionMessaging } from './TransactionMessaging';
 export { VirtualTransactionList } from './VirtualTransactionList';
-export { NewTransactionDialog } from './NewTransactionDialog';
+export { CreateTransactionOrQuoteDialog } from './CreateTransactionOrQuoteDialog';
 export { RenewTransactionDialog } from './RenewTransactionDialog';
 export { ShareLinkDialog } from './ShareLinkDialog';
 export { FeeDistributionSection } from './FeeDistributionSection';

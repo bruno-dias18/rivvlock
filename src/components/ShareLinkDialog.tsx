@@ -12,9 +12,10 @@ interface ShareLinkDialogProps {
   onOpenChange: (open: boolean) => void;
   shareLink: string;
   transactionTitle: string;
+  type?: 'transaction' | 'quote';
 }
 
-export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitle }: ShareLinkDialogProps) {
+export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitle, type = 'transaction' }: ShareLinkDialogProps) {
   const [copied, setCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -73,7 +74,7 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Transaction créée avec succès !</DialogTitle>
+          <DialogTitle>{type === 'quote' ? 'Devis créé avec succès !' : 'Transaction créée avec succès !'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -83,12 +84,15 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
             </div>
             <h3 className="text-lg font-semibold mb-2">"{transactionTitle}"</h3>
             <p className="text-muted-foreground text-sm">
-              Partagez ce lien avec le client pour qu'il puisse procéder au paiement
+              {type === 'quote' 
+                ? 'Partagez ce lien avec le client pour qu\'il puisse consulter et accepter le devis'
+                : 'Partagez ce lien avec le client pour qu\'il puisse procéder au paiement'
+              }
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Lien de paiement</label>
+            <label className="text-sm font-medium">{type === 'quote' ? 'Lien du devis' : 'Lien de paiement'}</label>
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -132,10 +136,21 @@ export function ShareLinkDialog({ open, onOpenChange, shareLink, transactionTitl
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-medium text-blue-900 mb-2">Comment ça marche ?</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Le client clique sur le lien</li>
-              <li>• Il se connecte ou crée un compte RivvLock</li>
-              <li>• Il procède au paiement via Stripe</li>
-              <li>• Vous recevez une notification de paiement</li>
+              {type === 'quote' ? (
+                <>
+                  <li>• Le client clique sur le lien</li>
+                  <li>• Il consulte le devis détaillé</li>
+                  <li>• Il peut accepter ou négocier le devis</li>
+                  <li>• Si accepté, le devis devient une transaction officielle</li>
+                </>
+              ) : (
+                <>
+                  <li>• Le client clique sur le lien</li>
+                  <li>• Il se connecte ou crée un compte RivvLock</li>
+                  <li>• Il procède au paiement via Stripe</li>
+                  <li>• Vous recevez une notification de paiement</li>
+                </>
+              )}
             </ul>
           </div>
         </div>

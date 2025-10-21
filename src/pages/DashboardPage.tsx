@@ -14,7 +14,7 @@ import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadQuotesGlobal } from '@/hooks/useUnreadQuotesGlobal';
 import { useQuotes } from '@/hooks/useQuotes';
-import { NewTransactionDialog } from '@/components/NewTransactionDialog';
+import { CreateTransactionOrQuoteDialog } from '@/components/CreateTransactionOrQuoteDialog';
 import { BankAccountRequiredDialog } from '@/components/BankAccountRequiredDialog';
 import { RecentActivityCard } from '@/components/RecentActivityCard';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
@@ -273,9 +273,10 @@ export default function DashboardPage() {
         onSetupComplete={() => setIsNewTransactionOpen(true)}
       />
 
-      <NewTransactionDialog
+      <CreateTransactionOrQuoteDialog
         open={isNewTransactionOpen}
         onOpenChange={setIsNewTransactionOpen}
+        defaultType="transaction"
       />
     </DashboardLayoutWithSidebar>
   );

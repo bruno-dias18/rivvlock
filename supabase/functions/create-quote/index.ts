@@ -1,5 +1,6 @@
 import { compose, withCors, withAuth, successResponse, errorResponse, withValidation } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
+import { buildQuoteViewUrl } from "../_shared/app-url.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 interface QuoteItem {
@@ -112,12 +113,14 @@ const handler = compose(
 
   logger.log(`[create-quote] Quote ${quote.id} created successfully`);
   
-  // ✅ OPTIMISATION: Utiliser secure_token directement (pas de 2e requête)
+  // ✅ OPTIMISATION: Utiliser secure_token + URL builder partagé
+  const viewUrl = buildQuoteViewUrl(quote.secure_token, quote.id);
+  
   return successResponse({ 
     success: true, 
     quote_id: quote.id,
-    secure_token: quote.secure_token, // ✅ Token DB auto-généré
-    view_url: `${req.headers.get('origin')}/quote-view/${quote.secure_token}?quoteId=${quote.id}`
+    secure_token: quote.secure_token,
+    view_url: viewUrl
   });
 });
 

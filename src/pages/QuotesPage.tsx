@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Send, Inbox } from 'lucide-react';
-import { CreateQuoteDialog } from '@/components/CreateQuoteDialog';
+import { CreateTransactionOrQuoteDialog } from '@/components/CreateTransactionOrQuoteDialog';
 import { EditQuoteDialog } from '@/components/EditQuoteDialog';
 import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -150,12 +150,13 @@ export const QuotesPage = () => {
           </TabsContent>
         </Tabs>
 
-        <CreateQuoteDialog
+        <CreateTransactionOrQuoteDialog
           open={createDialogOpen}
           onOpenChange={setCreateDialogOpen}
           onSuccess={() => {
             // Quotes will auto-refresh via React Query
           }}
+          defaultType="quote"
         />
 
         {selectedQuote && (

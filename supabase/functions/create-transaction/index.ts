@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
+import { buildTransactionJoinUrl } from "../_shared/app-url.ts";
 import { 
   compose, 
   withCors, 
@@ -89,8 +90,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   logger.log('[CREATE-TRANSACTION] Transaction created:', transaction.id);
 
-  // Build share link URL with correct format
-  const shareLink = `https://app.rivvlock.com/join/${shareToken}`;
+  // Build share link URL using shared utility
+  const shareLink = buildTransactionJoinUrl(shareToken);
 
   // Send email if client_email provided
   if (client_email) {
