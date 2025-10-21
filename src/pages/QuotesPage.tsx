@@ -30,8 +30,20 @@ export const QuotesPage = () => {
   const { sentQuotes, receivedQuotes, isLoading, archiveQuote, markAsViewed } = useQuotes();
   const isMobile = useIsMobile();
   const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(
-    sentQuotes.map(q => ({ id: q.id, conversation_id: q.conversation_id, status: q.status })),
-    receivedQuotes.map(q => ({ id: q.id, conversation_id: q.conversation_id, status: q.status }))
+    sentQuotes.map(q => ({ 
+      id: q.id, 
+      conversation_id: q.conversation_id, 
+      status: q.status,
+      updated_at: q.updated_at,
+      client_last_viewed_at: q.client_last_viewed_at
+    })),
+    receivedQuotes.map(q => ({ 
+      id: q.id, 
+      conversation_id: q.conversation_id, 
+      status: q.status,
+      updated_at: q.updated_at,
+      client_last_viewed_at: q.client_last_viewed_at
+    }))
   );
 
   // Handle openMessage query parameter
