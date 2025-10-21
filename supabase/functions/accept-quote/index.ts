@@ -257,7 +257,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
     return successResponse({
       transaction,
-      payment_link: `${req.headers.get('origin')}/payment-link/${transaction.shared_link_token}`
+      redirect_to_dashboard: true
     });
 
   } catch (error) {

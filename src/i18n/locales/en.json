@@ -214,7 +214,9 @@
     "buyerCanNowFinalize": "You can now finalize the transaction or report a dispute if necessary.",
     "buyerCanFinalizeEarly": "You can finalize now. The automatic countdown will start after the service date.",
     "awaitingPayment": "Awaiting buyer payment",
-    "reminderSuggestion": "Consider reminding the buyer if needed before the deadline expires."
+    "reminderSuggestion": "Consider reminding the buyer if needed before the deadline expires.",
+    "awaitingDates": "Awaiting dates",
+    "dateValidationPending": "Date validation pending"
   },
   "admin": {
     "dashboard": "Administration",

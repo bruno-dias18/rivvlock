@@ -213,7 +213,9 @@
     "buyerCanNowFinalize": "Sie können nun die Transaktion abschließen oder bei Bedarf einen Streitfall melden.",
     "buyerCanFinalizeEarly": "Sie können jetzt abschließen. Der automatische Countdown startet nach dem Servicedatum.",
     "awaitingPayment": "Warten auf Käuferzahlung",
-    "reminderSuggestion": "Erinnern Sie den Käufer bei Bedarf vor Ablauf der Frist."
+    "reminderSuggestion": "Erinnern Sie den Käufer bei Bedarf vor Ablauf der Frist.",
+    "awaitingDates": "Warten auf Termine",
+    "dateValidationPending": "Datumsvalidierung ausstehend"
   },
   "admin": {
     "dashboard": "Verwaltung",

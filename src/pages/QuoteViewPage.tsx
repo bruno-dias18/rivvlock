@@ -152,12 +152,10 @@ export default function QuoteViewPage() {
       if (error) throw error;
 
       if (data?.transaction) {
-        toast.success('Devis accepté ! Redirection vers le paiement...');
-        if (data.payment_link) {
-          window.location.href = data.payment_link;
-        } else {
-          navigate('/dashboard');
-        }
+        toast.success('Devis accepté ! Redirection vers vos transactions...', {
+          description: 'Vous pouvez maintenant payer la transaction'
+        });
+        navigate('/dashboard?tab=pending');
       }
     } catch (err: any) {
       logger.error('Error accepting quote:', err);

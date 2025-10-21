@@ -213,7 +213,9 @@
     "buyerCanNowFinalize": "Vous pouvez maintenant finaliser la transaction ou déclarer un litige si nécessaire.",
     "buyerCanFinalizeEarly": "Vous pouvez finaliser dès maintenant. Le compte à rebours automatique démarrera après la date de service.",
     "awaitingPayment": "En attente du paiement de l'acheteur",
-    "reminderSuggestion": "Pensez à relancer l'acheteur si nécessaire avant l'expiration du délai."
+    "reminderSuggestion": "Pensez à relancer l'acheteur si nécessaire avant l'expiration du délai.",
+    "awaitingDates": "En attente de dates",
+    "dateValidationPending": "Validation de la date en cours"
   },
   "admin": {
     "dashboard": "Administration",
