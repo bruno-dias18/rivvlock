@@ -112,7 +112,7 @@ export const FeeDistributionSlider = ({
               Appliquer la répartition automatique
             </Button>
             <p className="text-xs text-muted-foreground text-center">
-              💡 Vous pouvez aussi ajuster les prix manuellement ligne par ligne
+              💡 <strong>Astuce :</strong> vous pouvez aussi ajouter manuellement une ligne "Frais de plateforme" ou ajuster les prix ligne par ligne
             </p>
           </>
         )}
