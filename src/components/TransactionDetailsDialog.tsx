@@ -196,18 +196,6 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
               </div>
             )}
 
-            {clientFeeRatio > 0 ? (
-              <div className="flex justify-between text-sm text-orange-600">
-                <span>Frais de sécurisation ({clientFeeRatio}%):</span>
-                <span>+{clientFees.toFixed(2)} {transaction.currency.toUpperCase()}</span>
-              </div>
-            ) : (
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>Frais de sécurisation (0%):</span>
-                <span>+0.00 {transaction.currency.toUpperCase()}</span>
-              </div>
-            )}
-
             <Separator />
             <div className="flex justify-between font-bold text-lg">
               <span>Total TTC:</span>
