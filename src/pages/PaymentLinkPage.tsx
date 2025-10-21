@@ -123,32 +123,50 @@ export default function PaymentLinkPage() {
       return;
     }
 
+    console.log('🔍 DEBUG handleReturnToDashboard:', {
+      userId: user.id,
+      transactionId: transaction.id,
+      currentBuyerId: transaction.buyer_id,
+      sellerId: transaction.user_id
+    });
+
     // ✅ Si déjà attaché → redirection directe
     if (transaction.buyer_id === user.id) {
+      console.log('✅ Déjà attaché, redirection');
       navigate('/transactions');
       return;
     }
 
-    // ✅ UPDATE DIRECT - pas d'edge function
+    // ✅ UPDATE DIRECT
     try {
-      logger.log('🔄 Attachement direct de la transaction');
+      console.log('🔄 Tentative UPDATE direct...');
 
-      const { error: updateError } = await supabase
+      const { data, error: updateError } = await supabase
         .from('transactions')
         .update({ 
           buyer_id: user.id,
           updated_at: new Date().toISOString()
         })
-        .eq('id', transaction.id);
+        .eq('id', transaction.id)
+        .select();
+
+      console.log('📊 Résultat UPDATE:', { data, error: updateError });
 
       if (updateError) {
+        console.error('❌ UPDATE error:', updateError);
         throw updateError;
       }
+
+      if (!data || data.length === 0) {
+        console.error('❌ Aucune ligne mise à jour');
+        throw new Error('Transaction non mise à jour');
+      }
       
+      console.log('✅ UPDATE réussi:', data);
       toast.success('Transaction ajoutée à votre compte');
       navigate('/transactions');
     } catch (err: any) {
-      logger.error('❌ Erreur:', err);
+      console.error('❌ Erreur complète:', err);
       toast.error(err.message || 'Erreur lors de l\'ajout');
     }
   };
