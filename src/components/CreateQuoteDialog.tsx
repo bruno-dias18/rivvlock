@@ -471,7 +471,6 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                         variant={autoDistributionApplied ? "outline" : "default"}
                         size="sm"
                         onClick={applyAutoDistribution}
-                        disabled={feeRatio === 0}
                         className="w-full"
                       >
                         {autoDistributionApplied ? "Réappliquer la répartition" : "Répartir automatiquement"}
