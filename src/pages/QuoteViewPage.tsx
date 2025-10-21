@@ -267,7 +267,7 @@ export default function QuoteViewPage() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                Dates de prestation
+                Dates & heures de prestation
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -277,6 +277,11 @@ export default function QuoteViewPage() {
                     <span className="text-muted-foreground">Début :</span>
                     <span className="font-medium">
                       {format(new Date(quote.service_date), 'PPP', { locale: fr })}
+                      {new Date(quote.service_date).getHours() !== 0 && (
+                        <span className="ml-2 text-primary">
+                          à {format(new Date(quote.service_date), 'HH:mm')}
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -285,6 +290,11 @@ export default function QuoteViewPage() {
                     <span className="text-muted-foreground">Fin :</span>
                     <span className="font-medium">
                       {format(new Date(quote.service_end_date), 'PPP', { locale: fr })}
+                      {new Date(quote.service_end_date).getHours() !== 0 && (
+                        <span className="ml-2 text-primary">
+                          à {format(new Date(quote.service_end_date), 'HH:mm')}
+                        </span>
+                      )}
                     </span>
                   </div>
                 )}

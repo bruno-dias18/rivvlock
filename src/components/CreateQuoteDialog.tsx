@@ -49,6 +49,8 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
   const [currency, setCurrency] = useState<Currency>(getDefaultCurrency());
   const [serviceDate, setServiceDate] = useState<Date>();
   const [serviceEndDate, setServiceEndDate] = useState<Date>();
+  const [serviceTime, setServiceTime] = useState<string>('');
+  const [serviceEndTime, setServiceEndTime] = useState<string>('');
   const [validUntil, setValidUntil] = useState<Date>(
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   );
@@ -176,6 +178,17 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
     setIsLoading(true);
     try {
+      // Combiner date + heure si les deux sont fournis
+      const getFinalDateTime = (date: Date | undefined, time: string): string | null => {
+        if (!date) return null;
+        if (!time) return date.toISOString(); // Juste la date sans heure
+        
+        const [hours, minutes] = time.split(':').map(Number);
+        const combined = new Date(date);
+        combined.setHours(hours, minutes, 0, 0);
+        return combined.toISOString();
+      };
+
       const { data, error } = await supabase.functions.invoke('create-quote', {
         body: {
           client_email: clientEmail || null,
@@ -184,8 +197,8 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
           description: description || null,
           items,
           currency,
-          service_date: serviceDate?.toISOString() || null,
-          service_end_date: serviceEndDate?.toISOString() || null,
+          service_date: getFinalDateTime(serviceDate, serviceTime),
+          service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
           valid_until: validUntil.toISOString(),
           total_amount: submittedTotalAmount,
           fee_ratio_client: feeRatio
@@ -222,6 +235,8 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
       setOriginalItems([resetItem]);
       setServiceDate(undefined);
       setServiceEndDate(undefined);
+      setServiceTime('');
+      setServiceEndTime('');
       setFeeRatio(0);
       setAutoDistributionApplied(false);
     } catch (error) {
@@ -536,9 +551,9 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
 
           {/* Dates */}
           <div className="space-y-4">
-            <h3 className="font-medium">Dates (optionnelles)</h3>
+            <h3 className="font-medium">Dates & heures (optionnelles)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>Date de prestation</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -553,11 +568,24 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       selected={serviceDate}
                       onSelect={setServiceDate}
                       disabled={(date) => date < new Date()}
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
+                {serviceDate && (
+                  <>
+                    <Label htmlFor="service-time" className="text-xs text-muted-foreground">Heure (optionnelle)</Label>
+                    <Input
+                      id="service-time"
+                      type="time"
+                      value={serviceTime}
+                      onChange={(e) => setServiceTime(e.target.value)}
+                      className="w-full"
+                    />
+                  </>
+                )}
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>Date de fin</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -572,9 +600,22 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       selected={serviceEndDate}
                       onSelect={setServiceEndDate}
                       disabled={(date) => !serviceDate || date < serviceDate}
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
+                {serviceEndDate && (
+                  <>
+                    <Label htmlFor="service-end-time" className="text-xs text-muted-foreground">Heure (optionnelle)</Label>
+                    <Input
+                      id="service-end-time"
+                      type="time"
+                      value={serviceEndTime}
+                      onChange={(e) => setServiceEndTime(e.target.value)}
+                      className="w-full"
+                    />
+                  </>
+                )}
               </div>
               <div>
                 <Label>Valide jusqu'au *</Label>
@@ -591,6 +632,7 @@ export const CreateQuoteDialog = ({ open, onOpenChange, onSuccess }: Props) => {
                       selected={validUntil}
                       onSelect={(date) => date && setValidUntil(date)}
                       disabled={(date) => date < new Date()}
+                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
