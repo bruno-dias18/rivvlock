@@ -61,10 +61,10 @@ const handler = compose(
   // Calculate totals
   const subtotal = body.items.reduce((sum, item) => sum + item.total, 0);
   
-  // Get seller's profile for tax rate (optimisé avec maybeSingle)
+  // Get seller's profile for tax rate + nom (optimisé avec maybeSingle)
   const { data: profile } = await ctx.supabaseClient!
     .from('profiles')
-    .select('vat_rate, tva_rate')
+    .select('vat_rate, tva_rate, company_name, first_name, last_name')
     .eq('user_id', ctx.user!.id)
     .maybeSingle();
 
@@ -115,6 +115,35 @@ const handler = compose(
   
   // ✅ OPTIMISATION: Utiliser secure_token + URL builder partagé
   const viewUrl = buildQuoteViewUrl(quote.secure_token, quote.id);
+  
+  // ✅ Send email if client_email provided
+  if (body.client_email) {
+    try {
+      await ctx.adminClient!.functions.invoke('send-email', {
+        body: {
+          type: 'quote_created',
+          to: body.client_email,
+          data: {
+            clientName: body.client_name || 'Client',
+            sellerName: profile?.company_name || `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || 'Prestataire',
+            quoteTitle: body.title,
+            quoteLink: viewUrl,
+            totalAmount: totalAmount.toFixed(2),
+            currency: body.currency.toUpperCase(),
+            validUntil: new Date(body.valid_until).toLocaleDateString('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })
+          }
+        }
+      });
+      logger.log('[create-quote] Email sent to:', body.client_email);
+    } catch (emailError) {
+      logger.error('[create-quote] Email error:', emailError);
+      // Ne pas bloquer la création du devis si l'email échoue
+    }
+  }
   
   return successResponse({ 
     success: true, 
