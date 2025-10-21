@@ -11,6 +11,7 @@ import { Transaction } from '@/types';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from '@/hooks/useToast';
 
 interface TransactionData {
   id: string;
@@ -132,10 +133,23 @@ export default function PaymentLinkPage() {
       if (joinData.error) throw new Error(joinData.error);
       
       setAutoJoined(true);
-      logger.log('User automatically joined transaction');
+      logger.log('✅ Transaction rejointe automatiquement');
+      
+      // Rediriger vers le dashboard avec un message de succès
+      toast.success('Transaction ajoutée à votre compte', {
+        description: 'Vous pouvez maintenant effectuer le paiement depuis votre dashboard'
+      });
+      
+      setTimeout(() => {
+        navigate('/dashboard?tab=pending');
+      }, 1000);
     } catch (err: any) {
       logger.error('Error auto-joining transaction:', err);
-      // Don't show error to user for auto-join, they can still manually join
+      // Si l'utilisateur est déjà assigné, rediriger quand même
+      if (err.message?.includes('déjà assigné')) {
+        toast.info('Transaction déjà dans votre compte');
+        navigate('/dashboard?tab=pending');
+      }
     }
   };
 
@@ -212,7 +226,7 @@ export default function PaymentLinkPage() {
     }
   };
 
-  // Auto-join transaction when user is authenticated
+  // Auto-join transaction when user is authenticated and redirect to dashboard
   useEffect(() => {
     if (user && transaction && !autoJoined) {
       autoJoinTransaction();

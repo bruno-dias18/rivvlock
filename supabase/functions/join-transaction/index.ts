@@ -10,6 +10,8 @@ import {
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
 
+// Join transaction with optimized payment deadline handling
+
 const joinTransactionSchema = z.object({
   transaction_id: z.string().uuid(),
   linkToken: z.string().optional(),
@@ -74,23 +76,35 @@ const handler = async (ctx: any) => {
     `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim() || 
     'Acheteur';
 
-  // Calculate payment deadline (24h before service date and time)
-  const serviceDate = new Date(transaction.service_date);
-  const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+  // Use existing payment deadline or calculate it
+  let paymentDeadline: string;
   
-  logger.log('🕒 [JOIN-TRANSACTION] Payment deadline calculation:', {
-    serviceDate: serviceDate.toISOString(),
-    paymentDeadline: paymentDeadline.toISOString(),
-    timeDiff: (serviceDate.getTime() - paymentDeadline.getTime()) / (1000 * 60 * 60)
-  });
-  
-  // Validate that payment deadline is in the future
-  const now = new Date();
-  if (paymentDeadline <= now) {
-    return errorResponse(
-      'Service trop proche : le paiement doit être possible au moins 24h avant le service.',
-      400
-    );
+  if (transaction.payment_deadline) {
+    // Use existing deadline
+    paymentDeadline = transaction.payment_deadline;
+    logger.log('📅 [JOIN-TRANSACTION] Using existing payment deadline:', paymentDeadline);
+  } else {
+    // Calculate payment deadline based on service date and payment_deadline_hours
+    const paymentDeadlineHours = transaction.payment_deadline_hours || 24;
+    const serviceDate = new Date(transaction.service_date);
+    const calculatedDeadline = new Date(serviceDate.getTime() - paymentDeadlineHours * 60 * 60 * 1000);
+    
+    logger.log('🕒 [JOIN-TRANSACTION] Calculating payment deadline:', {
+      serviceDate: serviceDate.toISOString(),
+      paymentDeadlineHours,
+      calculatedDeadline: calculatedDeadline.toISOString()
+    });
+    
+    // Validate that payment deadline is in the future
+    const now = new Date();
+    if (calculatedDeadline <= now) {
+      return errorResponse(
+        'Service trop proche : le paiement doit être possible au moins 24h avant le service.',
+        400
+      );
+    }
+    
+    paymentDeadline = calculatedDeadline.toISOString();
   }
 
   // Create conversation if it doesn't exist
@@ -122,7 +136,7 @@ const handler = async (ctx: any) => {
     .update({ 
       buyer_id: user.id,
       buyer_display_name: buyerDisplayName,
-      payment_deadline: paymentDeadline.toISOString(),
+      payment_deadline: paymentDeadline,
       conversation_id: conversationId,
       updated_at: new Date().toISOString()
     })
