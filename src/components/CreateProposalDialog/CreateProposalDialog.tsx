@@ -21,8 +21,9 @@ import { ProposalDetails } from './ProposalDetails';
 import { ProposalItems } from './ProposalItems';
 import { ProposalFeeDistribution } from './ProposalFeeDistribution';
 import { ProposalDates } from './ProposalDates';
-import type { ProposalItem } from './types';
-import type { CreateProposalDialogProps } from './types';
+import type { ProposalItem, CreateProposalDialogProps, ProposalMode } from './types';
+
+export type { CreateProposalDialogProps, ProposalMode, ProposalItem };
 
 /**
  * Composant unifié pour créer des devis ou des transactions

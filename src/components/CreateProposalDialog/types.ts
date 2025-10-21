@@ -5,7 +5,7 @@ import { Currency } from '@/types';
  * - 'quote' : Création d'un devis
  * - 'transaction' : Création d'une transaction directe
  */
-export type ProposalMode = 'quote' | 'transaction' as const;
+export type ProposalMode = 'quote' | 'transaction';
 
 /**
  * Structure d'un item de proposition (devis ou transaction)

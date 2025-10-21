@@ -18,6 +18,7 @@ export { CompleteTransactionButtonWithStatus } from './CompleteTransactionButton
 export { TransactionMessaging } from './TransactionMessaging';
 export { VirtualTransactionList } from './VirtualTransactionList';
 export { CreateProposalDialog } from './CreateProposalDialog';
+export type { CreateProposalDialogProps, ProposalMode, ProposalItem } from './CreateProposalDialog/types';
 export { RenewTransactionDialog } from './RenewTransactionDialog';
 export { ShareLinkDialog } from './ShareLinkDialog';
 export { FeeDistributionSection } from './FeeDistributionSection';
