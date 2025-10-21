@@ -37,6 +37,7 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
+  const [hasAttemptedAutoJoin, setHasAttemptedAutoJoin] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -178,7 +179,6 @@ export default function PaymentLinkPage() {
     // If bank transfer is selected, mark transaction method and show instructions
     if (selectedPaymentMethod === 'bank_transfer') {
       try {
-        // Update transaction with bank_transfer payment method
         const { error: updateError } = await supabase
           .from('transactions')
           .update({ payment_method: 'bank_transfer' })
@@ -196,21 +196,7 @@ export default function PaymentLinkPage() {
 
     setProcessingPayment(true);
     try {
-      // 1. Join the transaction first (best-effort, non-bloquant)
-      try {
-        const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-          body: { 
-            transaction_id: transaction.id,
-            linkToken: token || new URLSearchParams(window.location.search).get('txId')
-          }
-        });
-        if (joinError) throw joinError;
-        if (joinData?.error) throw new Error(joinData.error);
-      } catch (joinErr) {
-        logger.warn('Join transaction skipped (continuing to checkout):', joinErr);
-      }
-
-      // 2. Create Stripe Checkout session immediately
+      // Create Stripe Checkout session (transaction already joined by auto-attach)
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
         body: { 
           transactionId: transaction.id,
@@ -222,7 +208,7 @@ export default function PaymentLinkPage() {
       if (checkoutError) throw checkoutError;
       if (checkoutData.error) throw new Error(checkoutData.error);
 
-      // 3. Redirect to Stripe Checkout
+      // Redirect to Stripe Checkout
       if (checkoutData.url || checkoutData.sessionUrl) {
         window.location.href = checkoutData.url || checkoutData.sessionUrl;
       } else {
@@ -243,7 +229,56 @@ export default function PaymentLinkPage() {
     }
   };
 
-  // Remove auto-join - user must click button to attach transaction
+  // Auto-attach transaction when user is authenticated and page is fully loaded
+  useEffect(() => {
+    if (user && transaction?.id && !loading && !hasAttemptedAutoJoin) {
+      setHasAttemptedAutoJoin(true);
+      
+      // Wait a bit to ensure everything is loaded
+      const timer = setTimeout(async () => {
+        // Check if already attached
+        if (transaction.buyer_id === user.id) {
+          logger.log('✅ Transaction already attached to user');
+          return;
+        }
+
+        try {
+          const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+          
+          if (!finalToken) {
+            logger.warn('No token available for auto-join');
+            return;
+          }
+          
+          logger.log('🔄 Auto-attaching transaction to user:', {
+            transactionId: transaction.id,
+            userId: user.id
+          });
+
+          const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
+            body: { 
+              transaction_id: transaction.id,
+              linkToken: finalToken
+            }
+          });
+
+          if (joinError) throw joinError;
+          if (joinData?.error) throw new Error(joinData.error);
+          
+          logger.log('✅ Transaction auto-attached successfully');
+          
+          toast.success('Transaction ajoutée à votre compte', {
+            description: 'Elle apparaît maintenant dans votre espace'
+          });
+        } catch (err: any) {
+          logger.error('Error auto-attaching transaction:', err);
+          // Silent fail - user can still use the dashboard button
+        }
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, transaction?.id, loading, hasAttemptedAutoJoin, token]);
 
   const handleAuthRedirect = () => {
     const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
