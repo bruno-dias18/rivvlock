@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, AlertCircle, CreditCard, Users, Calendar } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Users, Calendar, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
@@ -227,15 +227,27 @@ export default function PaymentLinkPage() {
   // Show loading state while checking auth or fetching transaction
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        {debugMode && (
-          <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)}
+      <div className="min-h-screen bg-background">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au dashboard
+          </Button>
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+          {debugMode && (
+            <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
+              DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | authLoading={String(authLoading)}
+            </div>
+          )}
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Chargement...</p>
           </div>
-        )}
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Chargement...</p>
         </div>
       </div>
     );
@@ -247,13 +259,24 @@ export default function PaymentLinkPage() {
                           error.toLowerCase().includes('rate limit');
     
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        {debugMode && (
-          <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | error={error}
-          </div>
-        )}
-        <div className="max-w-md w-full text-center">
+      <div className="min-h-screen bg-background">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au dashboard
+          </Button>
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+          {debugMode && (
+            <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
+              DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated={String(!!user)} | error={error}
+            </div>
+          )}
+          <div className="max-w-md w-full text-center">
           <AlertCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">
             {isRateLimited ? 'Trop de tentatives' : 'Oups !'}
@@ -283,6 +306,7 @@ export default function PaymentLinkPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
     );
   }
@@ -290,14 +314,25 @@ export default function PaymentLinkPage() {
   // If no user and we have transaction data, show join transaction screen
   if (!user && transaction) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        {debugMode && (
-          <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated=false
-          </div>
-        )}
-        <div className="max-w-md w-full space-y-6">
-          <div className="text-center">
+      <div className="min-h-screen bg-background">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à l'accueil
+          </Button>
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+          {debugMode && (
+            <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
+              DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated=false
+            </div>
+          )}
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center">
             <img 
               src="/assets/rivvlock-logo.jpeg" 
               alt="RIVVLOCK Logo" 
@@ -372,6 +407,7 @@ export default function PaymentLinkPage() {
           <p className="text-xs text-center text-muted-foreground">
             Connectez-vous pour effectuer le paiement sécurisé via Stripe
           </p>
+          </div>
         </div>
       </div>
     );
@@ -382,9 +418,20 @@ export default function PaymentLinkPage() {
     // Show bank transfer instructions if selected
     if (showBankInstructions) {
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="max-w-md w-full space-y-6">
-            <div className="text-center">
+        <div className="min-h-screen bg-background">
+          <div className="p-4">
+            <Button
+              variant="ghost"
+              onClick={() => navigate('/dashboard')}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour au dashboard
+            </Button>
+          </div>
+          <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+            <div className="max-w-md w-full space-y-6">
+              <div className="text-center">
               <img 
                 src="/assets/rivvlock-logo.jpeg" 
                 alt="RIVVLOCK Logo" 
@@ -393,27 +440,39 @@ export default function PaymentLinkPage() {
               />
             </div>
             <BankTransferInstructions transaction={transaction} />
-            <Button 
-              variant="outline"
-              onClick={() => setShowBankInstructions(false)}
-              className="w-full"
-            >
-              Retour
-            </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setShowBankInstructions(false)}
+                className="w-full"
+              >
+                Retour
+              </Button>
+            </div>
           </div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        {debugMode && (
-          <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
-            DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated=true
-          </div>
-        )}
-        <div className="max-w-md w-full space-y-6">
-          <div className="text-center">
+      <div className="min-h-screen bg-background">
+        <div className="p-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour au dashboard
+          </Button>
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+          {debugMode && (
+            <div className="fixed top-0 left-0 right-0 bg-yellow-100 text-yellow-800 text-xs p-2 text-center">
+              DEBUG: token={token} | txId={new URLSearchParams(window.location.search).get('txId')} | authenticated=true
+            </div>
+          )}
+          <div className="max-w-md w-full space-y-6">
+            <div className="text-center">
             <img 
               src="/assets/rivvlock-logo.jpeg" 
               alt="RIVVLOCK Logo" 
@@ -500,6 +559,7 @@ export default function PaymentLinkPage() {
           <p className="text-xs text-center text-muted-foreground">
             Paiement sécurisé par Stripe • Vos données sont protégées
           </p>
+        </div>
         </div>
       </div>
     );
