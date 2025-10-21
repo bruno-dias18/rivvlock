@@ -213,7 +213,7 @@ export default function QuoteViewPage() {
           <div className="flex justify-start">
             <Button
               variant="outline"
-              onClick={() => navigate('/quotes')}
+              onClick={() => navigate('/dashboard/quotes')}
               className="gap-2"
             >
               ← Mes devis

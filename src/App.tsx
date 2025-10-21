@@ -78,11 +78,12 @@ const App: React.FC = () => {
                  path: "/payment-success", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(PaymentSuccessPage))
                }),
-               // Legacy redirects to preserve old links
-               React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
-               React.createElement(Route, { path: "/profile", element: React.createElement(Navigate, { to: "/dashboard/profile", replace: true }) }),
-               React.createElement(Route, { path: "/admin", element: React.createElement(Navigate, { to: "/dashboard/admin", replace: true }) }),
-               React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
+                // Legacy redirects to preserve old links
+                React.createElement(Route, { path: "/transactions", element: React.createElement(Navigate, { to: "/dashboard/transactions", replace: true }) }),
+                React.createElement(Route, { path: "/quotes", element: React.createElement(Navigate, { to: "/dashboard/quotes", replace: true }) }),
+                React.createElement(Route, { path: "/profile", element: React.createElement(Navigate, { to: "/dashboard/profile", replace: true }) }),
+                React.createElement(Route, { path: "/admin", element: React.createElement(Navigate, { to: "/dashboard/admin", replace: true }) }),
+                React.createElement(Route, { path: "/admin/disputes", element: React.createElement(Navigate, { to: "/dashboard/admin/disputes", replace: true }) }),
                React.createElement(Route, { 
                   path: "/dashboard", 
                   element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(DashboardPage)))
