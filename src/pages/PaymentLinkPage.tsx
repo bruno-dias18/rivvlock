@@ -123,6 +123,13 @@ export default function PaymentLinkPage() {
       return;
     }
 
+    // Vérifier que transaction.id existe
+    if (!transaction.id) {
+      logger.error('❌ Transaction ID manquant');
+      toast.error('Transaction non chargée');
+      return;
+    }
+
     // ✅ Si déjà attaché → redirection directe SANS appel API
     if (transaction.buyer_id === user.id) {
       logger.log('✅ Transaction déjà attachée, redirection directe');
@@ -139,7 +146,7 @@ export default function PaymentLinkPage() {
         return;
       }
       
-      logger.log('🔄 Attachement de la transaction');
+      logger.log('🔄 Attachement de la transaction:', transaction.id);
 
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
