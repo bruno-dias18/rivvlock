@@ -102,7 +102,7 @@ const TransactionActionsComponent = ({
          transaction.status !== 'validated' && 
          transaction.date_change_status !== 'pending_approval' && (
           <Button
-            variant="outline"
+            variant={!transaction.service_date ? "default" : "outline"}
             size={isMobile ? "default" : "sm"}
             onClick={() => setIsDateChangeDialogOpen(true)}
             className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
