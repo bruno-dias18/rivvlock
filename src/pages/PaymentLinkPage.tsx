@@ -425,7 +425,7 @@ export default function PaymentLinkPage() {
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Revenir au dashboard
+            Voir dans mon espace
           </Button>
         </div>
           <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
@@ -461,7 +461,7 @@ export default function PaymentLinkPage() {
             className="gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Revenir au dashboard
+            Voir dans mon espace
           </Button>
         </div>
         <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
@@ -554,6 +554,10 @@ export default function PaymentLinkPage() {
               </Button>
             )}
           </div>
+
+          <p className="text-xs text-center text-muted-foreground mt-3 mb-2">
+            💡 Transaction sauvegardée dans votre espace • Vous pourrez payer plus tard
+          </p>
 
           <p className="text-xs text-center text-muted-foreground">
             Paiement sécurisé par Stripe • Vos données sont protégées
