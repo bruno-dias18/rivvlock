@@ -25,9 +25,11 @@ type Country = 'FR' | 'CH';
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
-  const resetMode = searchParams.get('mode') === 'reset';
+  const mode = searchParams.get('mode');
+  const resetMode = mode === 'reset';
+  const signupMode = mode === 'signup';
   
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(signupMode);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(resetMode);
   const [loading, setLoading] = useState(false);
