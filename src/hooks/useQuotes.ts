@@ -14,11 +14,12 @@ export const useQuotes = () => {
     queryFn: async (): Promise<Quote[]> => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Fetch quotes where user is seller OR client
+      // Fetch quotes where user is seller OR client, excluding archived
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
         .or(`seller_id.eq.${user.id},client_user_id.eq.${user.id}`)
+        .neq('status', 'archived')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -34,7 +35,7 @@ export const useQuotes = () => {
     staleTime: 30000,
   });
 
-  // Separate sent and received quotes
+  // Separate sent and received quotes (already filtered, no archived)
   const sentQuotes = quotes.filter(q => q.seller_id === user?.id);
   const receivedQuotes = quotes.filter(q => q.client_user_id === user?.id);
 
