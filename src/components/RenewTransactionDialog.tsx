@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Calendar } from 'lucide-react';
@@ -25,7 +25,18 @@ export function RenewTransactionDialog({
   const [newServiceEndDate, setNewServiceEndDate] = useState<Date>();
   const [message, setMessage] = useState('');
 
+  // Reset end date if it becomes invalid
+  useEffect(() => {
+    if (newServiceDate && newServiceEndDate && newServiceEndDate < newServiceDate) {
+      setNewServiceEndDate(undefined);
+    }
+  }, [newServiceDate, newServiceEndDate]);
+
   const handleConfirm = () => {
+    if (newServiceEndDate && newServiceDate && newServiceEndDate < newServiceDate) {
+      // This should not happen due to UI constraints, but adding as safeguard
+      return;
+    }
     onConfirm(newServiceDate, message || undefined);
   };
 
@@ -74,6 +85,8 @@ export function RenewTransactionDialog({
             <DateTimePicker
               date={newServiceEndDate}
               onDateChange={setNewServiceEndDate}
+              minDate={newServiceDate}
+              disabled={!newServiceDate}
             />
             <p className="text-xs text-muted-foreground">
               Pour les services de plusieurs jours

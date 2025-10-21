@@ -14,6 +14,7 @@ interface DateTimePickerProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  minDate?: Date;
 }
 
 export function DateTimePicker({ 
@@ -21,7 +22,8 @@ export function DateTimePicker({
   onDateChange, 
   placeholder = "Sélectionner une date et heure",
   disabled = false,
-  className 
+  className,
+  minDate
 }: DateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
@@ -92,7 +94,12 @@ export function DateTimePicker({
             mode="single"
             selected={selectedDate}
             onSelect={handleDateSelect}
-            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+            disabled={(date) => {
+              const today = new Date(new Date().setHours(0, 0, 0, 0));
+              if (date < today) return true;
+              if (minDate && date < minDate) return true;
+              return false;
+            }}
             initialFocus
             className="pointer-events-auto"
           />

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, MessageSquare, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -36,9 +36,21 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Reset end date if it becomes invalid
+  useEffect(() => {
+    if (proposedDate && proposedEndDate && proposedEndDate < proposedDate) {
+      setProposedEndDate(undefined);
+    }
+  }, [proposedDate, proposedEndDate]);
+
   const handleSubmit = async () => {
     if (!proposedDate) {
       toast.error('Veuillez sélectionner une nouvelle date');
+      return;
+    }
+
+    if (proposedEndDate && proposedEndDate < proposedDate) {
+      toast.error('La date de fin ne peut pas être antérieure à la date de début');
       return;
     }
 
@@ -134,6 +146,8 @@ export const DateChangeRequestDialog: React.FC<DateChangeRequestDialogProps> = (
                   date={proposedEndDate}
                   onDateChange={setProposedEndDate}
                   placeholder="Sélectionner la nouvelle date de fin..."
+                  minDate={proposedDate}
+                  disabled={!proposedDate}
                 />
                 <p className="text-xs text-muted-foreground">
                   Pour les services de plusieurs jours
