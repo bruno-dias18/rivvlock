@@ -323,7 +323,8 @@ export const UnifiedMessaging = ({
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-background"
+        className="flex-1 min-h-0 max-h-full overflow-y-scroll overflow-x-hidden p-4 bg-background"
+        style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
