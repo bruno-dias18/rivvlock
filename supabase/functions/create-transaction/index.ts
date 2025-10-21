@@ -19,6 +19,7 @@ const createTransactionSchema = z.object({
   price: z.number().positive(),
   currency: z.string().length(3),
   service_date: z.string(),
+  service_end_date: z.string().optional(),
   client_email: z.string().email().optional(),
   client_name: z.string().optional(),
   buyer_display_name: z.string().optional(),
@@ -28,7 +29,7 @@ const createTransactionSchema = z.object({
 const handler: Handler = async (req, ctx: HandlerContext) => {
   const { user, supabaseClient, adminClient, body } = ctx;
   const { 
-    title, description, price, currency, service_date, 
+    title, description, price, currency, service_date, service_end_date,
     client_email, client_name, buyer_display_name, fee_ratio_client 
   } = body;
   
@@ -75,6 +76,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       price,
       currency,
       service_date,
+      service_end_date: service_end_date || null,
       payment_deadline: paymentDeadline.toISOString(),
       validation_deadline: validationDeadline.toISOString(),
       status: 'pending',

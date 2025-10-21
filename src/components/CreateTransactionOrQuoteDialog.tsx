@@ -88,6 +88,15 @@ export const CreateTransactionOrQuoteDialog = ({
     }
   }, [profile?.country]);
 
+  // Reset end date if it becomes invalid
+  useEffect(() => {
+    if (serviceEndDate && serviceDate && serviceEndDate < serviceDate) {
+      setServiceEndDate(undefined);
+      setServiceEndTime('');
+      toast.info('La date de fin a été réinitialisée car elle était avant la date de début');
+    }
+  }, [serviceDate, serviceEndDate]);
+
   // Sync originalItems when items change (if no auto-distribution applied)
   useEffect(() => {
     if (!autoDistributionApplied) {
@@ -171,6 +180,12 @@ export const CreateTransactionOrQuoteDialog = ({
       return;
     }
 
+    // Validate end date is after start date
+    if (serviceEndDate && serviceDate && serviceEndDate < serviceDate) {
+      toast.error('La date de fin doit être après la date de début');
+      return;
+    }
+
     const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
     const currentTaxAmount = currentSubtotal * (taxRate / 100);
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
@@ -233,6 +248,7 @@ export const CreateTransactionOrQuoteDialog = ({
             price: submittedTotalAmount,
             currency: currency.toUpperCase(),
             service_date: getFinalDateTime(serviceDate, serviceTime)!,
+            service_end_date: getFinalDateTime(serviceEndDate, serviceEndTime),
             client_email: clientEmail || null,
             client_name: clientName || null,
             fee_ratio_client: feeRatio,
@@ -419,42 +435,88 @@ export const CreateTransactionOrQuoteDialog = ({
                 {/* Dates */}
                 <div className="space-y-4">
                   <h3 className="font-medium">Dates</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Date de prestation {formType === 'transaction' ? '*' : '(optionnel)'}</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              'w-full justify-start text-left font-normal',
-                              !serviceDate && 'text-muted-foreground'
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {serviceDate ? format(serviceDate, 'PPP', { locale: fr }) : 'Sélectionner'}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={serviceDate}
-                            onSelect={setServiceDate}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    {serviceDate && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="service-time">Heure (optionnel)</Label>
-                        <Input
-                          id="service-time"
-                          type="time"
-                          value={serviceTime}
-                          onChange={(e) => setServiceTime(e.target.value)}
-                        />
+                        <Label>Date de prestation {formType === 'transaction' ? '*' : '(optionnel)'}</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !serviceDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {serviceDate ? format(serviceDate, 'PPP', { locale: fr }) : 'Sélectionner'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={serviceDate}
+                              onSelect={setServiceDate}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      {serviceDate && (
+                        <div>
+                          <Label htmlFor="service-time">Heure (optionnel)</Label>
+                          <Input
+                            id="service-time"
+                            type="time"
+                            value={serviceTime}
+                            onChange={(e) => setServiceTime(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* End date (optional for multi-day services) */}
+                    {serviceDate && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Date de fin (optionnel - pour services sur plusieurs jours)</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !serviceEndDate && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {serviceEndDate ? format(serviceEndDate, 'PPP', { locale: fr }) : 'Sélectionner'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={serviceEndDate}
+                                onSelect={setServiceEndDate}
+                                disabled={(date) => serviceDate ? date < serviceDate : false}
+                                initialFocus
+                                className="pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        {serviceEndDate && (
+                          <div>
+                            <Label htmlFor="service-end-time">Heure de fin (optionnel)</Label>
+                            <Input
+                              id="service-end-time"
+                              type="time"
+                              value={serviceEndTime}
+                              onChange={(e) => setServiceEndTime(e.target.value)}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
