@@ -37,7 +37,6 @@ export default function PaymentLinkPage() {
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
-  const [hasAttemptedAutoJoin, setHasAttemptedAutoJoin] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -120,27 +119,27 @@ export default function PaymentLinkPage() {
 
   const handleReturnToDashboard = async () => {
     if (!user || !transaction) {
-      navigate('/dashboard?tab=pending');
+      handleAuthRedirect();
       return;
     }
 
-    // Si déjà attaché, rediriger directement
+    // ✅ Si déjà attaché → redirection directe SANS appel API
     if (transaction.buyer_id === user.id) {
-      navigate('/dashboard?tab=pending');
+      logger.log('✅ Transaction déjà attachée, redirection directe');
+      navigate('/transactions');
       return;
     }
 
+    // ✅ Sinon → attacher puis rediriger
     try {
       const finalToken = token || new URLSearchParams(window.location.search).get('txId');
       
       if (!finalToken) {
-        throw new Error('Token manquant');
+        toast.error('Token manquant');
+        return;
       }
       
-      logger.log('🔄 Attaching transaction to user:', {
-        transactionId: transaction.id,
-        userId: user.id
-      });
+      logger.log('🔄 Attachement de la transaction');
 
       const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
         body: { 
@@ -154,22 +153,11 @@ export default function PaymentLinkPage() {
       
       logger.log('✅ Transaction attachée avec succès');
       
-      toast.success('Transaction ajoutée à votre compte', {
-        description: 'Vous pouvez la retrouver dans votre espace'
-      });
-      
-      // Attendre un peu puis rediriger
-      setTimeout(() => {
-        navigate('/dashboard?tab=pending');
-      }, 800);
+      toast.success('Transaction ajoutée à votre compte');
+      navigate('/transactions');
     } catch (err: any) {
-      logger.error('Error attaching transaction:', err);
-      // Si déjà assigné, rediriger quand même
-      if (err.message?.includes('déjà assigné')) {
-        navigate('/dashboard?tab=pending');
-      } else {
-        toast.error('Erreur lors de l\'ajout de la transaction');
-      }
+      logger.error('❌ Erreur lors de l\'attachement:', err);
+      toast.error('Erreur lors de l\'ajout de la transaction');
     }
   };
 
@@ -229,56 +217,6 @@ export default function PaymentLinkPage() {
     }
   };
 
-  // Auto-attach transaction when user is authenticated and page is fully loaded
-  useEffect(() => {
-    if (user && transaction?.id && !loading && !hasAttemptedAutoJoin) {
-      setHasAttemptedAutoJoin(true);
-      
-      // Wait a bit to ensure everything is loaded
-      const timer = setTimeout(async () => {
-        // Check if already attached
-        if (transaction.buyer_id === user.id) {
-          logger.log('✅ Transaction already attached to user');
-          return;
-        }
-
-        try {
-          const finalToken = token || new URLSearchParams(window.location.search).get('txId');
-          
-          if (!finalToken) {
-            logger.warn('No token available for auto-join');
-            return;
-          }
-          
-          logger.log('🔄 Auto-attaching transaction to user:', {
-            transactionId: transaction.id,
-            userId: user.id
-          });
-
-          const { data: joinData, error: joinError } = await supabase.functions.invoke('join-transaction', {
-            body: { 
-              transaction_id: transaction.id,
-              linkToken: finalToken
-            }
-          });
-
-          if (joinError) throw joinError;
-          if (joinData?.error) throw new Error(joinData.error);
-          
-          logger.log('✅ Transaction auto-attached successfully');
-          
-          toast.success('Transaction ajoutée à votre compte', {
-            description: 'Elle apparaît maintenant dans votre espace'
-          });
-        } catch (err: any) {
-          logger.error('Error auto-attaching transaction:', err);
-          // Silent fail - user can still use the dashboard button
-        }
-      }, 300);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [user, transaction?.id, loading, hasAttemptedAutoJoin, token]);
 
   const handleAuthRedirect = () => {
     const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
