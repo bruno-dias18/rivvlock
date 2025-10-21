@@ -37,6 +37,7 @@ import { LocalErrorBoundary } from '@/components/LocalErrorBoundary';
 import { shareOrCopy } from '@/lib/copyUtils';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { SortButtons } from '@/components/SortButtons';
+import { TransactionYearMonthFilters } from '@/components/TransactionYearMonthFilters';
 import { logger } from '@/lib/logger';
 import { getPublicBaseUrl } from '@/lib/appUrl';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
@@ -80,6 +81,10 @@ export default function TransactionsPage() {
     return 'desc';
   });
   
+  // Year/Month filters
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
@@ -113,9 +118,28 @@ export default function TransactionsPage() {
   } = useTransactions();
 
   // Select data source based on feature flag
-  const transactions = usePagination ? (paginatedData?.transactions || []) : allTransactions;
+  let transactions = usePagination ? (paginatedData?.transactions || []) : allTransactions;
   const isLoading = usePagination ? paginatedLoading : allLoading;
   const refetch = usePagination ? refetchPaginated : refetchAll;
+  
+  // Apply year/month filters
+  if (selectedYear) {
+    transactions = transactions.filter((t: any) => {
+      const date = new Date(t.created_at);
+      const matchesYear = date.getFullYear() === selectedYear;
+      if (!selectedMonth) return matchesYear;
+      const txMonth = date.getMonth() + 1;
+      return matchesYear && txMonth === selectedMonth;
+    });
+  }
+  
+  // Calculate available years from transactions
+  const yearsSet = new Set<number>(
+    (usePagination ? allTransactions : transactions)
+      .map((t: any) => new Date(t.created_at).getFullYear())
+      .filter((year): year is number => !isNaN(year))
+  );
+  const availableYears: number[] = Array.from(yearsSet).sort((a, b) => b - a);
   
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
   const { data: stripeAccount } = useStripeAccount();
@@ -608,6 +632,18 @@ export default function TransactionsPage() {
             {isMobile ? t('transactions.new') : t('transactions.newTransaction')}
           </Button>
         </div>
+      </div>
+
+      {/* Year/Month Filters */}
+      <div className="flex justify-center">
+        <TransactionYearMonthFilters
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onYearChange={setSelectedYear}
+          onMonthChange={setSelectedMonth}
+          availableYears={availableYears}
+          isMobile={isMobile}
+        />
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>

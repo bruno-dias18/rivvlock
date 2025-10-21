@@ -605,6 +605,9 @@ export type Database = {
       }
       quotes: {
         Row: {
+          archived_by_client: boolean | null
+          archived_by_seller: boolean | null
+          client_archived_at: string | null
           client_email: string | null
           client_last_viewed_at: string | null
           client_name: string | null
@@ -619,6 +622,7 @@ export type Database = {
           id: string
           items: Json
           secure_token: string
+          seller_archived_at: string | null
           seller_id: string
           service_date: string | null
           service_end_date: string | null
@@ -633,6 +637,9 @@ export type Database = {
           valid_until: string
         }
         Insert: {
+          archived_by_client?: boolean | null
+          archived_by_seller?: boolean | null
+          client_archived_at?: string | null
           client_email?: string | null
           client_last_viewed_at?: string | null
           client_name?: string | null
@@ -647,6 +654,7 @@ export type Database = {
           id?: string
           items?: Json
           secure_token?: string
+          seller_archived_at?: string | null
           seller_id: string
           service_date?: string | null
           service_end_date?: string | null
@@ -661,6 +669,9 @@ export type Database = {
           valid_until?: string
         }
         Update: {
+          archived_by_client?: boolean | null
+          archived_by_seller?: boolean | null
+          client_archived_at?: string | null
           client_email?: string | null
           client_last_viewed_at?: string | null
           client_name?: string | null
@@ -675,6 +686,7 @@ export type Database = {
           id?: string
           items?: Json
           secure_token?: string
+          seller_archived_at?: string | null
           seller_id?: string
           service_date?: string | null
           service_end_date?: string | null

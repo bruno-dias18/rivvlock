@@ -14,18 +14,26 @@ export const useQuotes = () => {
     queryFn: async (): Promise<Quote[]> => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Fetch quotes where user is seller OR client, excluding archived
+      // Fetch quotes where user is seller OR client
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
         .or(`seller_id.eq.${user.id},client_user_id.eq.${user.id}`)
-        .neq('status', 'archived')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
+      // Filter out archived quotes based on user role
+      const filteredData = (data || []).filter((q: any) => {
+        // Si je suis le vendeur et j'ai archivé → masquer
+        if (q.seller_id === user.id && q.archived_by_seller) return false;
+        // Si je suis le client et j'ai archivé → masquer
+        if (q.client_user_id === user.id && q.archived_by_client) return false;
+        return true;
+      });
+      
       // Parse items from JSON and ensure all fields are present
-      return (data || []).map(q => ({
+      return filteredData.map((q: any) => ({
         ...q,
         client_user_id: q.client_user_id || null,
         items: (q.items as any) || []
@@ -35,15 +43,32 @@ export const useQuotes = () => {
     staleTime: 30000,
   });
 
-  // Separate sent and received quotes (already filtered, no archived)
+  // Separate sent and received quotes
   const sentQuotes = quotes.filter(q => q.seller_id === user?.id);
   const receivedQuotes = quotes.filter(q => q.client_user_id === user?.id);
 
   const archiveQuote = useMutation({
     mutationFn: async (quoteId: string) => {
+      if (!user?.id) throw new Error('Not authenticated');
+      
+      // Récupérer le devis pour savoir si on est seller ou client
+      const { data: quote, error: fetchError } = await supabase
+        .from('quotes')
+        .select('seller_id, client_user_id')
+        .eq('id', quoteId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Déterminer quel champ mettre à jour
+      const isSeller = quote.seller_id === user.id;
+      const updateData = isSeller 
+        ? { archived_by_seller: true, seller_archived_at: new Date().toISOString() }
+        : { archived_by_client: true, client_archived_at: new Date().toISOString() };
+      
       const { error } = await supabase
         .from('quotes')
-        .update({ status: 'archived' })
+        .update(updateData)
         .eq('id', quoteId);
       
       if (error) throw error;
