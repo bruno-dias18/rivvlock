@@ -15,35 +15,3 @@ export function createServiceClient() {
     },
   });
 }
-
-/**
- * Creates a Supabase client with anon key
- * Used for public operations
- */
-export function createAnonClient() {
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-
-  return createClient(supabaseUrl, supabaseAnonKey);
-}
-
-/**
- * Creates a Supabase client with user JWT for authenticated operations
- */
-export function createAuthenticatedClient(authHeader: string | null) {
-  if (!authHeader) {
-    throw new Error('Missing authorization header');
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: { Authorization: authHeader },
-    },
-    auth: {
-      persistSession: false,
-    },
-  });
-}

@@ -35,9 +35,7 @@ interface QuoteData {
   valid_until: string;
   status: string;
   client_name: string;
-  client_email?: string;
   seller_name: string;
-  created_at: string;
   conversation_id?: string;
 }
 
