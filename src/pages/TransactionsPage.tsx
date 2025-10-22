@@ -304,6 +304,12 @@ export default function TransactionsPage() {
   const disputedTransactions = sortTransactions(
     transactions.filter(t => t.status === 'disputed' && !resolvedTxIds.has(t.id))
   );
+  
+  // Compteurs basés sur TOUTES les transactions (non paginées) pour les tabs
+  const pendingCount = allTransactions.filter(t => t.status === 'pending').length;
+  const blockedCount = allTransactions.filter(t => t.status === 'paid').length;
+  const completedCount = allTransactions.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id)).length;
+  const disputedCount = allTransactions.filter(t => t.status === 'disputed' && !resolvedTxIds.has(t.id)).length;
   // Get unread messages counts per tab with unified system
   const tabCounts = useUnreadTransactionTabCounts(transactions);
 
@@ -658,7 +664,7 @@ export default function TransactionsPage() {
           <TabsTrigger value="pending" className={`flex items-center ${isMobile ? 'flex-col py-2 px-1 gap-0.5' : 'gap-2'} relative`}>
             <Clock className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
             <span className={isMobile ? 'text-[10px] leading-tight text-center' : ''}>
-              {isMobile ? `${t('transactions.waiting')} (${pendingTransactions.length})` : `${t('transactions.pending')} (${pendingTransactions.length})`}
+              {isMobile ? `${t('transactions.waiting')} (${pendingCount})` : `${t('transactions.pending')} (${pendingCount})`}
             </span>
             <div className={`flex items-center gap-0.5 ${isMobile ? 'scale-75' : ''}`}>
               {newCounts.pending > 0 && (
@@ -678,7 +684,7 @@ export default function TransactionsPage() {
           <TabsTrigger value="blocked" className={`flex items-center ${isMobile ? 'flex-col py-2 px-1 gap-0.5' : 'gap-2'} relative`}>
             <Lock className={isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
             <span className={isMobile ? 'text-[10px] leading-tight text-center' : ''}>
-              {isMobile ? `${t('transactions.blockedShort')} (${blockedTransactions.length})` : `${t('transactions.blocked')} (${blockedTransactions.length})`}
+              {isMobile ? `${t('transactions.blockedShort')} (${blockedCount})` : `${t('transactions.blocked')} (${blockedCount})`}
             </span>
             <div className={`flex items-center gap-0.5 ${isMobile ? 'scale-75' : ''}`}>
               {newCounts.blocked > 0 && (
@@ -699,7 +705,7 @@ export default function TransactionsPage() {
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
-                {t('transactions.completed')} ({completedTransactions.length})
+                {t('transactions.completed')} ({completedCount})
                 <div className="flex items-center gap-1">
                   {newCounts.completed > 0 && (
                     <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 hover:bg-green-500/20">
@@ -717,7 +723,7 @@ export default function TransactionsPage() {
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 relative">
                 <AlertTriangle className="h-4 w-4" />
-                {t('transactions.disputed')} ({disputedTransactions.length})
+                {t('transactions.disputed')} ({disputedCount})
                 <div className="flex items-center gap-1">
                   {newCounts.disputed > 0 && (
                     <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-300 hover:bg-red-500/20">
@@ -745,7 +751,7 @@ export default function TransactionsPage() {
             <>
               <TabsTrigger value="completed" className="flex items-center gap-2 flex-col py-3 relative">
                 <CheckCircle2 className="h-4 w-4" />
-                <span className="text-xs">{t('transactions.completed')} ({completedTransactions.length})</span>
+                <span className="text-xs">{t('transactions.completed')} ({completedCount})</span>
                 <div className="flex items-center gap-1">
                   {newCounts.completed > 0 && (
                     <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-300 hover:bg-green-500/20 text-[10px] h-5 px-1.5">
@@ -763,7 +769,7 @@ export default function TransactionsPage() {
               </TabsTrigger>
               <TabsTrigger value="disputed" className="flex items-center gap-2 flex-col py-3 relative">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="text-xs">{t('transactions.disputed')} ({disputedTransactions.length})</span>
+                <span className="text-xs">{t('transactions.disputed')} ({disputedCount})</span>
                 <div className="flex items-center gap-1">
                   {newCounts.disputed > 0 && (
                     <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-300 hover:bg-red-500/20 text-[10px] h-5 px-1.5">
