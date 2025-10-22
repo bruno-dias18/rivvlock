@@ -33,7 +33,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           title,
           user_id,
           buyer_id,
-          profiles!user_id (first_name, last_name),
+          seller:profiles!user_id (first_name, last_name),
           buyer_profiles:profiles!buyer_id (first_name, last_name)
         )
       `)
