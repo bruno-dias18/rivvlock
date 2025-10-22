@@ -309,7 +309,8 @@ export default function TransactionsPage() {
   const pendingCount = allTransactions.filter(t => t.status === 'pending').length;
   const blockedCount = allTransactions.filter(t => t.status === 'paid').length;
   const completedCount = allTransactions.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id)).length;
-  const disputedCount = allTransactions.filter(t => t.status === 'disputed' && !resolvedTxIds.has(t.id)).length;
+  // Pour les litiges, compter les DISPUTES non résolus, pas les transactions
+  const disputedCount = disputes.filter((d: any) => !d?.status || !String(d.status).startsWith('resolved')).length;
   // Get unread messages counts per tab with unified system
   const tabCounts = useUnreadTransactionTabCounts(transactions);
 
