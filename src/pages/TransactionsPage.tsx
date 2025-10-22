@@ -81,10 +81,10 @@ export default function TransactionsPage() {
     return 'desc';
   });
   
-  // Year/Month filters (temporairement désactivés - seront gérés côté serveur)
+  // Year/Month filters (activés avec Step 4)
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const filtersDisabled = true; // Étape 1: désactivé temporairement
+  const filtersDisabled = false; // Step 4: Filtres activés côté serveur
   
   // Pagination state - UNE PAGE PAR ONGLET (Étape 2)
   const [pendingPage, setPendingPage] = useState(1);
@@ -111,7 +111,9 @@ export default function TransactionsPage() {
     pageSize,
     status: 'pending',
     sortBy: paginatedSortBy,
-    sortOrder: sortOrder as 'asc' | 'desc'
+    sortOrder: sortOrder as 'asc' | 'desc',
+    year: selectedYear,
+    month: selectedMonth,
   });
 
   const { 
@@ -123,7 +125,9 @@ export default function TransactionsPage() {
     pageSize,
     status: 'paid',
     sortBy: paginatedSortBy,
-    sortOrder: sortOrder as 'asc' | 'desc'
+    sortOrder: sortOrder as 'asc' | 'desc',
+    year: selectedYear,
+    month: selectedMonth,
   });
 
   const { 
@@ -135,7 +139,9 @@ export default function TransactionsPage() {
     pageSize,
     status: 'validated',
     sortBy: paginatedSortBy,
-    sortOrder: sortOrder as 'asc' | 'desc'
+    sortOrder: sortOrder as 'asc' | 'desc',
+    year: selectedYear,
+    month: selectedMonth,
   });
 
   const { 
@@ -147,7 +153,9 @@ export default function TransactionsPage() {
     pageSize,
     status: 'disputed',
     sortBy: paginatedSortBy,
-    sortOrder: sortOrder as 'asc' | 'desc'
+    sortOrder: sortOrder as 'asc' | 'desc',
+    year: selectedYear,
+    month: selectedMonth,
   });
 
   // Use standard hook as fallback (pour compteurs et disputes)
@@ -234,6 +242,24 @@ export default function TransactionsPage() {
       sortBy: newSortBy,
       sortOrder: newSortOrder
     }));
+  };
+
+  // Reset pages to 1 when filters change
+  const handleYearChange = (year: number | null) => {
+    setSelectedYear(year);
+    setSelectedMonth(null); // Reset month when year changes
+    setPendingPage(1);
+    setBlockedPage(1);
+    setCompletedPage(1);
+    setDisputedPage(1);
+  };
+
+  const handleMonthChange = (month: number | null) => {
+    setSelectedMonth(month);
+    setPendingPage(1);
+    setBlockedPage(1);
+    setCompletedPage(1);
+    setDisputedPage(1);
   };
 
   // Sort transactions function
@@ -688,14 +714,14 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Year/Month Filters - Temporairement désactivés (Étape 1) */}
+      {/* Year/Month Filters - Activés avec Step 4 */}
       {!filtersDisabled && (
         <div className="flex justify-center">
           <TransactionYearMonthFilters
             selectedYear={selectedYear}
             selectedMonth={selectedMonth}
-            onYearChange={setSelectedYear}
-            onMonthChange={setSelectedMonth}
+            onYearChange={handleYearChange}
+            onMonthChange={handleMonthChange}
             availableYears={availableYears}
             isMobile={isMobile}
           />

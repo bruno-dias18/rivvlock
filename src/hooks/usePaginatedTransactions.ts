@@ -12,6 +12,8 @@ interface UsePaginatedTransactionsOptions {
   status?: 'pending' | 'paid' | 'validated' | 'disputed' | 'expired' | 'all';
   sortBy?: 'created_at' | 'updated_at' | 'price';
   sortOrder?: 'asc' | 'desc';
+  year?: number | null;
+  month?: number | null;
 }
 
 interface PaginatedResult {
@@ -49,10 +51,12 @@ export function usePaginatedTransactions(
     status,
     sortBy = 'created_at',
     sortOrder = 'desc',
+    year,
+    month,
   } = options;
 
   return useQuery({
-    queryKey: ['transactions-paginated', user?.id, page, pageSize, status, sortBy, sortOrder],
+    queryKey: ['transactions-paginated', user?.id, page, pageSize, status, sortBy, sortOrder, year, month],
     queryFn: async (): Promise<PaginatedResult> => {
       if (!user?.id) {
         return {
@@ -80,6 +84,20 @@ export function usePaginatedTransactions(
       // Apply status filter if provided (côté serveur)
       if (status && status !== 'all') {
         query = query.eq('status', status);
+      }
+
+      // Apply year filter if provided (côté serveur)
+      if (year !== null && year !== undefined) {
+        const yearStart = new Date(year, 0, 1).toISOString();
+        const yearEnd = new Date(year + 1, 0, 1).toISOString();
+        query = query.gte('created_at', yearStart).lt('created_at', yearEnd);
+      }
+
+      // Apply month filter if provided (côté serveur)
+      if (month !== null && month !== undefined && year !== null && year !== undefined) {
+        const monthStart = new Date(year, month - 1, 1).toISOString();
+        const monthEnd = new Date(year, month, 1).toISOString();
+        query = query.gte('created_at', monthStart).lt('created_at', monthEnd);
       }
 
       const { data, error, count } = await query;
