@@ -28,13 +28,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       .from('disputes')
       .select(`
         *,
-        transactions (
+        transactions!inner (
           id,
           title,
           user_id,
-          buyer_id,
-          seller:profiles!user_id (first_name, last_name),
-          buyer_profiles:profiles!buyer_id (first_name, last_name)
+          buyer_id
         )
       `)
       .in('status', ['open', 'negotiating', 'responded'])
