@@ -31,6 +31,7 @@ export const FeeDistributionSlider = ({
   const clientFees = totalFees * (feeRatio / 100);
   const sellerFees = totalFees * (1 - feeRatio / 100);
   const finalPrice = totalAmount + clientFees;
+  const sellerReceives = totalAmount - sellerFees;
 
   return (
     <div className="space-y-4">
@@ -95,9 +96,14 @@ export const FeeDistributionSlider = ({
 
         <div className="pt-3 border-t">
           <div className="flex justify-between items-center">
-            <span className="font-medium">Prix final client</span>
-            <span className="text-lg font-bold">{finalPrice.toFixed(2)} {currency}</span>
+            <span className="font-medium">Montant que vous recevrez</span>
+            <span className="text-lg font-bold text-green-600">
+              {sellerReceives.toFixed(2)} {currency}
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Après déduction des frais RivvLock à votre charge
+          </p>
         </div>
 
         {showApplyButton && onApplyDistribution && (
