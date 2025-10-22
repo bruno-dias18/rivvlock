@@ -86,8 +86,11 @@ export default function TransactionsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const filtersDisabled = true; // Étape 1: désactivé temporairement
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  // Pagination state - UNE PAGE PAR ONGLET (Étape 2)
+  const [pendingPage, setPendingPage] = useState(1);
+  const [blockedPage, setBlockedPage] = useState(1);
+  const [completedPage, setCompletedPage] = useState(1);
+  const [disputedPage, setDisputedPage] = useState(1);
   const pageSize = 20;
 
   // Feature flag: enable pagination (set to true to activate)
@@ -98,19 +101,56 @@ export default function TransactionsPage() {
     ? sortBy 
     : 'created_at') as 'created_at' | 'updated_at' | 'price';
 
-  // Use paginated transactions hook if enabled
+  // Use paginated transactions hook for EACH status (Étape 2: pagination par onglet)
   const { 
-    data: paginatedData,
-    isLoading: paginatedLoading,
-    refetch: refetchPaginated
+    data: pendingData,
+    isLoading: pendingLoading,
+    refetch: refetchPending
   } = usePaginatedTransactions({
-    page: currentPage,
+    page: pendingPage,
     pageSize,
+    status: 'pending',
     sortBy: paginatedSortBy,
     sortOrder: sortOrder as 'asc' | 'desc'
   });
 
-  // Use standard hook as fallback
+  const { 
+    data: blockedData,
+    isLoading: blockedLoading,
+    refetch: refetchBlocked
+  } = usePaginatedTransactions({
+    page: blockedPage,
+    pageSize,
+    status: 'paid',
+    sortBy: paginatedSortBy,
+    sortOrder: sortOrder as 'asc' | 'desc'
+  });
+
+  const { 
+    data: completedData,
+    isLoading: completedLoading,
+    refetch: refetchCompleted
+  } = usePaginatedTransactions({
+    page: completedPage,
+    pageSize,
+    status: 'validated',
+    sortBy: paginatedSortBy,
+    sortOrder: sortOrder as 'asc' | 'desc'
+  });
+
+  const { 
+    data: disputedData,
+    isLoading: disputedLoading,
+    refetch: refetchDisputed
+  } = usePaginatedTransactions({
+    page: disputedPage,
+    pageSize,
+    status: 'disputed',
+    sortBy: paginatedSortBy,
+    sortOrder: sortOrder as 'asc' | 'desc'
+  });
+
+  // Use standard hook as fallback (pour compteurs et disputes)
   const { 
     data: allTransactions = [], 
     isLoading: allLoading,
@@ -118,25 +158,30 @@ export default function TransactionsPage() {
     refetch: refetchAll 
   } = useTransactions();
 
-  // Select data source based on feature flag
-  let transactions = usePagination ? (paginatedData?.transactions || []) : allTransactions;
-  const isLoading = usePagination ? paginatedLoading : allLoading;
-  const refetch = usePagination ? refetchPaginated : refetchAll;
+  const activeTab = searchParams.get('tab') || 'pending';
+
+  // Select data source based on active tab (Étape 2)
+  const isLoading = usePagination 
+    ? (activeTab === 'pending' ? pendingLoading : 
+       activeTab === 'blocked' ? blockedLoading : 
+       activeTab === 'completed' ? completedLoading : disputedLoading)
+    : allLoading;
+    
+  const refetch = () => {
+    refetchAll();
+    refetchPending();
+    refetchBlocked();
+    refetchCompleted();
+    refetchDisputed();
+  };
+  
   
   // Apply year/month filters (désactivé temporairement car incompatible avec pagination côté serveur)
-  if (!filtersDisabled && selectedYear) {
-    transactions = transactions.filter((t: any) => {
-      const date = new Date(t.created_at);
-      const matchesYear = date.getFullYear() === selectedYear;
-      if (!selectedMonth) return matchesYear;
-      const txMonth = date.getMonth() + 1;
-      return matchesYear && txMonth === selectedMonth;
-    });
-  }
+  // Les transactions viennent maintenant directement des hooks paginés par status
   
   // Calculate available years from transactions
   const yearsSet = new Set<number>(
-    (usePagination ? allTransactions : transactions)
+    allTransactions
       .map((t: any) => new Date(t.created_at).getFullYear())
       .filter((year): year is number => !isNaN(year))
   );
@@ -148,8 +193,6 @@ export default function TransactionsPage() {
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
   const { unreadCount: unreadDisputeMsgs, markAllAsSeen: markDisputesSeen } = useUnreadDisputesGlobal();
-  
-  const activeTab = searchParams.get('tab') || 'pending';
   
   // Map active tab to category for new activity notifications
   const tabToCategoryMap: Record<string, 'pending' | 'blocked' | 'disputed' | 'completed'> = {
@@ -181,8 +224,11 @@ export default function TransactionsPage() {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     
-    // CRITIQUE : Réinitialiser à la page 1 quand on change le tri
-    setCurrentPage(1);
+    // CRITIQUE : Réinitialiser toutes les pages à 1 quand on change le tri
+    setPendingPage(1);
+    setBlockedPage(1);
+    setCompletedPage(1);
+    setDisputedPage(1);
     
     localStorage.setItem('rivvlock-transactions-sort', JSON.stringify({
       sortBy: newSortBy,
@@ -296,14 +342,10 @@ export default function TransactionsPage() {
       .filter(Boolean)
   );
 
-  const pendingTransactions = sortTransactions(transactions.filter(t => t.status === 'pending'));
-  const blockedTransactions = sortTransactions(transactions.filter(t => t.status === 'paid'));
-  const completedTransactions = sortTransactions(
-    transactions.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id))
-  );
-  const disputedTransactions = sortTransactions(
-    transactions.filter(t => t.status === 'disputed' && !resolvedTxIds.has(t.id))
-  );
+  const pendingTransactions = sortTransactions(pendingData?.transactions || []);
+  const blockedTransactions = sortTransactions(blockedData?.transactions || []);
+  const completedTransactions = sortTransactions(completedData?.transactions || []);
+  const disputedTransactions = sortTransactions(disputedData?.transactions || []);
   
   // Compteurs basés sur TOUTES les transactions (non paginées) pour les tabs
   const pendingCount = allTransactions.filter(t => t.status === 'pending').length;
@@ -312,7 +354,7 @@ export default function TransactionsPage() {
   // Pour les litiges, compter les DISPUTES non résolus, pas les transactions
   const disputedCount = disputes.filter((d: any) => !d?.status || !String(d.status).startsWith('resolved')).length;
   // Get unread messages counts per tab with unified system
-  const tabCounts = useUnreadTransactionTabCounts(transactions);
+  const tabCounts = useUnreadTransactionTabCounts(allTransactions);
 
   const handleCopyLink = async (text: string) => {
     try {
@@ -879,15 +921,15 @@ export default function TransactionsPage() {
                 </>
               )}
               
-              {/* Pagination Controls */}
-              {usePagination && paginatedData && !isLoading && !queryError && pendingTransactions.length > 0 && (
+              {/* Pagination Controls - ONGLET PENDING */}
+              {usePagination && pendingData && !isLoading && !queryError && pendingTransactions.length > 0 && (
                 <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={paginatedData.totalPages}
-                  hasNextPage={paginatedData.hasNextPage}
-                  hasPreviousPage={paginatedData.hasPreviousPage}
-                  onPageChange={setCurrentPage}
-                  totalCount={paginatedData.totalCount}
+                  currentPage={pendingPage}
+                  totalPages={pendingData.totalPages}
+                  hasNextPage={pendingData.hasNextPage}
+                  hasPreviousPage={pendingData.hasPreviousPage}
+                  onPageChange={setPendingPage}
+                  totalCount={pendingData.totalCount}
                   pageSize={pageSize}
                 />
               )}
@@ -963,15 +1005,15 @@ export default function TransactionsPage() {
                 </>
               )}
               
-              {/* Pagination Controls */}
-              {usePagination && paginatedData && !isLoading && !queryError && blockedTransactions.length > 0 && (
+              {/* Pagination Controls - ONGLET BLOCKED */}
+              {usePagination && blockedData && !isLoading && !queryError && blockedTransactions.length > 0 && (
                 <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={paginatedData.totalPages}
-                  hasNextPage={paginatedData.hasNextPage}
-                  hasPreviousPage={paginatedData.hasPreviousPage}
-                  onPageChange={setCurrentPage}
-                  totalCount={paginatedData.totalCount}
+                  currentPage={blockedPage}
+                  totalPages={blockedData.totalPages}
+                  hasNextPage={blockedData.hasNextPage}
+                  hasPreviousPage={blockedData.hasPreviousPage}
+                  onPageChange={setBlockedPage}
+                  totalCount={blockedData.totalCount}
                   pageSize={pageSize}
                 />
               )}
@@ -1056,15 +1098,15 @@ export default function TransactionsPage() {
                 </>
               )}
               
-              {/* Pagination Controls */}
-              {usePagination && paginatedData && !isLoading && !queryError && completedTransactions.length > 0 && (
+              {/* Pagination Controls - ONGLET COMPLETED */}
+              {usePagination && completedData && !isLoading && !queryError && completedTransactions.length > 0 && (
                 <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={paginatedData.totalPages}
-                  hasNextPage={paginatedData.hasNextPage}
-                  hasPreviousPage={paginatedData.hasPreviousPage}
-                  onPageChange={setCurrentPage}
-                  totalCount={paginatedData.totalCount}
+                  currentPage={completedPage}
+                  totalPages={completedData.totalPages}
+                  hasNextPage={completedData.hasNextPage}
+                  hasPreviousPage={completedData.hasPreviousPage}
+                  onPageChange={setCompletedPage}
+                  totalCount={completedData.totalCount}
                   pageSize={pageSize}
                 />
               )}

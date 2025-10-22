@@ -9,7 +9,7 @@ const ITEMS_PER_PAGE = 20;
 interface UsePaginatedTransactionsOptions {
   page?: number;
   pageSize?: number;
-  status?: string;
+  status?: 'pending' | 'paid' | 'validated' | 'disputed' | 'expired' | 'all';
   sortBy?: 'created_at' | 'updated_at' | 'price';
   sortOrder?: 'asc' | 'desc';
 }
@@ -77,9 +77,9 @@ export function usePaginatedTransactions(
         .order(sortBy, { ascending: sortOrder === 'asc' })
         .range(from, to);
 
-      // Apply status filter if provided
+      // Apply status filter if provided (côté serveur)
       if (status && status !== 'all') {
-        query = query.eq('status', status as any);
+        query = query.eq('status', status);
       }
 
       const { data, error, count } = await query;
