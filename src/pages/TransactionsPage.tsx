@@ -61,12 +61,12 @@ export default function TransactionsPage() {
     if (saved) {
       try {
         const { sortBy } = JSON.parse(saved);
-        return sortBy || 'service_date';
+        return sortBy || 'created_at';
       } catch {
-        return 'service_date';
+        return 'created_at';
       }
     }
-    return 'service_date';
+    return 'created_at';
   });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(() => {
     const saved = localStorage.getItem('rivvlock-transactions-sort');
@@ -81,13 +81,14 @@ export default function TransactionsPage() {
     return 'desc';
   });
   
-  // Year/Month filters
+  // Year/Month filters (temporairement désactivés - seront gérés côté serveur)
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const filtersDisabled = true; // Étape 1: désactivé temporairement
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 50;
+  const pageSize = 20;
 
   // Feature flag: enable pagination (set to true to activate)
   const usePagination = true;
@@ -122,8 +123,8 @@ export default function TransactionsPage() {
   const isLoading = usePagination ? paginatedLoading : allLoading;
   const refetch = usePagination ? refetchPaginated : refetchAll;
   
-  // Apply year/month filters
-  if (selectedYear) {
+  // Apply year/month filters (désactivé temporairement car incompatible avec pagination côté serveur)
+  if (!filtersDisabled && selectedYear) {
     transactions = transactions.filter((t: any) => {
       const date = new Date(t.created_at);
       const matchesYear = date.getFullYear() === selectedYear;
@@ -634,17 +635,19 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      {/* Year/Month Filters */}
-      <div className="flex justify-center">
-        <TransactionYearMonthFilters
-          selectedYear={selectedYear}
-          selectedMonth={selectedMonth}
-          onYearChange={setSelectedYear}
-          onMonthChange={setSelectedMonth}
-          availableYears={availableYears}
-          isMobile={isMobile}
-        />
-      </div>
+      {/* Year/Month Filters - Temporairement désactivés (Étape 1) */}
+      {!filtersDisabled && (
+        <div className="flex justify-center">
+          <TransactionYearMonthFilters
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            onYearChange={setSelectedYear}
+            onMonthChange={setSelectedMonth}
+            availableYears={availableYears}
+            isMobile={isMobile}
+          />
+        </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={(value) => setSearchParams({ tab: value })}>
         <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} ${isMobile ? 'h-auto' : ''}`}>
@@ -864,6 +867,19 @@ export default function TransactionsPage() {
                   )}
                 </>
               )}
+              
+              {/* Pagination Controls */}
+              {usePagination && paginatedData && !isLoading && !queryError && pendingTransactions.length > 0 && (
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={paginatedData.totalPages}
+                  hasNextPage={paginatedData.hasNextPage}
+                  hasPreviousPage={paginatedData.hasPreviousPage}
+                  onPageChange={setCurrentPage}
+                  totalCount={paginatedData.totalCount}
+                  pageSize={pageSize}
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -934,6 +950,19 @@ export default function TransactionsPage() {
                     </LocalErrorBoundary>
                   )}
                 </>
+              )}
+              
+              {/* Pagination Controls */}
+              {usePagination && paginatedData && !isLoading && !queryError && blockedTransactions.length > 0 && (
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={paginatedData.totalPages}
+                  hasNextPage={paginatedData.hasNextPage}
+                  hasPreviousPage={paginatedData.hasPreviousPage}
+                  onPageChange={setCurrentPage}
+                  totalCount={paginatedData.totalCount}
+                  pageSize={pageSize}
+                />
               )}
             </CardContent>
           </Card>
@@ -1014,6 +1043,19 @@ export default function TransactionsPage() {
                     </LocalErrorBoundary>
                   )}
                 </>
+              )}
+              
+              {/* Pagination Controls */}
+              {usePagination && paginatedData && !isLoading && !queryError && completedTransactions.length > 0 && (
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={paginatedData.totalPages}
+                  hasNextPage={paginatedData.hasNextPage}
+                  hasPreviousPage={paginatedData.hasPreviousPage}
+                  onPageChange={setCurrentPage}
+                  totalCount={paginatedData.totalCount}
+                  pageSize={pageSize}
+                />
               )}
             </CardContent>
           </Card>
