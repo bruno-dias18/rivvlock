@@ -17,7 +17,7 @@ import { MaskedAvsInput } from '@/components/ui/masked-avs-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { LanguageSelector } from '@/components/LanguageSelector';
-import rivvlockLogo from '@/assets/rivvlock-logo.png';
+import rivvlockLogo from '@/assets/rivvlock-logo-lock.png';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';
@@ -268,7 +268,7 @@ export default function AuthPage() {
           <img 
             src={rivvlockLogo} 
             alt="RIVVLOCK Logo" 
-            className="mx-auto h-20 w-20 object-contain"
+            className="mx-auto h-32 w-32 object-contain"
           />
           </div>
           <h2 className="text-3xl font-bold text-foreground">
