@@ -17,7 +17,7 @@ import { MaskedAvsInput } from '@/components/ui/masked-avs-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { LanguageSelector } from '@/components/LanguageSelector';
-import rivvlockLogo from '@/assets/rivvlock-logo-lock.png';
+import rivvlockLogo from '@/assets/rivvlock-logo.png';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';
