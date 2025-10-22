@@ -32,9 +32,9 @@ vi.mock('@/contexts/AuthContext', () => ({
 }));
 
 const mockDispute: Dispute = {
-  id: 'dispute-1',
-  transaction_id: 'transaction-1',
-  reporter_id: 'test-user-id',
+  id: '550e8400-e29b-41d4-a716-446655440001',
+  transaction_id: '550e8400-e29b-41d4-a716-446655440002',
+  reporter_id: '550e8400-e29b-41d4-a716-446655440003',
   status: 'open',
   dispute_type: 'quality_issue',
   reason: 'Test dispute reason',

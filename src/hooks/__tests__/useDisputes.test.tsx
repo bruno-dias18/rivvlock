@@ -44,9 +44,9 @@ describe('useDisputes', () => {
   it('should fetch disputes successfully', async () => {
     const mockDisputes = [
       {
-        id: 'dispute-1',
-        transaction_id: 'txn-1',
-        reporter_id: 'test-user-id',
+        id: '550e8400-e29b-41d4-a716-446655440001',
+        transaction_id: '550e8400-e29b-41d4-a716-446655440002',
+        reporter_id: '550e8400-e29b-41d4-a716-446655440003',
         status: 'open',
         dispute_type: 'quality_issue',
         reason: 'Test reason',
@@ -95,9 +95,9 @@ describe('useDisputes', () => {
   it('should filter archived disputes for seller', async () => {
     const mockDisputes = [
       {
-        id: 'dispute-1',
-        transaction_id: 'txn-1',
-        reporter_id: 'test-user-id',
+        id: '550e8400-e29b-41d4-a716-446655440004',
+        transaction_id: '550e8400-e29b-41d4-a716-446655440005',
+        reporter_id: '550e8400-e29b-41d4-a716-446655440006',
         status: 'open',
         archived_by_seller: true,
         archived_by_buyer: false,
@@ -106,9 +106,9 @@ describe('useDisputes', () => {
 
     const mockTransactions = [
       {
-        id: 'txn-1',
-        user_id: 'test-user-id', // Current user is seller
-        buyer_id: 'other-user',
+        id: '550e8400-e29b-41d4-a716-446655440005',
+        user_id: '550e8400-e29b-41d4-a716-446655440003', // Current user is seller
+        buyer_id: '550e8400-e29b-41d4-a716-446655440013',
       },
     ];
 
@@ -133,9 +133,9 @@ describe('useDisputes', () => {
   it('should filter archived disputes for buyer', async () => {
     const mockDisputes = [
       {
-        id: 'dispute-1',
-        transaction_id: 'txn-1',
-        reporter_id: 'test-user-id',
+        id: '550e8400-e29b-41d4-a716-446655440008',
+        transaction_id: '550e8400-e29b-41d4-a716-446655440009',
+        reporter_id: '550e8400-e29b-41d4-a716-446655440010',
         status: 'open',
         archived_by_seller: false,
         archived_by_buyer: true,
@@ -144,9 +144,9 @@ describe('useDisputes', () => {
 
     const mockTransactions = [
       {
-        id: 'txn-1',
-        user_id: 'other-user',
-        buyer_id: 'test-user-id', // Current user is buyer
+        id: '550e8400-e29b-41d4-a716-446655440009',
+        user_id: '550e8400-e29b-41d4-a716-446655440014',
+        buyer_id: '550e8400-e29b-41d4-a716-446655440003', // Current user is buyer
       },
     ];
 
@@ -171,16 +171,16 @@ describe('useDisputes', () => {
   it('should enrich disputes with transaction data', async () => {
     const mockDisputes = [
       {
-        id: 'dispute-1',
-        transaction_id: 'txn-1',
-        reporter_id: 'test-user-id',
+        id: '550e8400-e29b-41d4-a716-446655440011',
+        transaction_id: '550e8400-e29b-41d4-a716-446655440012',
+        reporter_id: '550e8400-e29b-41d4-a716-446655440003',
         status: 'open',
       },
     ];
 
     const mockTransactions = [
       {
-        id: 'txn-1',
+        id: '550e8400-e29b-41d4-a716-446655440012',
         title: 'Test Transaction',
         user_id: 'seller-id',
         buyer_id: 'test-user-id',
