@@ -103,6 +103,11 @@ verify_jwt = true
 [functions.clean-old-users]
 verify_jwt = true
 
+[functions.cleanup-rate-limits]
+verify_jwt = false
+
+[functions.cleanup-webhook-events]
+verify_jwt = false
 
 [functions.confirm-transaction-date]
 verify_jwt = true
@@ -245,6 +250,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-validation-reminders]
+verify_jwt = false
+
+[functions.stripe-webhook]
 verify_jwt = false
 
 [functions.sync-stripe-customers]

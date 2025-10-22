@@ -2,6 +2,7 @@ import Stripe from 'https://esm.sh/stripe@17.5.0';
 
 /**
  * Creates a Stripe client instance
+ * ⚠️ API Version locked to 2024-06-20 per STRIPE_STABILITY_RULES.md
  */
 export function createStripeClient() {
   const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -9,7 +10,7 @@ export function createStripeClient() {
     throw new Error('STRIPE_SECRET_KEY not configured');
   }
   return new Stripe(stripeKey, {
-    apiVersion: '2024-11-20.acacia',
+    apiVersion: '2024-06-20',
     httpClient: Stripe.createFetchHttpClient(),
   });
 }

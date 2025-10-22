@@ -1100,6 +1100,33 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_id: string
+          event_type: string
+          id: string
+          processed_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_id: string
+          event_type: string
+          id?: string
+          processed_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_id?: string
+          event_type?: string
+          id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       dispute_system_health: {
@@ -1130,6 +1157,7 @@ export type Database = {
       }
       cleanup_old_logs: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      cleanup_old_webhook_events: { Args: never; Returns: undefined }
       create_escalated_dispute_conversations: {
         Args: { p_admin_id: string; p_dispute_id: string }
         Returns: {

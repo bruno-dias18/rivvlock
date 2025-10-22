@@ -39,7 +39,28 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     // Verify webhook signature
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     
-    logger.info(`Stripe webhook event received: ${event.type}`);
+    logger.info(`Stripe webhook event received: ${event.type}`, { eventId: event.id });
+
+    // ✅ IDEMPOTENCY: Check if event already processed
+    const { data: existingEvent } = await adminClient
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", event.id)
+      .single();
+
+    if (existingEvent) {
+      logger.info("Event already processed (idempotent)", { eventId: event.id });
+      return successResponse({ received: true, idempotent: true });
+    }
+
+    // ✅ Log event for idempotency
+    await adminClient
+      .from("webhook_events")
+      .insert({
+        event_id: event.id,
+        event_type: event.type,
+        data: event.data.object as any,
+      });
 
     if (event.type === "payment_intent.succeeded") {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
@@ -65,14 +86,38 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         }
       }
 
+      // ✅ Validate transaction exists and can be updated
+      const { data: transaction } = await adminClient
+        .from("transactions")
+        .select("id, status, price")
+        .eq("id", transactionId)
+        .single();
+
+      if (!transaction) {
+        logger.error("Transaction not found", { transactionId });
+        throw new Error("Transaction not found");
+      }
+
+      if (transaction.status === "paid") {
+        logger.info("Transaction already paid (idempotent)", { transactionId });
+        return successResponse({ received: true, idempotent: true });
+      }
+
+      // Calculate validation deadline (72h for service transactions)
+      const validationDeadline = new Date();
+      validationDeadline.setHours(validationDeadline.getHours() + 72);
+
       // Update transaction to paid status
       const { error: updateError } = await adminClient
         .from("transactions")
         .update({
           status: "paid",
           payment_method: paymentMethod,
+          payment_blocked_at: new Date().toISOString(),
+          validation_deadline: validationDeadline.toISOString(),
         })
-        .eq("id", transactionId);
+        .eq("id", transactionId)
+        .eq("status", "pending");
 
       if (updateError) {
         logger.error("Error updating transaction", updateError, { transactionId });
@@ -143,6 +188,82 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         });
 
       logger.info("Transaction updated to expired after payment failure", { transactionId });
+
+      return successResponse({ received: true });
+    }
+
+    // ✅ Handle charge.refunded
+    if (event.type === "charge.refunded") {
+      const charge = event.data.object as Stripe.Charge;
+      const transactionId = charge.metadata.transaction_id;
+      
+      if (!transactionId) {
+        logger.warn("No transaction_id in charge.refunded metadata");
+        return successResponse({ received: true });
+      }
+
+      logger.info("Charge refunded", { transactionId, chargeId: charge.id });
+
+      const { error: updateError } = await adminClient
+        .from("transactions")
+        .update({
+          refund_status: "refunded",
+          funds_released: true,
+          funds_released_at: new Date().toISOString(),
+        })
+        .eq("id", transactionId);
+
+      if (updateError) {
+        logger.error("Error updating refunded transaction", updateError, { transactionId });
+        throw updateError;
+      }
+
+      logger.info("Transaction marked as refunded", { transactionId });
+      return successResponse({ received: true });
+    }
+
+    // ✅ Handle account.updated for Stripe Connect
+    if (event.type === "account.updated") {
+      const account = event.data.object as Stripe.Account;
+      
+      logger.info("Stripe account updated", { accountId: account.id });
+
+      // Find user with this Stripe account
+      const { data: stripeAccount } = await adminClient
+        .from("stripe_accounts")
+        .select("user_id")
+        .eq("stripe_account_id", account.id)
+        .single();
+
+      if (!stripeAccount) {
+        logger.warn("No user found for Stripe account", { accountId: account.id });
+        return successResponse({ received: true });
+      }
+
+      // Update account status
+      const { error: updateError } = await adminClient
+        .from("stripe_accounts")
+        .update({
+          charges_enabled: account.charges_enabled || false,
+          payouts_enabled: account.payouts_enabled || false,
+          details_submitted: account.details_submitted || false,
+          onboarding_completed: account.details_submitted || false,
+          account_status: (account.charges_enabled && account.payouts_enabled) ? "active" : "pending",
+          last_status_check: new Date().toISOString(),
+        })
+        .eq("stripe_account_id", account.id);
+
+      if (updateError) {
+        logger.error("Error updating Stripe account status", updateError, { accountId: account.id });
+        throw updateError;
+      }
+
+      logger.info("Stripe account status synchronized", { 
+        accountId: account.id, 
+        userId: stripeAccount.user_id,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled 
+      });
 
       return successResponse({ received: true });
     }
