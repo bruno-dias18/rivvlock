@@ -724,6 +724,36 @@ export type Database = {
           },
         ]
       }
+      rate_limit_attempts: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          identifier: string
+          identifier_type: string
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          identifier: string
+          identifier_type: string
+          updated_at?: string
+          window_start?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          identifier?: string
+          identifier_type?: string
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       security_audit_log: {
         Row: {
           created_at: string | null
@@ -1093,18 +1123,13 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
-      check_admin_role: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      check_admin_role: { Args: { _user_id: string }; Returns: boolean }
       check_token_abuse_secure: {
         Args: { check_ip?: string; check_token: string }
         Returns: boolean
       }
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      cleanup_old_logs: { Args: never; Returns: undefined }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
       create_escalated_dispute_conversations: {
         Args: { p_admin_id: string; p_dispute_id: string }
         Returns: {
@@ -1116,10 +1141,7 @@ export type Database = {
         Args: { p_operation: string; p_table_name: string; p_user_id?: string }
         Returns: boolean
       }
-      generate_secure_token: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_secure_token: { Args: never; Returns: string }
       get_buyer_invoice_data: {
         Args: { p_buyer_id: string; p_requesting_user_id: string }
         Returns: {
@@ -1160,10 +1182,7 @@ export type Database = {
           has_active_account: boolean
         }[]
       }
-      get_current_user_admin_status: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      get_current_user_admin_status: { Args: never; Returns: boolean }
       get_next_invoice_sequence: {
         Args: { p_seller_id: string; p_year: number }
         Returns: number
@@ -1229,22 +1248,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      is_admin_secure: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      is_feature_enabled: {
-        Args: { flag_key: string }
-        Returns: boolean
-      }
-      is_super_admin: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      is_admin_secure: { Args: { check_user_id?: string }; Returns: boolean }
+      is_feature_enabled: { Args: { flag_key: string }; Returns: boolean }
+      is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
       log_admin_profile_access: {
         Args: { accessed_user_id: string; admin_user_id: string }
         Returns: boolean
@@ -1264,14 +1271,8 @@ export type Database = {
         }
         Returns: string
       }
-      purge_old_activity_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      scheduled_security_cleanup: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      purge_old_activity_logs: { Args: never; Returns: undefined }
+      scheduled_security_cleanup: { Args: never; Returns: undefined }
       validate_shared_link_secure: {
         Args: {
           p_ip_address?: string
@@ -1285,7 +1286,7 @@ export type Database = {
         Returns: boolean
       }
       verify_token_security: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           has_expiry: boolean
           is_expired: boolean
