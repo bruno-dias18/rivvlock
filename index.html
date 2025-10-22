@@ -10,9 +10,12 @@
     
     <!-- Performance: Preconnect to critical origins -->
     <link rel="preconnect" href="https://slthyxqruhfuyfmextwr.supabase.co" crossorigin>
-    <link rel="dns-prefetch" href="https://api.stripe.com">
+    <link rel="preconnect" href="https://api.stripe.com" crossorigin>
     <link rel="dns-prefetch" href="https://js.stripe.com">
     <link rel="dns-prefetch" href="https://m.stripe.com">
+    
+    <!-- Preload critical assets -->
+    <link rel="preload" as="image" type="image/webp" href="/assets/rivvlock-logo-icon.webp" fetchpriority="high">
     
     <!-- Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
