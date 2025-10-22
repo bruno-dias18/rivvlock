@@ -10,14 +10,26 @@ const OLD_DOMAINS = [
   'https://lovableproject.com'
 ];
 
-// Minimal files to cache (add index.html for SPA fallback)
+// Core files to cache (critical for offline functionality)
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
   '/icon-192.png',
-  '/icon-512.png'
+  '/icon-512.png',
+  '/favicon.png'
 ];
+
+// Runtime cache configuration
+const RUNTIME_CACHE = 'rivvlock-runtime-v9';
+const API_CACHE = 'rivvlock-api-v9';
+const ASSET_CACHE = 'rivvlock-assets-v9';
+
+// Cache duration in milliseconds
+const CACHE_DURATION = {
+  api: 5 * 60 * 1000, // 5 minutes for API responses
+  assets: 7 * 24 * 60 * 60 * 1000, // 7 days for static assets
+};
 
 // Installation du service worker
 self.addEventListener('install', (event) => {
@@ -89,25 +101,78 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For non-navigation requests: cache-first with network fallback
-  event.respondWith(
-    caches.match(req).then((cachedRes) => {
-      return (
-        cachedRes ||
-        fetch(req).then((networkRes) => {
-          // Optionally cache successful GET responses
-          if (req.method === 'GET' && networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+  // Strategy selection based on request type
+  const isApiRequest = url.hostname === 'slthyxqruhfuyfmextwr.supabase.co';
+  const isAsset = /\.(js|css|png|jpg|jpeg|svg|webp|woff2?)$/i.test(url.pathname);
+
+  // API requests: Network-first with cache fallback
+  if (isApiRequest) {
+    event.respondWith(
+      fetch(req)
+        .then((networkRes) => {
+          if (networkRes.status === 200) {
             const resClone = networkRes.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, resClone)).catch(() => {});
+            caches.open(API_CACHE).then((cache) => {
+              cache.put(req, resClone);
+            });
           }
           return networkRes;
-        }).catch(() => {
-          // As a last resort, return index.html for GET requests to keep SPA usable
+        })
+        .catch(() => {
+          return caches.match(req).then((cached) => {
+            if (cached) {
+              devLog('🔄 [SW] Serving stale API response from cache:', req.url);
+              return cached;
+            }
+            throw new Error('Network unavailable and no cache available');
+          });
+        })
+    );
+    return;
+  }
+
+  // Static assets: Cache-first with network fallback
+  if (isAsset) {
+    event.respondWith(
+      caches.match(req).then((cachedRes) => {
+        if (cachedRes) {
+          return cachedRes;
+        }
+        return fetch(req).then((networkRes) => {
+          if (networkRes.status === 200) {
+            const resClone = networkRes.clone();
+            caches.open(ASSET_CACHE).then((cache) => {
+              cache.put(req, resClone);
+            });
+          }
+          return networkRes;
+        });
+      })
+    );
+    return;
+  }
+
+  // Other requests: Network-first
+  event.respondWith(
+    fetch(req)
+      .then((networkRes) => {
+        if (req.method === 'GET' && networkRes.status === 200) {
+          const resClone = networkRes.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put(req, resClone);
+          });
+        }
+        return networkRes;
+      })
+      .catch(() => {
+        return caches.match(req).then((cached) => {
+          if (cached) {
+            return cached;
+          }
           if (req.method === 'GET') {
             return caches.match('/index.html');
           }
-        })
-      );
-    })
+        });
+      })
   );
 });

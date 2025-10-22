@@ -1,0 +1,12 @@
+[
+  {
+    "path": "./dist/assets/index-*.js",
+    "maxSize": "250 KB",
+    "compression": "gzip"
+  },
+  {
+    "path": "./dist/assets/vendor-*.js",
+    "maxSize": "500 KB",
+    "compression": "gzip"
+  }
+]

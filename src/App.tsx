@@ -37,6 +37,7 @@ import { UserRoute } from "./components/UserRoute";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
+import { PageSkeleton } from "./components/PageSkeleton";
 
 const App: React.FC = () => {
   return React.createElement(
@@ -50,10 +51,10 @@ const App: React.FC = () => {
         null,
         React.createElement(RealtimeActivitySync),
         React.createElement(Toaster, { position: "top-right" }),
-        React.createElement(
-          Suspense,
-          { fallback: null },
           React.createElement(
+            Suspense,
+            { fallback: React.createElement(PageSkeleton) },
+            React.createElement(
             GlobalErrorBoundary,
             null,
             React.createElement(

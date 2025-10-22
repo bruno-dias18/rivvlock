@@ -166,3 +166,102 @@ export function useRenderMonitor(componentName: string) {
     performanceMonitor.endMeasure(measureName);
   };
 }
+
+/**
+ * Core Web Vitals monitoring
+ * Tracks key performance metrics: LCP, INP, CLS, FCP, TTFB
+ */
+interface WebVitalMetric {
+  name: string;
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+  delta: number;
+}
+
+const webVitalsMetrics: WebVitalMetric[] = [];
+
+function sendToAnalytics(metric: WebVitalMetric) {
+  webVitalsMetrics.push(metric);
+  
+  // Log only poor ratings in production
+  if (import.meta.env.PROD && metric.rating === 'poor') {
+    logger.warn(`⚠️ Poor Web Vital: ${metric.name} = ${metric.value.toFixed(2)}ms (${metric.rating})`);
+  }
+  
+  // In development, log all metrics
+  if (!import.meta.env.PROD) {
+    logger.log(`📊 Web Vital: ${metric.name} = ${metric.value.toFixed(2)}ms (${metric.rating})`);
+  }
+}
+
+/**
+ * Initialize Core Web Vitals tracking
+ * Should be called once in main.tsx
+ */
+export async function initWebVitals() {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const { onCLS, onINP, onLCP, onFCP, onTTFB } = await import('web-vitals');
+    
+    onCLS((metric) => sendToAnalytics({ 
+      name: 'CLS', 
+      value: metric.value, 
+      rating: metric.rating,
+      delta: metric.delta 
+    }));
+    
+    onINP((metric) => sendToAnalytics({ 
+      name: 'INP', 
+      value: metric.value, 
+      rating: metric.rating,
+      delta: metric.delta 
+    }));
+    
+    onLCP((metric) => sendToAnalytics({ 
+      name: 'LCP', 
+      value: metric.value, 
+      rating: metric.rating,
+      delta: metric.delta 
+    }));
+    
+    onFCP((metric) => sendToAnalytics({ 
+      name: 'FCP', 
+      value: metric.value, 
+      rating: metric.rating,
+      delta: metric.delta 
+    }));
+    
+    onTTFB((metric) => sendToAnalytics({ 
+      name: 'TTFB', 
+      value: metric.value, 
+      rating: metric.rating,
+      delta: metric.delta 
+    }));
+    
+    logger.log('✅ Core Web Vitals monitoring initialized');
+  } catch (error) {
+    logger.error('Failed to initialize Web Vitals:', error);
+  }
+}
+
+/**
+ * Get all collected Web Vitals metrics
+ */
+export function getWebVitalsMetrics(): WebVitalMetric[] {
+  return [...webVitalsMetrics];
+}
+
+/**
+ * Get Web Vitals summary
+ */
+export function getWebVitalsSummary(): Record<string, WebVitalMetric> {
+  const summary: Record<string, WebVitalMetric> = {};
+  
+  webVitalsMetrics.forEach(metric => {
+    // Keep only the latest value for each metric
+    summary[metric.name] = metric;
+  });
+  
+  return summary;
+}

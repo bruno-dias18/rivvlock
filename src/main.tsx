@@ -4,9 +4,13 @@ import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
 import { initSentry } from "./lib/sentry";
+import { initWebVitals } from "./lib/monitoring";
 
 // Initialize Sentry error tracking (production only)
 initSentry();
+
+// Initialize Core Web Vitals monitoring
+initWebVitals();
 
 // Ensure public domain for shared links (redirect from editor/preview domains)
 if (import.meta.env.PROD) {
