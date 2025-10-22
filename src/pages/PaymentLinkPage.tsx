@@ -341,7 +341,7 @@ export default function PaymentLinkPage() {
           <div className="max-w-md w-full space-y-6">
             <div className="text-center">
             <img 
-              src="/assets/rivvlock-logo.png" 
+              src="/assets/rivvlock-logo.webp" 
               alt="RIVVLOCK Logo" 
               className="mx-auto h-16 w-auto object-contain mb-6"
               loading="lazy"
@@ -440,7 +440,7 @@ export default function PaymentLinkPage() {
             <div className="max-w-md w-full space-y-6">
               <div className="text-center">
               <img 
-                src="/assets/rivvlock-logo.png" 
+                src="/assets/rivvlock-logo.webp" 
                 alt="RIVVLOCK Logo" 
                 className="mx-auto h-16 w-auto object-contain mb-6"
                 loading="lazy"
@@ -484,7 +484,7 @@ export default function PaymentLinkPage() {
           <div className="max-w-md w-full space-y-6">
             <div className="text-center">
             <img 
-              src="/assets/rivvlock-logo.png" 
+              src="/assets/rivvlock-logo.webp" 
               alt="RIVVLOCK Logo" 
               className="mx-auto h-16 w-auto object-contain mb-6"
               loading="lazy"

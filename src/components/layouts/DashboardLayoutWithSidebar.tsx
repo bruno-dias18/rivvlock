@@ -38,16 +38,18 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
               {isMobile && (
                 <>
                   <img 
-                    src="/assets/rivvlock-logo-icon.png" 
+                    src="/assets/rivvlock-logo-icon.webp" 
                     alt="RIVVLOCK Icon" 
                     className="h-8 w-8 object-contain"
-                    loading="lazy"
+                    width="32"
+                    height="32"
+                    loading="eager"
                   />
                   <img 
-                    src="/assets/rivvlock-logo-text.png" 
+                    src="/assets/rivvlock-logo-text.webp" 
                     alt="RIVVLOCK" 
                     className="h-4 w-auto object-contain"
-                    loading="lazy"
+                    loading="eager"
                   />
                 </>
               )}

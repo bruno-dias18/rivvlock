@@ -73,7 +73,7 @@ export const PaymentReminderEmail = ({
         <Container style={container}>
           <Section style={header}>
             <Img 
-              src="https://app.rivvlock.com/assets/rivvlock-logo-email.png"
+              src="https://app.rivvlock.com/assets/rivvlock-logo-email.webp"
               alt="RIVVLOCK"
               width="200"
               style={logoImage}

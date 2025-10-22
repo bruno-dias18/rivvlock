@@ -15,7 +15,7 @@ export default function RegistrationSuccessPage() {
       <div className="max-w-md w-full space-y-8 text-center">
         <div className="mb-8">
           <img 
-            src="/assets/rivvlock-logo.png" 
+            src="/assets/rivvlock-logo.webp" 
             alt="RIVVLOCK Logo" 
             className="mx-auto h-24 w-auto object-contain"
             loading="lazy"

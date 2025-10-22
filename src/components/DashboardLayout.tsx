@@ -22,16 +22,18 @@ export function DashboardLayout({ children, onSyncPayments }: DashboardLayoutPro
       <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
         <div className="flex items-center gap-2">
           <img 
-            src="/assets/rivvlock-logo-icon.png" 
+            src="/assets/rivvlock-logo-icon.webp" 
             alt="RIVVLOCK Icon" 
             className="h-8 w-8 object-contain"
-            loading="lazy"
+            width="32"
+            height="32"
+            loading="eager"
           />
           <img 
-            src="/assets/rivvlock-logo-text.png" 
+            src="/assets/rivvlock-logo-text.webp" 
             alt="RIVVLOCK" 
             className="h-4 w-auto object-contain"
-            loading="lazy"
+            loading="eager"
           />
         </div>
         
