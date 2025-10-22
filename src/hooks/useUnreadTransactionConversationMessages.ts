@@ -2,20 +2,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
+import { useUnreadCountBase } from './useUnreadCountBase';
 
 /**
  * Compte les messages non lus pour une transaction (via transactionId)
- * Résout conversation_id côté DB pour éviter les incohérences côté client
+ * Résout conversation_id côté DB puis utilise useUnreadCountBase
  */
 export function useUnreadTransactionConversationMessages(transactionId: string | null | undefined) {
   const { user } = useAuth();
 
-  const { data: unreadCount = 0, refetch } = useQuery({
-    queryKey: ['unread-by-transaction', transactionId, user?.id],
-    queryFn: async (): Promise<number> => {
-      if (!transactionId || !user?.id) return 0;
+  // Step 1: Resolve conversation_id from transaction
+  const { data: conversationId } = useQuery({
+    queryKey: ['transaction-conversation-id', transactionId],
+    queryFn: async (): Promise<string | null> => {
+      if (!transactionId) return null;
 
-      // 1) Récupérer conversation_id depuis la transaction
       const { data: tx, error: txErr } = await supabase
         .from('transactions')
         .select('conversation_id')
@@ -24,46 +25,25 @@ export function useUnreadTransactionConversationMessages(transactionId: string |
 
       if (txErr) {
         logger.error('UnreadByTx txErr', { transactionId, error: String(txErr) });
-        return 0;
+        return null;
       }
 
-      const conversationId = tx?.conversation_id;
-      if (!conversationId) {
+      if (!tx?.conversation_id) {
         logger.debug('UnreadByTx no conversation', { transactionId });
-        return 0;
+        return null;
       }
 
-      // 2) Lire last_read_at depuis conversation_reads (source de vérité)
-      const { data: read } = await supabase
-        .from('conversation_reads')
-        .select('last_read_at')
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const since = read?.last_read_at ?? '1970-01-01T00:00:00Z';
-
-      // 3) Compter les messages non lus (après last_read_at, et pas les siens)
-      const { count, error } = await supabase
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id)
-        .gt('created_at', since);
-
-      if (error) {
-        logger.error('UnreadByTx count error', { transactionId, conversationId, error: String(error) });
-        return 0;
-      }
-
-      logger.debug('UnreadByTx', { transactionId, conversationId, lastReadAt: read?.last_read_at, count });
-      return count || 0;
+      return tx.conversation_id;
     },
     enabled: !!transactionId && !!user?.id,
-    staleTime: 0,
-    gcTime: 5 * 60_000,
-    refetchOnMount: 'always',
+    staleTime: 5 * 60_000,
   });
 
-  return { unreadCount, refetch };
+  // Step 2: Count unread messages using base hook
+  const result = useUnreadCountBase(
+    conversationId,
+    ['unread-by-transaction', transactionId, user?.id]
+  );
+
+  return result;
 }

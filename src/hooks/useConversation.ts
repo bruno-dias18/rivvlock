@@ -1,7 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useRef } from 'react';
+import { useConversationBase } from './useConversationBase';
 
 interface UnifiedMessage {
   id: string;
@@ -14,93 +11,29 @@ interface UnifiedMessage {
 }
 
 export const useConversation = (conversationId: string | null | undefined) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const lastInvalidationRef = useRef<number>(0);
+  // Utilise le hook de base pour la logique commune
+  const baseResult = useConversationBase(
+    conversationId,
+    ['conversation-messages', conversationId]
+  );
 
-  const { data: messages = [], isLoading } = useQuery<UnifiedMessage[]>({
-    queryKey: ['conversation-messages', conversationId],
-    queryFn: async () => {
-      if (!user?.id || !conversationId) throw new Error('Missing user or conversation');
+  // Transforme les messages du format base vers le format attendu
+  const messages: UnifiedMessage[] = baseResult.messages.map(msg => ({
+    ...msg,
+    message_type: msg.message_type as 'text' | 'system' | 'proposal_update',
+    metadata: null,
+  }));
 
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true })
-        .limit(200);
-
-      if (error) throw error;
-      return (data as UnifiedMessage[]) || [];
-    },
-    enabled: !!user?.id && !!conversationId,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: 'always',
-    placeholderData: (prev) => prev,
-  });
-
-  const sendMessage = useMutation({
-    mutationFn: async ({ message }: { message: string }) => {
-      if (!user?.id || !conversationId) throw new Error('Missing user or conversation');
-
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          message: message.trim().slice(0, 1000),
-          message_type: 'text',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as UnifiedMessage;
-    },
-    onSuccess: () => {
-      if (!conversationId) return;
-      queryClient.invalidateQueries({ queryKey: ['conversation-messages', conversationId] });
-    },
-  });
-
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const channel = supabase
-      .channel(`conversation-${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          const row = payload.new as UnifiedMessage | undefined;
-          if (!row || row.conversation_id !== conversationId) return;
-
-          // Optimistic update immédiat sans throttling
-          queryClient.setQueryData<UnifiedMessage[]>(
-            ['conversation-messages', conversationId],
-            (old = []) => {
-              const exists = old.some(msg => msg.id === row.id);
-              if (exists) return old;
-              return [...old, row];
-            }
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      try { 
-        supabase.removeChannel(channel); 
-      } catch {}
-    };
-  }, [conversationId, queryClient]);
+  // Wrapper pour sendMessage avec validation de longueur
+  const sendMessageWithValidation = async (params: { message: string }) => {
+    const trimmedMessage = params.message.trim().slice(0, 1000);
+    return baseResult.sendMessage(trimmedMessage);
+  };
 
   return {
     messages,
-    isLoading,
-    sendMessage: sendMessage.mutateAsync,
-    isSendingMessage: sendMessage.isPending,
+    isLoading: baseResult.isLoading,
+    sendMessage: sendMessageWithValidation,
+    isSendingMessage: baseResult.isSendingMessage,
   };
 };

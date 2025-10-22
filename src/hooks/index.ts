@@ -3,6 +3,10 @@
  * Provides centralized imports for better organization
  */
 
+// Base Hooks (fondations réutilisables)
+export { useUnreadCountBase } from './useUnreadCountBase';
+export { useConversationBase } from './useConversationBase';
+
 // Transaction Hooks
 export { useTransactions, useSyncStripePayments } from './useTransactions';
 export { useTransactionsWithNewActivity } from './useTransactionsWithNewActivity';
