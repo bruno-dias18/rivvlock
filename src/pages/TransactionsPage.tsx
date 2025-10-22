@@ -180,6 +180,10 @@ export default function TransactionsPage() {
     
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
+    
+    // CRITIQUE : Réinitialiser à la page 1 quand on change le tri
+    setCurrentPage(1);
+    
     localStorage.setItem('rivvlock-transactions-sort', JSON.stringify({
       sortBy: newSortBy,
       sortOrder: newSortOrder
