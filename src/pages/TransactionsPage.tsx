@@ -879,46 +879,19 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && pendingTransactions.length > 0 && (
-                <>
-                  {pendingTransactions.length > 20 ? (
-                    <VirtualTransactionList
-                      transactions={pendingTransactions}
-                      user={user}
-                      transactionsWithNewActivity={transactionsWithNewActivity}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      onDeleteExpired={handleDeleteExpiredTransaction}
-                      onRenewExpired={handleRenewExpiredTransaction}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ) : (
-                    <LocalErrorBoundary onRetry={refetch}>
-                      <div className="space-y-4">
-                        {pendingTransactions.map(transaction => (
-                          <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
-                            <TransactionCard
-                              transaction={transaction}
-                              user={user}
-                              showActions={true}
-                              hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                              onCopyLink={handleCopyLink}
-                              onPayment={handlePayment}
-                              onRefetch={refetch}
-                              onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                              onDownloadInvoice={handleDownloadInvoice}
-                              onDeleteExpired={handleDeleteExpiredTransaction}
-                              onRenewExpired={handleRenewExpiredTransaction}
-                              CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </LocalErrorBoundary>
-                  )}
-                </>
+                <VirtualTransactionList
+                  transactions={pendingTransactions}
+                  user={user}
+                  transactionsWithNewActivity={transactionsWithNewActivity}
+                  onCopyLink={handleCopyLink}
+                  onPayment={handlePayment}
+                  onRefetch={refetch}
+                  onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                  onDownloadInvoice={handleDownloadInvoice}
+                  onDeleteExpired={handleDeleteExpiredTransaction}
+                  onRenewExpired={handleRenewExpiredTransaction}
+                  CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                />
               )}
               
               {/* Pagination Controls - ONGLET PENDING */}
@@ -963,46 +936,19 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && blockedTransactions.length > 0 && (
-                <>
-                  {blockedTransactions.length > 20 ? (
-                    <VirtualTransactionList
-                      transactions={blockedTransactions}
-                      user={user}
-                      transactionsWithNewActivity={transactionsWithNewActivity}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      onDeleteExpired={handleDeleteExpiredTransaction}
-                      onRenewExpired={handleRenewExpiredTransaction}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ) : (
-                    <LocalErrorBoundary onRetry={refetch}>
-                      <div className="space-y-4">
-                        {blockedTransactions.map(transaction => (
-                          <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
-                            <TransactionCard
-                              transaction={transaction}
-                              user={user}
-                              showActions={true}
-                              hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                              onCopyLink={handleCopyLink}
-                              onPayment={handlePayment}
-                              onRefetch={refetch}
-                              onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                              onDownloadInvoice={handleDownloadInvoice}
-                              onDeleteExpired={handleDeleteExpiredTransaction}
-                              onRenewExpired={handleRenewExpiredTransaction}
-                              CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </LocalErrorBoundary>
-                  )}
-                </>
+                <VirtualTransactionList
+                  transactions={blockedTransactions}
+                  user={user}
+                  transactionsWithNewActivity={transactionsWithNewActivity}
+                  onCopyLink={handleCopyLink}
+                  onPayment={handlePayment}
+                  onRefetch={refetch}
+                  onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                  onDownloadInvoice={handleDownloadInvoice}
+                  onDeleteExpired={handleDeleteExpiredTransaction}
+                  onRenewExpired={handleRenewExpiredTransaction}
+                  CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                />
               )}
               
               {/* Pagination Controls - ONGLET BLOCKED */}
@@ -1056,46 +1002,19 @@ export default function TransactionsPage() {
               )}
 
               {!isLoading && !queryError && completedTransactions.length > 0 && (
-                <>
-                  {completedTransactions.length > 20 ? (
-                    <VirtualTransactionList
-                      transactions={completedTransactions}
-                      user={user}
-                      transactionsWithNewActivity={transactionsWithNewActivity}
-                      onCopyLink={handleCopyLink}
-                      onPayment={handlePayment}
-                      onRefetch={refetch}
-                      onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                      onDownloadInvoice={handleDownloadInvoice}
-                      onDeleteExpired={handleDeleteExpiredTransaction}
-                      onRenewExpired={handleRenewExpiredTransaction}
-                      CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                    />
-                  ) : (
-                    <LocalErrorBoundary onRetry={refetch}>
-                      <div className="space-y-4">
-                        {completedTransactions.map(transaction => (
-                          <div key={transaction.id} id={`transaction-${transaction.id}`} className="transition-all duration-300">
-                            <TransactionCard
-                              transaction={transaction}
-                              user={user}
-                              showActions={true}
-                              hasNewActivity={transactionsWithNewActivity?.has(transaction.id)}
-                              onCopyLink={handleCopyLink}
-                              onPayment={handlePayment}
-                              onRefetch={refetch}
-                              onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
-                              onDownloadInvoice={handleDownloadInvoice}
-                              onDeleteExpired={handleDeleteExpiredTransaction}
-                              onRenewExpired={handleRenewExpiredTransaction}
-                              CompleteButtonComponent={CompleteTransactionButtonWithStatus}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </LocalErrorBoundary>
-                  )}
-                </>
+                <VirtualTransactionList
+                  transactions={completedTransactions}
+                  user={user}
+                  transactionsWithNewActivity={transactionsWithNewActivity}
+                  onCopyLink={handleCopyLink}
+                  onPayment={handlePayment}
+                  onRefetch={refetch}
+                  onOpenDispute={(tx) => setDisputeDialog({ open: true, transaction: tx })}
+                  onDownloadInvoice={handleDownloadInvoice}
+                  onDeleteExpired={handleDeleteExpiredTransaction}
+                  onRenewExpired={handleRenewExpiredTransaction}
+                  CompleteButtonComponent={CompleteTransactionButtonWithStatus}
+                />
               )}
               
               {/* Pagination Controls - ONGLET COMPLETED */}
