@@ -6,6 +6,7 @@
 // Base Hooks (fondations réutilisables)
 export { useUnreadCountBase } from './useUnreadCountBase';
 export { useConversationBase } from './useConversationBase';
+export { useUnreadGlobalBase } from './useUnreadGlobalBase';
 
 // Transaction Hooks
 export { useTransactions, useSyncStripePayments } from './useTransactions';
