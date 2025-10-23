@@ -84,7 +84,11 @@ export async function createTestUser(
     console.log('[E2E] invoking test-assign-role:', { email, userId, hasToken: !!token });
     
     const { data: roleData, error: roleError } = await supabase.functions.invoke('test-assign-role', {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'x-email': email,
+        'x-user-id': userId,
+      },
       body: { role: 'admin', email, user_id: userId },
     });
 
