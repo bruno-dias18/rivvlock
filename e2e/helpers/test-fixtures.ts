@@ -330,7 +330,7 @@ export async function createTestDispute(
     .from('disputes')
     .insert({
       transaction_id: transactionId,
-      created_by: buyerId,
+      reporter_id: buyerId,
       reason,
       description: 'Test dispute for E2E tests',
       status: 'open',
