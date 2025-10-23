@@ -67,11 +67,12 @@ export async function createTestUser(
   // Ensure we have a session for edge function auth
   await supabase.auth.signInWithPassword({ email, password });
 
-  // Assign role via secure edge function (service role), restricted to @test-rivvlock.com
+  // Assign role via secure edge function (no auth required, uses test key)
   if (role === 'admin') {
     console.log('[E2E] invoking test-assign-role for email:', email);
     const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
-      body: { role: 'admin' },
+      body: { role: 'admin', email },
+      headers: { 'x-test-role-key': 'local-e2e' }
     });
 
     if (roleError) {

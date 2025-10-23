@@ -261,6 +261,9 @@ verify_jwt = false
 [functions.sync-stripe-payments]
 verify_jwt = false
 
+[functions.test-assign-role]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 
