@@ -98,7 +98,8 @@ export default function PaymentLinkPage() {
         if (data.transaction.payment_deadline) {
           const deadline = new Date(data.transaction.payment_deadline);
           if (deadline < new Date()) {
-            setError('Cette transaction a expiré. Le délai de paiement est dépassé.');
+            // Align with E2E expectation: include "Lien expiré" keyword
+            setError('Lien expiré — Le délai de paiement est dépassé.');
             setTransaction(null);
             setLoading(false);
             return;
@@ -554,13 +555,13 @@ export default function PaymentLinkPage() {
               >
                 <CreditCard className="w-5 h-5 mr-2" />
                 {!selectedPaymentMethod
-                  ? 'Choisissez un mode de paiement'
+                  ? 'Payer — choisissez un mode de paiement'
                   : transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()
                     ? 'Délai expiré'
                     : processingPayment 
                       ? 'Préparation...'
                       : selectedPaymentMethod === 'bank_transfer' 
-                        ? 'Voir les instructions de virement'
+                        ? 'Payer — voir les instructions de virement'
                         : 'Payer par carte'
                 }
               </Button>
