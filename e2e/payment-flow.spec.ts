@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createTestUser, createTestTransaction, cleanupTestData } from './helpers/test-fixtures';
 
 /**
  * E2E tests for the complete payment flow
@@ -10,10 +11,26 @@ import { test, expect } from '@playwright/test';
  * 4. Payment is processed
  */
 test.describe('Payment Flow', () => {
+  let seller: Awaited<ReturnType<typeof createTestUser>>;
+  let transaction: Awaited<ReturnType<typeof createTestTransaction>>;
+  let testUserIds: string[] = [];
+
+  test.beforeAll(async () => {
+    seller = await createTestUser('seller', 'payment-seller');
+    testUserIds.push(seller.id);
+    
+    transaction = await createTestTransaction(seller.id, null, {
+      amount: 500,
+      status: 'pending',
+    });
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(testUserIds);
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to the payment link page
-    // Note: This would need a valid test transaction token
-    await page.goto('/payment-link/test-token-123');
+    await page.goto(`/payment-link/${transaction.token}`);
   });
 
   test('should display payment method selector', async ({ page }) => {
@@ -87,8 +104,13 @@ test.describe('Payment Flow', () => {
   });
 
   test('should handle expired payment links', async ({ page }) => {
-    // Navigate to an expired payment link
-    await page.goto('/payment-link/expired-token-123');
+    // Create an expired transaction
+    const expiredTransaction = await createTestTransaction(seller.id, null, {
+      amount: 300,
+      status: 'expired',
+    });
+
+    await page.goto(`/payment-link/${expiredTransaction.token}`);
 
     // Should display error message
     await expect(page.getByText(/lien expiré/i)).toBeVisible();
@@ -99,13 +121,31 @@ test.describe('Payment Flow', () => {
  * Mobile-specific payment flow tests
  */
 test.describe('Mobile Payment Flow', () => {
+  let mobileSeller: Awaited<ReturnType<typeof createTestUser>>;
+  let mobileTransaction: Awaited<ReturnType<typeof createTestTransaction>>;
+  let mobileTestUserIds: string[] = [];
+
+  test.beforeAll(async () => {
+    mobileSeller = await createTestUser('seller', 'mobile-payment-seller');
+    mobileTestUserIds.push(mobileSeller.id);
+    
+    mobileTransaction = await createTestTransaction(mobileSeller.id, null, {
+      amount: 400,
+      status: 'pending',
+    });
+  });
+
+  test.afterAll(async () => {
+    await cleanupTestData(mobileTestUserIds);
+  });
+
   test.use({ 
     viewport: { width: 375, height: 667 },
     userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15',
   });
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
-    await page.goto('/payment-link/test-token-123');
+    await page.goto(`/payment-link/${mobileTransaction.token}`);
     await page.waitForLoadState('networkidle');
 
     // Check that layout is mobile-friendly
