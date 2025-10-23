@@ -49,8 +49,8 @@ export async function createTestUser(
   let authData, authError;
   ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
 
-  // If "invalid email" error, retry with example.org
-  if (authError && /invalid/i.test(authError.message || '')) {
+  // If any error, retry with example.org (handles domain restrictions)
+  if (authError) {
     email = buildEmail('example.org');
     ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
   }
