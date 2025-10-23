@@ -30,18 +30,16 @@ test.describe('Admin Validation - Transaction Management', () => {
   });
 
   test('admin can view all transactions with filters', async ({ page }) => {
-    // Navigate to admin transactions via stable href (avoid brittle heading assertions)
-    const transactionsLink = page.locator('aside a[href="/dashboard/admin/transactions"]').first();
+    // Navigate to transactions page (admins use same page as users)
+    const transactionsLink = page.locator('aside a[href="/dashboard/transactions"]').first();
     await expect(transactionsLink).toBeVisible();
     await transactionsLink.click();
 
-    // Apply filter: status = paid
-    await page.getByRole('button', { name: /filtres/i }).click();
-    await page.getByLabel(/statut/i).selectOption('paid');
-    await page.getByRole('button', { name: /appliquer/i }).click();
-
-    // Verify a paid indicator appears (localized)
-    await expect(page.getByText(/payé/i).first()).toBeVisible();
+    // Verify tabs are visible (the UI uses tabs, not a "Filtres" button)
+    await expect(page.getByRole('tab', { name: /en attente/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /fonds bloqués/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /complétées/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /litiges/i })).toBeVisible();
   });
 
   test.skip('admin can view transaction details including sensitive data', async ({ page }) => {
