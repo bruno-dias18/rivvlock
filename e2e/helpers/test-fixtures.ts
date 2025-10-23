@@ -186,12 +186,24 @@ export async function loginAdmin(page: Page, user: TestUser) {
   await page.goto('/auth');
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
-  
-  // Click and wait for navigation in parallel
-  await Promise.all([
+
+  // Click and wait for either user or admin dashboard
+  const nav = Promise.race([
     page.waitForURL('**/dashboard/admin**', { timeout: 15000 }),
+    page.waitForURL('**/dashboard**', { timeout: 15000 }),
+  ]);
+  await Promise.all([
+    nav,
     page.getByRole('button', { name: /connexion|sign in/i }).click(),
   ]);
+
+  // If not on admin URL yet, try direct navigation (role may be set just-in-time)
+  if (!page.url().includes('/dashboard/admin')) {
+    await page.goto('/dashboard/admin');
+  }
+
+  // Final guard: wait for an admin-only UI signal
+  await page.waitForSelector('a[href="/dashboard/admin/disputes"], [data-testid="admin-dispute-card"]', { timeout: 15000 });
 }
 
 /**
