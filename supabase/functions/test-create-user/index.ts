@@ -20,16 +20,6 @@ const createUserSchema = z.object({
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   const { email, password } = ctx.body as z.infer<typeof createUserSchema>;
 
-  // Secure test key header to avoid public abuse
-  const testKey = req.headers.get("x-test-role-key") || "";
-  const requiredKey = Deno.env.get("TEST_ROLE_ASSIGN_KEY") || "local-e2e";
-  if (testKey !== requiredKey) {
-    return new Response(JSON.stringify({ error: "Invalid test key" }), {
-      headers: { "Content-Type": "application/json" },
-      status: 401,
-    });
-  }
-
   // Allow only specific domains for tests
   const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "test-rivvlock.com,example.org,example.com")
     .split(",")

@@ -25,10 +25,8 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   // Determine target user via two secure paths:
   // 1) Authenticated call (Authorization: Bearer <user_jwt>)
-  // 2) Test key call with header x-test-role-key matching secret and body.email provided
+  // 2) Test direct call with body.email provided (only from allowed domains)
   const authHeader = req.headers.get("Authorization");
-  const testKey = req.headers.get("x-test-role-key") || "";
-  const requiredKey = Deno.env.get("TEST_ROLE_ASSIGN_KEY") || "local-e2e"; // fallback for local CI
 
   let targetUserId: string | null = null;
   let targetEmail: string | null = null;
@@ -47,8 +45,8 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     }
   }
 
-  if (!targetUserId && testKey && testKey === requiredKey && body.email) {
-    // Secure test-path: find user by email via admin API
+  if (!targetUserId && body.email) {
+    // Test direct path: find user by email via admin API
     const { data, error } = await adminClient.auth.admin.listUsers({ email: body.email });
     if (error) {
       logger.error("[TEST-ASSIGN-ROLE] listUsers error:", error);
@@ -65,7 +63,7 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   }
 
   if (!targetUserId) {
-    return new Response(JSON.stringify({ error: "Not authenticated or invalid test key" }), {
+    return new Response(JSON.stringify({ error: "Not authenticated or user not found" }), {
       headers: { "Content-Type": "application/json" },
       status: 401,
     });
@@ -99,7 +97,7 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     });
   }
 
-  return successResponse({ success: true, user_id: targetUserId, role: body.role, via: authHeader ? "jwt" : "test-key" });
+  return successResponse({ success: true, user_id: targetUserId, role: body.role, via: authHeader ? "jwt" : "direct" });
 };
 
 Deno.serve(

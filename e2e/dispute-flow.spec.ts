@@ -15,14 +15,15 @@ import { createTestUser, loginAdmin, loginUser, createPaidTransaction, type Test
 let BUYER: TestUser;
 let SELLER: TestUser;
 
-test.describe('Dispute Flow - Complete Journey', () => {
-  test.beforeAll(async () => {
-    SELLER = await createTestUser('seller', 'e2e-seller-dispute');
-    BUYER = await createTestUser('buyer', 'e2e-buyer-dispute');
-    // Ensure at least one paid transaction exists
-    await createPaidTransaction(SELLER.id, BUYER.id, 100);
-  });
+// Create users once for all tests
+test.beforeAll(async () => {
+  SELLER = await createTestUser('seller', 'e2e-seller-dispute');
+  BUYER = await createTestUser('buyer', 'e2e-buyer-dispute');
+  // Ensure at least one paid transaction exists
+  await createPaidTransaction(SELLER.id, BUYER.id, 100);
+});
 
+test.describe('Dispute Flow - Complete Journey', () => {
   test('buyer can create dispute on paid transaction', async ({ page }) => {
     // Login as buyer
     await loginUser(page, BUYER);

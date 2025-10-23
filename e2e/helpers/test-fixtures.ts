@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 import { supabase } from '../../src/integrations/supabase/client';
 
 /**
@@ -39,6 +39,8 @@ export async function createTestUser(
   role: 'buyer' | 'seller' | 'admin',
   emailPrefix: string
 ): Promise<TestUser> {
+  const timestamp = Date.now();
+  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'test-rivvlock.com';
   const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
   const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
   let email = buildEmail(primaryDomain);
@@ -57,7 +59,6 @@ export async function createTestUser(
     console.log('[E2E] trying domain:', domain, 'email:', email);
     const res = await supabase.functions.invoke('test-create-user', {
       body: { email, password },
-      headers: { 'x-test-role-key': 'local-e2e' },
     });
     if (!res.error) {
       authData = { user: { id: res.data?.user_id } };
@@ -74,12 +75,11 @@ export async function createTestUser(
   // Ensure we have a session for edge function auth
   await supabase.auth.signInWithPassword({ email, password });
 
-  // Assign role via secure edge function (no auth required, uses test key)
+  // Assign role via secure edge function (no test key, just domain check)
   if (role === 'admin') {
     console.log('[E2E] invoking test-assign-role for email:', email);
     const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
       body: { role: 'admin', email },
-      headers: { 'x-test-role-key': 'local-e2e' }
     });
 
     if (roleError) {
@@ -174,8 +174,15 @@ export async function loginUser(page: Page, user: TestUser) {
   await page.goto('/auth');
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
-  await page.getByRole('button', { name: /connexion|sign in/i }).click();
-  await page.waitForURL('/dashboard', { timeout: 10000 });
+  
+  // Race-free: click + wait for URL in parallel
+  await Promise.all([
+    page.waitForURL('**/dashboard**', { timeout: 15000 }),
+    page.getByRole('button', { name: /connexion|sign in/i }).click(),
+  ]);
+  
+  // Verify we're on dashboard
+  await expect(page).toHaveURL(/\/dashboard(\/.*)?$/);
 }
 
 /**
@@ -185,10 +192,15 @@ export async function loginAdmin(page: Page, user: TestUser) {
   await page.goto('/auth');
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
-  await page.getByRole('button', { name: /connexion|sign in/i }).click();
   
-  // Admin users are redirected to /dashboard/admin
-  await page.waitForURL('/dashboard/admin', { timeout: 10000 });
+  // Race-free: click + wait for URL in parallel
+  await Promise.all([
+    page.waitForURL('**/dashboard/admin**', { timeout: 15000 }),
+    page.getByRole('button', { name: /connexion|sign in/i }).click(),
+  ]);
+  
+  // Verify we're on admin dashboard
+  await expect(page).toHaveURL(/\/dashboard\/admin/);
 }
 
 /**

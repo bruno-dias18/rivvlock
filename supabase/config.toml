@@ -264,6 +264,9 @@ verify_jwt = false
 [functions.test-assign-role]
 verify_jwt = false
 
+[functions.test-create-user]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 
@@ -288,9 +291,6 @@ enabled = false
 port = 54327
 vector_port = 54328
 gw_port = 54329
-
-[functions.test-create-user]
-verify_jwt = false
 
 # [experimental]
 # orioledb_version = ""
