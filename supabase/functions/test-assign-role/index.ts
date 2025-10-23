@@ -89,6 +89,32 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   }
 
   if (!targetUserId) {
+    // Final fallback: scan recent users with allowed domains (last 15 minutes)
+    try {
+      logger.info("[TEST-ASSIGN-ROLE] Fallback scan for recent users");
+      const { data: usersData, error: usersErr } = await adminClient.auth.admin.listUsers({ page: 1, perPage: 200 });
+      if (!usersErr && usersData?.users?.length) {
+        const now = Date.now();
+        const recent = usersData.users
+          .filter((u: any) => typeof u.email === 'string')
+          .filter((u: any) => allowed.some(d => String(u.email).toLowerCase().endsWith(`@${d}`)))
+          .filter((u: any) => {
+            const created = new Date(u.created_at || u.createdAt || 0).getTime();
+            return Number.isFinite(created) && (now - created) < 15 * 60 * 1000;
+          })
+          .sort((a: any, b: any) => new Date(b.created_at || b.createdAt).getTime() - new Date(a.created_at || a.createdAt).getTime());
+        if (recent[0]) {
+          targetUserId = recent[0].id;
+          targetEmail = recent[0].email ?? null;
+          logger.info("[TEST-ASSIGN-ROLE] Fallback user selected", { user_id: targetUserId, email: targetEmail });
+        }
+      }
+    } catch (e) {
+      logger.warn("[TEST-ASSIGN-ROLE] Fallback scan failed", { error: String(e) });
+    }
+  }
+
+  if (!targetUserId) {
     logger.error("[TEST-ASSIGN-ROLE] No user found");
     return new Response(JSON.stringify({ error: "Not authenticated or user not found" }), {
       headers: { "Content-Type": "application/json" },
