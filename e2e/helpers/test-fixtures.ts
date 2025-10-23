@@ -6,6 +6,9 @@ import { supabase } from '../../src/integrations/supabase/client';
  * Provides reusable setup for creating test data
  */
 
+// Keep a map of credentials per created user id to switch sessions respecting RLS
+const userCredentials = new Map<string, { email: string; password: string }>();
+
 export interface TestUser {
   id: string;
   email: string;
