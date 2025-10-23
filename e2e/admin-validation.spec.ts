@@ -171,8 +171,8 @@ test.describe('Admin Validation - Dispute Management', () => {
     await expect(page.getByText(/litiges ouverts/i)).toBeVisible();
     await expect(page.getByText(/litiges escaladés/i)).toBeVisible();
     
-    // Navigate to disputes (use sidebar link)
-    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
+    // Navigate to disputes (use precise href selector)
+    await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
     
     // Should see all disputes
     await expect(page.getByRole('heading', { name: /tous les litiges/i })).toBeVisible();
@@ -183,7 +183,7 @@ test.describe('Admin Validation - Dispute Management', () => {
   });
 
   test('admin creates official proposal for escalated dispute', async ({ page }) => {
-    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
+    await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
     await page.getByRole('tab', { name: /escaladés/i }).click();
     
     // Click on escalated dispute

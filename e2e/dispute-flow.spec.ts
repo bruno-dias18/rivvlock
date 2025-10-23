@@ -121,8 +121,8 @@ test.describe('Dispute Flow - Complete Journey', () => {
     // Login as admin
     await loginAdmin(page, adminUser);
     
-    // Navigate to disputes (use sidebar link)
-    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
+    // Navigate to disputes (use precise href selector)
+    await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
     
     // Should see escalated disputes
     await expect(page.getByText(/litiges escaladés/i)).toBeVisible();
