@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createTestUser, loginAdmin, type TestUser } from './helpers/test-fixtures';
 
 /**
  * E2E tests for dispute escalation flow
@@ -19,11 +20,6 @@ const TEST_SELLER = {
 const TEST_BUYER = {
   email: 'buyer-test@rivvlock.com',
   password: 'Test123!@#',
-};
-
-const TEST_ADMIN = {
-  email: 'admin-test@rivvlock.com',
-  password: 'Admin123!@#',
 };
 
 test.describe('Dispute Flow - Complete Journey', () => {
@@ -119,14 +115,11 @@ test.describe('Dispute Flow - Complete Journey', () => {
   });
 
   test('admin can view and resolve escalated dispute', async ({ page }) => {
-    // Login as admin
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_ADMIN.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_ADMIN.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
+    // Create admin user
+    const adminUser = await createTestUser('admin', 'admin-e2e-dispute-resolve');
     
-    // Should redirect to admin dashboard
-    await page.waitForURL('/dashboard/admin');
+    // Login as admin
+    await loginAdmin(page, adminUser);
     
     // Navigate to disputes
     await page.getByRole('link', { name: /litiges/i }).click();

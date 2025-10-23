@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { createTestUser, loginAdmin, cleanupTestData, type TestUser } from './helpers/test-fixtures';
 
 /**
  * E2E tests for admin validation flow
@@ -10,21 +11,22 @@ import { test, expect } from '@playwright/test';
  * 4. Handle problematic transactions
  */
 
-const TEST_ADMIN = {
-  email: 'admin-test@rivvlock.com',
-  password: 'Admin123!@#',
-};
-
 test.describe('Admin Validation - Transaction Management', () => {
+  let adminUser: TestUser;
+
+  test.beforeAll(async () => {
+    // Create admin user for all tests
+    adminUser = await createTestUser('admin', 'admin-e2e-txn');
+  });
+
+  test.afterAll(async () => {
+    // Cleanup test data
+    await cleanupTestData([adminUser.id]);
+  });
+
   test.beforeEach(async ({ page }) => {
     // Login as admin
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_ADMIN.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_ADMIN.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    // Should redirect to admin dashboard
-    await page.waitForURL('/dashboard/admin');
+    await loginAdmin(page, adminUser);
   });
 
   test('admin can view all transactions with filters', async ({ page }) => {
@@ -148,12 +150,20 @@ test.describe('Admin Validation - Transaction Management', () => {
 });
 
 test.describe('Admin Validation - Dispute Management', () => {
+  let adminUser: TestUser;
+
+  test.beforeAll(async () => {
+    // Create admin user for all tests
+    adminUser = await createTestUser('admin', 'admin-e2e-disputes');
+  });
+
+  test.afterAll(async () => {
+    // Cleanup test data
+    await cleanupTestData([adminUser.id]);
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_ADMIN.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_ADMIN.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    await page.waitForURL('/dashboard/admin');
+    await loginAdmin(page, adminUser);
   });
 
   test('admin views all disputes in dashboard', async ({ page }) => {
@@ -234,12 +244,20 @@ test.describe('Admin Validation - Dispute Management', () => {
 });
 
 test.describe('Admin Validation - User Management', () => {
+  let adminUser: TestUser;
+
+  test.beforeAll(async () => {
+    // Create admin user for all tests
+    adminUser = await createTestUser('admin', 'admin-e2e-users');
+  });
+
+  test.afterAll(async () => {
+    // Cleanup test data
+    await cleanupTestData([adminUser.id]);
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_ADMIN.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_ADMIN.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    await page.waitForURL('/dashboard/admin');
+    await loginAdmin(page, adminUser);
   });
 
   test('admin can view user profile with access logs', async ({ page }) => {
@@ -285,12 +303,20 @@ test.describe('Admin Validation - User Management', () => {
 });
 
 test.describe('Admin Validation - Security & Audit', () => {
+  let adminUser: TestUser;
+
+  test.beforeAll(async () => {
+    // Create admin user for all tests
+    adminUser = await createTestUser('admin', 'admin-e2e-security');
+  });
+
+  test.afterAll(async () => {
+    // Cleanup test data
+    await cleanupTestData([adminUser.id]);
+  });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_ADMIN.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_ADMIN.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    await page.waitForURL('/dashboard/admin');
+    await loginAdmin(page, adminUser);
   });
 
   test('admin dashboard shows security metrics', async ({ page }) => {
