@@ -79,7 +79,7 @@ export async function createTestUser(
   if (role === 'admin') {
     console.log('[E2E] invoking test-assign-role for email:', email);
     const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
-      body: { role: 'admin', email },
+      body: { role: 'admin', email, user_id: authData.user.id },
     });
 
     if (roleError) {

@@ -16,6 +16,7 @@ import { createServiceClient } from "../_shared/supabase-utils.ts";
 const assignRoleSchema = z.object({
   role: z.enum(["admin"]).default("admin"),
   email: z.string().email().optional(),
+  user_id: z.string().uuid().optional(),
 });
 
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {
@@ -23,13 +24,14 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   const adminClient = createServiceClient();
 
-  // Determine target user via two secure paths:
-  // 1) Authenticated call (Authorization: Bearer <user_jwt>)
-  // 2) Test direct call with body.email provided (only from allowed domains)
+  // Determine target user via three secure paths:
+  // 1) Direct user_id provided (test-only fast path)
+  // 2) Authenticated call (Authorization: Bearer <user_jwt>)
+  // 3) Admin lookup by body.email (only from allowed domains)
   const authHeader = req.headers.get("Authorization");
 
-  let targetUserId: string | null = null;
-  let targetEmail: string | null = null;
+  let targetUserId: string | null = body.user_id ?? null;
+  let targetEmail: string | null = body.email ?? null;
 
   if (authHeader) {
     // Verify user JWT and extract id/email
