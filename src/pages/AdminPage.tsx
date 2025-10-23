@@ -122,7 +122,7 @@ export default function AdminPage() {
     <DashboardLayoutWithSidebar>
       <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{t('navigation.admin')}</h1>
+        <h1 className="text-3xl font-bold text-foreground">{t('admin.dashboard')}</h1>
         <p className="text-muted-foreground">
           {t('admin.dashboard')} - Interface d'administration
         </p>

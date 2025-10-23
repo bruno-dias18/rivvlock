@@ -160,6 +160,7 @@ export function AdminProblematicTransactions() {
           {problematicTransactions.map((transaction) => (
             <div
               key={transaction.id}
+              data-testid="problematic-transaction-card"
               className="flex items-center justify-between p-4 border rounded-lg bg-muted/50"
             >
               <div className="flex-1">

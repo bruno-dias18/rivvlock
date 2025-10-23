@@ -109,8 +109,8 @@ const TransactionCardComponent = ({
         </div>
       )}
 
-      <Card key={transaction.id} className={cn(
-        "mb-4 relative transition-all duration-200 hover:shadow-md hover:scale-[1.01]",
+      <Card key={transaction.id} data-testid="transaction-card" onClick={() => setIsDetailsOpen(true)} className={cn(
+        "mb-4 relative transition-all duration-200 hover:shadow-md hover:scale-[1.01] cursor-pointer",
         isServiceDatePassed() && "border-2 border-orange-400",
         hasNewActivity && "border-2 border-blue-500 dark:border-blue-400"
       )}>

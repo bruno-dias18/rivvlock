@@ -29,6 +29,7 @@ export function UserMenu() {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
+          aria-label="Menu utilisateur"
           variant="ghost"
           className="flex items-center gap-2 h-10 px-3 hover:bg-muted"
         >
@@ -64,7 +65,18 @@ export function UserMenu() {
         
         <Separator />
         
-        <div className="p-2">
+        <div className="p-2 space-y-1">
+          <Button
+            variant="ghost"
+            className="w-full justify-start gap-3 text-sm h-9 px-3"
+            onClick={() => {
+              setIsOpen(false);
+              navigate('/dashboard/admin/settings');
+            }}
+          >
+            <User className="h-4 w-4" />
+            Paramètres
+          </Button>
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-sm h-9 px-3 hover:bg-destructive hover:text-destructive-foreground"

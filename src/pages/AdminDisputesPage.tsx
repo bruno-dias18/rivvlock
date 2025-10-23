@@ -58,6 +58,7 @@ export default function AdminDisputesPage() {
             <AlertTriangle className="h-8 w-8" />
             Gestion des Litiges
           </h1>
+          <h2 className="text-lg font-semibold mt-1">Tous les litiges</h2>
           <p className="text-muted-foreground">
             Administration et résolution des litiges clients
           </p>

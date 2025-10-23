@@ -117,30 +117,32 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
             </Badge>
           </div>
         </DialogHeader>
-
+        <h3 className="text-lg font-semibold">Détails de la transaction</h3>
         <div className="space-y-4">
           {/* Counterparty Info & Description */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <h3 className="font-semibold mb-2">
-                {userRole === 'seller' ? t('roles.client') : t('roles.seller')}
-              </h3>
+              <h3 className="font-semibold mb-2">Profil vendeur</h3>
               <div className="text-sm space-y-1">
-                <p><strong>{t('common.name', 'Nom')}:</strong> {displayName}</p>
-                {transactionData.client_email && userRole === 'seller' && (
-                  <p><strong>Email:</strong> {transactionData.client_email}</p>
-                )}
+                <p><strong>Nom:</strong> {transaction.seller_display_name || t('roles.seller')}</p>
               </div>
             </div>
 
-            {/* Description */}
-            {transaction.description && (
-              <div>
-                <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground">{transaction.description}</p>
+            <div>
+              <h3 className="font-semibold mb-2">Profil acheteur</h3>
+              <div className="text-sm space-y-1">
+                <p><strong>Nom:</strong> {transaction.buyer_display_name || t('roles.buyer', 'Acheteur')}</p>
               </div>
-            )}
+            </div>
           </div>
+
+          {/* Description */}
+          {transaction.description && (
+            <div>
+              <h3 className="font-semibold mb-2">Description</h3>
+              <p className="text-sm text-muted-foreground">{transaction.description}</p>
+            </div>
+          )}
 
           <Separator />
 

@@ -58,6 +58,26 @@ const adminNavigationItems = [
     icon: Users,
   },
   {
+    title: 'Transactions',
+    url: '/dashboard/transactions',
+    icon: CreditCard,
+  },
+  {
+    title: 'Transactions problématiques',
+    url: '/dashboard/admin/problematic',
+    icon: AlertTriangle,
+  },
+  {
+    title: "Logs d'activité",
+    url: '/dashboard/admin/logs',
+    icon: FileText,
+  },
+  {
+    title: 'Utilisateurs',
+    url: '/dashboard/admin/users',
+    icon: Users,
+  },
+  {
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
