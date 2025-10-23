@@ -24,6 +24,10 @@ const ActivityHistoryPage = lazy(() => import("./pages/ActivityHistoryPage"));
 const AnnualReportsPage = lazy(() => import("./pages/AnnualReportsPage"));
 const AdminPage = lazy(() => import("./pages/AdminPage"));
 const AdminDisputesPage = lazy(() => import("./pages/AdminDisputesPage"));
+const AdminProblematicTransactionsPage = lazy(() => import("./pages/AdminProblematicTransactionsPage"));
+const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
+const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
+const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -112,6 +116,22 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/admin/disputes", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminDisputesPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/problematic", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminProblematicTransactionsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/logs", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminLogsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/users", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminUsersPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/settings", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminSettingsPage)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 

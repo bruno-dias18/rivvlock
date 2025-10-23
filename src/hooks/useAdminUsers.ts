@@ -9,6 +9,9 @@ export interface AdminUser {
   country: string;
   verified: boolean;
   created_at: string;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
 }
 
 export const useAdminUsers = (limit = 10) => {
@@ -18,7 +21,7 @@ export const useAdminUsers = (limit = 10) => {
       // Use secure profile access with minimal data only
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, user_type, country, verified, created_at')
+        .select('id, user_id, user_type, country, verified, created_at, first_name, last_name, company_name')
         .order('created_at', { ascending: false })
         .limit(limit);
 
