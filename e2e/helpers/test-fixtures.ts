@@ -40,14 +40,16 @@ export async function createTestUser(
   if (authError) throw new Error(`Failed to create test user: ${authError.message}`);
   if (!authData.user) throw new Error('No user data returned');
 
-  // Update profile with role if admin
+  // Insert into user_roles if admin
   if (role === 'admin') {
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ role: 'admin' })
-      .eq('id', authData.user.id);
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: authData.user.id,
+        role: 'admin'
+      });
 
-    if (updateError) throw new Error(`Failed to set admin role: ${updateError.message}`);
+    if (roleError) throw new Error(`Failed to set admin role: ${roleError.message}`);
   }
 
   return {
@@ -114,6 +116,19 @@ export async function loginUser(page: Page, user: TestUser) {
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
   await page.getByRole('button', { name: /connexion|sign in/i }).click();
   await page.waitForURL('/dashboard', { timeout: 10000 });
+}
+
+/**
+ * Logs in an admin user and waits for admin dashboard
+ */
+export async function loginAdmin(page: Page, user: TestUser) {
+  await page.goto('/auth');
+  await page.getByLabel(/email/i).fill(user.email);
+  await page.getByLabel(/mot de passe|password/i).fill(user.password);
+  await page.getByRole('button', { name: /connexion|sign in/i }).click();
+  
+  // Admin users are redirected to /dashboard/admin
+  await page.waitForURL('/dashboard/admin', { timeout: 10000 });
 }
 
 /**
@@ -186,13 +201,30 @@ export async function createTestDispute(
  * Cleans up test data after test completion
  */
 export async function cleanupTestData(testUserIds: string[]) {
+  // Delete user roles first (FK constraint)
+  await supabase.from('user_roles').delete().in('user_id', testUserIds);
+  
+  // Delete conversations
+  await supabase.from('conversations').delete().in('seller_id', testUserIds);
+  await supabase.from('conversations').delete().in('buyer_id', testUserIds);
+  
+  // Delete disputes via transactions
+  const { data: transactions } = await supabase
+    .from('transactions')
+    .select('id')
+    .or(`seller_id.in.(${testUserIds.join(',')}),buyer_id.in.(${testUserIds.join(',')})`);
+  
+  if (transactions) {
+    const transactionIds = transactions.map(t => t.id);
+    await supabase.from('disputes').delete().in('transaction_id', transactionIds);
+  }
+  
   // Delete transactions
   await supabase.from('transactions').delete().in('seller_id', testUserIds);
   await supabase.from('transactions').delete().in('buyer_id', testUserIds);
 
-  // Delete profiles
-  await supabase.from('profiles').delete().in('id', testUserIds);
+  // Delete profiles (will cascade to user_roles via FK)
+  await supabase.from('profiles').delete().in('user_id', testUserIds);
 
-  // Delete auth users (requires service role key in real tests)
-  // This would typically be done via admin API
+  // Note: Auth users deletion requires service role in edge function
 }
