@@ -270,6 +270,12 @@ verify_jwt = false
 [functions.test-create-user]
 verify_jwt = false
 
+[functions.test-create-transaction]
+verify_jwt = false
+
+[functions.test-join-transaction]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 

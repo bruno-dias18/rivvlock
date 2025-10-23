@@ -194,12 +194,10 @@ export async function createTestTransaction(
   if (!tx?.id) throw new Error('No transaction returned from edge function or fallback');
 
 
-  // 2) Attach buyer if provided using security definer RPC
-  if (buyerId) {
-    await signInAs(buyerId);
-    const { error: joinErr } = await supabase.rpc('assign_self_as_buyer', {
-      p_transaction_id: tx.id,
-      p_token: tx.shared_link_token,
+  // 2) Attach buyer via test function (no auth needed)
+  if (buyerId && tx) {
+    const { error: joinErr } = await supabase.functions.invoke('test-join-transaction', {
+      body: { transaction_id: tx.id, token: tx.shared_link_token, buyer_id: buyerId }
     });
     if (joinErr) throw new Error(`Failed to attach buyer: ${joinErr.message}`);
   }
