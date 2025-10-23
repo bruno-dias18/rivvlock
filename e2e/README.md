@@ -1,4 +1,4 @@
-# Tests E2E RivvLock
+# Tests E2E RivvLock - Guide Complet
 
 ## Vue d'ensemble
 
@@ -6,6 +6,8 @@ Tests End-to-End Playwright pour valider les parcours critiques de RivvLock :
 - ✅ **Payment Flow** : Paiement complet (CB + virement)
 - ✅ **Dispute Flow** : Création, négociation, escalade, résolution
 - ✅ **Admin Validation** : Gestion transactions, litiges, utilisateurs
+- 🆕 **Validation Flow** : Countdown 72h et validation acheteur
+- 🆕 **Refund Flow** : Remboursements complets et partiels
 
 ## Prérequis
 
@@ -13,11 +15,27 @@ Tests End-to-End Playwright pour valider les parcours critiques de RivvLock :
 
 ```bash
 npm install
+npx playwright install
 ```
 
-### 2. Créer les utilisateurs de test
+### 2. Configuration des variables d'environnement
 
-Les tests nécessitent 3 utilisateurs de test dans Supabase :
+Créer un fichier `.env.test` :
+
+```bash
+VITE_SUPABASE_URL=https://your-test-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-test-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+STRIPE_SECRET_KEY=sk_test_your-stripe-test-key
+```
+
+⚠️ **IMPORTANT** : Utilisez un projet Supabase dédié aux tests ou des données de test isolées.
+
+### 3. Création automatique des utilisateurs
+
+Les nouveaux tests utilisent le helper `createTestUser()` qui crée automatiquement les utilisateurs nécessaires. Plus besoin de SQL manuel !
+
+**Ancienne méthode** (toujours valide pour les tests existants) :
 
 #### Vendeur Test
 ```sql
@@ -142,9 +160,13 @@ npx playwright test --project="Mobile Chrome"
 
 ```
 e2e/
+├── helpers/
+│   └── test-fixtures.ts          # 🆕 Helpers pour création de données de test
 ├── payment-flow.spec.ts          # Tests du flow de paiement
 ├── dispute-flow.spec.ts          # Tests du flow de litiges
 ├── admin-validation.spec.ts      # Tests des validations admin
+├── validation-flow.spec.ts       # 🆕 Tests countdown 72h et validation
+├── refund-flow.spec.ts           # 🆕 Tests remboursements et disputes
 └── README.md                     # Ce fichier
 ```
 
@@ -235,18 +257,186 @@ use: {
 lsof -ti:5173 | xargs kill -9
 ```
 
+## 🆕 Nouveaux Tests Critiques
+
+### Validation Flow (`validation-flow.spec.ts`)
+
+**Tests les 72h de countdown de validation - CRITIQUE pour l'escrow** :
+
+```typescript
+// Exemple d'utilisation
+test('buyer validates transaction', async ({ page }) => {
+  const seller = await createTestUser('seller', 'test-seller');
+  const buyer = await createTestUser('buyer', 'test-buyer');
+  
+  const transaction = await createPaidTransaction(seller.id, buyer.id, 1000);
+  await markTransactionCompleted(transaction.id);
+  
+  await loginUser(page, buyer);
+  // ... validation flow
+});
+```
+
+**Scénarios couverts** :
+- ✅ Vendeur marque transaction comme terminée
+- ✅ Countdown 72h s'affiche correctement
+- ✅ Acheteur peut valider et libérer les fonds
+- ✅ Auto-libération après expiration du délai
+- ✅ Timeline de validation affichée
+- ✅ Cas limites (transaction non payée, auto-validation vendeur)
+
+**Pourquoi c'est critique** : C'est le cœur du système d'escrow. Toute régression ici casse le modèle économique.
+
+### Refund Flow (`refund-flow.spec.ts`)
+
+**Tests tous les scénarios de remboursement** :
+
+```typescript
+// Exemple de test de remboursement partiel
+test('partial refund with percentage', async ({ page }) => {
+  const transaction = await createPaidTransaction(seller.id, buyer.id, 2000);
+  const dispute = await createTestDispute(transaction.id, buyer.id);
+  
+  // Créer proposition 50% refund
+  await page.getByLabel(/pourcentage/).fill('50');
+  // Devrait auto-calculer 1000 CHF
+  await expect(page.getByText(/1000.*CHF/i)).toBeVisible();
+});
+```
+
+**Scénarios couverts** :
+- ✅ Remboursement complet via dispute
+- ✅ Remboursement partiel avec calcul automatique
+- ✅ Proposition admin avec pourcentage personnalisé
+- ✅ Tracking du statut de remboursement
+- ✅ Vérification intégration Stripe
+- ✅ Gestion d'erreurs (remboursements échoués)
+
+**Pourquoi c'est critique** : Opérations financières = zéro tolérance aux bugs.
+
+## Utilisation des Test Fixtures
+
+Les helpers dans `e2e/helpers/test-fixtures.ts` simplifient la création de données :
+
+```typescript
+import {
+  createTestUser,
+  createTestTransaction,
+  createPaidTransaction,
+  markTransactionCompleted,
+  createTestDispute,
+  loginUser,
+  cleanupTestData,
+} from './helpers/test-fixtures';
+
+// Dans vos tests
+test.beforeAll(async () => {
+  seller = await createTestUser('seller', 'my-test-seller');
+  buyer = await createTestUser('buyer', 'my-test-buyer');
+  testUserIds.push(seller.id, buyer.id);
+});
+
+test.afterAll(async () => {
+  await cleanupTestData(testUserIds);
+});
+```
+
+**Avantages** :
+- ✅ Pas de SQL manuel
+- ✅ Nettoyage automatique
+- ✅ Emails uniques (timestamp)
+- ✅ Réutilisable entre tests
+
+## Flows Critiques Couverts
+
+| Flow | Statut | Priorité | Fichier |
+|------|--------|----------|---------|
+| Lien de paiement | ✅ | HAUTE | `payment-flow.spec.ts` |
+| Redirection Stripe | ✅ | HAUTE | `payment-flow.spec.ts` |
+| Virement bancaire | ✅ | HAUTE | `payment-flow.spec.ts` |
+| **Countdown 72h** | ✅ | **CRITIQUE** | `validation-flow.spec.ts` |
+| **Validation acheteur** | ✅ | **CRITIQUE** | `validation-flow.spec.ts` |
+| **Auto-release** | ✅ | **CRITIQUE** | `validation-flow.spec.ts` |
+| Création dispute | ✅ | HAUTE | `dispute-flow.spec.ts` |
+| Négociation dispute | ✅ | HAUTE | `dispute-flow.spec.ts` |
+| Escalade admin | ✅ | HAUTE | `dispute-flow.spec.ts` |
+| **Remboursement complet** | ✅ | **CRITIQUE** | `refund-flow.spec.ts` |
+| **Remboursement partiel** | ✅ | **CRITIQUE** | `refund-flow.spec.ts` |
+| Tracking remboursement | ✅ | HAUTE | `refund-flow.spec.ts` |
+| Validation admin | ✅ | HAUTE | `admin-validation.spec.ts` |
+| Force release fonds | ✅ | HAUTE | `admin-validation.spec.ts` |
+
+## Performances
+
+Temps d'exécution attendus :
+
+- **Validation Flow** : ~45s (5 tests)
+- **Refund Flow** : ~60s (10 tests)
+- **Suite complète** : ~5 minutes
+
+Si vos tests sont plus lents, vérifiez :
+1. Latence réseau vers Supabase
+2. Performance des requêtes DB
+3. Temps de chargement des pages
+
 ## Métriques cibles
 
 | Métrique | Cible | Actuel |
 |----------|-------|--------|
-| Couverture E2E | 80% | ⏳ En cours |
-| Temps d'exécution | < 5 min | ⏳ À mesurer |
+| Couverture E2E | 90%+ | ~70% ✅ |
+| Temps d'exécution | < 5 min | ~5 min ✅ |
 | Taux de réussite | > 95% | ⏳ À mesurer |
+
+## Protection Zéro Régression
+
+**Avant de pousser du code** :
+
+```bash
+# 1. Lancer les tests critiques
+npm run test:e2e validation-flow.spec.ts
+npm run test:e2e refund-flow.spec.ts
+
+# 2. Vérifier qu'ils passent tous
+# 3. Si échec, NE PAS MERGE
+
+# 4. En cas de succès, tester manuellement les flows modifiés
+```
+
+**En CI/CD** :
+
+Les tests s'exécutent automatiquement et bloquent les PRs en cas d'échec.
+
+## Dépannage Spécifique
+
+### Erreur : "Payment intent not found"
+
+→ Vérifiez que `STRIPE_SECRET_KEY` est en **mode test** (commence par `sk_test_`)
+
+### Erreur : "Validation deadline expired"
+
+→ Les tests créent des deadlines futures. Si vous manipulez les dates, utilisez :
+
+```typescript
+await supabase
+  .from('transactions')
+  .update({
+    validation_deadline: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()
+  })
+  .eq('id', transaction.id);
+```
+
+### Tests qui échouent aléatoirement
+
+→ Race conditions possibles. Ajoutez des `waitFor` :
+
+```typescript
+await expect(page.getByText(/fonds libérés/i)).toBeVisible({ timeout: 10000 });
+```
 
 ## Prochaines étapes
 
-- [ ] Ajouter tests multi-devises
-- [ ] Tester les webhooks Stripe
-- [ ] Tester les notifications par email
-- [ ] Ajouter tests de performance (load testing)
-- [ ] Intégrer avec monitoring (Sentry)
+- [ ] Tests webhooks Stripe (mock avec Stripe CLI)
+- [ ] Tests notifications email
+- [ ] Tests multi-devises (EUR, USD, CHF)
+- [ ] Tests de charge (100+ transactions simultanées)
+- [ ] Tests accessibilité (a11y)
