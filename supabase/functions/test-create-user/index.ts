@@ -22,8 +22,8 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   logger.info("[TEST-CREATE-USER] Start", { email });
 
-  // Allow only specific domains for tests
-  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "gmail.com,outlook.com,test-rivvlock.com,example.org,example.com")
+  const allowedSecret = Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "";
+  const allowed = `${allowedSecret},gmail.com,outlook.com,test-rivvlock.com,example.org,example.com`
     .split(",")
     .map((d) => d.replace(/^@/, "").trim().toLowerCase())
     .filter(Boolean);
