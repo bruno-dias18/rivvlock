@@ -202,17 +202,16 @@ export async function createTestTransaction(
     if (joinErr) throw new Error(`Failed to attach buyer: ${joinErr.message}`);
   }
 
-  // 3) Back to seller, set status/intent if needed
-  await signInAs(sellerId);
+// 3) Mark as paid via test function (bypasses RLS safely)
   if (status !== 'pending' || paymentIntentId) {
-    const { error: updErr } = await supabase
-      .from('transactions')
-      .update({
-        status,
-        stripe_payment_intent_id: paymentIntentId || null,
-      })
-      .eq('id', tx.id);
-    if (updErr) throw new Error(`Failed to update transaction: ${updErr.message}`);
+    const { error: markErr } = await supabase.functions.invoke('test-mark-transaction-paid', {
+      body: {
+        transaction_id: tx.id,
+        payment_intent_id: paymentIntentId || undefined,
+        status: status as 'paid' | 'completed',
+      }
+    });
+    if (markErr) throw new Error(`Failed to mark paid: ${markErr.message}`);
   }
 
   return {
@@ -283,14 +282,15 @@ export async function createPaidTransaction(
   const paymentBlockedAt = new Date();
   const validationDeadline = new Date(paymentBlockedAt.getTime() + 72 * 60 * 60 * 1000);
 
-  await supabase
-    .from('transactions')
-    .update({
-      payment_blocked_at: paymentBlockedAt.toISOString(),
-      validation_deadline: validationDeadline.toISOString(),
-    })
-    .eq('id', transaction.id);
-
+  // Ensure payment_blocked_at and validation_deadline via edge function
+  const { error: blockErr } = await supabase.functions.invoke('test-mark-transaction-paid', {
+    body: {
+      transaction_id: transaction.id,
+      set_blocked_now: true,
+      validation_hours: 72,
+    }
+  });
+  if (blockErr) throw new Error(`Failed to set validation deadline: ${blockErr.message}`);
   return transaction;
 }
 
