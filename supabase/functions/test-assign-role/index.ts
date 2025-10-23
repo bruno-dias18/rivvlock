@@ -22,6 +22,8 @@ const assignRoleSchema = z.object({
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   const { body } = ctx;
 
+  logger.info("[TEST-ASSIGN-ROLE] Start", { role: body.role, email: body.email, user_id: body.user_id });
+
   const adminClient = createServiceClient();
 
   // Determine target user via three secure paths:
@@ -33,7 +35,8 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   let targetUserId: string | null = body.user_id ?? null;
   let targetEmail: string | null = body.email ?? null;
 
-  if (authHeader) {
+  if (!targetUserId && authHeader) {
+    logger.info("[TEST-ASSIGN-ROLE] Trying JWT auth");
     // Verify user JWT and extract id/email
     const userClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -44,14 +47,16 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     if (!error && data.user) {
       targetUserId = data.user.id;
       targetEmail = (data.user as any).email ?? null;
+      logger.info("[TEST-ASSIGN-ROLE] User from JWT", { user_id: targetUserId });
     }
   }
 
   if (!targetUserId && body.email) {
+    logger.info("[TEST-ASSIGN-ROLE] Trying email lookup", { email: body.email });
     // Test direct path: find user by email via admin API
     const { data, error } = await adminClient.auth.admin.listUsers({ email: body.email });
     if (error) {
-      logger.error("[TEST-ASSIGN-ROLE] listUsers error:", error);
+      logger.error("[TEST-ASSIGN-ROLE] listUsers error", { error: error.message });
       return new Response(JSON.stringify({ error: error.message }), {
         headers: { "Content-Type": "application/json" },
         status: 500,
@@ -61,10 +66,12 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     if (user) {
       targetUserId = user.id;
       targetEmail = user.email ?? body.email;
+      logger.info("[TEST-ASSIGN-ROLE] User from email", { user_id: targetUserId });
     }
   }
 
   if (!targetUserId) {
+    logger.error("[TEST-ASSIGN-ROLE] No user found");
     return new Response(JSON.stringify({ error: "Not authenticated or user not found" }), {
       headers: { "Content-Type": "application/json" },
       status: 401,
@@ -77,14 +84,19 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     .split(",")
     .map(d => d.replace(/^@/, '').trim().toLowerCase())
     .filter(Boolean);
+  
+  logger.info("[TEST-ASSIGN-ROLE] Checking email domain", { email, allowed });
+  
   const isAllowed = allowed.some(d => email.toLowerCase().endsWith(`@${d}`));
   if (!isAllowed) {
-    logger.warn("[TEST-ASSIGN-ROLE] Attempt from non-allowed email:", email);
+    logger.warn("[TEST-ASSIGN-ROLE] Non-allowed email", { email, allowed });
     return new Response(JSON.stringify({ error: "Not allowed" }), {
       headers: { "Content-Type": "application/json" },
       status: 403,
     });
   }
+
+  logger.info("[TEST-ASSIGN-ROLE] Upserting role", { user_id: targetUserId, role: body.role });
 
   // Upsert role using service role (bypasses RLS safely)
   const { error } = await adminClient
@@ -92,13 +104,14 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     .upsert({ user_id: targetUserId, role: body.role }, { onConflict: "user_id,role" });
 
   if (error) {
-    logger.error("[TEST-ASSIGN-ROLE] Upsert error:", error);
+    logger.error("[TEST-ASSIGN-ROLE] Upsert error", { error: error.message });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { "Content-Type": "application/json" },
       status: 500,
     });
   }
 
+  logger.info("[TEST-ASSIGN-ROLE] Success", { user_id: targetUserId, role: body.role });
   return successResponse({ success: true, user_id: targetUserId, role: body.role, via: authHeader ? "jwt" : "direct" });
 };
 

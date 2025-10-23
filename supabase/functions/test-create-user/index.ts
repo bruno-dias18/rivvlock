@@ -20,20 +20,26 @@ const createUserSchema = z.object({
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   const { email, password } = ctx.body as z.infer<typeof createUserSchema>;
 
+  logger.info("[TEST-CREATE-USER] Start", { email });
+
   // Allow only specific domains for tests
   const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "gmail.com,outlook.com,test-rivvlock.com,example.org,example.com")
     .split(",")
     .map((d) => d.replace(/^@/, "").trim().toLowerCase())
     .filter(Boolean);
+  
+  logger.info("[TEST-CREATE-USER] Allowed domains", { allowed });
+  
   const isAllowed = allowed.some((d) => email.toLowerCase().endsWith(`@${d}`));
   if (!isAllowed) {
-    logger.warn("[TEST-CREATE-USER] Non-allowed email:", email);
+    logger.warn("[TEST-CREATE-USER] Non-allowed email", { email, allowed });
     return new Response(JSON.stringify({ error: "Not allowed" }), {
       headers: { "Content-Type": "application/json" },
       status: 403,
     });
   }
 
+  logger.info("[TEST-CREATE-USER] Email allowed, creating user");
   const admin = createServiceClient();
 
   // Create user via admin API (bypasses signup restrictions)
@@ -44,13 +50,14 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   });
 
   if (error) {
-    logger.error("[TEST-CREATE-USER] createUser error:", error);
+    logger.error("[TEST-CREATE-USER] createUser error", { error: error.message });
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { "Content-Type": "application/json" },
       status: 400,
     });
   }
 
+  logger.info("[TEST-CREATE-USER] User created successfully", { user_id: data.user?.id });
   return successResponse({ user_id: data.user?.id, email });
 };
 
