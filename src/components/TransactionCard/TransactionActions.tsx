@@ -67,13 +67,12 @@ const TransactionActionsComponent = ({
           className={`${isMobile ? "justify-center" : ""} transition-all duration-200 hover:scale-105 active:scale-95`}
           disabled={
             !transaction.service_date || 
-            !transaction.service_end_date || 
             transaction.date_change_status === 'pending_approval' ||
             (transaction.payment_deadline && new Date(transaction.payment_deadline) <= new Date())
           }
         >
           <CreditCard className="h-4 w-4 mr-2" />
-          {!transaction.service_date || !transaction.service_end_date
+          {!transaction.service_date
             ? t('transactions.awaitingDates')
             : transaction.date_change_status === 'pending_approval'
             ? t('transactions.dateValidationPending')
