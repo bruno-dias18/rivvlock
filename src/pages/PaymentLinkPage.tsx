@@ -63,32 +63,34 @@ export default function PaymentLinkPage() {
       
       let payload: any | null = null;
 
-      // 1) Primary path: Supabase SDK (POST)
-      try {
-        const { data, error } = await supabase.functions.invoke('get-transaction-by-token', {
-          body: { token: finalToken }
-        });
-        if (error) throw error;
-        payload = data;
-      } catch (primaryErr: any) {
-        // 2) Fallback path: direct GET with full URL (supports public functions)
-        // Note: We include anon key headers as recommended for direct calls
-        const endpoint = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
-        const res = await fetch(endpoint, {
+      // Single, deterministic path: direct GET call with token in query (avoids body parsing issues)
+      const endpoint = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
+      let res = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0',
+        },
+      });
+
+      // Retry once on transient rate limit
+      if (res.status === 429) {
+        await new Promise((r) => setTimeout(r, 400));
+        res = await fetch(endpoint, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             apikey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0',
-            Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdGh5eHFydWhmdXlmbWV4dHdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxODIxMzcsImV4cCI6MjA3Mzc1ODEzN30.QFrsO1ThBjlQ_WRFGSHz-Pc3Giot1ijgUqSHVLykGW0'
-          }
+          },
         });
-        const json = await res.json().catch(() => null);
-        if (!res.ok) {
-          const reason = json?.error || json?.message || primaryErr?.message || 'Edge Function non disponible';
-          throw new Error(reason);
-        }
-        payload = json;
       }
+
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        const reason = json?.error || json?.message || 'Edge Function non disponible';
+        throw new Error(reason);
+      }
+      payload = json;
 
       // Accept either { success: true, transaction } or just { transaction }
       const data = payload || {};
