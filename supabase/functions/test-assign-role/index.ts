@@ -26,10 +26,16 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
     });
   }
 
-  // Extra safety: only allow test emails
+  // Extra safety: only allow emails from configured test domains
   const email = (user as any).email || "";
-  if (!email.endsWith("@test-rivvlock.com")) {
-    logger.warn("[TEST-ASSIGN-ROLE] Attempt from non-test email:", email);
+  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "test-rivvlock.com")
+    .split(",")
+    .map(d => d.trim().toLowerCase())
+    .filter(Boolean);
+
+  const isAllowed = allowed.some(d => email.toLowerCase().endsWith(`@${d}`));
+  if (!isAllowed) {
+    logger.warn("[TEST-ASSIGN-ROLE] Attempt from non-allowed email:", email);
     return new Response(JSON.stringify({ error: "Not allowed" }), {
       headers: { "Content-Type": "application/json" },
       status: 403,

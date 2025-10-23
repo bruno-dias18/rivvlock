@@ -150,8 +150,10 @@ test.describe('Admin Validation - Dispute Management', () => {
   });
 
   test.afterAll(async () => {
-    // Cleanup test data
-    await cleanupTestData([adminUser.id]);
+    // Only cleanup if user was successfully created
+    if (adminUser?.id) {
+      await cleanupTestData([adminUser.id]);
+    }
   });
 
   test.beforeEach(async ({ page }) => {

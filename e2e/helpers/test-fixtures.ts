@@ -40,14 +40,20 @@ export async function createTestUser(
   emailPrefix: string
 ): Promise<TestUser> {
   const timestamp = Date.now();
-  const email = `${emailPrefix}-${timestamp}@test-rivvlock.com`;
+  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'test-rivvlock.com';
+  const buildEmail = (domain: string) => `${emailPrefix}-${timestamp}@${domain}`;
+  let email = buildEmail(primaryDomain);
   const password = 'Test123!@#$%';
 
-  // Create auth user
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  // Create auth user with automatic fallback if domain is restricted
+  let authData, authError;
+  ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
+
+  // If "invalid email" error, retry with example.org
+  if (authError && /invalid/i.test(authError.message || '')) {
+    email = buildEmail('example.org');
+    ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
+  }
 
   if (authError) throw new Error(`Failed to create test user: ${authError.message}`);
   if (!authData.user) throw new Error('No user data returned');
