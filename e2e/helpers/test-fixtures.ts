@@ -39,37 +39,37 @@ export async function createTestUser(
   role: 'buyer' | 'seller' | 'admin',
   emailPrefix: string
 ): Promise<TestUser> {
-  const timestamp = Date.now();
-  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'test-rivvlock.com';
-  const buildEmail = (domain: string) => `${emailPrefix}-${timestamp}@${domain}`;
+  const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+  const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
   let email = buildEmail(primaryDomain);
   const password = 'Test123!@#$%';
 
   // Create auth user with automatic fallback if domain is restricted
-  let authData: any = null, authError: any = null;
-  
-  // Debug logs to understand failures in CI/local
-  console.log('[E2E] createTestUser:', { role, primaryDomain, email });
-  
-  // Use edge function (admin API) to bypass domain restrictions
-  let createRes = await supabase.functions.invoke('test-create-user', {
-    body: { email, password },
-    headers: { 'x-test-role-key': 'local-e2e' }
-  });
-  
-  if (createRes.error) {
-    console.warn('[E2E] primary create-user error:', createRes.error?.message);
-    email = buildEmail('example.org');
-    console.log('[E2E] retrying create-user with fallback domain:', email);
-    createRes = await supabase.functions.invoke('test-create-user', {
+  let authData: any = null;
+
+  console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
+
+  const candidateDomains = [primaryDomain, 'example.org', 'example.com'];
+  let lastError: any = null;
+
+  for (const domain of candidateDomains) {
+    email = buildEmail(domain);
+    console.log('[E2E] trying domain:', domain, 'email:', email);
+    const res = await supabase.functions.invoke('test-create-user', {
       body: { email, password },
-      headers: { 'x-test-role-key': 'local-e2e' }
+      headers: { 'x-test-role-key': 'local-e2e' },
     });
+    if (!res.error) {
+      authData = { user: { id: res.data?.user_id } };
+      console.log('[E2E] user created:', authData.user.id, 'email:', email);
+      break;
+    }
+    console.warn('[E2E] create-user error for', domain, ':', res.error?.message);
+    lastError = res.error;
   }
 
-  if (createRes.error) throw new Error(`Failed to create test user: ${createRes.error.message}`);
-  authData = { user: { id: createRes.data?.user_id } };
-  if (!authData.user?.id) throw new Error('No user data returned');
+  if (!authData) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
+  if (!authData.user) throw new Error('No user data returned');
 
   // Ensure we have a session for edge function auth
   await supabase.auth.signInWithPassword({ email, password });
