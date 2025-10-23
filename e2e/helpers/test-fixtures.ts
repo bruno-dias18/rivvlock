@@ -47,11 +47,17 @@ export async function createTestUser(
 
   // Create auth user with automatic fallback if domain is restricted
   let authData, authError;
+  
+  // Debug logs to understand failures in CI/local
+  // These logs only print during tests
+  console.log('[E2E] createTestUser:', { role, primaryDomain, email });
   ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
-
+  
   // If any error, retry with example.org (handles domain restrictions)
   if (authError) {
+    console.warn('[E2E] primary signUp error:', authError?.message);
     email = buildEmail('example.org');
+    console.log('[E2E] retrying signUp with fallback domain:', email);
     ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
   }
 
@@ -63,11 +69,15 @@ export async function createTestUser(
 
   // Assign role via secure edge function (service role), restricted to @test-rivvlock.com
   if (role === 'admin') {
+    console.log('[E2E] invoking test-assign-role for email:', email);
     const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
       body: { role: 'admin' },
     });
 
-    if (roleError) throw new Error(`Failed to set admin role: ${roleError.message}`);
+    if (roleError) {
+      console.error('[E2E] test-assign-role error:', roleError?.message);
+      throw new Error(`Failed to set admin role: ${roleError.message}`);
+    }
   }
   // Store credentials for later session switches
   userCredentials.set(authData.user.id, { email, password });
