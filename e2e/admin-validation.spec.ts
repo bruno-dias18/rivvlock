@@ -37,8 +37,8 @@ test.describe('Admin Validation - Transaction Management', () => {
     await expect(page.getByText(/transactions actives/i)).toBeVisible();
     await expect(page.getByText(/en attente de validation/i)).toBeVisible();
     
-    // Navigate to transactions
-    await page.getByRole('link', { name: /transactions/i }).click();
+    // Navigate to transactions (use sidebar link)
+    await page.locator('aside').getByRole('link', { name: /transactions/i }).click();
     
     // Should see all transactions (not just own)
     const transactionCards = page.locator('[data-testid="transaction-card"]');
@@ -54,7 +54,7 @@ test.describe('Admin Validation - Transaction Management', () => {
   });
 
   test('admin can view transaction details including sensitive data', async ({ page }) => {
-    await page.getByRole('link', { name: /transactions/i }).click();
+    await page.locator('aside').getByRole('link', { name: /transactions/i }).click();
     
     // Click on first transaction
     await page.locator('[data-testid="transaction-card"]').first().click();
@@ -72,7 +72,7 @@ test.describe('Admin Validation - Transaction Management', () => {
   });
 
   test('admin validates seller completion', async ({ page }) => {
-    await page.getByRole('link', { name: /transactions/i }).click();
+    await page.locator('aside').getByRole('link', { name: /transactions/i }).click();
     
     // Find transaction awaiting validation
     await page.getByText(/en attente de validation/i).first().click();
@@ -99,7 +99,7 @@ test.describe('Admin Validation - Transaction Management', () => {
 
   test('admin can force release funds on problematic transaction', async ({ page }) => {
     // Navigate to problematic transactions
-    await page.getByRole('link', { name: /transactions problématiques/i }).click();
+    await page.locator('aside').getByRole('link', { name: /transactions problématiques/i }).click();
     
     // Should see list of problematic transactions
     await expect(page.getByText(/transactions nécessitant une attention/i)).toBeVisible();
@@ -125,7 +125,7 @@ test.describe('Admin Validation - Transaction Management', () => {
   });
 
   test('admin can delete expired transaction', async ({ page }) => {
-    await page.getByRole('link', { name: /transactions/i }).click();
+    await page.locator('aside').getByRole('link', { name: /transactions/i }).click();
     
     // Filter expired transactions
     await page.getByRole('button', { name: /filtres/i }).click();
@@ -171,8 +171,8 @@ test.describe('Admin Validation - Dispute Management', () => {
     await expect(page.getByText(/litiges ouverts/i)).toBeVisible();
     await expect(page.getByText(/litiges escaladés/i)).toBeVisible();
     
-    // Navigate to disputes
-    await page.getByRole('link', { name: /litiges/i }).click();
+    // Navigate to disputes (use sidebar link)
+    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
     
     // Should see all disputes
     await expect(page.getByRole('heading', { name: /tous les litiges/i })).toBeVisible();
@@ -183,7 +183,7 @@ test.describe('Admin Validation - Dispute Management', () => {
   });
 
   test('admin creates official proposal for escalated dispute', async ({ page }) => {
-    await page.getByRole('link', { name: /litiges/i }).click();
+    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
     await page.getByRole('tab', { name: /escaladés/i }).click();
     
     // Click on escalated dispute
@@ -220,7 +220,7 @@ test.describe('Admin Validation - Dispute Management', () => {
   });
 
   test('admin can force escalate dispute', async ({ page }) => {
-    await page.getByRole('link', { name: /litiges/i }).click();
+    await page.locator('aside').getByRole('link', { name: /litiges/i }).click();
     
     // Filter by open disputes
     await page.getByRole('tab', { name: /ouverts/i }).click();
@@ -261,7 +261,7 @@ test.describe('Admin Validation - User Management', () => {
   });
 
   test('admin can view user profile with access logs', async ({ page }) => {
-    await page.getByRole('link', { name: /utilisateurs/i }).click();
+    await page.locator('aside').getByRole('link', { name: /utilisateurs/i }).click();
     
     // Search for user
     await page.getByPlaceholder(/rechercher un utilisateur/i).fill('test@example.com');
@@ -280,7 +280,7 @@ test.describe('Admin Validation - User Management', () => {
   });
 
   test('admin access is logged in profile_access_logs', async ({ page }) => {
-    await page.getByRole('link', { name: /utilisateurs/i }).click();
+    await page.locator('aside').getByRole('link', { name: /utilisateurs/i }).click();
     await page.locator('[data-testid="user-row"]').first().click();
     
     // Admin viewing should create access log
@@ -330,7 +330,7 @@ test.describe('Admin Validation - Security & Audit', () => {
   });
 
   test('admin can view complete activity logs', async ({ page }) => {
-    await page.getByRole('link', { name: /logs d'activité/i }).click();
+    await page.locator('aside').getByRole('link', { name: /logs d'activité/i }).click();
     
     // Should see activity log table
     await expect(page.getByRole('table')).toBeVisible();
