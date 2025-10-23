@@ -46,23 +46,30 @@ export async function createTestUser(
   const password = 'Test123!@#$%';
 
   // Create auth user with automatic fallback if domain is restricted
-  let authData, authError;
+  let authData: any = null, authError: any = null;
   
   // Debug logs to understand failures in CI/local
-  // These logs only print during tests
   console.log('[E2E] createTestUser:', { role, primaryDomain, email });
-  ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
   
-  // If any error, retry with example.org (handles domain restrictions)
-  if (authError) {
-    console.warn('[E2E] primary signUp error:', authError?.message);
+  // Use edge function (admin API) to bypass domain restrictions
+  let createRes = await supabase.functions.invoke('test-create-user', {
+    body: { email, password },
+    headers: { 'x-test-role-key': 'local-e2e' }
+  });
+  
+  if (createRes.error) {
+    console.warn('[E2E] primary create-user error:', createRes.error?.message);
     email = buildEmail('example.org');
-    console.log('[E2E] retrying signUp with fallback domain:', email);
-    ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
+    console.log('[E2E] retrying create-user with fallback domain:', email);
+    createRes = await supabase.functions.invoke('test-create-user', {
+      body: { email, password },
+      headers: { 'x-test-role-key': 'local-e2e' }
+    });
   }
 
-  if (authError) throw new Error(`Failed to create test user: ${authError.message}`);
-  if (!authData.user) throw new Error('No user data returned');
+  if (createRes.error) throw new Error(`Failed to create test user: ${createRes.error.message}`);
+  authData = { user: { id: createRes.data?.user_id } };
+  if (!authData.user?.id) throw new Error('No user data returned');
 
   // Ensure we have a session for edge function auth
   await supabase.auth.signInWithPassword({ email, password });

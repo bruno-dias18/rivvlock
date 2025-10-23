@@ -289,6 +289,9 @@ port = 54327
 vector_port = 54328
 gw_port = 54329
 
+[functions.test-create-user]
+verify_jwt = false
+
 # [experimental]
 # orioledb_version = ""
 # s3_host = "localhost" 
