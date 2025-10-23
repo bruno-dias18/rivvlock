@@ -40,14 +40,14 @@ export async function createTestUser(
   if (authError) throw new Error(`Failed to create test user: ${authError.message}`);
   if (!authData.user) throw new Error('No user data returned');
 
-  // Insert into user_roles if admin
+  // Ensure we have a session for edge function auth
+  await supabase.auth.signInWithPassword({ email, password });
+
+  // Assign role via secure edge function (service role), restricted to @test-rivvlock.com
   if (role === 'admin') {
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: authData.user.id,
-        role: 'admin'
-      });
+    const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
+      body: { role: 'admin' },
+    });
 
     if (roleError) throw new Error(`Failed to set admin role: ${roleError.message}`);
   }
