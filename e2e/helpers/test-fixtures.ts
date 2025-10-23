@@ -121,22 +121,14 @@ export async function createTestTransaction(
   let tx: any | null = null;
   let lastInvokeErr: any = null;
 
-  // 1) Preferred path: edge function (auth + validations)
+  // 1) Preferred path: test helper edge function (bypasses RLS safely)
   try {
-    const { data: createData, error: createErr } = await supabase.functions.invoke('create-transaction', {
+    const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
       body: {
-        title: 'E2E Transaction',
-        description: 'Test transaction for E2E tests',
-        price: amount,
-        currency: 'CHF',
-        service_date: serviceDate,
-        service_end_date: null,
-        client_email: null,
-        client_name: null,
-        buyer_display_name: null,
+        seller_id: sellerId,
+        amount,
         fee_ratio_client: feeRatioClient,
-      },
-      headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
+      }
     });
 
     if (createErr) {
