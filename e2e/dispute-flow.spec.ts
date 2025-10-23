@@ -103,18 +103,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
   test('admin can view and resolve escalated dispute', async ({ page }) => {
     // Create a paid transaction with dispute escalated
     const tx = await createPaidTransaction(SELLER.id, BUYER.id, 150);
-    const dispute = await createTestDispute(tx.id, BUYER.id, 'quality_issue');
-    
-    // Force escalate the dispute (set deadline in past)
-    const pastDeadline = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    await supabase
-      .from('disputes')
-      .update({ 
-        status: 'escalated',
-        escalated_at: pastDeadline,
-        dispute_deadline: pastDeadline 
-      })
-      .eq('id', dispute.id);
+    await createTestDispute(tx.id, BUYER.id, 'quality_issue');
     
     // Create admin user
     const adminUser = await createTestUser('admin', 'admin-e2e-dispute-resolve');
@@ -126,7 +115,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
     await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
     
     // Wait for disputes to load
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1200);
     
     // Should see escalated disputes section or card
     const hasEscalatedText = await page.getByText(/litiges escaladés/i).isVisible().catch(() => false);
