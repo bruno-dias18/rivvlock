@@ -194,8 +194,8 @@ test.describe('Validation Flow - Edge Cases', () => {
   });
 
   test('seller cannot validate their own transaction', async ({ page }) => {
-    const transaction = await createPaidTransaction(seller.id, buyer.id, 600);
-    await markTransactionCompleted(transaction.id);
+  const transaction = await createPaidTransaction(seller.id, buyer.id, 600);
+  await markTransactionCompleted(transaction.id, seller.id);
 
     // Login as seller
     await loginUser(page, seller);

@@ -23,6 +23,15 @@ export interface TestTransaction {
   status: string;
 }
 
+/** Switch Supabase session to the given user */
+export async function signInAs(userId: string) {
+  const creds = userCredentials.get(userId);
+  if (!creds) throw new Error(`Missing credentials for user ${userId}`);
+  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signInWithPassword({ email: creds.email, password: creds.password });
+  if (error) throw new Error(`Failed to sign in as user ${userId}: ${error.message}`);
+}
+
 /**
  * Creates a test user with Stripe account (for sellers)
  */
@@ -54,6 +63,8 @@ export async function createTestUser(
 
     if (roleError) throw new Error(`Failed to set admin role: ${roleError.message}`);
   }
+  // Store credentials for later session switches
+  userCredentials.set(authData.user.id, { email, password });
 
   return {
     id: authData.user.id,
@@ -78,35 +89,57 @@ export async function createTestTransaction(
 ): Promise<TestTransaction> {
   const { amount, status = 'pending', paymentIntentId, feeRatioClient = 0 } = options;
 
-  // Calculate deadlines
-  const now = new Date();
-  const serviceDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
-  const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000); // -24h before service
+  // 1) Seller session
+  await signInAs(sellerId);
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert({
-      seller_id: sellerId,
-      buyer_id: buyerId,
-      amount,
-      currency: 'CHF',
-      status,
-      service_date: serviceDate.toISOString(),
-      payment_deadline: paymentDeadline.toISOString(),
-      payment_intent_id: paymentIntentId || null,
-      fee_ratio_client: feeRatioClient,
+  // Create via edge function to ensure secure token and defaults
+  const serviceDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: createData, error: createErr } = await supabase.functions.invoke('create-transaction', {
+    body: {
+      title: 'E2E Transaction',
       description: 'Test transaction for E2E tests',
-    })
-    .select()
-    .single();
+      price: amount,
+      currency: 'CHF',
+      service_date: serviceDate,
+      service_end_date: null,
+      client_email: null,
+      client_name: null,
+      buyer_display_name: null,
+      fee_ratio_client: feeRatioClient,
+    },
+  });
+  if (createErr) throw new Error(`Failed to create transaction (edge): ${createErr.message}`);
+  const tx = createData?.transaction;
+  if (!tx?.id) throw new Error('No transaction returned from edge function');
 
-  if (error) throw new Error(`Failed to create transaction: ${error.message}`);
+  // 2) Attach buyer if provided using security definer RPC
+  if (buyerId) {
+    await signInAs(buyerId);
+    const { error: joinErr } = await supabase.rpc('assign_self_as_buyer', {
+      p_transaction_id: tx.id,
+      p_token: tx.shared_link_token,
+    });
+    if (joinErr) throw new Error(`Failed to attach buyer: ${joinErr.message}`);
+  }
+
+  // 3) Back to seller, set status/intent if needed
+  await signInAs(sellerId);
+  if (status !== 'pending' || paymentIntentId) {
+    const { error: updErr } = await supabase
+      .from('transactions')
+      .update({
+        status,
+        stripe_payment_intent_id: paymentIntentId || null,
+      })
+      .eq('id', tx.id);
+    if (updErr) throw new Error(`Failed to update transaction: ${updErr.message}`);
+  }
 
   return {
-    id: data.id,
-    token: data.token,
-    amount: data.amount,
-    status: data.status,
+    id: tx.id,
+    token: tx.shared_link_token,
+    amount: tx.price,
+    status: status,
   };
 }
 
@@ -166,12 +199,12 @@ export async function createPaidTransaction(
 /**
  * Marks transaction as completed by seller
  */
-export async function markTransactionCompleted(transactionId: string) {
+export async function markTransactionCompleted(transactionId: string, sellerId: string) {
+  await signInAs(sellerId);
   await supabase
     .from('transactions')
     .update({
-      seller_completed_at: new Date().toISOString(),
-      status: 'awaiting_validation',
+      seller_validated: true,
     })
     .eq('id', transactionId);
 }
@@ -223,7 +256,7 @@ export async function cleanupTestData(testUserIds: string[]) {
   }
   
   // Delete transactions
-  await supabase.from('transactions').delete().in('seller_id', testUserIds);
+  await supabase.from('transactions').delete().in('user_id', testUserIds);
   await supabase.from('transactions').delete().in('buyer_id', testUserIds);
 
   // Delete profiles (will cascade to user_roles via FK)
