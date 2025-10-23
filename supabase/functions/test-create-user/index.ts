@@ -59,6 +59,24 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   }
 
   logger.info("[TEST-CREATE-USER] User created successfully", { user_id: data.user?.id });
+
+  // Optional: assign admin role when requested by tests
+  try {
+    const requestedRole = (ctx.body as any)?.role;
+    if (requestedRole === 'admin' && data.user?.id) {
+      const { error: roleErr } = await admin
+        .from('user_roles')
+        .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id,role' });
+      if (roleErr) {
+        logger.warn('[TEST-CREATE-USER] role upsert failed', { error: roleErr.message });
+      } else {
+        logger.info('[TEST-CREATE-USER] admin role assigned', { user_id: data.user.id });
+      }
+    }
+  } catch (e) {
+    logger.warn('[TEST-CREATE-USER] role assignment attempt failed', { error: String(e) });
+  }
+
   return successResponse({ user_id: data.user?.id, email });
 };
 

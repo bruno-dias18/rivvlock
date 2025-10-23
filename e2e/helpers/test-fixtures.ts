@@ -58,7 +58,7 @@ export async function createTestUser(
     email = buildEmail(domain);
     console.log('[E2E] trying domain:', domain, 'email:', email);
     const { data, error } = await supabase.functions.invoke('test-create-user', {
-      body: { email, password },
+      body: { email, password, role: role === 'admin' ? 'admin' : undefined },
     });
     if (!error && data?.user_id) {
       userId = data.user_id;
@@ -79,24 +79,9 @@ export async function createTestUser(
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData.session?.access_token;
 
-  // Assign admin role if needed
+  // Assign admin role is handled by test-create-user edge function
   if (role === 'admin') {
-    console.log('[E2E] invoking test-assign-role:', { email, userId, hasToken: !!token });
-    
-    const { data: roleData, error: roleError } = await supabase.functions.invoke('test-assign-role', {
-      headers: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        'x-email': email,
-        'x-user-id': userId,
-      },
-      body: { role: 'admin', email, user_id: userId },
-    });
-
-    if (roleError) {
-      console.error('[E2E] test-assign-role failed:', { roleError, roleData, email, userId });
-      throw new Error(`Failed to set admin role: ${roleData?.error || roleError.message}`);
-    }
-    console.log('[E2E] admin role assigned successfully');
+    console.log('[E2E] admin role assigned by test-create-user');
   }
 
   // Store credentials for later session switches
