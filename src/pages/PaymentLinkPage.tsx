@@ -75,7 +75,7 @@ export default function PaymentLinkPage() {
 
       // Retry once on transient rate limit
       if (res.status === 429) {
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 300));
         res = await fetch(endpoint, {
           method: 'GET',
           headers: {
@@ -85,12 +85,34 @@ export default function PaymentLinkPage() {
         });
       }
 
-      const json = await res.json().catch(() => null);
+      let json = await res.json().catch(() => null);
+
+      // If the function rate-limited or returned an error, fall back to SECURITY DEFINER RPC
       if (!res.ok) {
-        const reason = json?.error || json?.message || 'Edge Function non disponible';
-        throw new Error(reason);
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_transaction_by_token_safe', {
+          p_token: finalToken,
+        });
+
+        if (!rpcError && rpcData && rpcData.length > 0) {
+          const t = rpcData[0];
+          payload = { transaction: {
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            price: Number(t.price),
+            currency: t.currency,
+            seller_display_name: t.seller_display_name,
+            service_date: t.service_date,
+            payment_deadline: t.payment_deadline,
+            status: t.status,
+          }};
+        } else {
+          const reason = json?.error || json?.message || rpcError?.message || 'Edge Function non disponible';
+          throw new Error(reason);
+        }
+      } else {
+        payload = json;
       }
-      payload = json;
 
       // Accept either { success: true, transaction } or just { transaction }
       const data = payload || {};
