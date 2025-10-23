@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createTestUser, loginAdmin, type TestUser } from './helpers/test-fixtures';
+import { createTestUser, loginAdmin, loginUser, createPaidTransaction, type TestUser } from './helpers/test-fixtures';
 
 /**
  * E2E tests for dispute escalation flow
@@ -11,27 +11,21 @@ import { createTestUser, loginAdmin, type TestUser } from './helpers/test-fixtur
  * 4. Admin resolves dispute
  */
 
-// Test credentials (to be replaced with actual test users)
-const TEST_SELLER = {
-  email: 'seller-test@rivvlock.com',
-  password: 'Test123!@#',
-};
-
-const TEST_BUYER = {
-  email: 'buyer-test@rivvlock.com',
-  password: 'Test123!@#',
-};
+// Dynamic users created for tests
+let BUYER: TestUser;
+let SELLER: TestUser;
 
 test.describe('Dispute Flow - Complete Journey', () => {
+  test.beforeAll(async () => {
+    SELLER = await createTestUser('seller', 'e2e-seller-dispute');
+    BUYER = await createTestUser('buyer', 'e2e-buyer-dispute');
+    // Ensure at least one paid transaction exists
+    await createPaidTransaction(SELLER.id, BUYER.id, 100);
+  });
+
   test('buyer can create dispute on paid transaction', async ({ page }) => {
     // Login as buyer
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    // Wait for dashboard
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     
     // Navigate to transactions
     await page.getByRole('link', { name: /transactions/i }).click();
@@ -58,12 +52,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
 
   test('seller can respond to dispute', async ({ page, context }) => {
     // Login as seller
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_SELLER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_SELLER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, SELLER);
     
     // Navigate to disputes
     await page.getByRole('link', { name: /litiges/i }).click();
@@ -91,12 +80,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
 
   test('dispute escalates to admin after deadline', async ({ page }) => {
     // Login as buyer
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     
     // Navigate to disputes
     await page.getByRole('link', { name: /litiges/i }).click();
@@ -147,12 +131,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
 
   test('buyer accepts admin proposal and dispute is resolved', async ({ page }) => {
     // Login as buyer
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     
     // Navigate to disputes
     await page.getByRole('link', { name: /litiges/i }).click();
@@ -179,12 +158,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
 
 test.describe('Dispute Flow - Edge Cases', () => {
   test('cannot create dispute on unpaid transaction', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     await page.getByRole('link', { name: /transactions/i }).click();
     
     // Find pending transaction
@@ -196,12 +170,7 @@ test.describe('Dispute Flow - Edge Cases', () => {
   });
 
   test('dispute deadline countdown is displayed', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     await page.getByRole('link', { name: /litiges/i }).click();
     
     // Click on active dispute
@@ -213,12 +182,7 @@ test.describe('Dispute Flow - Edge Cases', () => {
   });
 
   test('archived disputes do not appear in active list', async ({ page }) => {
-    await page.goto('/auth');
-    await page.getByLabel(/email/i).fill(TEST_BUYER.email);
-    await page.getByLabel(/mot de passe/i).fill(TEST_BUYER.password);
-    await page.getByRole('button', { name: /connexion/i }).click();
-    
-    await page.waitForURL('/dashboard');
+    await loginUser(page, BUYER);
     await page.getByRole('link', { name: /litiges/i }).click();
     
     // Find resolved dispute
