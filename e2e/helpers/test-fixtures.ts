@@ -115,6 +115,8 @@ export async function createTestTransaction(
 
   // Create via edge function to ensure secure token and defaults
   const serviceDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: sessionNow } = await supabase.auth.getSession();
+  const jwt = sessionNow.session?.access_token;
   const { data: createData, error: createErr } = await supabase.functions.invoke('create-transaction', {
     body: {
       title: 'E2E Transaction',
@@ -128,8 +130,14 @@ export async function createTestTransaction(
       buyer_display_name: null,
       fee_ratio_client: feeRatioClient,
     },
+    headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
   });
-  if (createErr) throw new Error(`Failed to create transaction (edge): ${createErr.message}`);
+  if (createErr) {
+    // Print full error for debugging (status/message)
+    // @ts-expect-error - FunctionsError shape varies
+    console.error('[E2E] create-transaction invoke error:', createErr);
+    throw new Error(`Failed to create transaction (edge): ${createErr.message}`);
+  }
   const tx = createData?.transaction;
   if (!tx?.id) throw new Error('No transaction returned from edge function');
 
