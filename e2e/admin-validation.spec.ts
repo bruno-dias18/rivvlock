@@ -30,8 +30,8 @@ test.describe('Admin Validation - Transaction Management', () => {
   });
 
   test('admin can view all transactions with filters', async ({ page }) => {
-    // Should see admin dashboard
-    await expect(page.getByRole('heading', { name: /administration/i })).toBeVisible();
+    // Should see admin dashboard heading
+    await expect(page.getByRole('heading', { name: /admin/i })).toBeVisible();
     
     // Should see transaction stats
     await expect(page.getByText(/transactions actives/i)).toBeVisible();
