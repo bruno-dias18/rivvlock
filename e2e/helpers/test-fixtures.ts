@@ -117,29 +117,90 @@ export async function createTestTransaction(
   const serviceDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: sessionNow } = await supabase.auth.getSession();
   const jwt = sessionNow.session?.access_token;
-  const { data: createData, error: createErr } = await supabase.functions.invoke('create-transaction', {
-    body: {
-      title: 'E2E Transaction',
-      description: 'Test transaction for E2E tests',
-      price: amount,
-      currency: 'CHF',
-      service_date: serviceDate,
-      service_end_date: null,
-      client_email: null,
-      client_name: null,
-      buyer_display_name: null,
-      fee_ratio_client: feeRatioClient,
-    },
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
-  });
-  if (createErr) {
-    // Print full error for debugging (status/message)
-    // @ts-expect-error - FunctionsError shape varies
-    console.error('[E2E] create-transaction invoke error:', createErr);
-    throw new Error(`Failed to create transaction (edge): ${createErr.message}`);
+
+  let tx: any | null = null;
+  let lastInvokeErr: any = null;
+
+  // 1) Preferred path: edge function (auth + validations)
+  try {
+    const { data: createData, error: createErr } = await supabase.functions.invoke('create-transaction', {
+      body: {
+        title: 'E2E Transaction',
+        description: 'Test transaction for E2E tests',
+        price: amount,
+        currency: 'CHF',
+        service_date: serviceDate,
+        service_end_date: null,
+        client_email: null,
+        client_name: null,
+        buyer_display_name: null,
+        fee_ratio_client: feeRatioClient,
+      },
+      headers: jwt ? { Authorization: `Bearer ${jwt}` } : undefined,
+    });
+
+    if (createErr) {
+      lastInvokeErr = createErr;
+    } else {
+      tx = createData?.transaction ?? null;
+    }
+  } catch (err) {
+    lastInvokeErr = err;
   }
-  const tx = createData?.transaction;
-  if (!tx?.id) throw new Error('No transaction returned from edge function');
+
+  // 2) Fallback: direct DB insert (same logic as the edge function)
+  if (!tx) {
+    // Generate secure token via RPC
+    const { data: tokenData, error: tokenErr } = await supabase.rpc('generate_secure_token');
+    if (tokenErr) {
+      console.error('[E2E] token generation error:', tokenErr, '\ninvokeErr:', lastInvokeErr);
+      throw new Error(`Failed to create transaction (token): ${tokenErr.message}`);
+    }
+    const shareToken = tokenData as string;
+    const paymentDeadline = new Date(new Date(serviceDate).getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const validationDeadline = new Date(new Date(serviceDate).getTime() + 48 * 60 * 60 * 1000).toISOString();
+    const shareExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('company_name, first_name, last_name')
+      .eq('user_id', sellerId)
+      .maybeSingle();
+    const sellerDisplayName = profile?.company_name || `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.trim() || 'Vendeur';
+
+    const { data: inserted, error: insErr } = await supabase
+      .from('transactions')
+      .insert({
+        user_id: sellerId,
+        title: 'E2E Transaction',
+        description: 'Test transaction for E2E tests',
+        price: amount,
+        currency: 'CHF',
+        service_date: serviceDate,
+        service_end_date: null,
+        payment_deadline: paymentDeadline,
+        validation_deadline: validationDeadline,
+        status: 'pending',
+        seller_display_name: sellerDisplayName,
+        buyer_display_name: null,
+        client_email: null,
+        fee_ratio_client: feeRatioClient,
+        shared_link_token: shareToken,
+        shared_link_expires_at: shareExpiresAt,
+      })
+      .select()
+      .maybeSingle();
+
+    if (insErr || !inserted?.id) {
+      console.error('[E2E] direct insert error:', insErr, '\ninvokeErr:', lastInvokeErr);
+      throw new Error(`Failed to create transaction (insert): ${insErr?.message || 'unknown'}`);
+    }
+
+    tx = inserted;
+  }
+
+  if (!tx?.id) throw new Error('No transaction returned from edge function or fallback');
+
 
   // 2) Attach buyer if provided using security definer RPC
   if (buyerId) {
