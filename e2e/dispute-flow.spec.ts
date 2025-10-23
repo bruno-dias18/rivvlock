@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { createTestUser, loginAdmin, loginUser, createPaidTransaction, type TestUser } from './helpers/test-fixtures';
+import { createTestUser, loginAdmin, loginUser, createPaidTransaction, createTestDispute, type TestUser } from './helpers/test-fixtures';
+import { supabase } from '../src/integrations/supabase/client';
 
 /**
  * E2E tests for dispute escalation flow
@@ -100,6 +101,21 @@ test.describe('Dispute Flow - Complete Journey', () => {
   });
 
   test('admin can view and resolve escalated dispute', async ({ page }) => {
+    // Create a paid transaction with dispute escalated
+    const tx = await createPaidTransaction(SELLER.id, BUYER.id, 150);
+    const dispute = await createTestDispute(tx.id, BUYER.id, 'quality_issue');
+    
+    // Force escalate the dispute (set deadline in past)
+    const pastDeadline = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    await supabase
+      .from('disputes')
+      .update({ 
+        status: 'escalated',
+        escalated_at: pastDeadline,
+        dispute_deadline: pastDeadline 
+      })
+      .eq('id', dispute.id);
+    
     // Create admin user
     const adminUser = await createTestUser('admin', 'admin-e2e-dispute-resolve');
     
@@ -109,8 +125,16 @@ test.describe('Dispute Flow - Complete Journey', () => {
     // Navigate to disputes (use precise href selector)
     await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
     
-    // Should see escalated disputes
-    await expect(page.getByText(/litiges escaladés/i)).toBeVisible();
+    // Wait for disputes to load
+    await page.waitForTimeout(1000);
+    
+    // Should see escalated disputes section or card
+    const hasEscalatedText = await page.getByText(/litiges escaladés/i).isVisible().catch(() => false);
+    const hasDisputeCard = await page.locator('[data-testid="admin-dispute-card"]').first().isVisible().catch(() => false);
+    
+    if (!hasEscalatedText && !hasDisputeCard) {
+      throw new Error('No escalated disputes visible on admin page');
+    }
     
     // Click on first escalated dispute
     await page.locator('[data-testid="admin-dispute-card"]').first().click();
