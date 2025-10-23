@@ -15,6 +15,7 @@ import { createServiceClient } from "../_shared/supabase-utils.ts";
 const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
+  role: z.enum(["admin"]).optional(),
 });
 
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {

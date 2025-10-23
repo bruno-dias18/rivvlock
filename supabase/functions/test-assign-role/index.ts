@@ -53,6 +53,13 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   let targetUserId: string | null = user_id ?? null;
   let targetEmail: string | null = email ?? null;
 
+  // Allowed domains (from secret + internal list)
+  const allowedSecret = Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "";
+  const allowedDomains = `${allowedSecret},gmail.com,outlook.com,test-rivvlock.com,example.org,example.com`
+    .split(",")
+    .map(d => d.replace(/^@/, '').trim().toLowerCase())
+    .filter(Boolean);
+
   if (!targetUserId && authHeader) {
     logger.info("[TEST-ASSIGN-ROLE] Trying JWT auth");
     // Verify user JWT and extract id/email
@@ -97,7 +104,7 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
         const now = Date.now();
         const recent = usersData.users
           .filter((u: any) => typeof u.email === 'string')
-          .filter((u: any) => allowed.some(d => String(u.email).toLowerCase().endsWith(`@${d}`)))
+          .filter((u: any) => allowedDomains.some(d => String(u.email).toLowerCase().endsWith(`@${d}`)))
           .filter((u: any) => {
             const created = new Date(u.created_at || u.createdAt || 0).getTime();
             return Number.isFinite(created) && (now - created) < 15 * 60 * 1000;
@@ -124,15 +131,8 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   // Extra safety: only allow specific email domains
   const resolvedEmail = String(targetEmail || email || "");
-  const allowedSecret = Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "";
-  const allowed = `${allowedSecret},gmail.com,outlook.com,test-rivvlock.com,example.org,example.com`
-    .split(",")
-    .map(d => d.replace(/^@/, '').trim().toLowerCase())
-    .filter(Boolean);
-  
-  logger.info("[TEST-ASSIGN-ROLE] Checking email domain", { email: resolvedEmail, allowed });
-  
-  const isAllowed = allowed.some(d => resolvedEmail.toLowerCase().endsWith(`@${d}`));
+  logger.info("[TEST-ASSIGN-ROLE] Checking email domain", { email: resolvedEmail, allowed: allowedDomains });
+  const isAllowed = allowedDomains.some(d => resolvedEmail.toLowerCase().endsWith(`@${d}`));
   if (!isAllowed) {
     logger.warn("[TEST-ASSIGN-ROLE] Non-allowed email", { email: resolvedEmail, allowed });
     return new Response(JSON.stringify({ error: "Not allowed" }), {
