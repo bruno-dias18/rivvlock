@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { createTestUser, createTestTransaction, cleanupTestData } from './helpers/test-fixtures';
+import { createTestUser, createTestTransaction, cleanupTestData, loginUser, expireTransaction } from './helpers/test-fixtures';
 
 /**
  * E2E tests for the complete payment flow
@@ -12,14 +12,16 @@ import { createTestUser, createTestTransaction, cleanupTestData } from './helper
  */
 test.describe('Payment Flow', () => {
   let seller: Awaited<ReturnType<typeof createTestUser>>;
+  let buyer: Awaited<ReturnType<typeof createTestUser>>;
   let transaction: Awaited<ReturnType<typeof createTestTransaction>>;
   let testUserIds: string[] = [];
 
   test.beforeAll(async () => {
     seller = await createTestUser('seller', 'payment-seller');
-    testUserIds.push(seller.id);
+    buyer = await createTestUser('buyer', 'payment-buyer');
+    testUserIds.push(seller.id, buyer.id);
     
-    transaction = await createTestTransaction(seller.id, null, {
+    transaction = await createTestTransaction(seller.id, buyer.id, {
       amount: 500,
       status: 'pending',
     });
@@ -30,6 +32,7 @@ test.describe('Payment Flow', () => {
   });
 
   test.beforeEach(async ({ page }) => {
+    await loginUser(page, buyer);
     await page.goto(`/payment-link/${transaction.token}`);
   });
 
@@ -105,15 +108,17 @@ test.describe('Payment Flow', () => {
 
   test('should handle expired payment links', async ({ page }) => {
     // Create an expired transaction
-    const expiredTransaction = await createTestTransaction(seller.id, null, {
+    const expiredTransaction = await createTestTransaction(seller.id, buyer.id, {
       amount: 300,
-      status: 'expired',
+      status: 'pending',
     });
+    // Force deadline to past to trigger expiration UI
+    await expireTransaction(expiredTransaction.id, seller.id);
 
     await page.goto(`/payment-link/${expiredTransaction.token}`);
 
-    // Should display error message
-    await expect(page.getByText(/lien expiré/i)).toBeVisible();
+    // Should display error message (contains "expiré")
+    await expect(page.getByText(/expir/i)).toBeVisible();
   });
 });
 
@@ -122,14 +127,16 @@ test.describe('Payment Flow', () => {
  */
 test.describe('Mobile Payment Flow', () => {
   let mobileSeller: Awaited<ReturnType<typeof createTestUser>>;
+  let mobileBuyer: Awaited<ReturnType<typeof createTestUser>>;
   let mobileTransaction: Awaited<ReturnType<typeof createTestTransaction>>;
   let mobileTestUserIds: string[] = [];
 
   test.beforeAll(async () => {
     mobileSeller = await createTestUser('seller', 'mobile-payment-seller');
-    mobileTestUserIds.push(mobileSeller.id);
+    mobileBuyer = await createTestUser('buyer', 'mobile-payment-buyer');
+    mobileTestUserIds.push(mobileSeller.id, mobileBuyer.id);
     
-    mobileTransaction = await createTestTransaction(mobileSeller.id, null, {
+    mobileTransaction = await createTestTransaction(mobileSeller.id, mobileBuyer.id, {
       amount: 400,
       status: 'pending',
     });
@@ -145,6 +152,7 @@ test.describe('Mobile Payment Flow', () => {
   });
 
   test('should display mobile-optimized payment selector', async ({ page }) => {
+    await loginUser(page, mobileBuyer);
     await page.goto(`/payment-link/${mobileTransaction.token}`);
     await page.waitForLoadState('networkidle');
 

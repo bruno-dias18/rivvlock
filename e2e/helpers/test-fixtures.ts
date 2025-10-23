@@ -210,6 +210,17 @@ export async function markTransactionCompleted(transactionId: string, sellerId: 
 }
 
 /**
+ * Force a transaction to be expired by setting a past deadline
+ */
+export async function expireTransaction(transactionId: string, sellerId: string) {
+  await signInAs(sellerId);
+  const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  await supabase
+    .from('transactions')
+    .update({ payment_deadline: past })
+    .eq('id', transactionId);
+}
+/**
  * Creates a dispute on a transaction
  */
 export async function createTestDispute(

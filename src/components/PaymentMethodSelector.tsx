@@ -26,13 +26,13 @@ export const PaymentMethodSelector = ({
   const bankTransferAllowed = hoursUntilDeadline >= 72;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Choisissez votre méthode de paiement</h3>
-        <p className="text-sm text-muted-foreground">
-          Montant : <span className="font-medium">{transaction.price} {transaction.currency.toUpperCase()}</span>
-        </p>
-      </div>
+      <div className="space-y-4" data-testid="payment-method-selector">
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Choisissez votre méthode de paiement</h3>
+          <p className="text-sm text-muted-foreground">
+            Montant : <span className="font-medium">{transaction.price} {transaction.currency.toUpperCase()}</span>
+          </p>
+        </div>
 
       {/* Payment deadline info */}
       {transaction.payment_deadline && (
