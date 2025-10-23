@@ -43,11 +43,10 @@ export async function createTestUser(
   const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'test-rivvlock.com';
   const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
   const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
-  let email = buildEmail(primaryDomain);
   const password = 'Test123!@#$%';
 
-  // Create auth user with automatic fallback if domain is restricted
-  let authData: any = null;
+  let email = buildEmail(primaryDomain);
+  let userId: string | null = null;
 
   console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
 
@@ -57,29 +56,29 @@ export async function createTestUser(
   for (const domain of candidateDomains) {
     email = buildEmail(domain);
     console.log('[E2E] trying domain:', domain, 'email:', email);
-    const res = await supabase.functions.invoke('test-create-user', {
+    const { data, error } = await supabase.functions.invoke('test-create-user', {
       body: { email, password },
     });
-    if (!res.error) {
-      authData = { user: { id: res.data?.user_id } };
-      console.log('[E2E] user created:', authData.user.id, 'email:', email);
+    if (!error && data?.user_id) {
+      userId = data.user_id;
+      console.log('[E2E] user created:', userId, 'email:', email);
       break;
     }
-    console.warn('[E2E] create-user error for', domain, ':', res.error?.message);
-    lastError = res.error;
+    console.warn('[E2E] create-user error for', domain, ':', error?.message);
+    lastError = error;
   }
 
-  if (!authData) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
-  if (!authData.user) throw new Error('No user data returned');
+  if (!userId) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
 
-  // Ensure we have a session for edge function auth
-  await supabase.auth.signInWithPassword({ email, password });
+  // Sign in to get JWT for edge function auth
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  if (signInError) throw new Error(`Sign-in failed: ${signInError.message}`);
 
-  // Assign role via secure edge function (no test key, just domain check)
+  // Assign role via secure edge function
   if (role === 'admin') {
     console.log('[E2E] invoking test-assign-role for email:', email);
     const { error: roleError } = await supabase.functions.invoke('test-assign-role', {
-      body: { role: 'admin', email, user_id: authData.user.id },
+      body: { role: 'admin', email, user_id: userId },
     });
 
     if (roleError) {
@@ -87,11 +86,12 @@ export async function createTestUser(
       throw new Error(`Failed to set admin role: ${roleError.message}`);
     }
   }
+
   // Store credentials for later session switches
-  userCredentials.set(authData.user.id, { email, password });
+  userCredentials.set(userId, { email, password });
 
   return {
-    id: authData.user.id,
+    id: userId,
     email,
     password,
     role,
