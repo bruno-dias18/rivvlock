@@ -21,7 +21,7 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   const { email, password } = ctx.body as z.infer<typeof createUserSchema>;
 
   // Allow only specific domains for tests
-  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "test-rivvlock.com,example.org,example.com")
+  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "gmail.com,outlook.com,test-rivvlock.com,example.org,example.com")
     .split(",")
     .map((d) => d.replace(/^@/, "").trim().toLowerCase())
     .filter(Boolean);

@@ -51,7 +51,7 @@ export async function createTestUser(
 
   console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
 
-  const candidateDomains = [primaryDomain, 'example.org', 'example.com'];
+  const candidateDomains = [primaryDomain, 'gmail.com', 'outlook.com', 'example.org', 'example.com'];
   let lastError: any = null;
 
   for (const domain of candidateDomains) {
