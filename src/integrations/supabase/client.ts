@@ -8,9 +8,18 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+// Use localStorage if available (browser), otherwise use a simple in-memory storage (tests)
+const storage = typeof window !== 'undefined' && window.localStorage
+  ? window.localStorage
+  : {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    };
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: storage as any,
     persistSession: true,
     autoRefreshToken: true,
   }
