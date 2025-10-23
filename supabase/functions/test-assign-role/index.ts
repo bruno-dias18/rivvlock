@@ -28,9 +28,9 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
 
   // Extra safety: only allow emails from configured test domains
   const email = (user as any).email || "";
-  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "test-rivvlock.com")
+  const allowed = (Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "test-rivvlock.com,example.org,example.com")
     .split(",")
-    .map(d => d.trim().toLowerCase())
+    .map(d => d.replace(/^@/, '').trim().toLowerCase())
     .filter(Boolean);
 
   const isAllowed = allowed.some(d => email.toLowerCase().endsWith(`@${d}`));
