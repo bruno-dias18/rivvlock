@@ -142,9 +142,13 @@ export const addBreadcrumb = (breadcrumb: Record<string, any>) => {
 };
 
 export const getSentryStatus = () => {
+  const runtimeDsn = (typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : undefined) as string | undefined;
+  const previewDsn = !import.meta.env.PROD && typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || undefined) : undefined;
+  const envDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+  const resolvedDsn = envDsn || previewDsn || runtimeDsn;
   return {
     initialized: typeof window !== 'undefined' ? Boolean((window as any).__SENTRY_INITIALIZED__) : false,
-    dsnConfigured: Boolean(import.meta.env.VITE_SENTRY_DSN),
+    dsnConfigured: Boolean(resolvedDsn),
     mode: import.meta.env.MODE,
   } as const;
 };
