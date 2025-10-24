@@ -117,7 +117,7 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await expect(newTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
   });
 
-  test('transaction auto-releases after 72h validation deadline', async ({ page }) => {
+  test('transaction auto-releases after 48h validation deadline', async ({ page }) => {
     // This test requires time manipulation or database manipulation
     // For now, we just verify the UI shows the correct information
 

@@ -397,16 +397,16 @@ export async function createPaidTransaction(
     paymentIntentId: `pi_test_${Date.now()}`,
   });
 
-  // Set payment_blocked_at and validation_deadline (72h)
+  // Set payment_blocked_at and validation_deadline (48h)
   const paymentBlockedAt = new Date();
-  const validationDeadline = new Date(paymentBlockedAt.getTime() + 72 * 60 * 60 * 1000);
+  const validationDeadline = new Date(paymentBlockedAt.getTime() + 48 * 60 * 60 * 1000);
 
   // Ensure payment_blocked_at and validation_deadline via edge function
   const { error: blockErr } = await supabase.functions.invoke('test-mark-transaction-paid', {
     body: {
       transaction_id: transaction.id,
       set_blocked_now: true,
-      validation_hours: 72,
+      validation_hours: 48,
     }
   });
   if (blockErr) throw new Error(`Failed to set validation deadline: ${blockErr.message}`);
