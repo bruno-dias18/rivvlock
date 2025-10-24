@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { Input } from '@/components/ui/input';
 import { getSentryStatus } from '@/lib/sentry';
+import * as Sentry from '@sentry/react';
 
 /**
  * Page de test Sentry (Admin uniquement)
@@ -40,7 +41,7 @@ export default function AdminTestSentryPage() {
       
       throw new Error('🧪 Test Sentry: Simple error from admin panel');
     } catch (error) {
-      captureException(error as Error, { tags: { test_type: 'simple' } });
+      Sentry.captureException(error as Error, { tags: { test_type: 'simple' } });
       setLastError('Simple error sent to Sentry ✅');
       toast.success('Error sent to Sentry');
     }
@@ -58,7 +59,7 @@ export default function AdminTestSentryPage() {
         setTimeout(() => reject(new Error('🧪 Test Sentry: Async error')), 100)
       );
     } catch (error) {
-      captureException(error as Error, { tags: { test_type: 'async' } });
+      Sentry.captureException(error as Error, { tags: { test_type: 'async' } });
       setLastError('Async error sent to Sentry ✅');
       toast.success('Async error sent to Sentry');
     }
@@ -78,7 +79,7 @@ export default function AdminTestSentryPage() {
       
       throw fakeApiError;
     } catch (error) {
-      captureException(error as Error, { 
+      Sentry.captureException(error as Error, { 
         tags: { test_type: 'api_failure' },
         extra: { endpoint: '/api/fake-endpoint', status: 500 }
       });
