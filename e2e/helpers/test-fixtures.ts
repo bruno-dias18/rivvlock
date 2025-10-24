@@ -157,7 +157,7 @@ export async function createTestTransaction(
 
   // 1) Preferred path: test helper edge function (bypasses RLS safely) with retries
   try {
-    for (let attempt = 1; attempt <= 10 && !tx; attempt++) {
+    for (let attempt = 1; attempt <= 15 && !tx; attempt++) {
       const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
         body: {
           seller_id: sellerId,
@@ -170,10 +170,11 @@ export async function createTestTransaction(
         lastInvokeErr = createErr;
         const is429 = (createErr as any)?.status === 429;
         console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message, is429 ? '(429)' : '');
-        // Longer backoff for rate limits, quadratic growth with jitter
-        const baseDelay = is429 ? 1200 : 600;
-        const jitter = Math.floor(Math.random() * 300);
-        await new Promise((r) => setTimeout(r, baseDelay * attempt + jitter));
+        // Exponential backoff with jitter for rate limits
+        const baseDelay = is429 ? 2000 : 800;
+        const exponentialFactor = Math.pow(1.5, attempt - 1);
+        const jitter = Math.floor(Math.random() * 500);
+        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 30000)));
       } else {
         tx = createData?.transaction ?? null;
       }
@@ -241,7 +242,7 @@ export async function createTestTransaction(
     let joinSuccess = false;
     let lastJoinErr: any = null;
     
-    for (let attempt = 1; attempt <= 5 && !joinSuccess; attempt++) {
+    for (let attempt = 1; attempt <= 12 && !joinSuccess; attempt++) {
       const { error: joinErr } = await supabase.functions.invoke('test-join-transaction', {
         body: { transaction_id: tx.id, token: tx.shared_link_token, buyer_id: buyerId }
       });
@@ -250,9 +251,11 @@ export async function createTestTransaction(
         lastJoinErr = joinErr;
         const is429 = (joinErr as any)?.status === 429;
         console.warn(`[E2E] test-join-transaction attempt=${attempt} failed:`, joinErr.message, is429 ? '(429)' : '');
-        const baseDelay = is429 ? 800 : 400;
-        const jitter = Math.floor(Math.random() * 120);
-        await new Promise((r) => setTimeout(r, baseDelay * attempt + jitter));
+        // Exponential backoff
+        const baseDelay = is429 ? 1800 : 700;
+        const exponentialFactor = Math.pow(1.5, attempt - 1);
+        const jitter = Math.floor(Math.random() * 500);
+        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 30000)));
       } else {
         joinSuccess = true;
       }
@@ -413,13 +416,13 @@ export async function createPaidTransaction(
 export async function markTransactionCompleted(transactionId: string, sellerId: string) {
   // Use service role to ensure update succeeds (test helper, bypasses RLS)
   const SUPABASE_URL = 'https://slthyxqruhfuyfmextwr.supabase.co';
-  const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   
   if (!SUPABASE_SERVICE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY not available in test environment');
   }
   
-  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.4');
+  const { createClient } = await import('@supabase/supabase-js');
   const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   
   const { error } = await serviceClient
