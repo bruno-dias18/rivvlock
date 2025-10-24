@@ -269,17 +269,30 @@ export async function createTestTransaction(
       throw new Error(`Failed to attach buyer: ${lastJoinErr.message}`);
     }
   }
+  // Brief delay to let previous writes propagate
+  await new Promise((r) => setTimeout(r, 250));
 
-// 3) Mark as paid via test function (bypasses RLS safely)
+  // 3) Mark as paid via test function (bypasses RLS safely)
   if (status !== 'pending' || paymentIntentId) {
-    const { error: markErr } = await supabase.functions.invoke('test-mark-transaction-paid', {
-      body: {
-        transaction_id: tx.id,
-        payment_intent_id: paymentIntentId || undefined,
-        status: status as 'paid' | 'completed',
-      }
-    });
-    if (markErr) throw new Error(`Failed to mark paid: ${markErr.message}`);
+    const maxAttempts = 5;
+    let lastErr: any = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const { error } = await supabase.functions.invoke('test-mark-transaction-paid', {
+        body: {
+          transaction_id: tx.id,
+          payment_intent_id: paymentIntentId || undefined,
+          status: status as 'paid' | 'completed',
+        }
+      });
+      if (!error) { lastErr = null; break; }
+      lastErr = error;
+      const s = (error as any)?.status;
+      const isTransient = s === 429 || s === 404 || s === 400;
+      const delay = Math.min(200 * Math.pow(1.5, attempt - 1) + Math.floor(Math.random() * 150), 1500);
+      if (!isTransient && attempt >= 2) break;
+      await new Promise((r) => setTimeout(r, delay));
+    }
+    if (lastErr) throw new Error(`Failed to mark paid: ${lastErr.message}`);
   }
 
   return {
@@ -402,14 +415,25 @@ export async function createPaidTransaction(
   const validationDeadline = new Date(paymentBlockedAt.getTime() + 48 * 60 * 60 * 1000);
 
   // Ensure payment_blocked_at and validation_deadline via edge function
-  const { error: blockErr } = await supabase.functions.invoke('test-mark-transaction-paid', {
-    body: {
-      transaction_id: transaction.id,
-      set_blocked_now: true,
-      validation_hours: 48,
-    }
-  });
-  if (blockErr) throw new Error(`Failed to set validation deadline: ${blockErr.message}`);
+  const maxAttempts = 5;
+  let lastErr: any = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { error } = await supabase.functions.invoke('test-mark-transaction-paid', {
+      body: {
+        transaction_id: transaction.id,
+        set_blocked_now: true,
+        validation_hours: 48,
+      }
+    });
+    if (!error) { lastErr = null; break; }
+    lastErr = error;
+    const s = (error as any)?.status;
+    const isTransient = s === 429 || s === 404 || s === 400;
+    const delay = Math.min(200 * Math.pow(1.5, attempt - 1) + Math.floor(Math.random() * 150), 1500);
+    if (!isTransient && attempt >= 2) break;
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  if (lastErr) throw new Error(`Failed to set validation deadline: ${lastErr.message}`);
   return transaction;
 }
 
