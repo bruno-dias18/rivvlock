@@ -51,8 +51,9 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await expect(txCard).toBeVisible({ timeout: 20000 });
     await txCard.click();
 
-    // Status should update to validation phase with countdown (data-testid)
-    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
+    // Status should update to validation phase with countdown (scoped to this card)
+    const countdown = txCard.locator('[data-testid="validation-countdown"]');
+    await expect(countdown).toBeVisible();
   });
 
   test('buyer sees validation request and can validate', async ({ page }) => {
@@ -74,8 +75,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await expect(buyerTxCard).toBeVisible({ timeout: 15000 });
     await buyerTxCard.click();
 
-    // Should see validation countdown
-    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
+    // Should see validation countdown (scoped)
+    await expect(buyerTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
 
     // Validate button should be visible
     const validateButton = page.getByRole('button', { name: /valider et libérer les fonds|validate and release/i });
@@ -109,8 +110,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await expect(newTxCard).toBeVisible({ timeout: 15000 });
     await newTxCard.click();
 
-    // Should see countdown component
-    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
+    // Should see countdown component (scoped)
+    await expect(newTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
   });
 
   test('transaction auto-releases after 72h validation deadline', async ({ page }) => {
