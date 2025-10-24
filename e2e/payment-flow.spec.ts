@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createTestUser, createTestTransaction, cleanupTestData, loginUser, expireTransaction } from './helpers/test-fixtures';
-
+import { getTestUser, releaseTestUser } from './helpers/user-pool';
 /**
  * E2E tests for the complete payment flow
  * 
