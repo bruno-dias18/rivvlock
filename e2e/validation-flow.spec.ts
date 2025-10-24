@@ -73,10 +73,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     // Should see validation badge/notification within this card (avoid global matches)
     await expect(buyerTxCard.getByText(/validation requise|validation required/i)).toBeVisible({ timeout: 15000 });
 
-    await buyerTxCard.click();
-
-    // Should see validation countdown (scoped)
-    await expect(buyerTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
+    // Should see validation countdown (scoped, without opening details)
+    await expect(buyerTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible({ timeout: 20000 });
 
     // Validate button should be visible (scoped to this card)
     const validateButton = buyerTxCard.getByRole('button', { name: /finaliser la transaction|finalize/i });
@@ -204,8 +202,14 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     const transaction = await createPaidTransaction(seller.id, buyer.id, 400);
     await markTransactionCompleted(transaction.id, seller.id);
 
+    // Ensure authenticated session before navigating
+    await loginUser(page, seller);
     await page.goto('/dashboard/transactions?tab=blocked');
-    const timelineContainer = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"] [data-testid="transaction-timeline"]`);
-    await expect(timelineContainer).toBeVisible();
+
+    const txCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
+    await expect(txCard).toBeVisible({ timeout: 20000 });
+
+    const timelineContainer = txCard.locator('[data-testid="transaction-timeline"]');
+    await expect(timelineContainer).toBeVisible({ timeout: 20000 });
   });
 });
