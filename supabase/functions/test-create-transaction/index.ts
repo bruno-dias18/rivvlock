@@ -42,9 +42,7 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
     });
   }
   const email = userResp.user.email.toLowerCase();
-  logger.info("[TEST-CREATE-TRANSACTION] Domain check disabled for E2E - proceeding", { email, allowed });
-    });
-  }
+  logger.info("[TEST-CREATE-TRANSACTION] Domain check disabled for E2E - proceeding", { email });
 
   // Compute dates
   const now = Date.now();
