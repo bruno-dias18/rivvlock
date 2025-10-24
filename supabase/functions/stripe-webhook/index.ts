@@ -9,9 +9,32 @@ import {
   Handler,
   HandlerContext
 } from "../_shared/middleware.ts";
+import { rateLimiter } from "../_shared/rate-limiter.ts";
+
+// Rate limit configuration for webhooks (protect against abuse)
+const WEBHOOK_RATE_LIMIT = {
+  maxRequests: 100, // Max 100 webhooks per window
+  windowMs: 60 * 1000, // 1 minute window
+};
 
 // Note: No withAuth for webhooks - Stripe calls this directly
 const handler: Handler = async (req, ctx: HandlerContext) => {
+  // ✅ RATE LIMITING: Check rate limit before processing
+  const identifier = req.headers.get("stripe-signature")?.substring(0, 20) || 'unknown';
+  const rateLimitResult = await rateLimiter(
+    `webhook_${identifier}`,
+    WEBHOOK_RATE_LIMIT.maxRequests,
+    WEBHOOK_RATE_LIMIT.windowMs
+  );
+  
+  if (!rateLimitResult.allowed) {
+    logger.warn("Webhook rate limit exceeded", { 
+      identifier,
+      attemptsSoFar: rateLimitResult.current 
+    });
+    return errorResponse("Rate limit exceeded", 429);
+  }
+
   const adminClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
