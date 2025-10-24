@@ -17,15 +17,10 @@ test.describe.serial('Payment Flow', () => {
   let testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    // Create users sequentially to avoid rate limiting
-    seller = await createTestUser('seller', 'payment-seller');
-    testUserIds.push(seller.id);
-    
-    // Small delay between user creations to avoid rate limits
-    await new Promise(r => setTimeout(r, 300));
-    
-    buyer = await createTestUser('buyer', 'payment-buyer');
-    testUserIds.push(buyer.id);
+    // Get users from pre-created pool (fast, no rate limiting)
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
+    testUserIds.push(seller.id, buyer.id);
     
     transaction = await createTestTransaction(seller.id, buyer.id, {
       amount: 500,
@@ -34,6 +29,11 @@ test.describe.serial('Payment Flow', () => {
   });
 
   test.afterAll(async () => {
+    // Release users back to pool for reuse
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
+    
+    // Clean up test data
     await cleanupTestData(testUserIds);
   });
 
@@ -142,15 +142,10 @@ test.describe.serial('Mobile Payment Flow', () => {
   let mobileTestUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    // Create users sequentially to avoid rate limiting
-    mobileSeller = await createTestUser('seller', 'mobile-payment-seller');
-    mobileTestUserIds.push(mobileSeller.id);
-    
-    // Small delay between user creations to avoid rate limits
-    await new Promise(r => setTimeout(r, 300));
-    
-    mobileBuyer = await createTestUser('buyer', 'mobile-payment-buyer');
-    mobileTestUserIds.push(mobileBuyer.id);
+    // Get users from pre-created pool (fast, no rate limiting)
+    mobileSeller = await getTestUser('seller');
+    mobileBuyer = await getTestUser('buyer');
+    mobileTestUserIds.push(mobileSeller.id, mobileBuyer.id);
     
     mobileTransaction = await createTestTransaction(mobileSeller.id, mobileBuyer.id, {
       amount: 400,
@@ -159,6 +154,11 @@ test.describe.serial('Mobile Payment Flow', () => {
   });
 
   test.afterAll(async () => {
+    // Release users back to pool for reuse
+    releaseTestUser(mobileSeller.id);
+    releaseTestUser(mobileBuyer.id);
+    
+    // Clean up test data
     await cleanupTestData(mobileTestUserIds);
   });
 

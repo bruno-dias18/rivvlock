@@ -9,6 +9,94 @@ Tests End-to-End Playwright pour valider les parcours critiques de RivvLock :
 - 🆕 **Validation Flow** : Countdown 72h et validation acheteur
 - 🆕 **Refund Flow** : Remboursements complets et partiels
 
+## 🚀 Setup Rapide avec User Pool (Recommandé)
+
+**Nouveau depuis 2025-10-24** : Les tests utilisent maintenant un **pool de users réutilisables** pour éliminer les alertes Supabase et accélérer les tests de **5-10x**.
+
+### Initialiser le pool (une seule fois)
+
+```bash
+# Créer 20 users de test (10 sellers + 10 buyers)
+npm run e2e:setup-pool
+
+# Durée: ~1 minute
+# Le pool persiste indéfiniment, pas besoin de le recréer !
+```
+
+### Lancer les tests
+
+```bash
+# Les tests utilisent automatiquement le pool
+npx playwright test
+
+# Plus d'appels à test-create-user = Plus d'alertes Supabase ✅
+# Tests 5-10x plus rapides ✅
+```
+
+### Fonctionnement du pool
+
+- **20 users pré-créés** : 10 sellers + 10 buyers
+- **Thread-safe** : système de checkout évite les collisions en tests parallèles
+- **Fallback automatique** : si le pool n'existe pas, création on-the-fly (lent mais fonctionnel)
+- **Réutilisable** : chaque test emprunte un user puis le rend disponible après cleanup
+- **Aucune maintenance** : le pool dure indéfiniment jusqu'au cleanup manuel
+
+### Structure du pool
+
+```json
+// e2e/.test-user-pool.json (auto-généré, ignoré par Git)
+{
+  "sellers": [
+    { "id": "uuid", "email": "test-pool-seller-01@gmail.com", "password": "Test123!@#$%" },
+    { "id": "uuid", "email": "test-pool-seller-02@gmail.com", "password": "Test123!@#$%" },
+    ...
+  ],
+  "buyers": [
+    { "id": "uuid", "email": "test-pool-buyer-01@gmail.com", "password": "Test123!@#$%" },
+    ...
+  ],
+  "createdAt": "2025-10-24T10:00:00.000Z",
+  "poolSize": 10
+}
+```
+
+### Utilisation dans les tests
+
+```typescript
+import { getTestUser, releaseTestUser } from './helpers/user-pool';
+
+test.beforeAll(async () => {
+  // Récupère des users du pool (instantané, pas de rate limit)
+  seller = await getTestUser('seller');
+  buyer = await getTestUser('buyer');
+});
+
+test.afterAll(async () => {
+  // Rend les users disponibles pour les autres tests
+  releaseTestUser(seller.id);
+  releaseTestUser(buyer.id);
+});
+```
+
+### Commandes disponibles
+
+```bash
+# Setup du pool (à faire une seule fois)
+npm run e2e:setup-pool
+
+# Lancer tous les tests E2E
+npx playwright test
+
+# Lancer un fichier spécifique
+npx playwright test e2e/payment-flow.spec.ts
+
+# Mode UI interactif
+npx playwright test --ui
+
+# Debug mode
+npx playwright test --debug
+```
+
 ## Prérequis
 
 ### 1. Installation

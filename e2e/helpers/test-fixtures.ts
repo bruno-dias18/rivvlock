@@ -46,48 +46,27 @@ export async function createTestUser(
   const buildEmail = (domain: string) => `test-${uuid}-${cleanPrefix}@${domain}`;
   const password = 'Test123!@#$%';
 
-  let email = buildEmail(primaryDomain);
+  // Create user via edge function
+  // Note: This function is now primarily a fallback when user pool is not available
+  // For better performance, use getTestUser() from user-pool.ts instead
   let userId: string | null = null;
-
-  console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
-
-  // Use a single stable domain to avoid rate limiting
-  const candidateDomains = [primaryDomain];
   let lastError: any = null;
 
-  for (const domain of candidateDomains) {
-    email = buildEmail(domain);
-    console.log('[E2E] trying domain:', domain, 'email:', email);
+  try {
+    const { data, error } = await supabase.functions.invoke('test-create-user', {
+      body: { email, password, role: role === 'admin' ? 'admin' : undefined },
+    });
 
-    // Retry a few times to avoid transient 4xx/5xx from edge function / rate limit
-    for (let attempt = 1; attempt <= 5; attempt++) {
-      const { data, error } = await supabase.functions.invoke('test-create-user', {
-        body: { email, password, role: role === 'admin' ? 'admin' : undefined },
-      });
-
-      if (!error && data?.user_id) {
-        userId = data.user_id;
-        console.log('[E2E] user created:', userId, 'email:', email);
-        break;
-      }
-
+    if (!error && data?.user_id) {
+      userId = data.user_id;
+      console.log('[E2E] user created:', userId, 'email:', email);
+    } else {
       lastError = error || new Error('invoke failed');
-      const is429 = (error as any)?.status === 429;
-      console.warn(`[E2E] create-user error domain=${domain} attempt=${attempt}:`, {
-        message: (error as any)?.message,
-        status: (error as any)?.status,
-        name: (error as any)?.name,
-        is429,
-      });
-      
-      // Exponential backoff with longer delays for rate limits
-      const baseDelay = is429 ? 1500 : 400;
-      const backoff = baseDelay * Math.pow(1.5, attempt - 1);
-      const jitter = Math.floor(Math.random() * 200);
-      await new Promise((r) => setTimeout(r, backoff + jitter));
+      console.error('[E2E] Failed to create user:', lastError);
     }
-
-    if (userId) break;
+  } catch (e) {
+    lastError = e;
+    console.error('[E2E] Exception creating user:', e);
   }
 
   if (!userId) {
@@ -116,30 +95,11 @@ export async function createTestUser(
 
   if (!userId) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
 
-  // Auto-confirm email for E2E tests (bypasses email confirmation requirement)
-  // The test-create-user edge function sets email_confirm: true, but there's a propagation delay
-  // Retry sign-in with exponential backoff to wait for confirmation to propagate
-  let signInSuccess = false;
-  for (let confirmAttempt = 1; confirmAttempt <= 5; confirmAttempt++) {
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (!signInError) {
-      signInSuccess = true;
-      break;
-    }
-    
-    // If email not confirmed, wait with exponential backoff for propagation
-    if (signInError.message.includes('Email not confirmed')) {
-      const backoffMs = 500 * Math.pow(2, confirmAttempt - 1); // 500ms, 1s, 2s, 4s, 8s
-      console.warn(`[E2E] Email not confirmed yet, attempt ${confirmAttempt}/5, waiting ${backoffMs}ms...`);
-      await new Promise(r => setTimeout(r, backoffMs));
-    } else {
-      throw new Error(`Sign-in failed: ${signInError.message}`);
-    }
-  }
-  
-  if (!signInSuccess) {
-    throw new Error(`Sign-in failed after 5 attempts: Email confirmation did not propagate. Check test-create-user edge function logs.`);
+  // Sign in to get JWT token
+  // The test-create-user edge function auto-confirms email
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  if (signInError) {
+    throw new Error(`Sign-in failed for ${email}: ${signInError.message}`);
   }
 
   // Get session token for Authorization header
