@@ -157,7 +157,7 @@ export async function createTestTransaction(
 
   // 1) Preferred path: test helper edge function (bypasses RLS safely) with retries
   try {
-    for (let attempt = 1; attempt <= 5 && !tx; attempt++) {
+    for (let attempt = 1; attempt <= 10 && !tx; attempt++) {
       const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
         body: {
           seller_id: sellerId,
@@ -170,9 +170,9 @@ export async function createTestTransaction(
         lastInvokeErr = createErr;
         const is429 = (createErr as any)?.status === 429;
         console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message, is429 ? '(429)' : '');
-        // Longer backoff for rate limits, shorter for other errors
-        const baseDelay = is429 ? 800 : 400;
-        const jitter = Math.floor(Math.random() * 120);
+        // Longer backoff for rate limits, quadratic growth with jitter
+        const baseDelay = is429 ? 1200 : 600;
+        const jitter = Math.floor(Math.random() * 300);
         await new Promise((r) => setTimeout(r, baseDelay * attempt + jitter));
       } else {
         tx = createData?.transaction ?? null;

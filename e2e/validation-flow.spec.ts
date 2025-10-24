@@ -17,7 +17,7 @@ import { getTestUser, releaseTestUser } from './helpers/user-pool';
  * 4. Funds are released to seller
  */
 
-test.describe('Validation Flow - Complete Journey', () => {
+test.describe.serial('Validation Flow - Complete Journey', () => {
   let seller: any;
   let buyer: any;
   let transaction: any;
@@ -148,7 +148,7 @@ test.describe('Validation Flow - Complete Journey', () => {
   });
 });
 
-test.describe('Validation Flow - Edge Cases', () => {
+test.describe.serial('Validation Flow - Edge Cases', () => {
   let seller: any;
   let buyer: any;
   const testUserIds: string[] = [];
