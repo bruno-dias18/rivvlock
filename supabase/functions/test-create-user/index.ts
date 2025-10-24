@@ -16,7 +16,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  role: z.enum(["admin"]).optional(),
+  // Accept seller/buyer/admin for pool creation (admin remains optional)
+  role: z.enum(["admin", "seller", "buyer"]).optional(),
 });
 
 const handler: Handler = async (req: Request, ctx: HandlerContext) => {
