@@ -173,7 +173,11 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     });
 
     await loginUser(page, seller);
-    await page.getByRole('link', { name: /transactions/i }).click();
+    await page.goto('/dashboard/transactions');
+    await page.waitForLoadState('networkidle');
+    
+    // Wait for transaction to appear in the list
+    await expect(page.getByText(pendingTransaction.id.substring(0, 8))).toBeVisible({ timeout: 10000 });
     await page.getByText(pendingTransaction.id.substring(0, 8)).click();
 
     // Complete button should not be present and no validation countdown

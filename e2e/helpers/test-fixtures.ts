@@ -411,30 +411,22 @@ export async function createPaidTransaction(
 
 /**
  * Marks transaction as completed by seller
- * Uses service role to bypass RLS (test helper)
+ * Uses edge function with service role to bypass RLS (test helper)
  */
 export async function markTransactionCompleted(transactionId: string, sellerId: string) {
-  // Use service role to ensure update succeeds (test helper, bypasses RLS)
-  const SUPABASE_URL = 'https://slthyxqruhfuyfmextwr.supabase.co';
-  const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { error } = await supabase.functions.invoke('test-mark-seller-validated', {
+    body: {
+      transaction_id: transactionId,
+      seller_id: sellerId,
+    }
+  });
   
-  if (!SUPABASE_SERVICE_KEY) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY not available in test environment');
-  }
-  
-  const { createClient } = await import('@supabase/supabase-js');
-  const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  
-  const { error } = await serviceClient
-    .from('transactions')
-    .update({
-      seller_validated: true,
-    })
-    .eq('id', transactionId);
-    
   if (error) {
     throw new Error(`Failed to mark transaction as completed: ${error.message}`);
   }
+  
+  // Wait for change to propagate
+  await new Promise((r) => setTimeout(r, 500));
 }
 
 /**
