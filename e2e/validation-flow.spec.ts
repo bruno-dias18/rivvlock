@@ -66,20 +66,21 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     // Navigate to transactions (blocked tab)
     await page.goto('/dashboard/transactions?tab=blocked');
 
-    // Should see validation badge/notification
-    await expect(page.getByText(/validation requise|validation required/i)).toBeVisible({ timeout: 15000 });
-
-    // Open the transaction we just created
+    // Open the transaction we just created (scoped to this card)
     const buyerTxCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
-    await expect(buyerTxCard).toBeVisible({ timeout: 15000 });
+    await expect(buyerTxCard).toBeVisible({ timeout: 20000 });
+
+    // Should see validation badge/notification within this card (avoid global matches)
+    await expect(buyerTxCard.getByText(/validation requise|validation required/i)).toBeVisible({ timeout: 15000 });
+
     await buyerTxCard.click();
 
     // Should see validation countdown (scoped)
     await expect(buyerTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
 
-    // Validate button should be visible
-    const validateButton = page.getByRole('button', { name: /valider et libérer les fonds|validate and release/i });
-    await expect(validateButton).toBeVisible();
+    // Validate button should be visible (scoped to this card)
+    const validateButton = buyerTxCard.getByRole('button', { name: /valider et libérer les fonds|validate and release/i });
+    await expect(validateButton).toBeVisible({ timeout: 15000 });
 
     // Click validate
     await validateButton.click();
