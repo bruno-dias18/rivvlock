@@ -17,13 +17,13 @@ export const useRealtimeActivityRefresh = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    // Fonction helper pour refetch avec throttling (max 1x toutes les 3 secondes par query)
+    // Fonction helper pour refetch avec throttling (max 1x par seconde par query)
     const throttledRefetch = (queryKey: string[]) => {
       const key = queryKey.join('-');
       const now = Date.now();
       const lastRefetch = lastInvalidationRef.current[key] || 0;
 
-      if (now - lastRefetch > 3000) {
+      if (now - lastRefetch > 1000) {
         lastInvalidationRef.current[key] = now;
         // ✅ Force refetch immédiat (ignore staleTime) pour mise à jour instantanée
         queryClient.refetchQueries({ queryKey, type: 'active' });
@@ -204,7 +204,7 @@ export const useRealtimeActivityRefresh = () => {
             .from('conversations')
             .select('dispute_id')
             .eq('id', message.conversation_id)
-            .single();
+            .maybeSingle();
           
           if (conversation?.dispute_id) {
             logger.debug('Realtime: New dispute message (unified)', payload);

@@ -40,7 +40,7 @@ export const useUnreadQuotesGlobal = () => {
     ['unread-quotes-global', user?.id],
     {
       staleTime: 5_000,
-      refetchInterval: 10_000,
+      refetchInterval: 20_000,
     }
   );
 
