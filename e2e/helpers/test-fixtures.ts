@@ -157,7 +157,8 @@ export async function createTestTransaction(
 
   // 1) Preferred path: test helper edge function (bypasses RLS safely) with retries
   try {
-    for (let attempt = 1; attempt <= 15 && !tx; attempt++) {
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts && !tx; attempt++) {
       const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
         body: {
           seller_id: sellerId,
@@ -168,13 +169,16 @@ export async function createTestTransaction(
 
       if (createErr) {
         lastInvokeErr = createErr;
-        const is429 = (createErr as any)?.status === 429;
-        console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message, is429 ? '(429)' : '');
-        // Exponential backoff with jitter for rate limits
-        const baseDelay = is429 ? 2000 : 800;
+        const status = (createErr as any)?.status;
+        const is429 = status === 429;
+        console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message, is429 ? '(429)' : `(status:${status ?? 'unknown'})`);
+        // Quick fallback if not rate limit and we already tried twice
+        if (!is429 && attempt >= 2) break;
+        // Backoff: shorter to keep test under 30s
+        const baseDelay = is429 ? 700 : 300;
         const exponentialFactor = Math.pow(1.5, attempt - 1);
-        const jitter = Math.floor(Math.random() * 500);
-        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 30000)));
+        const jitter = Math.floor(Math.random() * 200);
+        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 2000)));
       } else {
         tx = createData?.transaction ?? null;
       }
