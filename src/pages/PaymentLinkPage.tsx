@@ -340,14 +340,14 @@ export default function PaymentLinkPage() {
           <h1 className="text-2xl font-bold mb-2">
             {isRateLimited ? 'Trop de tentatives' : 'Oups !'}
           </h1>
-          <p className="text-muted-foreground mb-6">
+          <p 
+            className="text-muted-foreground mb-6"
+            data-testid={typeof error === 'string' && error.toLowerCase().includes('lien expiré') ? 'expired-link' : undefined}
+          >
             {isRateLimited 
               ? 'Vous avez effectué trop de tentatives. Pour votre sécurité, veuillez patienter 2 minutes avant de réessayer.'
               : error}
           </p>
-          {typeof error === 'string' && error.toLowerCase().includes('lien expiré') && (
-            <div data-testid="expired-link">Lien expiré</div>
-          )}
           <div className="flex gap-2 justify-center">
             <Button 
               onClick={() => {
