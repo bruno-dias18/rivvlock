@@ -40,7 +40,7 @@ export async function createTestUser(
   emailPrefix: string
   const timestamp = Date.now();
   const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
-  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'gmail.com';
+  const primaryDomain = 'gmail.com';
   const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
   const password = 'Test123!@#$%';
 
@@ -49,14 +49,8 @@ export async function createTestUser(
 
   console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
 
-  // Try multiple domains as fallback (prefer stable public domains first)
-  const candidateDomains = Array.from(new Set([
-    primaryDomain,
-    'gmail.com',
-    'outlook.com',
-    'test-rivvlock.com',
-    'example.org',
-  ]));
+  // Use a single stable domain to avoid rate limiting
+  const candidateDomains = [primaryDomain];
   let lastError: any = null;
 
   for (const domain of candidateDomains) {

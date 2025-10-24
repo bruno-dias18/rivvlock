@@ -109,10 +109,13 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
   return successResponse({ transaction: inserted });
 };
 
+const maxRequests = Number(Deno.env.get("TEST_RATE_LIMIT_MAX") || "1000");
+const windowMs = Number(Deno.env.get("TEST_RATE_LIMIT_WINDOW_MS") || "60000");
+
 Deno.serve(
   compose(
     withCors,
-    withRateLimit({ maxRequests: 100, windowMs: 60_000 }),
+    withRateLimit({ maxRequests, windowMs }),
     withValidation(testCreateTxSchema)
   )(handler)
 );

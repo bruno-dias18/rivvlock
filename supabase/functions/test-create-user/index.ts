@@ -85,6 +85,9 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   return successResponse({ user_id: data.user?.id, email });
 };
 
+const maxRequests = Number(Deno.env.get("TEST_RATE_LIMIT_MAX") || "1000");
+const windowMs = Number(Deno.env.get("TEST_RATE_LIMIT_WINDOW_MS") || "60000");
+
 Deno.serve(
-  compose(withCors, withRateLimit({ maxRequests: 100, windowMs: 60_000 }), withValidation(createUserSchema))(handler)
+  compose(withCors, withRateLimit({ maxRequests, windowMs }), withValidation(createUserSchema))(handler)
 );
