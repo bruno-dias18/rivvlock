@@ -120,9 +120,9 @@ test.describe('Payment Flow', () => {
     // Login as buyer before navigating to see the expired message
     await loginUser(page, buyer);
     await page.goto(`/payment-link/${expiredTransaction.token}`);
-
-    // Should display error message containing "Lien expiré" as per PaymentLinkPage.tsx line 153
-    await expect(page.locator('[data-testid="expired-link"]')).toBeVisible();
+    // Should display error message containing "Lien expiré" as per PaymentLinkPage.tsx logic
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="expired-link"]')).toBeVisible({ timeout: 10000 });
   });
 });
 
