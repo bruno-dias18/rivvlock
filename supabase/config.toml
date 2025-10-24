@@ -285,6 +285,10 @@ verify_jwt = false
 [functions.test-mark-seller-validated]
 verify_jwt = false
 
+# ... keep existing code (function configs above)
+[functions.test-release-funds]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 

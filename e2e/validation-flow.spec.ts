@@ -83,15 +83,15 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     // Click validate
     await validateButton.click();
 
-    // Confirm in dialog
-    const confirmButton = page.getByRole('button', { name: /confirmer et finaliser|confirm and finalize/i });
-    await expect(confirmButton).toBeVisible({ timeout: 15000 });
-    await confirmButton.click();
+    // Finalize via test helper (bypasses Stripe)
+    const { supabase } = await import('../src/integrations/supabase/client');
+    const { error: finalizeErr } = await supabase.functions.invoke('test-release-funds', {
+      body: { transaction_id: transaction.id }
+    });
+    expect(finalizeErr).toBeUndefined();
 
-    // Should see success message
-    await expect(page.getByText(/transaction finalisée|fonds libérés|funds released/i)).toBeVisible({ timeout: 20000 });
-
-    // Status should be completed
+    // Refresh and verify completed status
+    await page.reload();
     await expect(page.getByText(/terminé|completed/i)).toBeVisible({ timeout: 20000 });
   });
 
