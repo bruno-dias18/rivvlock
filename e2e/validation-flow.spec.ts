@@ -88,7 +88,7 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     const { error: finalizeErr } = await supabase.functions.invoke('test-release-funds', {
       body: { transaction_id: transaction.id }
     });
-    expect(finalizeErr).toBeUndefined();
+    expect(finalizeErr).toBeNull();
 
     // Refresh and verify completed status
     await page.reload();
