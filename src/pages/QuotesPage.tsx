@@ -9,6 +9,7 @@ import { QuoteDetailsDialog } from '@/components/QuoteDetailsDialog';
 import { QuoteCard } from '@/components/QuoteCard';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
 import { useQuotes } from '@/hooks/useQuotes';
+import { usePaginatedQuotes } from '@/hooks/usePaginatedQuotes';
 import { Quote, QuoteStatus } from '@/types/quotes';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,6 +17,7 @@ import { useIsMobile } from '@/lib/mobileUtils';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadQuoteTabCounts } from '@/hooks/useUnreadQuoteTabCounts';
 import { useAuth } from '@/contexts/AuthContext';
+import { QuotePaginationControls } from '@/components/quotes/QuotePaginationControls';
 
 export const QuotesPage = () => {
   const { user } = useAuth();
@@ -27,17 +29,62 @@ export const QuotesPage = () => {
   const activeTab = searchParams.get('tab') || 'sent';
   const [messagingQuoteId, setMessagingQuoteId] = useState<string | null>(null);
   const [messagingClientName, setMessagingClientName] = useState<string | undefined>();
-  const { sentQuotes, receivedQuotes, isLoading, archiveQuote, markAsViewed } = useQuotes();
+  
+  // Pagination state - one page per tab
+  const [sentPage, setSentPage] = useState(1);
+  const [receivedPage, setReceivedPage] = useState(1);
+  const pageSize = 20;
+  
+  // Feature flag for pagination (enabled)
+  const usePagination = true;
+  
+  // Paginated queries
+  const { 
+    data: sentData,
+    isLoading: sentLoading,
+    refetch: refetchSent
+  } = usePaginatedQuotes({
+    page: sentPage,
+    pageSize,
+    type: 'sent',
+    sortBy: 'created_at',
+    sortOrder: 'desc',
+  });
+  
+  const { 
+    data: receivedData,
+    isLoading: receivedLoading,
+    refetch: refetchReceived
+  } = usePaginatedQuotes({
+    page: receivedPage,
+    pageSize,
+    type: 'received',
+    sortBy: 'created_at',
+    sortOrder: 'desc',
+  });
+  
+  // Fallback: Keep useQuotes for unread counts and archive actions
+  const { sentQuotes: allSentQuotes, receivedQuotes: allReceivedQuotes, isLoading: allLoading, archiveQuote, markAsViewed } = useQuotes();
+  
   const isMobile = useIsMobile();
+  
+  // Select data source based on pagination flag
+  const sentQuotes = usePagination ? (sentData?.quotes || []) : allSentQuotes;
+  const receivedQuotes = usePagination ? (receivedData?.quotes || []) : allReceivedQuotes;
+  const isLoading = usePagination 
+    ? (activeTab === 'sent' ? sentLoading : receivedLoading)
+    : allLoading;
+  
+  // Unread counts from all quotes (not paginated)
   const { sentUnread, receivedUnread } = useUnreadQuoteTabCounts(
-    sentQuotes.map(q => ({ 
+    allSentQuotes.map(q => ({ 
       id: q.id, 
       conversation_id: q.conversation_id, 
       status: q.status,
       updated_at: q.updated_at,
       client_last_viewed_at: q.client_last_viewed_at
     })),
-    receivedQuotes.map(q => ({ 
+    allReceivedQuotes.map(q => ({ 
       id: q.id, 
       conversation_id: q.conversation_id, 
       status: q.status,
@@ -77,7 +124,17 @@ export const QuotesPage = () => {
     setMessagingClientName(clientName);
   };
 
+  const handlePageChange = (newPage: number) => {
+    if (activeTab === 'sent') {
+      setSentPage(newPage);
+    } else {
+      setReceivedPage(newPage);
+    }
+  };
+
   const currentQuotes = activeTab === 'sent' ? sentQuotes : receivedQuotes;
+  const currentPage = activeTab === 'sent' ? sentPage : receivedPage;
+  const paginationData = activeTab === 'sent' ? sentData : receivedData;
 
   return (
     <DashboardLayoutWithSidebar>
@@ -122,16 +179,29 @@ export const QuotesPage = () => {
                 <p>Aucun devis envoyé</p>
               </div>
             ) : (
-              sentQuotes.map(quote => (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  onView={() => handleViewQuote(quote)}
-                  onArchive={() => archiveQuote(quote.id)}
-                  onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
-                  isSeller={true}
-                />
-              ))
+              <>
+                {sentQuotes.map(quote => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onView={() => handleViewQuote(quote)}
+                    onArchive={() => archiveQuote(quote.id)}
+                    onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
+                    isSeller={true}
+                  />
+                ))}
+                {usePagination && paginationData && (
+                  <QuotePaginationControls
+                    currentPage={currentPage}
+                    totalPages={paginationData.totalPages}
+                    hasNextPage={paginationData.hasNextPage}
+                    hasPreviousPage={paginationData.hasPreviousPage}
+                    onPageChange={handlePageChange}
+                    totalCount={paginationData.totalCount}
+                    pageSize={pageSize}
+                  />
+                )}
+              </>
             )}
           </TabsContent>
 
@@ -147,17 +217,30 @@ export const QuotesPage = () => {
                 </p>
               </div>
             ) : (
-              receivedQuotes.map(quote => (
-                <QuoteCard
-                  key={quote.id}
-                  quote={quote}
-                  onView={() => handleViewQuote(quote)}
-                  onArchive={() => archiveQuote(quote.id)}
-                  onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
-                  isSeller={false}
-                  onMarkAsViewed={markAsViewed}
-                />
-              ))
+              <>
+                {receivedQuotes.map(quote => (
+                  <QuoteCard
+                    key={quote.id}
+                    quote={quote}
+                    onView={() => handleViewQuote(quote)}
+                    onArchive={() => archiveQuote(quote.id)}
+                    onOpenMessaging={() => handleOpenMessaging(quote.id, quote.client_name || undefined)}
+                    isSeller={false}
+                    onMarkAsViewed={markAsViewed}
+                  />
+                ))}
+                {usePagination && paginationData && (
+                  <QuotePaginationControls
+                    currentPage={currentPage}
+                    totalPages={paginationData.totalPages}
+                    hasNextPage={paginationData.hasNextPage}
+                    hasPreviousPage={paginationData.hasPreviousPage}
+                    onPageChange={handlePageChange}
+                    totalCount={paginationData.totalCount}
+                    pageSize={pageSize}
+                  />
+                )}
+              </>
             )}
           </TabsContent>
         </Tabs>
