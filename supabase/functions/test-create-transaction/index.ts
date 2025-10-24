@@ -116,7 +116,6 @@ const windowMs = Number(Deno.env.get("TEST_RATE_LIMIT_WINDOW_MS") || "60000");
 Deno.serve(
   compose(
     withCors,
-    withRateLimit({ maxRequests, windowMs }),
     withValidation(testCreateTxSchema)
   )(handler)
 );
