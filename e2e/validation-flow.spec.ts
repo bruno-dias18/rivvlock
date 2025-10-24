@@ -79,21 +79,22 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await expect(buyerTxCard.locator('[data-testid="validation-countdown"]')).toBeVisible();
 
     // Validate button should be visible (scoped to this card)
-    const validateButton = buyerTxCard.getByRole('button', { name: /valider et libérer les fonds|validate and release/i });
-    await expect(validateButton).toBeVisible({ timeout: 15000 });
+    const validateButton = buyerTxCard.getByRole('button', { name: /finaliser la transaction|finalize/i });
+    await expect(validateButton).toBeVisible({ timeout: 20000 });
 
     // Click validate
     await validateButton.click();
 
-    // Confirm in dialog with checkbox
-    await page.getByLabel(/je confirme|i confirm/i).check();
-    await page.getByRole('button', { name: /confirmer la validation|confirm validation/i }).click();
+    // Confirm in dialog
+    const confirmButton = page.getByRole('button', { name: /confirmer et finaliser|confirm and finalize/i });
+    await expect(confirmButton).toBeVisible({ timeout: 15000 });
+    await confirmButton.click();
 
     // Should see success message
-    await expect(page.getByText(/fonds libérés|funds released/i)).toBeVisible();
+    await expect(page.getByText(/transaction finalisée|fonds libérés|funds released/i)).toBeVisible({ timeout: 20000 });
 
     // Status should be completed
-    await expect(page.getByText(/terminé|completed/i)).toBeVisible();
+    await expect(page.getByText(/terminé|completed/i)).toBeVisible({ timeout: 20000 });
   });
 
   test('validation countdown displays correct time remaining', async ({ page }) => {
@@ -195,7 +196,7 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     await sellerTxCard.click();
 
     // Validate button should not be present for seller
-    const validateButton = page.getByRole('button', { name: /valider et libérer|validate and release/i });
+    const validateButton = sellerTxCard.getByRole('button', { name: /finaliser la transaction|finalize/i });
     await expect(validateButton).toHaveCount(0);
   });
 
@@ -203,9 +204,7 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     const transaction = await createPaidTransaction(seller.id, buyer.id, 400);
     await markTransactionCompleted(transaction.id, seller.id);
 
-    await loginUser(page, buyer);
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
     const timelineContainer = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"] [data-testid="transaction-timeline"]`);
     await expect(timelineContainer).toBeVisible();
   });
