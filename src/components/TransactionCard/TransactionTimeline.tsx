@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calendar, Clock, Banknote } from 'lucide-react';
+import { Calendar, Clock, Banknote, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { ValidationCountdown } from '@/components/ValidationCountdown';
@@ -137,6 +137,23 @@ const TransactionTimelineComponent = ({
           <Clock className="h-4 w-4" />
           <span className="text-sm">{validationStatus.displayLabel}</span>
         </div>
+      )}
+      
+      {/* Status indicator for validation expired */}
+      {validationStatus.phase === 'validation_expired' && (
+        <Alert className="mt-3 bg-orange-50 dark:bg-orange-950 border-orange-200 dark:border-orange-800">
+          <AlertTriangle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          <AlertDescription className="text-orange-800 dark:text-orange-200">
+            <div className="space-y-2">
+              <div className="font-semibold">
+                Délai de validation expiré
+              </div>
+              <div className="text-sm">
+                Les fonds seront libérés automatiquement au vendeur après traitement.
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
       )}
       
       {/* Manual finalization for buyers */}
