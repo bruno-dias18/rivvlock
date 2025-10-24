@@ -289,6 +289,9 @@ verify_jwt = false
 [functions.test-release-funds]
 verify_jwt = false
 
+[functions.test-expire-validation-deadline]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 

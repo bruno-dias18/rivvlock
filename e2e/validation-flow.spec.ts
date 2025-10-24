@@ -125,14 +125,12 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
   const expiredTransaction = await createPaidTransaction(seller.id, buyer.id, 300);
   await markTransactionCompleted(expiredTransaction.id, seller.id);
 
-  // Manually set validation_deadline to past
+  // Manually set validation_deadline to past via test helper
   const { supabase } = await import('../src/integrations/supabase/client');
-    await supabase
-      .from('transactions')
-      .update({
-        validation_deadline: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      })
-      .eq('id', expiredTransaction.id);
+  const { error: expireErr } = await supabase.functions.invoke('test-expire-validation-deadline', {
+    body: { transaction_id: expiredTransaction.id }
+  });
+  expect(expireErr).toBeNull();
 
     // Login as buyer
     await loginUser(page, buyer);
