@@ -282,6 +282,9 @@ verify_jwt = false
 [functions.test-create-dispute]
 verify_jwt = false
 
+[functions.test-mark-seller-validated]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 
