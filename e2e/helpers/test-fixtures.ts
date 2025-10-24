@@ -84,6 +84,30 @@ export async function createTestUser(
     if (userId) break;
   }
 
+  if (!userId) {
+    // Fallback path: create via client signup or reuse existing account
+    try {
+      const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({ email, password });
+      if (!signUpErr) {
+        userId = signUpData.user?.id ?? null;
+      } else {
+        // If already registered, just sign in
+        if ((signUpErr.message || '').toLowerCase().includes('registered')) {
+          const { data: signInData2, error: signInErr2 } = await supabase.auth.signInWithPassword({ email, password });
+          if (!signInErr2) {
+            userId = signInData2.user?.id ?? null;
+          } else {
+            lastError = signInErr2;
+          }
+        } else {
+          lastError = signUpErr;
+        }
+      }
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
   if (!userId) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
 
   // Sign in to get JWT token
