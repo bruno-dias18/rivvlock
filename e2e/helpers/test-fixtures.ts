@@ -9,6 +9,13 @@ import { supabase } from '../../src/integrations/supabase/client';
 // Keep a map of credentials per created user id to switch sessions respecting RLS
 const userCredentials = new Map<string, { email: string; password: string }>();
 
+/**
+ * Register user credentials (used by user-pool.ts)
+ */
+export function registerUserCredentials(userId: string, email: string, password: string): void {
+  userCredentials.set(userId, { email, password });
+}
+
 export interface TestUser {
   id: string;
   email: string;

@@ -13,7 +13,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { createTestUser, type TestUser } from './test-fixtures';
+import { createTestUser, type TestUser, registerUserCredentials } from './test-fixtures';
 
 interface UserPool {
   sellers: TestUser[];
@@ -106,6 +106,9 @@ export async function getTestUser(role: 'seller' | 'buyer'): Promise<TestUser> {
     if (!checkoutState.checkedOut.has(user.id)) {
       // Checkout user (mark as in-use)
       checkoutState.checkedOut.add(user.id);
+      
+      // Register credentials so signInAs() can find them
+      registerUserCredentials(user.id, user.email, user.password);
       
       console.log(`[UserPool] ✅ Checked out ${role}: ${user.email} (index: ${currentIndex})`);
       return user;
