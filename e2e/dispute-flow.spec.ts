@@ -101,20 +101,26 @@ test.describe('Dispute Flow - Complete Journey', () => {
   });
 
   test('admin can view and resolve escalated dispute', async ({ page }) => {
-    // Create a paid transaction with dispute escalated
+    // Create a paid transaction and open a dispute
     const tx = await createPaidTransaction(SELLER.id, BUYER.id, 150);
-    await createTestDispute(tx.id, BUYER.id, 'quality_issue');
+    const dispute = await createTestDispute(tx.id, BUYER.id, 'Produit non conforme');
     
-    // Create admin user
+    // Create admin user and force escalate via edge function (auth required)
     const adminUser = await createTestUser('admin', 'admin-e2e-dispute-resolve');
     
-    // Login as admin
+    // Programmatic escalation using admin credentials
+    await supabase.auth.signOut();
+    // sign in as admin in Node client (uses stored creds via createTestUser)
+    // The test-fixtures has userCredentials map; reusing signInAs is simpler
+    // But we don't import it here; perform direct sign-in
+    await supabase.auth.signInWithPassword({ email: adminUser.email, password: adminUser.password });
+    await supabase.functions.invoke('force-escalate-dispute', { body: { disputeId: dispute.id } });
+    
+    // UI login as admin
     await loginAdmin(page, adminUser);
     
-    // Navigate to disputes (use precise href selector)
+    // Navigate to admin disputes
     await page.locator('a[href="/dashboard/admin/disputes"]').first().click();
-    
-    // Wait for disputes to load
     await page.waitForTimeout(1200);
     
     // Should see escalated disputes section or card

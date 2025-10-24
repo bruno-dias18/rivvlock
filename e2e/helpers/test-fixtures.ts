@@ -326,30 +326,21 @@ export async function createTestDispute(
   buyerId: string,
   reason: string = 'quality_issue'
 ) {
-  // Ensure buyer session for RLS INSERT policy
+  // Ensure buyer session for RLS policies
   await signInAs(buyerId);
 
-  const pastDeadline = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-
-  const { data, error } = await supabase
-    .from('disputes')
-    .insert({
-      transaction_id: transactionId,
-      reporter_id: buyerId,
+  // Use edge function to create dispute and link conversation correctly
+  const { data, error } = await supabase.functions.invoke('create-dispute', {
+    body: {
+      transactionId,
+      disputeType: 'quality_issue',
       reason,
-      description: 'Test dispute for E2E tests',
-      status: 'open',
-      dispute_deadline: pastDeadline
-    })
-    .select()
-    .single();
+    }
+  });
 
   if (error) throw new Error(`Failed to create dispute: ${error.message}`);
 
-  // Trigger escalation processor (public function)
-  await supabase.functions.invoke('process-dispute-deadlines', { body: {} });
-
-  return data;
+  return { id: data?.disputeId as string };
 }
 
 /**
