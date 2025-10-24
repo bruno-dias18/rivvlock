@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RIVVLOCK - Hors ligne</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.6;
+      opacity: 0.9;
+      margin-bottom: 30px;
+    }
+
+    .retry-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .retry-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .retry-btn:active {
+      transform: translateY(0);
+    }
+
+    .features {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .features h2 {
+      font-size: 18px;
+      margin-bottom: 15px;
+      opacity: 0.9;
+    }
+
+    .features ul {
+      list-style: none;
+      text-align: left;
+    }
+
+    .features li {
+      padding: 8px 0;
+      opacity: 0.8;
+      font-size: 14px;
+    }
+
+    .features li::before {
+      content: "✓ ";
+      margin-right: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📡</div>
+    <h1>Vous êtes hors ligne</h1>
+    <p>
+      Pas de connexion Internet pour le moment. RIVVLOCK nécessite une connexion 
+      pour accéder à vos transactions sécurisées.
+    </p>
+    <button class="retry-btn" onclick="window.location.reload()">
+      Réessayer
+    </button>
+
+    <div class="features">
+      <h2>Fonctionnalités disponibles hors ligne :</h2>
+      <ul>
+        <li>Consultation des transactions en cache</li>
+        <li>Accès rapide depuis l'écran d'accueil</li>
+        <li>Navigation dans l'application</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Auto-retry when connection is back
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+
+    // Show connection status
+    if (navigator.onLine) {
+      document.querySelector('.retry-btn').click();
+    }
+  </script>
+</body>
+</html>

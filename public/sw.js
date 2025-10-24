@@ -24,6 +24,7 @@ const urlsToCache = [
 const RUNTIME_CACHE = 'rivvlock-runtime-v9';
 const API_CACHE = 'rivvlock-api-v9';
 const ASSET_CACHE = 'rivvlock-assets-v9';
+const OFFLINE_PAGE_CACHE = 'rivvlock-offline-v9';
 
 // Cache duration in milliseconds
 const CACHE_DURATION = {
@@ -31,19 +32,32 @@ const CACHE_DURATION = {
   assets: 7 * 24 * 60 * 60 * 1000, // 7 days for static assets
 };
 
+// Offline fallback page
+const OFFLINE_URL = '/offline.html';
+
 // Installation du service worker
 self.addEventListener('install', (event) => {
   devLog('🔧 [SW] Installing service worker v9...');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        devLog('🔧 [SW] Caching core assets...');
-        return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        devLog('🔧 [SW] Installation complete, taking control...');
-        return self.skipWaiting();
-      })
+    Promise.all([
+      caches.open(CACHE_NAME)
+        .then((cache) => {
+          devLog('🔧 [SW] Caching core assets...');
+          return cache.addAll(urlsToCache);
+        }),
+      caches.open(OFFLINE_PAGE_CACHE)
+        .then((cache) => {
+          devLog('🔧 [SW] Caching offline page...');
+          return cache.add(new Request(OFFLINE_URL, {cache: 'reload'}));
+        })
+        .catch(() => {
+          devLog('⚠️ [SW] Offline page not available yet');
+        })
+    ])
+    .then(() => {
+      devLog('🔧 [SW] Installation complete, taking control...');
+      return self.skipWaiting();
+    })
   );
 });
 
@@ -55,7 +69,7 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME || OLD_CACHE_NAMES.includes(cacheName)) {
+            if (cacheName !== CACHE_NAME && cacheName !== OFFLINE_PAGE_CACHE || OLD_CACHE_NAMES.includes(cacheName)) {
               devLog(`🧹 [SW] Deleting old cache: ${cacheName}`);
               return caches.delete(cacheName);
             }
@@ -95,7 +109,9 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           devLog('🔄 [SW] Network failed, trying cache fallback for navigation:', req.url);
-          return caches.match('/index.html').then((cached) => cached || fetch('/index.html'));
+          return caches.match('/index.html')
+            .then((cached) => cached || caches.match(OFFLINE_URL))
+            .then((response) => response || new Response('Offline', { status: 503 }));
         })
     );
     return;
