@@ -28,6 +28,7 @@ const AdminProblematicTransactionsPage = lazy(() => import("./pages/AdminProblem
 const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
+const AdminTestSentryPage = lazy(() => import("./pages/AdminTestSentryPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -132,6 +133,10 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/admin/settings", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminSettingsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/test-sentry", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminTestSentryPage)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 

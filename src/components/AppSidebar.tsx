@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature } from 'lucide-react';
+import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature, Bug } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -81,6 +81,11 @@ const adminNavigationItems = [
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
+  },
+  {
+    title: 'Test Sentry',
+    url: '/dashboard/admin/test-sentry',
+    icon: Bug,
   },
 ];
 
