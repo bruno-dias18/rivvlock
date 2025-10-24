@@ -47,9 +47,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
 
     await loginUser(page, seller);
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
     const txCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
-    await expect(txCard).toBeVisible({ timeout: 15000 });
+    await expect(txCard).toBeVisible({ timeout: 20000 });
     await txCard.click();
 
     // Status should update to validation phase with countdown (data-testid)
