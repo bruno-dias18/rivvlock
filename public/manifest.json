@@ -60,6 +60,20 @@
       "url": "url"
     }
   },
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "form_factor": "wide"
+    }
+  ],
   "lang": "fr",
   "dir": "ltr",
   "prefer_related_applications": false,

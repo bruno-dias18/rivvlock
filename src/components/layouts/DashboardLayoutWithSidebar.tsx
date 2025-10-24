@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/AppSidebar';
 import { UserMenu } from '@/components/UserMenu';
 import { BottomTabBar } from '@/components/BottomTabBar';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RefreshCw } from 'lucide-react';
@@ -96,6 +97,9 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
           {isMobile && <BottomTabBar />}
         </SidebarInset>
       </div>
+      
+      {/* Push Notification Prompt - non-invasif */}
+      <PushNotificationPrompt />
     </SidebarProvider>
   );
 }

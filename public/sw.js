@@ -192,3 +192,54 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+
+// ============= Push Notifications =============
+self.addEventListener('push', (event) => {
+  if (!event.data) {
+    devLog('⚠️ [SW] Push event without data');
+    return;
+  }
+
+  try {
+    const data = event.data.json();
+    const title = data.title || 'RIVVLOCK';
+    const options = {
+      body: data.body || '',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: data.data || {},
+      tag: data.tag || 'default',
+      requireInteraction: data.requireInteraction || false,
+      actions: data.actions || [],
+    };
+
+    event.waitUntil(
+      self.registration.showNotification(title, options)
+    );
+  } catch (error) {
+    devLog('❌ [SW] Error handling push event:', error);
+  }
+});
+
+// Gestion des clics sur les notifications
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data?.url || '/dashboard';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // Si une fenêtre est déjà ouverte, la focus
+        for (const client of clientList) {
+          if (client.url.includes(urlToOpen) && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Sinon, ouvrir une nouvelle fenêtre
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});
