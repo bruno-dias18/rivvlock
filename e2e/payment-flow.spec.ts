@@ -10,7 +10,7 @@ import { createTestUser, createTestTransaction, cleanupTestData, loginUser, expi
  * 3. Redirects to Stripe or shows bank instructions
  * 4. Payment is processed
  */
-test.describe('Payment Flow', () => {
+test.describe.serial('Payment Flow', () => {
   let seller: Awaited<ReturnType<typeof createTestUser>>;
   let buyer: Awaited<ReturnType<typeof createTestUser>>;
   let transaction: Awaited<ReturnType<typeof createTestTransaction>>;
@@ -116,9 +116,6 @@ test.describe('Payment Flow', () => {
     });
     // Force deadline to past to trigger expiration UI
     await expireTransaction(expiredTransaction.id, seller.id);
-    
-    // Wait for DB propagation (Supabase may have slight replication delay)
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Login as buyer before navigating to see the expired message
     await loginUser(page, buyer);
@@ -132,7 +129,7 @@ test.describe('Payment Flow', () => {
 /**
  * Mobile-specific payment flow tests
  */
-test.describe('Mobile Payment Flow', () => {
+test.describe.serial('Mobile Payment Flow', () => {
   let mobileSeller: Awaited<ReturnType<typeof createTestUser>>;
   let mobileBuyer: Awaited<ReturnType<typeof createTestUser>>;
   let mobileTransaction: Awaited<ReturnType<typeof createTestTransaction>>;

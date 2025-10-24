@@ -162,7 +162,7 @@ export async function createTestTransaction(
 
   // 1) Preferred path: test helper edge function (bypasses RLS safely) with retries
   try {
-    for (let attempt = 1; attempt <= 3 && !tx; attempt++) {
+    for (let attempt = 1; attempt <= 5 && !tx; attempt++) {
       const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
         body: {
           seller_id: sellerId,
@@ -173,8 +173,12 @@ export async function createTestTransaction(
 
       if (createErr) {
         lastInvokeErr = createErr;
-        console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message);
-        await new Promise((r) => setTimeout(r, 400 * attempt));
+        const is429 = (createErr as any)?.status === 429;
+        console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message, is429 ? '(429)' : '');
+        // Longer backoff for rate limits, shorter for other errors
+        const baseDelay = is429 ? 800 : 400;
+        const jitter = Math.floor(Math.random() * 120);
+        await new Promise((r) => setTimeout(r, baseDelay * attempt + jitter));
       } else {
         tx = createData?.transaction ?? null;
       }
@@ -237,12 +241,31 @@ export async function createTestTransaction(
   if (!tx?.id) throw new Error('No transaction returned from edge function or fallback');
 
 
-  // 2) Attach buyer via test function (no auth needed)
+  // 2) Attach buyer via test function (no auth needed) with retries
   if (buyerId && tx) {
-    const { error: joinErr } = await supabase.functions.invoke('test-join-transaction', {
-      body: { transaction_id: tx.id, token: tx.shared_link_token, buyer_id: buyerId }
-    });
-    if (joinErr) throw new Error(`Failed to attach buyer: ${joinErr.message}`);
+    let joinSuccess = false;
+    let lastJoinErr: any = null;
+    
+    for (let attempt = 1; attempt <= 5 && !joinSuccess; attempt++) {
+      const { error: joinErr } = await supabase.functions.invoke('test-join-transaction', {
+        body: { transaction_id: tx.id, token: tx.shared_link_token, buyer_id: buyerId }
+      });
+      
+      if (joinErr) {
+        lastJoinErr = joinErr;
+        const is429 = (joinErr as any)?.status === 429;
+        console.warn(`[E2E] test-join-transaction attempt=${attempt} failed:`, joinErr.message, is429 ? '(429)' : '');
+        const baseDelay = is429 ? 800 : 400;
+        const jitter = Math.floor(Math.random() * 120);
+        await new Promise((r) => setTimeout(r, baseDelay * attempt + jitter));
+      } else {
+        joinSuccess = true;
+      }
+    }
+    
+    if (!joinSuccess && lastJoinErr) {
+      throw new Error(`Failed to attach buyer: ${lastJoinErr.message}`);
+    }
   }
 
 // 3) Mark as paid via test function (bypasses RLS safely)
