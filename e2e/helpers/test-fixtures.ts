@@ -355,7 +355,8 @@ export async function markTransactionCompleted(transactionId: string, sellerId: 
  */
 export async function expireTransaction(transactionId: string, sellerId: string) {
   await signInAs(sellerId);
-  const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  // Set deadline 24 hours in the past to avoid any timezone issues
+  const past = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   await supabase
     .from('transactions')
     .update({ payment_deadline: past })

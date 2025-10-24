@@ -54,8 +54,8 @@ test.describe('Payment Flow', () => {
     const payButton = page.getByRole('button', { name: /payer/i });
     await expect(payButton).toBeDisabled();
 
-    // Select card payment method by clicking the radio button
-    await page.getByRole('radio', { name: /carte bancaire/i }).click();
+    // Select card payment method by clicking the label
+    await page.locator('label[for="card"]').click();
 
     // Pay button should now be enabled
     await expect(payButton).toBeEnabled();
@@ -65,8 +65,8 @@ test.describe('Payment Flow', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
 
-    // Select card payment method by clicking the radio button
-    await page.getByRole('radio', { name: /carte bancaire/i }).click();
+    // Select card payment method by clicking the label (more reliable than radio button)
+    await page.locator('label[for="card"]').click();
 
     // Click pay button and wait for potential redirect
     const payButton = page.getByRole('button', { name: /payer/i });
@@ -92,8 +92,8 @@ test.describe('Payment Flow', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
 
-    // Select bank transfer payment method by clicking the radio button
-    await page.getByRole('radio', { name: /virement bancaire/i }).click();
+    // Select bank transfer payment method by clicking the label
+    await page.locator('label[for="bank_transfer"]').click();
 
     // Click pay button
     const payButton = page.getByRole('button', { name: /payer/i });
@@ -122,6 +122,8 @@ test.describe('Payment Flow', () => {
     // Force deadline to past to trigger expiration UI
     await expireTransaction(expiredTransaction.id, seller.id);
 
+    // Login as buyer before navigating to see the expired message
+    await loginUser(page, buyer);
     await page.goto(`/payment-link/${expiredTransaction.token}`);
 
     // Should display error message containing "Lien expiré" as per PaymentLinkPage.tsx line 153
