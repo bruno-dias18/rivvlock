@@ -102,7 +102,6 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
 Deno.serve(
   compose(
     withCors,
-    withRateLimit({ maxRequests: 100, windowMs: 60_000 }),
     withValidation(joinSchema)
   )(handler)
 );

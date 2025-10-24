@@ -246,7 +246,7 @@ export async function createTestTransaction(
     let joinSuccess = false;
     let lastJoinErr: any = null;
     
-    for (let attempt = 1; attempt <= 12 && !joinSuccess; attempt++) {
+    for (let attempt = 1; attempt <= 6 && !joinSuccess; attempt++) {
       const { error: joinErr } = await supabase.functions.invoke('test-join-transaction', {
         body: { transaction_id: tx.id, token: tx.shared_link_token, buyer_id: buyerId }
       });
@@ -255,11 +255,11 @@ export async function createTestTransaction(
         lastJoinErr = joinErr;
         const is429 = (joinErr as any)?.status === 429;
         console.warn(`[E2E] test-join-transaction attempt=${attempt} failed:`, joinErr.message, is429 ? '(429)' : '');
-        // Exponential backoff
-        const baseDelay = is429 ? 1800 : 700;
-        const exponentialFactor = Math.pow(1.5, attempt - 1);
-        const jitter = Math.floor(Math.random() * 500);
-        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 30000)));
+        // Shorter backoff to stay under test timeout
+        const baseDelay = is429 ? 600 : 250;
+        const exponentialFactor = Math.pow(1.4, attempt - 1);
+        const jitter = Math.floor(Math.random() * 200);
+        await new Promise((r) => setTimeout(r, Math.min(baseDelay * exponentialFactor + jitter, 2000)));
       } else {
         joinSuccess = true;
       }
