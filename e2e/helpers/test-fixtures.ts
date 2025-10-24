@@ -289,9 +289,15 @@ export async function createTestTransaction(
 export async function loginUser(page: Page, user: TestUser) {
   // First, ensure we're logged out
   await page.context().clearCookies();
-  await page.evaluate(() => localStorage.clear());
   
   await page.goto('/auth');
+  
+  // Clear storage within app origin; ignore cross-origin SecurityError
+  try {
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  } catch (e) {
+    console.log('[E2E] localStorage clear skipped');
+  }
   
   // Wait for auth page to load
   await page.waitForLoadState('domcontentloaded');
@@ -318,9 +324,15 @@ export async function loginUser(page: Page, user: TestUser) {
 export async function loginAdmin(page: Page, user: TestUser) {
   // First, ensure we're logged out
   await page.context().clearCookies();
-  await page.evaluate(() => localStorage.clear());
   
   await page.goto('/auth');
+  
+  // Clear storage within app origin; ignore cross-origin SecurityError
+  try {
+    await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  } catch (e) {
+    console.log('[E2E] localStorage clear skipped');
+  }
   
   // Wait for auth page to load
   await page.waitForLoadState('domcontentloaded');
