@@ -11,7 +11,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('[TEST-MARK-SELLER-VALIDATED] Function started');
     const { transaction_id, seller_id } = await req.json();
+    console.log('[TEST-MARK-SELLER-VALIDATED] Request data:', { transaction_id, seller_id });
 
     if (!transaction_id) {
       return new Response(
@@ -34,19 +36,22 @@ Deno.serve(async (req) => {
 
     // Mark transaction as seller_validated and set service_date in the past to activate validation phase
     const pastServiceDate = new Date(Date.now() - 60_000).toISOString();
+    console.log('[TEST-MARK-SELLER-VALIDATED] Updating transaction:', { pastServiceDate });
+    
     const { error } = await supabaseAdmin
       .from('transactions')
       .update({ seller_validated: true, service_date: pastServiceDate })
       .eq('id', transaction_id);
 
     if (error) {
-      console.error('[test-mark-seller-validated] Error:', error);
+      console.error('[TEST-MARK-SELLER-VALIDATED] Error updating transaction:', error);
       return new Response(
         JSON.stringify({ error: error.message }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('[TEST-MARK-SELLER-VALIDATED] Success');
     return new Response(
       JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
