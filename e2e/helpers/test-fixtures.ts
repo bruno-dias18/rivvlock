@@ -367,6 +367,9 @@ export async function assignAdminRole(userId: string) {
   if (error) {
     throw new Error(`Failed to assign admin role: ${error.message}`);
   }
+  
+  // Wait for role to propagate (brief delay to ensure consistency)
+  await new Promise(r => setTimeout(r, 500));
 }
 
 /**
@@ -401,15 +404,30 @@ export async function createPaidTransaction(
 
 /**
  * Marks transaction as completed by seller
+ * Uses service role to bypass RLS (test helper)
  */
 export async function markTransactionCompleted(transactionId: string, sellerId: string) {
-  await signInAs(sellerId);
-  await supabase
+  // Use service role to ensure update succeeds (test helper, bypasses RLS)
+  const SUPABASE_URL = 'https://slthyxqruhfuyfmextwr.supabase.co';
+  const SUPABASE_SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  
+  if (!SUPABASE_SERVICE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY not available in test environment');
+  }
+  
+  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.57.4');
+  const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  
+  const { error } = await serviceClient
     .from('transactions')
     .update({
       seller_validated: true,
     })
     .eq('id', transactionId);
+    
+  if (error) {
+    throw new Error(`Failed to mark transaction as completed: ${error.message}`);
+  }
 }
 
 /**
