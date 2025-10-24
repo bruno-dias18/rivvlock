@@ -90,9 +90,12 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     });
     expect(finalizeErr).toBeNull();
 
-    // Refresh and verify completed status
-    await page.reload();
-    await expect(page.getByText(/terminé|completed/i)).toBeVisible({ timeout: 20000 });
+    // Refresh and verify in Completed tab
+    await page.goto('/dashboard/transactions?tab=completed');
+    const completedCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
+    await expect(completedCard).toBeVisible({ timeout: 20000 });
+    await completedCard.click();
+    await expect(page.getByText(/validée|validated/i)).toBeVisible({ timeout: 20000 });
   });
 
   test('validation countdown displays correct time remaining', async ({ page }) => {
