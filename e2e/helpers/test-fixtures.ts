@@ -40,10 +40,10 @@ export async function createTestUser(
   emailPrefix: string
 ): Promise<TestUser> {
   const timestamp = Date.now();
-  const randomId = Math.random().toString(36).substring(2, 8); // 6 char random string
-  const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 20);
+  const uuid = crypto.randomUUID().split('-')[0]; // 8 char unique ID
+  const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 15);
   const primaryDomain = 'gmail.com';
-  const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}-${randomId}@${domain}`;
+  const buildEmail = (domain: string) => `test-${uuid}-${cleanPrefix}@${domain}`;
   const password = 'Test123!@#$%';
 
   let email = buildEmail(primaryDomain);
