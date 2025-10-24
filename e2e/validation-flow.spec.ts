@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
-  createTestUser,
   createPaidTransaction,
   markTransactionCompleted,
   loginUser,
   cleanupTestData,
 } from './helpers/test-fixtures';
+import { getTestUser, releaseTestUser } from './helpers/user-pool';
 
 /**
  * E2E tests for the complete validation flow
@@ -24,13 +24,16 @@ test.describe('Validation Flow - Complete Journey', () => {
   const testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    // Create test users
-    seller = await createTestUser('seller', 'validation-seller');
-    buyer = await createTestUser('buyer', 'validation-buyer');
+    // Get test users from pool
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
     testUserIds.push(seller.id, buyer.id);
   });
 
   test.afterAll(async () => {
+    // Release users back to pool
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
     // Cleanup test data
     await cleanupTestData(testUserIds);
   });
@@ -165,12 +168,14 @@ test.describe('Validation Flow - Edge Cases', () => {
   const testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    seller = await createTestUser('seller', 'edge-seller');
-    buyer = await createTestUser('buyer', 'edge-buyer');
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
     testUserIds.push(seller.id, buyer.id);
   });
 
   test.afterAll(async () => {
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
     await cleanupTestData(testUserIds);
   });
 

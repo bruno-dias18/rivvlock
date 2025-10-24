@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { createTestUser, loginAdmin, cleanupTestData, type TestUser } from './helpers/test-fixtures';
+import { loginAdmin, cleanupTestData, type TestUser } from './helpers/test-fixtures';
+import { getTestUser, releaseTestUser } from './helpers/user-pool';
 
 /**
  * E2E tests for admin validation flow
@@ -15,14 +16,14 @@ test.describe('Admin Validation - Transaction Management', () => {
   let adminUser: TestUser;
 
   test.beforeAll(async () => {
-    // Create admin user for all tests
-    adminUser = await createTestUser('admin', 'admin-e2e-txn');
+    // Get admin user from pool
+    adminUser = await getTestUser('seller'); // Pool has sellers, we assign admin role via edge function
   });
 
   test.afterAll(async () => {
-    // Only cleanup if user was successfully created
+    // Release user back to pool
     if (adminUser?.id) {
-      await cleanupTestData([adminUser.id]);
+      releaseTestUser(adminUser.id);
     }
   });
 
@@ -147,14 +148,14 @@ test.describe('Admin Validation - Dispute Management', () => {
   let adminUser: TestUser;
 
   test.beforeAll(async () => {
-    // Create admin user for all tests
-    adminUser = await createTestUser('admin', 'admin-e2e-disputes');
+    // Get admin user from pool
+    adminUser = await getTestUser('seller');
   });
 
   test.afterAll(async () => {
-    // Only cleanup if user was successfully created
+    // Release user back to pool
     if (adminUser?.id) {
-      await cleanupTestData([adminUser.id]);
+      releaseTestUser(adminUser.id);
     }
   });
 
@@ -240,14 +241,14 @@ test.describe('Admin Validation - User Management', () => {
   let adminUser: TestUser;
 
   test.beforeAll(async () => {
-    // Create admin user for all tests
-    adminUser = await createTestUser('admin', 'admin-e2e-users');
+    // Get admin user from pool
+    adminUser = await getTestUser('seller');
   });
 
   test.afterAll(async () => {
-    // Only cleanup if user was successfully created
+    // Release user back to pool
     if (adminUser?.id) {
-      await cleanupTestData([adminUser.id]);
+      releaseTestUser(adminUser.id);
     }
   });
 
@@ -303,14 +304,14 @@ test.describe('Admin Validation - Security & Audit', () => {
   let adminUser: TestUser;
 
   test.beforeAll(async () => {
-    // Create admin user for all tests
-    adminUser = await createTestUser('admin', 'admin-e2e-security');
+    // Get admin user from pool
+    adminUser = await getTestUser('seller');
   });
 
   test.afterAll(async () => {
-    // Only cleanup if user was successfully created
+    // Release user back to pool
     if (adminUser?.id) {
-      await cleanupTestData([adminUser.id]);
+      releaseTestUser(adminUser.id);
     }
   });
 

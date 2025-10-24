@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 import {
-  createTestUser,
   createPaidTransaction,
   createTestDispute,
   loginUser,
   cleanupTestData,
 } from './helpers/test-fixtures';
+import { getTestUser, releaseTestUser } from './helpers/user-pool';
 
 /**
  * E2E tests for refund flow
@@ -24,13 +24,16 @@ test.describe('Refund Flow - Dispute Resolution', () => {
   const testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    seller = await createTestUser('seller', 'refund-seller');
-    buyer = await createTestUser('buyer', 'refund-buyer');
-    admin = await createTestUser('admin', 'refund-admin');
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
+    admin = await getTestUser('seller'); // Use seller as admin
     testUserIds.push(seller.id, buyer.id, admin.id);
   });
 
   test.afterAll(async () => {
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
+    releaseTestUser(admin.id);
     await cleanupTestData(testUserIds);
   });
 
@@ -159,12 +162,14 @@ test.describe('Refund Flow - Stripe Integration', () => {
   const testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    seller = await createTestUser('seller', 'stripe-refund-seller');
-    buyer = await createTestUser('buyer', 'stripe-refund-buyer');
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
     testUserIds.push(seller.id, buyer.id);
   });
 
   test.afterAll(async () => {
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
     await cleanupTestData(testUserIds);
   });
 
@@ -248,12 +253,14 @@ test.describe('Refund Flow - Error Handling', () => {
   const testUserIds: string[] = [];
 
   test.beforeAll(async () => {
-    seller = await createTestUser('seller', 'error-refund-seller');
-    buyer = await createTestUser('buyer', 'error-refund-buyer');
+    seller = await getTestUser('seller');
+    buyer = await getTestUser('buyer');
     testUserIds.push(seller.id, buyer.id);
   });
 
   test.afterAll(async () => {
+    releaseTestUser(seller.id);
+    releaseTestUser(buyer.id);
     await cleanupTestData(testUserIds);
   });
 
