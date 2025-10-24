@@ -140,13 +140,13 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await page.goto('/dashboard/transactions?tab=blocked');
     const expiredTxCard = page.locator(`[data-testid=\"transaction-card\"][data-transaction-id=\"${expiredTransaction.id}\"]`);
     await expect(expiredTxCard).toBeVisible({ timeout: 20000 });
-    await expiredTxCard.click();
+    // Do not open dialog to keep assertions within the card
 
-    // Should show expired validation message
-    await expect(page.getByText(/délai de validation expiré|validation deadline expired/i)).toBeVisible();
+    // Should show expired validation message within the card (no dialog)
+    await expect(expiredTxCard.getByText(/délai de validation expiré|validation deadline expired/i)).toBeVisible({ timeout: 10000 });
 
-    // Should show auto-release message
-    await expect(page.getByText(/fonds seront libérés automatiquement|funds will be released automatically/i)).toBeVisible();
+    // Should show auto-release message within the same card
+    await expect(expiredTxCard.getByText(/fonds seront libérés automatiquement|funds will be released automatically/i)).toBeVisible({ timeout: 10000 });
   });
 });
 
