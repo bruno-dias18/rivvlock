@@ -373,16 +373,7 @@ export async function markTransactionCompleted(transactionId: string, sellerId: 
  * Uses edge function to bypass RLS restrictions
  */
 export async function expireTransaction(transactionId: string, sellerId: string) {
-  await signInAs(sellerId);
-  
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
-
-  if (!token) {
-    throw new Error('No auth token available');
-  }
-
-  // Call edge function to expire transaction (bypasses RLS)
+  // Call edge function to expire transaction (uses service role, no auth needed)
   const { data, error } = await supabase.functions.invoke('test-expire-transaction', {
     body: {
       transaction_id: transactionId,
@@ -394,7 +385,7 @@ export async function expireTransaction(transactionId: string, sellerId: string)
     throw new Error(`Failed to expire transaction: ${error?.message || 'unknown error'}`);
   }
 
-  // Wait a moment for the change to propagate
+  // Wait for change to propagate
   await new Promise((r) => setTimeout(r, 500));
 }
 
