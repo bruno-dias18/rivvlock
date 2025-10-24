@@ -39,9 +39,7 @@ export async function createTestUser(
   role: 'buyer' | 'seller' | 'admin',
   emailPrefix: string
 ): Promise<TestUser> {
-  const timestamp = Date.now();
-  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'test-rivvlock.com';
-  const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+  const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'gmail.com';
   const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
   const password = 'Test123!@#$%';
 
@@ -50,23 +48,38 @@ export async function createTestUser(
 
   console.log('[E2E] createTestUser start:', { role, primaryDomain, firstEmail: email });
 
-  // Try multiple domains as fallback
-  const candidateDomains = [primaryDomain, 'gmail.com', 'outlook.com', 'example.org', 'example.com'];
+  // Try multiple domains as fallback (prefer stable public domains first)
+  const candidateDomains = Array.from(new Set([
+    primaryDomain,
+    'gmail.com',
+    'outlook.com',
+    'test-rivvlock.com',
+    'example.org',
+  ]));
   let lastError: any = null;
 
   for (const domain of candidateDomains) {
     email = buildEmail(domain);
     console.log('[E2E] trying domain:', domain, 'email:', email);
-    const { data, error } = await supabase.functions.invoke('test-create-user', {
-      body: { email, password, role: role === 'admin' ? 'admin' : undefined },
-    });
-    if (!error && data?.user_id) {
-      userId = data.user_id;
-      console.log('[E2E] user created:', userId, 'email:', email);
-      break;
+
+    // Retry a few times to avoid transient 4xx/5xx from edge function / rate limit
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const { data, error } = await supabase.functions.invoke('test-create-user', {
+        body: { email, password, role: role === 'admin' ? 'admin' : undefined },
+      });
+
+      if (!error && data?.user_id) {
+        userId = data.user_id;
+        console.log('[E2E] user created:', userId, 'email:', email);
+        break;
+      }
+
+      lastError = error || new Error('invoke failed');
+      console.warn(`[E2E] create-user error domain=${domain} attempt=${attempt}:`, error?.message);
+      await new Promise((r) => setTimeout(r, 400 * attempt));
     }
-    console.warn('[E2E] create-user error for', domain, ':', error?.message);
-    lastError = error;
+
+    if (userId) break;
   }
 
   if (!userId) throw new Error(`Failed to create test user: ${lastError?.message || 'unknown error'}`);
@@ -121,20 +134,24 @@ export async function createTestTransaction(
   let tx: any | null = null;
   let lastInvokeErr: any = null;
 
-  // 1) Preferred path: test helper edge function (bypasses RLS safely)
+  // 1) Preferred path: test helper edge function (bypasses RLS safely) with retries
   try {
-    const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
-      body: {
-        seller_id: sellerId,
-        amount,
-        fee_ratio_client: feeRatioClient,
-      }
-    });
+    for (let attempt = 1; attempt <= 3 && !tx; attempt++) {
+      const { data: createData, error: createErr } = await supabase.functions.invoke('test-create-transaction', {
+        body: {
+          seller_id: sellerId,
+          amount,
+          fee_ratio_client: feeRatioClient,
+        }
+      });
 
-    if (createErr) {
-      lastInvokeErr = createErr;
-    } else {
-      tx = createData?.transaction ?? null;
+      if (createErr) {
+        lastInvokeErr = createErr;
+        console.warn(`[E2E] test-create-transaction attempt=${attempt} failed:`, createErr.message);
+        await new Promise((r) => setTimeout(r, 400 * attempt));
+      } else {
+        tx = createData?.transaction ?? null;
+      }
     }
   } catch (err) {
     lastInvokeErr = err;

@@ -23,15 +23,20 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   logger.info("[TEST-CREATE-USER] Start", { email });
 
+  const allowAll = (Deno.env.get("TEST_ALLOW_ALL_EMAILS") || "").toLowerCase() === "true";
   const allowedSecret = Deno.env.get("TEST_ALLOWED_EMAIL_DOMAINS") || "";
   const allowed = `${allowedSecret},gmail.com,outlook.com,test-rivvlock.com,example.org,example.com`
     .split(",")
     .map((d) => d.replace(/^@/, "").trim().toLowerCase())
     .filter(Boolean);
   
-  logger.info("[TEST-CREATE-USER] Allowed domains", { allowed });
+  if (allowAll) {
+    logger.info("[TEST-CREATE-USER] TEST_ALLOW_ALL_EMAILS enabled - skipping domain check", { email });
+  } else {
+    logger.info("[TEST-CREATE-USER] Allowed domains", { allowed });
+  }
   
-  const isAllowed = allowed.some((d) => email.toLowerCase().endsWith(`@${d}`));
+  const isAllowed = allowAll || allowed.some((d) => email.toLowerCase().endsWith(`@${d}`));
   if (!isAllowed) {
     logger.warn("[TEST-CREATE-USER] Non-allowed email", { email, allowed });
     return new Response(JSON.stringify({ error: "Not allowed" }), {
