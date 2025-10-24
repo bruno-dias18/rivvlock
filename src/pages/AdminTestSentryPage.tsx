@@ -6,6 +6,8 @@ import { AlertCircle, Bug, Zap, AlertTriangle, CheckCircle2 } from 'lucide-react
 import { captureException, addBreadcrumb } from '@/lib/sentry';
 import { toast } from 'sonner';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
+import { Input } from '@/components/ui/input';
+import { getSentryStatus } from '@/lib/sentry';
 
 /**
  * Page de test Sentry (Admin uniquement)
@@ -13,6 +15,20 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
  */
 export default function AdminTestSentryPage() {
   const [lastError, setLastError] = useState<string | null>(null);
+  const isPreview = !import.meta.env.PROD;
+  const status = getSentryStatus();
+  const [debugDsn, setDebugDsn] = useState<string>(typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || '') : '');
+  const savePreviewDsn = () => {
+    if (!debugDsn?.trim()) { toast.error('Veuillez saisir un DSN valide'); return; }
+    localStorage.setItem('VITE_SENTRY_DSN_DEBUG', debugDsn.trim());
+    toast.success('DSN enregistré (Preview)');
+    setTimeout(() => window.location.reload(), 300);
+  };
+  const clearPreviewDsn = () => {
+    localStorage.removeItem('VITE_SENTRY_DSN_DEBUG');
+    toast.message('DSN Preview supprimé');
+    setTimeout(() => window.location.reload(), 300);
+  };
 
   const testSimpleError = () => {
     try {
@@ -112,6 +128,28 @@ export default function AdminTestSentryPage() {
               {lastError}
             </AlertDescription>
           </Alert>
+        )}
+
+        {!isPreview ? null : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuration DSN (Preview)</CardTitle>
+              <CardDescription>
+                Activer Sentry en mode Preview sans republier. En production, utilisez le secret VITE_SENTRY_DSN.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <label className="text-sm">DSN Sentry</label>
+                <Input type="text" placeholder="https://xxxxx@o...ingest.sentry.io/xxxx" value={debugDsn} onChange={(e) => setDebugDsn(e.target.value)} />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={savePreviewDsn}>Activer DSN (Preview)</Button>
+                <Button variant="outline" onClick={clearPreviewDsn}>Effacer</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Etat: init={String(status.initialized)} | dsn={String(status.dsnConfigured)} | mode={status.mode}</p>
+            </CardContent>
+          </Card>
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
