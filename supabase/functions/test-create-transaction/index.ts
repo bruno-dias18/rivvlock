@@ -27,6 +27,7 @@ const allowedDomains = () => (
 );
 
 const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
+  logger.info("[TEST-CREATE-TRANSACTION] Handler reached", { hasBody: !!ctx.body });
   const { seller_id, amount, fee_ratio_client, title } = ctx.body as z.infer<typeof testCreateTxSchema>;
   const admin = createServiceClient();
 
@@ -116,6 +117,11 @@ Deno.serve(
   compose(
     withCors,
     withRateLimit({ maxRequests, windowMs }),
-    withValidation(testCreateTxSchema)
+    (handler: Handler): Handler => {
+      return async (req: Request, ctx: HandlerContext): Promise<Response> => {
+        logger.info("[TEST-CREATE-TRANSACTION] Before validation", { method: req.method, hasBody: req.body !== null });
+        return withValidation(testCreateTxSchema)(handler)(req, ctx);
+      };
+    }
   )(handler)
 );
