@@ -206,10 +206,9 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     await markTransactionCompleted(transaction.id, seller.id);
 
     await loginUser(page, buyer);
-    await page.getByRole('link', { name: /transactions/i }).click();
-    await page.locator('[data-testid="transaction-card"]').first().click();
-
-    // Should see transaction timeline section
-    await expect(page.locator('[data-testid="transaction-timeline"]')).toBeVisible();
+    await page.goto('/dashboard/transactions?tab=blocked');
+    await page.waitForLoadState('networkidle');
+    const timelineContainer = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"] [data-testid="transaction-timeline"]`);
+    await expect(timelineContainer).toBeVisible();
   });
 });

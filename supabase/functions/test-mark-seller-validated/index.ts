@@ -32,10 +32,11 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Mark transaction as seller_validated
+    // Mark transaction as seller_validated and set service_date in the past to activate validation phase
+    const pastServiceDate = new Date(Date.now() - 60_000).toISOString();
     const { error } = await supabaseAdmin
       .from('transactions')
-      .update({ seller_validated: true })
+      .update({ seller_validated: true, service_date: pastServiceDate })
       .eq('id', transaction_id);
 
     if (error) {
