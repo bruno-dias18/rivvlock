@@ -72,8 +72,10 @@ export const initSentry = () => {
     });
 
     console.log('[Sentry] Initialized successfully');
+    try { (window as any).__SENTRY_INITIALIZED__ = true; (window as any).__SENTRY_DSN__ = SENTRY_DSN; } catch {}
   } catch (error) {
     console.error('[Sentry] Initialization failed:', error);
+    try { (window as any).__SENTRY_INITIALIZED__ = false; } catch {}
   }
 };
 
@@ -127,4 +129,12 @@ export const addBreadcrumb = (breadcrumb: Record<string, any>) => {
   if (import.meta.env.MODE === 'production') {
     Sentry.addBreadcrumb(breadcrumb);
   }
+};
+
+export const getSentryStatus = () => {
+  return {
+    initialized: typeof window !== 'undefined' ? Boolean((window as any).__SENTRY_INITIALIZED__) : false,
+    dsnConfigured: Boolean(import.meta.env.VITE_SENTRY_DSN),
+    mode: import.meta.env.MODE,
+  } as const;
 };

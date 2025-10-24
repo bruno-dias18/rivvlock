@@ -20,6 +20,7 @@ import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccount
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
 import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
 import { AdminProblematicTransactions } from '@/components/AdminProblematicTransactions';
+import { getSentryStatus } from '@/lib/sentry';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -31,13 +32,15 @@ export default function AdminPage() {
   const { data: analytics, isLoading: analyticsLoading } = useAdminAnalytics(analyticsPeriod);
   const { data: disputeStats, isLoading: disputeStatsLoading } = useAdminDisputeStats();
   
-  // Hook pour les notifications de litiges escaladés
-  useAdminDisputeNotifications();
+// Hook pour les notifications de litiges escaladés
+useAdminDisputeNotifications();
 
-  const getCurrencySymbol = (currency: string) => {
-    const symbols: Record<string, string> = {
-      EUR: '€',
-      USD: '$',
+const sentry = getSentryStatus();
+
+const getCurrencySymbol = (currency: string) => {
+  const symbols: Record<string, string> = {
+    EUR: '€',
+    USD: '$',
       CHF: 'CHF',
       GBP: '£'
     };
@@ -479,6 +482,17 @@ export default function AdminPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Sentry status */}
+              <div className="rounded-md border p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Statut Sentry</p>
+                  <p className="text-xs text-muted-foreground">Env: {sentry.mode} • DSN: {sentry.dsnConfigured ? 'configuré' : 'absent'}</p>
+                </div>
+                <Badge variant={sentry.initialized ? 'default' : 'destructive'}>
+                  {sentry.initialized ? 'Actif' : 'Inactif'}
+                </Badge>
+              </div>
+
               <div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Validation des comptes Stripe Connect
