@@ -89,7 +89,7 @@ export function ValidationCountdown({ validationDeadline, isUserBuyer = true, cl
   };
 
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-2", className)} data-testid="validation-countdown">
       <Clock className="h-4 w-4 text-muted-foreground" />
       <div className="flex flex-col gap-1">
         <Badge variant={badgeVariant} className="font-normal">

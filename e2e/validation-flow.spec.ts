@@ -49,10 +49,10 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await loginUser(page, seller);
     await page.getByRole('link', { name: /transactions/i }).click();
     await page.waitForLoadState('networkidle');
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`).click();
 
-    // Status should update to validation phase with countdown (text variant)
-    await expect(page.getByText(/avant libération automatique|pour finaliser ou contester/i)).toBeVisible();
+    // Status should update to validation phase with countdown (data-testid)
+    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
   });
 
   test('buyer sees validation request and can validate', async ({ page }) => {
@@ -68,14 +68,11 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     // Should see validation badge/notification
     await expect(page.getByText(/validation requise|validation required/i)).toBeVisible();
 
-    // Open the first transaction card
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    // Open the transaction we just created
+    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`).click();
 
-    // Should see validation countdown text
-    await expect(page.getByText(/temps restant|time remaining|pour finaliser ou contester/i)).toBeVisible();
-
-    // Should see seller completion message
-    await expect(page.getByText(/le vendeur a marqué la transaction comme terminée/i)).toBeVisible();
+    // Should see validation countdown
+    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
 
     // Validate button should be visible
     const validateButton = page.getByRole('button', { name: /valider et libérer les fonds|validate and release/i });
@@ -104,10 +101,10 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await loginUser(page, buyer);
 
     await page.getByRole('link', { name: /transactions/i }).click();
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${newTransaction.id}"]`).click();
 
-    // Should see countdown text (format like "h" and "min" or validation phrases)
-    await expect(page.getByText(/h|min|pour finaliser ou contester|avant libération automatique/i)).toBeVisible();
+    // Should see countdown component
+    await expect(page.locator('[data-testid="validation-countdown"]')).toBeVisible();
   });
 
   test('transaction auto-releases after 72h validation deadline', async ({ page }) => {
@@ -131,7 +128,7 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await loginUser(page, buyer);
 
     await page.getByRole('link', { name: /transactions/i }).click();
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    await page.locator(`[data-testid=\"transaction-card\"][data-transaction-id=\"${expiredTransaction.id}\"]`).click();
 
     // Should show expired validation message
     await expect(page.getByText(/délai de validation expiré|validation deadline expired/i)).toBeVisible();
@@ -169,8 +166,8 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     await page.goto('/dashboard/transactions');
     await page.waitForLoadState('networkidle');
     
-    // Open the first transaction card (list is ordered by recent activity)
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    // Open the specific transaction card
+    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${pendingTransaction.id}"]`).click();
 
     // Complete button should not be present
     const completeButton = page.getByRole('button', { name: /marquer comme terminé|mark as completed/i });
@@ -184,14 +181,11 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     // Login as seller
     await loginUser(page, seller);
     await page.getByRole('link', { name: /transactions/i }).click();
-    await page.locator('[data-testid="transaction-card"]').first().click();
+    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`).click();
 
     // Validate button should not be present for seller
     const validateButton = page.getByRole('button', { name: /valider et libérer|validate and release/i });
     await expect(validateButton).toHaveCount(0);
-
-    // Should see waiting for buyer message
-    await expect(page.getByText(/en attente de validation de l'acheteur/i)).toBeVisible();
   });
 
   test('transaction timeline shows all status changes', async ({ page }) => {

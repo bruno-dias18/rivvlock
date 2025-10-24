@@ -35,7 +35,7 @@ const TransactionTimelineComponent = ({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2 text-sm text-muted-foreground mb-4">
+    <div className="space-y-2 text-sm text-muted-foreground mb-4" data-testid="transaction-timeline">
       {/* Date Change Accepted Notification for Seller */}
       {userRole === 'seller' && transaction.date_change_status === 'approved' && (
         <DateChangeAcceptedNotification transaction={transaction} />
