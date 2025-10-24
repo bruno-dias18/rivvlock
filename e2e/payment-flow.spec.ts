@@ -17,9 +17,15 @@ test.describe.serial('Payment Flow', () => {
   let testUserIds: string[] = [];
 
   test.beforeAll(async () => {
+    // Create users sequentially to avoid rate limiting
     seller = await createTestUser('seller', 'payment-seller');
+    testUserIds.push(seller.id);
+    
+    // Small delay between user creations to avoid rate limits
+    await new Promise(r => setTimeout(r, 300));
+    
     buyer = await createTestUser('buyer', 'payment-buyer');
-    testUserIds.push(seller.id, buyer.id);
+    testUserIds.push(buyer.id);
     
     transaction = await createTestTransaction(seller.id, buyer.id, {
       amount: 500,
@@ -136,9 +142,15 @@ test.describe.serial('Mobile Payment Flow', () => {
   let mobileTestUserIds: string[] = [];
 
   test.beforeAll(async () => {
+    // Create users sequentially to avoid rate limiting
     mobileSeller = await createTestUser('seller', 'mobile-payment-seller');
+    mobileTestUserIds.push(mobileSeller.id);
+    
+    // Small delay between user creations to avoid rate limits
+    await new Promise(r => setTimeout(r, 300));
+    
     mobileBuyer = await createTestUser('buyer', 'mobile-payment-buyer');
-    mobileTestUserIds.push(mobileSeller.id, mobileBuyer.id);
+    mobileTestUserIds.push(mobileBuyer.id);
     
     mobileTransaction = await createTestTransaction(mobileSeller.id, mobileBuyer.id, {
       amount: 400,
