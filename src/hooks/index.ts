@@ -72,5 +72,6 @@ export { useUnreadQuotesGlobal } from './useUnreadQuotesGlobal';
 export { useUnreadTransactionsGlobal } from './useUnreadTransactionsGlobal';
 export { useUnreadTransactionTabCounts } from './useUnreadTransactionTabCounts';
 
-// Utility Hooks
-export { useDebounce, useDebouncedCallback } from './useDebounce';
+// Problematic Transactions
+export { useProblematicTransactions } from './useProblematicTransactions';
+export { usePaginatedProblematicTransactions } from './usePaginatedProblematicTransactions';

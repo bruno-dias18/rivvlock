@@ -3,15 +3,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useProblematicTransactions } from '@/hooks/useProblematicTransactions';
+import { usePaginatedProblematicTransactions } from '@/hooks/usePaginatedProblematicTransactions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/useToast';
 import { logger } from '@/lib/logger';
+import { AdminProblematicTransactionsPagination } from './admin/AdminProblematicTransactionsPagination';
 
 export function AdminProblematicTransactions() {
-  const { data: problematicTransactions, isLoading, refetch } = useProblematicTransactions();
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
+  
+  // Feature flag for pagination (enabled)
+  const usePagination = true;
+  
+  // Paginated query
+  const {
+    data: paginatedData,
+    isLoading: paginatedLoading,
+    refetch: refetchPaginated
+  } = usePaginatedProblematicTransactions({
+    page: currentPage,
+    pageSize,
+    sortBy: 'created_at',
+    sortOrder: 'desc',
+  });
+  
+  // Fallback: Keep useProblematicTransactions for simple cases
+  const { data: allTransactions, isLoading: allLoading, refetch: refetchAll } = useProblematicTransactions();
+  
+  // Select data source based on pagination flag
+  const problematicTransactions = usePagination ? (paginatedData?.transactions || []) : allTransactions;
+  const isLoading = usePagination ? paginatedLoading : allLoading;
+  
+  const refetch = () => {
+    refetchAll();
+    refetchPaginated();
+  };
+  
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [deletingAll, setDeletingAll] = useState(false);
   const { toast } = useToast();
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   const formatCurrency = (amount: number, currency: string) => {
     const symbols: Record<string, string> = {
@@ -129,9 +164,12 @@ export function AdminProblematicTransactions() {
               <AlertTriangle className="h-5 w-5 text-warning" />
               Transactions problématiques
             </CardTitle>
-            <CardDescription>
-              {problematicTransactions.length} transaction(s) payée(s) sans acheteur détectée(s)
-            </CardDescription>
+          <CardDescription>
+            {usePagination && paginatedData
+              ? `${paginatedData.totalCount} transaction(s) payée(s) sans acheteur détectée(s)`
+              : `${problematicTransactions?.length || 0} transaction(s) payée(s) sans acheteur détectée(s)`
+            }
+          </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button
@@ -157,7 +195,7 @@ export function AdminProblematicTransactions() {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {problematicTransactions.map((transaction) => (
+          {problematicTransactions?.map((transaction) => (
             <div
               key={transaction.id}
               data-testid="problematic-transaction-card"
@@ -188,6 +226,18 @@ export function AdminProblematicTransactions() {
             </div>
           ))}
         </div>
+        
+        {usePagination && paginatedData && (
+          <AdminProblematicTransactionsPagination
+            currentPage={currentPage}
+            totalPages={paginatedData.totalPages}
+            hasNextPage={paginatedData.hasNextPage}
+            hasPreviousPage={paginatedData.hasPreviousPage}
+            onPageChange={handlePageChange}
+            totalCount={paginatedData.totalCount}
+            pageSize={pageSize}
+          />
+        )}
       </CardContent>
     </Card>
   );
