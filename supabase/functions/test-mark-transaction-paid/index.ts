@@ -55,7 +55,6 @@ const handler: Handler = async (_req: Request, ctx: HandlerContext) => {
 
     if (set_blocked_now) {
       const now = new Date();
-      update.payment_blocked_at = now.toISOString();
       const deadline = new Date(now.getTime() + validation_hours * 60 * 60 * 1000);
       update.validation_deadline = deadline.toISOString();
     }
