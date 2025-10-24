@@ -10,16 +10,46 @@ import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayout
 import { AdminDisputeCard } from '@/components/AdminDisputeCard';
 import { VirtualDisputeList } from '@/components/VirtualDisputeList';
 import { useAdminDisputes, useAdminDisputeStats } from '@/hooks/useAdminDisputes';
+import { usePaginatedAdminDisputes } from '@/hooks/usePaginatedAdminDisputes';
 import { useAdminDisputeNotifications } from '@/hooks/useAdminDisputeNotifications';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
+import { AdminDisputePaginationControls } from '@/components/admin/AdminDisputePaginationControls';
 
 export default function AdminDisputesPage() {
   const { t } = useTranslation();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
   
-  const { data: disputes, isLoading, refetch } = useAdminDisputes(statusFilter);
+  // Feature flag for pagination (enabled)
+  const usePagination = true;
+  
+  // Paginated query
+  const {
+    data: paginatedData,
+    isLoading: paginatedLoading,
+    refetch: refetchPaginated
+  } = usePaginatedAdminDisputes({
+    page: currentPage,
+    pageSize,
+    statusFilter,
+    sortBy: 'created_at',
+    sortOrder: 'desc',
+  });
+  
+  // Fallback: Keep useAdminDisputes for stats
+  const { data: allDisputes, isLoading: allLoading, refetch: refetchAll } = useAdminDisputes(statusFilter);
   const { data: stats, isLoading: statsLoading } = useAdminDisputeStats();
+  
+  // Select data source based on pagination flag
+  const disputes = usePagination ? (paginatedData?.disputes || []) : allDisputes;
+  const isLoading = usePagination ? paginatedLoading : allLoading;
+  
+  const refetch = () => {
+    refetchAll();
+    refetchPaginated();
+  };
   
   // Hook pour les notifications de litiges escaladés
   const { markAsSeen } = useAdminDisputeNotifications();
@@ -28,12 +58,21 @@ export default function AdminDisputesPage() {
   // Compteur de messages admin non lus
   const { unreadCount: adminUnreadCount } = useUnreadAdminMessages();
   
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+  
   // Marquer comme vu quand l'utilisateur visite la page avec le filtre escalated
   useEffect(() => {
     if (statusFilter === 'escalated') {
       markAsSeen();
     }
   }, [statusFilter, markAsSeen]);
+  
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -257,22 +296,38 @@ export default function AdminDisputesPage() {
             <>
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold">
-                  {disputes.length} litige{disputes.length > 1 ? 's' : ''} trouvé{disputes.length > 1 ? 's' : ''}
+                  {usePagination && paginatedData 
+                    ? `${paginatedData.totalCount} litige${paginatedData.totalCount > 1 ? 's' : ''} trouvé${paginatedData.totalCount > 1 ? 's' : ''}`
+                    : `${disputes.length} litige${disputes.length > 1 ? 's' : ''} trouvé${disputes.length > 1 ? 's' : ''}`
+                  }
                 </h2>
                 <Badge variant="outline" className={getStatusColor(statusFilter)}>
                   {statusFilter === 'all' ? 'Tous' : statusFilter}
                 </Badge>
               </div>
-              {disputes.length > 10 ? (
+              {!usePagination && disputes.length > 10 ? (
                 <VirtualDisputeList disputes={disputes} onRefetch={refetch} />
               ) : (
-                disputes.map((dispute) => (
-                  <AdminDisputeCard
-                    key={dispute.id}
-                    dispute={dispute}
-                    onRefetch={refetch}
-                  />
-                ))
+                <>
+                  {disputes.map((dispute) => (
+                    <AdminDisputeCard
+                      key={dispute.id}
+                      dispute={dispute}
+                      onRefetch={refetch}
+                    />
+                  ))}
+                  {usePagination && paginatedData && (
+                    <AdminDisputePaginationControls
+                      currentPage={currentPage}
+                      totalPages={paginatedData.totalPages}
+                      hasNextPage={paginatedData.hasNextPage}
+                      hasPreviousPage={paginatedData.hasPreviousPage}
+                      onPageChange={handlePageChange}
+                      totalCount={paginatedData.totalCount}
+                      pageSize={pageSize}
+                    />
+                  )}
+                </>
               )}
             </>
           ) : (

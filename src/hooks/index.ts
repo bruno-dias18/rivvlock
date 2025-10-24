@@ -26,6 +26,7 @@ export { useDisputeRealtimeNotifications } from './useDisputeRealtimeNotificatio
 // Admin Hooks
 export { useAdminTransactions } from './useAdminTransactions';
 export { useAdminDisputes } from './useAdminDisputes';
+export { usePaginatedAdminDisputes } from './usePaginatedAdminDisputes';
 export { useAdminUsers } from './useAdminUsers';
 export { useAdminStats } from './useAdminStats';
 export { useAdminAnalytics } from './useAdminAnalytics';
