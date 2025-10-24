@@ -23,17 +23,8 @@ export const initSentry = () => {
   const runtimeDsn = typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : null;
   const debugDsn = typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || runtimeDsn) : null;
   const SENTRY_DSN = (import.meta.env.VITE_SENTRY_DSN || urlDsn || debugDsn) as string | undefined;
-  
-  console.log('[Sentry Debug] DSN récupéré:', SENTRY_DSN);
-  console.log('[Sentry Debug] Variables env:', {
-    MODE: import.meta.env.MODE,
-    PROD: import.meta.env.PROD,
-    DEV: import.meta.env.DEV
-  });
 
-  // FORCE l'initialisation pour debug
   if (!SENTRY_DSN) {
-    console.error('[Sentry] AUCUN DSN trouvé !');
     try { (window as any).__SENTRY_INITIALIZED__ = false; } catch {}
     return;
   }
@@ -82,7 +73,6 @@ export const initSentry = () => {
       ],
     });
 
-    console.log('[Sentry] Initialized successfully');
     try { (window as any).__SENTRY_INITIALIZED__ = true; (window as any).__SENTRY_DSN__ = SENTRY_DSN; } catch {}
   } catch (error) {
     console.error('[Sentry] Initialization failed:', error);
