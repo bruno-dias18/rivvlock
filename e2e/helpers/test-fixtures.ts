@@ -284,10 +284,24 @@ export async function createTestTransaction(
 }
 
 /**
- * Logs in a user via UI
+ * Logs in a user via UI (or programmatically if already on a valid page)
  */
 export async function loginUser(page: Page, user: TestUser) {
+  // First, ensure we're logged out
+  await page.context().clearCookies();
+  await page.evaluate(() => localStorage.clear());
+  
   await page.goto('/auth');
+  
+  // Wait for auth page to load
+  await page.waitForLoadState('domcontentloaded');
+  
+  // Check if already redirected (already logged in)
+  if (!page.url().includes('/auth')) {
+    console.log('[E2E] User already authenticated, skipping login form');
+    return;
+  }
+  
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
   
@@ -302,7 +316,15 @@ export async function loginUser(page: Page, user: TestUser) {
  * Logs in an admin user and waits for admin dashboard
  */
 export async function loginAdmin(page: Page, user: TestUser) {
+  // First, ensure we're logged out
+  await page.context().clearCookies();
+  await page.evaluate(() => localStorage.clear());
+  
   await page.goto('/auth');
+  
+  // Wait for auth page to load
+  await page.waitForLoadState('domcontentloaded');
+  
   await page.getByLabel(/email/i).fill(user.email);
   await page.getByLabel(/mot de passe|password/i).fill(user.password);
 
