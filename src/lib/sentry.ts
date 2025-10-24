@@ -19,18 +19,18 @@ import * as Sentry from '@sentry/react';
  */
 export const initSentry = () => {
   const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-  const IS_DEPLOYED = import.meta.env.PROD; // Utilise PROD au lieu de MODE
-
-  console.log('[Sentry Debug]', { 
-    DSN: SENTRY_DSN ? 'present' : 'missing', 
-    MODE: import.meta.env.MODE, 
+  
+  console.log('[Sentry Debug] DSN récupéré:', SENTRY_DSN);
+  console.log('[Sentry Debug] Variables env:', {
+    MODE: import.meta.env.MODE,
     PROD: import.meta.env.PROD,
-    DEV: import.meta.env.DEV 
+    DEV: import.meta.env.DEV
   });
 
-  // Initialise si DSN présent ET en environnement déployé
-  if (!IS_DEPLOYED || !SENTRY_DSN) {
-    console.log('[Sentry] Skipped initialization - deployed:', IS_DEPLOYED, 'DSN:', !!SENTRY_DSN);
+  // FORCE l'initialisation pour debug
+  if (!SENTRY_DSN) {
+    console.error('[Sentry] AUCUN DSN trouvé !');
+    try { (window as any).__SENTRY_INITIALIZED__ = false; } catch {}
     return;
   }
 
