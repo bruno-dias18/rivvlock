@@ -116,6 +116,9 @@ test.describe('Payment Flow', () => {
     });
     // Force deadline to past to trigger expiration UI
     await expireTransaction(expiredTransaction.id, seller.id);
+    
+    // Wait for DB propagation (Supabase may have slight replication delay)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     // Login as buyer before navigating to see the expired message
     await loginUser(page, buyer);
