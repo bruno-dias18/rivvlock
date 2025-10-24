@@ -47,7 +47,10 @@ const TransactionActionsComponent = ({
   const isMobile = useIsMobile();
 
   return (
-    <div className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : 'flex-row'}`}>
+    <div 
+      className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : 'flex-row'}`}
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* View details button - always visible */}
       <Button
         variant="outline"
