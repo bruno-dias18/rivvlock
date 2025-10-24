@@ -43,6 +43,16 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
 
+    <!-- Runtime Sentry DSN (public) -->
+    <meta name="sentry-dsn" content="https://840f4dc88bccc56a3c1a8ef02d7ec2f1@o4510193827184640.ingest.de.sentry.io/4510193842585680" />
+    <script>
+      try {
+        const m = document.querySelector('meta[name="sentry-dsn"]');
+        if (m && !window.__SENTRY_DSN__) window.__SENTRY_DSN__ = m.getAttribute('content');
+      } catch {}
+    </script>
+
+
     <meta property="og:title" content="RIVVLOCK - Transactions Escrow Sécurisées" />
     <meta property="og:description" content="Plateforme de transactions escrow sécurisées pour la France et la Suisse" />
     <meta property="og:type" content="website" />

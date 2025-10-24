@@ -18,9 +18,10 @@ import * as Sentry from '@sentry/react';
  * Only runs in production to avoid noise during development
  */
 export const initSentry = () => {
-  // DSN resolution with safe debug fallbacks (ignored in PROD)
-  const urlDsn = !import.meta.env.PROD ? new URLSearchParams(window.location.search).get('sentryDsn') : null;
-  const debugDsn = !import.meta.env.PROD ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || (typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : null)) : null;
+  // DSN resolution with runtime/URL/localStorage fallbacks (works in preview and production)
+  const urlDsn = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sentryDsn') : null;
+  const runtimeDsn = typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : null;
+  const debugDsn = typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || runtimeDsn) : null;
   const SENTRY_DSN = (import.meta.env.VITE_SENTRY_DSN || urlDsn || debugDsn) as string | undefined;
   
   console.log('[Sentry Debug] DSN récupéré:', SENTRY_DSN);
