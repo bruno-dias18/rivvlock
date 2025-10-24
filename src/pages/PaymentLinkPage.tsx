@@ -345,6 +345,9 @@ export default function PaymentLinkPage() {
               ? 'Vous avez effectué trop de tentatives. Pour votre sécurité, veuillez patienter 2 minutes avant de réessayer.'
               : error}
           </p>
+          {typeof error === 'string' && error.toLowerCase().includes('lien expiré') && (
+            <div data-testid="expired-link">Lien expiré</div>
+          )}
           <div className="flex gap-2 justify-center">
             <Button 
               onClick={() => {
@@ -497,6 +500,7 @@ export default function PaymentLinkPage() {
                 className="w-full"
                 size="lg"
                 aria-label="Payer"
+                data-testid="pay-now"
                 disabled={
                   !selectedPaymentMethod ||
                   processingPayment || 

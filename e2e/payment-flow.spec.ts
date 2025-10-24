@@ -51,7 +51,7 @@ test.describe('Payment Flow', () => {
     await page.waitForLoadState('networkidle');
 
     // Pay button should be disabled initially
-    const payButton = page.getByRole('button', { name: /payer/i });
+    const payButton = page.locator('[data-testid="pay-now"]');
     await expect(payButton).toBeDisabled();
 
     // Select card payment method by clicking the label
@@ -69,7 +69,7 @@ test.describe('Payment Flow', () => {
     await page.locator('label[for="card"]').click();
 
     // Click pay button and wait for potential redirect
-    const payButton = page.getByRole('button', { name: /payer/i });
+    const payButton = page.locator('[data-testid="pay-now"]');
     
     // Use Promise.race to handle either Stripe redirect or timeout gracefully
     const result = await Promise.race([
@@ -96,7 +96,7 @@ test.describe('Payment Flow', () => {
     await page.locator('label[for="bank_transfer"]').click();
 
     // Click pay button
-    const payButton = page.getByRole('button', { name: /payer/i });
+    const payButton = page.locator('[data-testid="pay-now"]');
     await payButton.click();
 
     // Should display bank transfer instructions
@@ -127,7 +127,7 @@ test.describe('Payment Flow', () => {
     await page.goto(`/payment-link/${expiredTransaction.token}`);
 
     // Should display error message containing "Lien expiré" as per PaymentLinkPage.tsx line 153
-    await expect(page.getByText(/lien expiré/i)).toBeVisible();
+    await expect(page.locator('[data-testid="expired-link"]')).toBeVisible();
   });
 });
 
