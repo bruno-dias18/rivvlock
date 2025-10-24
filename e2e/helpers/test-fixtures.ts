@@ -60,7 +60,7 @@ export async function createTestUser(
     console.log('[E2E] trying domain:', domain, 'email:', email);
 
     // Retry a few times to avoid transient 4xx/5xx from edge function / rate limit
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    for (let attempt = 1; attempt <= 5; attempt++) {
       const { data, error } = await supabase.functions.invoke('test-create-user', {
         body: { email, password, role: role === 'admin' ? 'admin' : undefined },
       });
@@ -72,7 +72,12 @@ export async function createTestUser(
       }
 
       lastError = error || new Error('invoke failed');
-      console.warn(`[E2E] create-user error domain=${domain} attempt=${attempt}:`, error?.message);
+      console.warn(`[E2E] create-user error domain=${domain} attempt=${attempt}:`, {
+        message: (error as any)?.message,
+        status: (error as any)?.status,
+        name: (error as any)?.name,
+        error,
+      });
       await new Promise((r) => setTimeout(r, 400 * attempt));
     }
 

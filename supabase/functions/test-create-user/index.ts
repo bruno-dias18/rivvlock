@@ -10,6 +10,7 @@ import {
   HandlerContext,
 } from "../_shared/middleware.ts";
 import { createServiceClient } from "../_shared/supabase-utils.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 // Input validation
 const createUserSchema = z.object({
@@ -47,6 +48,11 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
 
   logger.info("[TEST-CREATE-USER] Email allowed, creating user");
   const admin = createServiceClient();
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
 
   // Create user via admin API with duplicate-handling retries
   let createdUserId: string | null = null;
@@ -67,8 +73,21 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     }
 
     lastErr = error;
-    // If the email already exists, try a plus-alias variant to ensure uniqueness (gmail/outlook support it, others usually accept it)
+    // If the email already exists, try to sign in and reuse it; otherwise alias and retry
     if (error?.message?.toLowerCase().includes("already been registered")) {
+      try {
+        const { data: signInData, error: signInErr } = await userClient.auth.signInWithPassword({
+          email: finalEmail,
+          password,
+        });
+        if (!signInErr && signInData?.user?.id) {
+          createdUserId = signInData.user.id;
+          logger.info("[TEST-CREATE-USER] Existing user reused after sign-in", { user_id: createdUserId, email: finalEmail, attempt });
+          break;
+        }
+      } catch (_) {
+        // ignore and alias
+      }
       const [local, domain] = finalEmail.split("@");
       const baseLocal = local.split("+")[0];
       const suffix = `${Date.now() % 1_000_000}-${attempt}-${Math.random().toString(36).slice(2, 6)}`;
