@@ -19,11 +19,18 @@ import * as Sentry from '@sentry/react';
  */
 export const initSentry = () => {
   const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-  const IS_PRODUCTION = import.meta.env.MODE === 'production';
+  const IS_DEPLOYED = import.meta.env.PROD; // Utilise PROD au lieu de MODE
 
-  // Only initialize in production and if DSN is provided
-  if (!IS_PRODUCTION || !SENTRY_DSN) {
-    console.log('[Sentry] Skipped initialization (development mode or missing DSN)');
+  console.log('[Sentry Debug]', { 
+    DSN: SENTRY_DSN ? 'present' : 'missing', 
+    MODE: import.meta.env.MODE, 
+    PROD: import.meta.env.PROD,
+    DEV: import.meta.env.DEV 
+  });
+
+  // Initialise si DSN présent ET en environnement déployé
+  if (!IS_DEPLOYED || !SENTRY_DSN) {
+    console.log('[Sentry] Skipped initialization - deployed:', IS_DEPLOYED, 'DSN:', !!SENTRY_DSN);
     return;
   }
 
@@ -94,7 +101,7 @@ export const captureException = (
   error: Error,
   context?: Record<string, any>
 ) => {
-  if (import.meta.env.MODE === 'production') {
+  if (import.meta.env.PROD) {
     Sentry.captureException(error, context);
   } else {
     console.error('[Sentry] Would capture:', error, context);
@@ -109,7 +116,7 @@ export const captureException = (
  * setUser({ id: user.id, email: user.email });
  */
 export const setUser = (user: { id: string; email?: string } | null) => {
-  if (import.meta.env.MODE === 'production') {
+  if (import.meta.env.PROD) {
     Sentry.setUser(user);
   }
 };
@@ -126,7 +133,7 @@ export const setUser = (user: { id: string; email?: string } | null) => {
  * });
  */
 export const addBreadcrumb = (breadcrumb: Record<string, any>) => {
-  if (import.meta.env.MODE === 'production') {
+  if (import.meta.env.PROD) {
     Sentry.addBreadcrumb(breadcrumb);
   }
 };
