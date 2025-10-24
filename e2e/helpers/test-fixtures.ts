@@ -370,41 +370,34 @@ export async function markTransactionCompleted(transactionId: string, sellerId: 
 
 /**
  * Force a transaction to be expired by setting a past deadline
+ * Uses edge function to bypass RLS restrictions
  */
 export async function expireTransaction(transactionId: string, sellerId: string) {
   await signInAs(sellerId);
-  // Set deadline 24 hours in the past to avoid any timezone issues
-  const past = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   
-  const { error: updErr } = await supabase
-    .from('transactions')
-    .update({ payment_deadline: past })
-    .eq('id', transactionId);
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
 
-  if (updErr) throw new Error(`Failed to expire transaction: ${updErr.message}`);
-
-  // Ensure the change is observable before returning (read-your-writes)
-  const timeoutMs = 4000;
-  const start = Date.now();
-
-  while (Date.now() - start < timeoutMs) {
-    const { data, error: selErr } = await supabase
-      .from('transactions')
-      .select('payment_deadline')
-      .eq('id', transactionId)
-      .maybeSingle();
-
-    if (!selErr && data?.payment_deadline) {
-      if (new Date(data.payment_deadline) < new Date()) {
-        return; // Confirmed expired in reads
-      }
-    }
-
-    await new Promise((r) => setTimeout(r, 150));
+  if (!token) {
+    throw new Error('No auth token available');
   }
 
-  // If we're here, DB didn't reflect in time (should be rare). Let the test proceed anyway.
+  // Call edge function to expire transaction (bypasses RLS)
+  const { data, error } = await supabase.functions.invoke('test-expire-transaction', {
+    body: {
+      transaction_id: transactionId,
+      seller_id: sellerId,
+    },
+  });
+
+  if (error || !data?.success) {
+    throw new Error(`Failed to expire transaction: ${error?.message || 'unknown error'}`);
+  }
+
+  // Wait a moment for the change to propagate
+  await new Promise((r) => setTimeout(r, 500));
 }
+
 /**
  * Creates a dispute on a transaction
  */
