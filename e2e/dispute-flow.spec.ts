@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { createTestUser, loginAdmin, loginUser, createPaidTransaction, createTestDispute, type TestUser } from './helpers/test-fixtures';
 import { supabase } from '../src/integrations/supabase/client';
 
+test.describe.configure({ mode: 'serial' });
+
 /**
  * E2E tests for dispute escalation flow
  * 
@@ -57,7 +59,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
     await loginUser(page, SELLER);
     
     // Navigate to disputes
-    await page.getByRole('link', { name: /litiges/i }).click();
+    await page.locator('a[href="/dashboard/disputes"]').first().click();
     
     // Should see dispute notification
     await expect(page.getByText(/nouveau litige/i)).toBeVisible();
@@ -85,7 +87,7 @@ test.describe('Dispute Flow - Complete Journey', () => {
     await loginUser(page, BUYER);
     
     // Navigate to disputes
-    await page.getByRole('link', { name: /litiges/i }).click();
+    await page.locator('a[href="/dashboard/disputes"]').first().click();
     
     // Find escalated dispute (status = escalated)
     await page.getByText(/escaladé/i).first().click();
@@ -128,7 +130,7 @@ test.describe('Dispute Flow - Edge Cases', () => {
 
   test('dispute deadline countdown is displayed', async ({ page }) => {
     await loginUser(page, BUYER);
-    await page.getByRole('link', { name: /litiges/i }).click();
+    await page.locator('a[href="/dashboard/disputes"]').first().click();
     
     // Click on active dispute
     await page.locator('[data-testid="dispute-card"]').first().click();
