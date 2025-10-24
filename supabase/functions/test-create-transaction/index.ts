@@ -117,11 +117,6 @@ Deno.serve(
   compose(
     withCors,
     withRateLimit({ maxRequests, windowMs }),
-    (handler: Handler): Handler => {
-      return async (req: Request, ctx: HandlerContext): Promise<Response> => {
-        logger.info("[TEST-CREATE-TRANSACTION] Before validation", { method: req.method, hasBody: req.body !== null });
-        return withValidation(testCreateTxSchema)(handler)(req, ctx);
-      };
-    }
+    withValidation(testCreateTxSchema)
   )(handler)
 );

@@ -132,13 +132,17 @@ export function withRateLimit(options: RateLimitOptions = {}): (handler: Handler
 export function withValidation<T extends z.ZodType>(schema: T): (handler: Handler) => Handler {
   return (handler: Handler): Handler => {
     return async (req: Request, ctx: HandlerContext): Promise<Response> => {
+      console.log('[VALIDATION] Starting validation', { method: req.method, url: req.url });
       try {
         const body = await req.json();
+        console.log('[VALIDATION] Body parsed', { bodyKeys: Object.keys(body || {}) });
         const validatedData = schema.parse(body);
+        console.log('[VALIDATION] Validation passed');
         ctx.body = validatedData;
       } catch (error) {
+        console.error('[VALIDATION] Error caught:', error);
         if (error instanceof z.ZodError) {
-          logger.error('[VALIDATION] Failed:', error.errors);
+          logger.error('[VALIDATION] Zod validation failed:', error.errors);
           return new Response(
             JSON.stringify({ 
               error: "Validation failed", 
@@ -150,12 +154,13 @@ export function withValidation<T extends z.ZodType>(schema: T): (handler: Handle
             }
           );
         }
-        return new Response(JSON.stringify({ error: "Invalid request body" }), {
+        return new Response(JSON.stringify({ error: "Invalid request body", message: error.message }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         });
       }
 
+      console.log('[VALIDATION] Calling handler');
       return handler(req, ctx);
     };
   };
