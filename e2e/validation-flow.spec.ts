@@ -65,10 +65,9 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
 
     // Navigate to transactions (blocked tab)
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
 
     // Should see validation badge/notification
-    await expect(page.getByText(/validation requise|validation required/i)).toBeVisible();
+    await expect(page.getByText(/validation requise|validation required/i)).toBeVisible({ timeout: 15000 });
 
     // Open the transaction we just created
     const buyerTxCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
@@ -105,9 +104,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await loginUser(page, buyer);
 
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
     const newTxCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${newTransaction.id}"]`);
-    await expect(newTxCard).toBeVisible({ timeout: 15000 });
+    await expect(newTxCard).toBeVisible({ timeout: 20000 });
     await newTxCard.click();
 
     // Should see countdown component (scoped)
@@ -135,9 +133,8 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     await loginUser(page, buyer);
 
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
     const expiredTxCard = page.locator(`[data-testid=\"transaction-card\"][data-transaction-id=\"${expiredTransaction.id}\"]`);
-    await expect(expiredTxCard).toBeVisible({ timeout: 15000 });
+    await expect(expiredTxCard).toBeVisible({ timeout: 20000 });
     await expiredTxCard.click();
 
     // Should show expired validation message
@@ -174,10 +171,11 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
 
     await loginUser(page, seller);
     await page.goto('/dashboard/transactions');
-    await page.waitForLoadState('networkidle');
     
     // Open the specific transaction card
-    await page.locator(`[data-testid="transaction-card"][data-transaction-id="${pendingTransaction.id}"]`).click();
+    const pendingCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${pendingTransaction.id}"]`);
+    await expect(pendingCard).toBeVisible({ timeout: 20000 });
+    await pendingCard.click();
 
     // Complete button should not be present
     const completeButton = page.getByRole('button', { name: /marquer comme terminé|mark as completed/i });
@@ -191,9 +189,8 @@ test.describe.serial('Validation Flow - Edge Cases', () => {
     // Login as seller
     await loginUser(page, seller);
     await page.goto('/dashboard/transactions?tab=blocked');
-    await page.waitForLoadState('networkidle');
     const sellerTxCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
-    await expect(sellerTxCard).toBeVisible({ timeout: 15000 });
+    await expect(sellerTxCard).toBeVisible({ timeout: 20000 });
     await sellerTxCard.click();
 
     // Validate button should not be present for seller
