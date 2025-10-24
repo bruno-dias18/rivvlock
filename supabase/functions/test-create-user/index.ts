@@ -48,41 +48,66 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
   logger.info("[TEST-CREATE-USER] Email allowed, creating user");
   const admin = createServiceClient();
 
-  // Create user via admin API (bypasses signup restrictions)
-  const { data, error } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // ensure immediate login possible
-  });
+  // Create user via admin API with duplicate-handling retries
+  let createdUserId: string | null = null;
+  let finalEmail = email;
+  let lastErr: any = null;
 
-  if (error) {
-    logger.error("[TEST-CREATE-USER] createUser error", { error: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    const { data, error } = await admin.auth.admin.createUser({
+      email: finalEmail,
+      password,
+      email_confirm: true, // ensure immediate login possible
+    });
+
+    if (!error && data?.user?.id) {
+      createdUserId = data.user.id;
+      logger.info("[TEST-CREATE-USER] User created successfully", { user_id: createdUserId, email: finalEmail, attempt });
+      break;
+    }
+
+    lastErr = error;
+    // If the email already exists, try a plus-alias variant to ensure uniqueness (gmail/outlook support it, others usually accept it)
+    if (error?.message?.toLowerCase().includes("already been registered")) {
+      const [local, domain] = finalEmail.split("@");
+      const baseLocal = local.split("+")[0];
+      const suffix = `${Date.now() % 1_000_000}-${attempt}-${Math.random().toString(36).slice(2, 6)}`;
+      finalEmail = `${baseLocal}+e2e-${suffix}@${domain}`;
+      logger.warn("[TEST-CREATE-USER] Duplicate email, retrying with alias", { next_email: finalEmail, attempt });
+      continue;
+    }
+
+    // Non-duplicate error -> stop and return
+    logger.error("[TEST-CREATE-USER] createUser error (non-duplicate)", { error: error?.message, attempt });
+    break;
+  }
+
+  if (!createdUserId) {
+    const message = lastErr?.message || "createUser failed";
+    return new Response(JSON.stringify({ error: message }), {
       headers: { "Content-Type": "application/json" },
       status: 400,
     });
   }
 
-  logger.info("[TEST-CREATE-USER] User created successfully", { user_id: data.user?.id });
-
   // Optional: assign admin role when requested by tests
   try {
     const requestedRole = (ctx.body as any)?.role;
-    if (requestedRole === 'admin' && data.user?.id) {
+    if (requestedRole === 'admin' && createdUserId) {
       const { error: roleErr } = await admin
         .from('user_roles')
-        .upsert({ user_id: data.user.id, role: 'admin' }, { onConflict: 'user_id,role' });
+        .upsert({ user_id: createdUserId, role: 'admin' }, { onConflict: 'user_id,role' });
       if (roleErr) {
         logger.warn('[TEST-CREATE-USER] role upsert failed', { error: roleErr.message });
       } else {
-        logger.info('[TEST-CREATE-USER] admin role assigned', { user_id: data.user.id });
+        logger.info('[TEST-CREATE-USER] admin role assigned', { user_id: createdUserId });
       }
     }
   } catch (e) {
     logger.warn('[TEST-CREATE-USER] role assignment attempt failed', { error: String(e) });
   }
 
-  return successResponse({ user_id: data.user?.id, email });
+  return successResponse({ user_id: createdUserId, email: finalEmail });
 };
 
 const maxRequests = Number(Deno.env.get("TEST_RATE_LIMIT_MAX") || "1000");

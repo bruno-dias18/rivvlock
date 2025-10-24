@@ -35,7 +35,8 @@ test.describe('Payment UI (Sans Auth)', () => {
     
     // Vérifier la structure de base de la page
     await expect(page.locator('body')).toBeVisible();
-    await expect(page.locator('div')).toHaveCount.toBeGreaterThan(1);
+    const divCount = await page.locator('div').count();
+    expect(divCount).toBeGreaterThan(1);
   });
 });
 
