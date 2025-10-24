@@ -38,7 +38,8 @@ export async function signInAs(userId: string) {
 export async function createTestUser(
   role: 'buyer' | 'seller' | 'admin',
   emailPrefix: string
-): Promise<TestUser> {
+  const timestamp = Date.now();
+  const cleanPrefix = emailPrefix.toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 30);
   const primaryDomain = process.env.E2E_TEST_EMAIL_DOMAIN || 'gmail.com';
   const buildEmail = (domain: string) => `${cleanPrefix}-${timestamp}@${domain}`;
   const password = 'Test123!@#$%';

@@ -30,19 +30,19 @@ const handler: Handler = async (req: Request, ctx: HandlerContext) => {
     .map((d) => d.replace(/^@/, "").trim().toLowerCase())
     .filter(Boolean);
   
-  if (allowAll) {
-    logger.info("[TEST-CREATE-USER] TEST_ALLOW_ALL_EMAILS enabled - skipping domain check", { email });
+  // Enforce domain allowlist unless TEST_ALLOW_ALL_EMAILS=true
+  if (!allowAll) {
+    const isAllowed = allowed.some((d) => email.toLowerCase().endsWith(`@${d}`));
+    logger.info("[TEST-CREATE-USER] Domain check", { email, allowed, isAllowed });
+    if (!isAllowed) {
+      logger.warn("[TEST-CREATE-USER] Non-allowed email", { email, allowed });
+      return new Response(JSON.stringify({ error: "Not allowed" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
   } else {
-    logger.info("[TEST-CREATE-USER] Allowed domains", { allowed });
-  }
-  
-  const isAllowed = allowAll || allowed.some((d) => email.toLowerCase().endsWith(`@${d}`));
-  if (!isAllowed) {
-    logger.warn("[TEST-CREATE-USER] Non-allowed email", { email, allowed });
-    return new Response(JSON.stringify({ error: "Not allowed" }), {
-      headers: { "Content-Type": "application/json" },
-      status: 403,
-    });
+    logger.info("[TEST-CREATE-USER] TEST_ALLOW_ALL_EMAILS enabled - skipping domain check", { email });
   }
 
   logger.info("[TEST-CREATE-USER] Email allowed, creating user");
