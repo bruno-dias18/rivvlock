@@ -50,13 +50,13 @@ async function createSingleUser(role: 'seller' | 'buyer', index: number): Promis
     });
 
     if (error) throw error;
-    if (!data?.user?.id) throw new Error('No user ID returned');
+    if (!data?.user_id) throw new Error('No user ID returned');
 
-    console.log(`✅ Created ${role} ${index}: ${data.user.id}`);
+    console.log(`✅ Created ${role} ${index}: ${data.user_id}`);
 
     return {
-      id: data.user.id,
-      email,
+      id: data.user_id,
+      email: data.email || email,
       password,
       role,
     };
