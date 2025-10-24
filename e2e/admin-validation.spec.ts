@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAdmin, cleanupTestData, type TestUser } from './helpers/test-fixtures';
+import { loginAdmin, cleanupTestData, type TestUser, assignAdminRole } from './helpers/test-fixtures';
 import { getTestUser, releaseTestUser } from './helpers/user-pool';
 
 /**
@@ -18,6 +18,7 @@ test.describe('Admin Validation - Transaction Management', () => {
   test.beforeAll(async () => {
     // Get admin user from pool
     adminUser = await getTestUser('seller'); // Pool has sellers, we assign admin role via edge function
+    await assignAdminRole(adminUser.id);
   });
 
   test.afterAll(async () => {
@@ -150,6 +151,7 @@ test.describe('Admin Validation - Dispute Management', () => {
   test.beforeAll(async () => {
     // Get admin user from pool
     adminUser = await getTestUser('seller');
+    await assignAdminRole(adminUser.id);
   });
 
   test.afterAll(async () => {
@@ -243,6 +245,7 @@ test.describe('Admin Validation - User Management', () => {
   test.beforeAll(async () => {
     // Get admin user from pool
     adminUser = await getTestUser('seller');
+    await assignAdminRole(adminUser.id);
   });
 
   test.afterAll(async () => {
@@ -306,6 +309,7 @@ test.describe('Admin Validation - Security & Audit', () => {
   test.beforeAll(async () => {
     // Get admin user from pool
     adminUser = await getTestUser('seller');
+    await assignAdminRole(adminUser.id);
   });
 
   test.afterAll(async () => {

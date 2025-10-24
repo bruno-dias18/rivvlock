@@ -359,6 +359,16 @@ export async function loginAdmin(page: Page, user: TestUser) {
   await page.waitForSelector('a[href="/dashboard/admin/disputes"], [data-testid="admin-dispute-card"]', { timeout: 15000 });
 }
 
+// Assign admin role to a user via test edge function
+export async function assignAdminRole(userId: string) {
+  const { error } = await supabase.functions.invoke('test-assign-role', {
+    body: { user_id: userId, role: 'admin' },
+  });
+  if (error) {
+    throw new Error(`Failed to assign admin role: ${error.message}`);
+  }
+}
+
 /**
  * Creates a paid transaction ready for validation
  */

@@ -70,7 +70,7 @@ test.describe('Validation Flow - Complete Journey', () => {
 
   test('buyer sees validation request and can validate', async ({ page }) => {
     // Mark transaction as completed
-    await markTransactionCompleted(transaction.id);
+    await markTransactionCompleted(transaction.id, seller.id);
 
     // Login as buyer
     await loginUser(page, buyer);
@@ -112,7 +112,7 @@ test.describe('Validation Flow - Complete Journey', () => {
   test('validation countdown displays correct time remaining', async ({ page }) => {
     // Create new paid transaction
     const newTransaction = await createPaidTransaction(seller.id, buyer.id, 500);
-    await markTransactionCompleted(newTransaction.id);
+    await markTransactionCompleted(newTransaction.id, seller.id);
 
     // Login as buyer
     await loginUser(page, buyer);
@@ -135,12 +135,12 @@ test.describe('Validation Flow - Complete Journey', () => {
     // This test requires time manipulation or database manipulation
     // For now, we just verify the UI shows the correct information
 
-    // Create transaction with expired validation deadline
-    const expiredTransaction = await createPaidTransaction(seller.id, buyer.id, 300);
-    await markTransactionCompleted(expiredTransaction.id);
+  // Create transaction with expired validation deadline
+  const expiredTransaction = await createPaidTransaction(seller.id, buyer.id, 300);
+  await markTransactionCompleted(expiredTransaction.id, seller.id);
 
-    // Manually set validation_deadline to past
-    const { supabase } = await import('../src/integrations/supabase/client');
+  // Manually set validation_deadline to past
+  const { supabase } = await import('../src/integrations/supabase/client');
     await supabase
       .from('transactions')
       .update({
@@ -217,7 +217,7 @@ test.describe('Validation Flow - Edge Cases', () => {
 
   test('transaction timeline shows all status changes', async ({ page }) => {
     const transaction = await createPaidTransaction(seller.id, buyer.id, 400);
-    await markTransactionCompleted(transaction.id);
+    await markTransactionCompleted(transaction.id, seller.id);
 
     await loginUser(page, buyer);
     await page.getByRole('link', { name: /transactions/i }).click();

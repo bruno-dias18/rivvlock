@@ -4,6 +4,7 @@ import {
   createTestDispute,
   loginUser,
   cleanupTestData,
+  assignAdminRole,
 } from './helpers/test-fixtures';
 import { getTestUser, releaseTestUser } from './helpers/user-pool';
 
@@ -27,6 +28,7 @@ test.describe('Refund Flow - Dispute Resolution', () => {
     seller = await getTestUser('seller');
     buyer = await getTestUser('buyer');
     admin = await getTestUser('seller'); // Use seller as admin
+    await assignAdminRole(admin.id);
     testUserIds.push(seller.id, buyer.id, admin.id);
   });
 
