@@ -95,7 +95,9 @@ test.describe.serial('Validation Flow - Complete Journey', () => {
     const completedCard = page.locator(`[data-testid="transaction-card"][data-transaction-id="${transaction.id}"]`);
     await expect(completedCard).toBeVisible({ timeout: 20000 });
     await completedCard.click();
-    await expect(page.getByText(/validée|validated/i)).toBeVisible({ timeout: 20000 });
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible({ timeout: 20000 });
+    await expect(dialog.getByText(/^validée$|^validated$/i)).toBeVisible({ timeout: 20000 });
   });
 
   test('validation countdown displays correct time remaining', async ({ page }) => {
