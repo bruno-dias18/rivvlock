@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
-import { initSentry } from "./lib/sentry";
+import { initSentry, captureException } from "./lib/sentry";
 import { initWebVitals } from "./lib/monitoring";
 
 // Initialize Sentry error tracking (production only)
@@ -19,10 +19,13 @@ if (import.meta.env.PROD) {
 
 window.addEventListener('error', (e) => {
   logger.error('🚨 [Global] window.error:', e.message, e.error);
+  if (e.error) captureException(e.error, { tags: { source: 'window.error' } });
 });
 
 window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
   logger.error('🚨 [Global] unhandledrejection:', e.reason);
+  const error = e.reason instanceof Error ? e.reason : new Error(String(e.reason));
+  captureException(error, { tags: { source: 'unhandledrejection' } });
 });
 
 // Service Worker management
