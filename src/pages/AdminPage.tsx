@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText } from 'lucide-react';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText, Bug } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -484,6 +484,18 @@ export default function AdminPage() {
                   Validation des comptes Stripe Connect
                 </p>
                 <ValidateStripeAccountsButton />
+              </div>
+              
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Test de monitoring Sentry
+                </p>
+                <Button asChild variant="outline" className="w-full">
+                  <Link to="/dashboard/admin/test-sentry" className="flex items-center justify-center gap-2">
+                    <Bug className="h-4 w-4" />
+                    Test Sentry
+                  </Link>
+                </Button>
               </div>
             </CardContent>
           </Card>
