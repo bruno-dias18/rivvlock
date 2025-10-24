@@ -357,10 +357,35 @@ export async function expireTransaction(transactionId: string, sellerId: string)
   await signInAs(sellerId);
   // Set deadline 24 hours in the past to avoid any timezone issues
   const past = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  await supabase
+  
+  const { error: updErr } = await supabase
     .from('transactions')
     .update({ payment_deadline: past })
     .eq('id', transactionId);
+
+  if (updErr) throw new Error(`Failed to expire transaction: ${updErr.message}`);
+
+  // Ensure the change is observable before returning (read-your-writes)
+  const timeoutMs = 4000;
+  const start = Date.now();
+
+  while (Date.now() - start < timeoutMs) {
+    const { data, error: selErr } = await supabase
+      .from('transactions')
+      .select('payment_deadline')
+      .eq('id', transactionId)
+      .maybeSingle();
+
+    if (!selErr && data?.payment_deadline) {
+      if (new Date(data.payment_deadline) < new Date()) {
+        return; // Confirmed expired in reads
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 150));
+  }
+
+  // If we're here, DB didn't reflect in time (should be rare). Let the test proceed anyway.
 }
 /**
  * Creates a dispute on a transaction
