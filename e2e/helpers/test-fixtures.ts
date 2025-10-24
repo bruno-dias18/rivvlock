@@ -326,14 +326,11 @@ export async function createTestDispute(
   buyerId: string,
   reason: string = 'quality_issue'
 ) {
-  // Ensure buyer session for RLS policies
-  await signInAs(buyerId);
-
-  // Use edge function to create dispute and link conversation correctly
-  const { data, error } = await supabase.functions.invoke('create-dispute', {
+  // Create dispute via public test function (bypasses RLS + ensures conversation)
+  const { data, error } = await supabase.functions.invoke('test-create-dispute', {
     body: {
-      transactionId,
-      disputeType: 'quality_issue',
+      transaction_id: transactionId,
+      reporter_id: buyerId,
       reason,
     }
   });

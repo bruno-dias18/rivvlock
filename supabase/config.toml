@@ -279,6 +279,9 @@ verify_jwt = false
 [functions.test-mark-transaction-paid]
 verify_jwt = false
 
+[functions.test-create-dispute]
+verify_jwt = false
+
 [functions.update-quote]
 verify_jwt = true
 
