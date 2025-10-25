@@ -16,6 +16,7 @@ export function useLogoUpload(): UseLogoUploadReturn {
   const uploadLogo = async (file: File, userId: string): Promise<string | null> => {
     try {
       setIsUploading(true);
+      logger.info('Starting logo upload for user:', userId);
 
       // Validation
       const maxSize = 2 * 1024 * 1024; // 2MB
@@ -35,10 +36,11 @@ export function useLogoUpload(): UseLogoUploadReturn {
         .from('profiles')
         .select('company_logo_url')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         logger.error('Error fetching profile:', profileError);
+        throw profileError;
       }
 
       // 2. Supprimer l'ancien logo du storage s'il existe
@@ -70,6 +72,7 @@ export function useLogoUpload(): UseLogoUploadReturn {
       const fileExt = file.name.split('.').pop();
       const timestamp = Date.now();
       const fileName = `${userId}/logo-${timestamp}.${fileExt}`;
+      logger.info('Uploading new logo:', fileName);
 
       // 4. Upload vers Storage
       const { error: uploadError } = await supabase.storage
@@ -83,10 +86,14 @@ export function useLogoUpload(): UseLogoUploadReturn {
         throw uploadError;
       }
 
+      logger.info('Logo uploaded successfully');
+
       // 5. Obtenir l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('company-logos')
         .getPublicUrl(fileName);
+
+      logger.info('Public URL:', publicUrl);
 
       // 6. Mettre à jour le profil
       const { error: updateError } = await supabase
@@ -99,11 +106,13 @@ export function useLogoUpload(): UseLogoUploadReturn {
         throw updateError;
       }
 
+      logger.info('Profile updated successfully');
       toast.success("Logo mis à jour. Il apparaîtra sur vos factures");
 
       return publicUrl;
     } catch (error) {
       logger.error('Logo upload failed:', error);
+      console.error('Full error details:', error);
       toast.error(error);
       return null;
     } finally {
