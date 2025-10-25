@@ -30,7 +30,6 @@ export interface InvoiceData {
   discount_percentage?: number;
   tax_rate?: number;
   tax_amount?: number;
-  companyLogoUrl?: string; // Optional custom company logo URL
 }
 
 // Base64 du logo RivvLock (cadenas bleu) - Version optimisée pour PDF
@@ -44,25 +43,7 @@ export const generateInvoicePDF = async (
   // Dynamic import of jsPDF - lazy loading
   const { default: jsPDF } = await import('jspdf');
   
-  const { language = 'fr', t, companyLogoUrl } = invoiceData;
-  
-  // Helper to fetch image as base64 (for custom logo)
-  const fetchImageAsBase64 = async (url: string): Promise<string> => {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch image');
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      logger.error('Failed to load company logo:', error);
-      throw error;
-    }
-  };
+  const { language = 'fr', t } = invoiceData;
   
   // Generate unique invoice number
   let invoiceNumber: string;
@@ -131,40 +112,11 @@ export const generateInvoicePDF = async (
   const locale = language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : 'fr-FR';
   const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
   
-  // LOGO + RIVVLOCK à gauche et FACTURE à droite sur la même ligne
-  
-  // Logo - Use custom logo if available, otherwise RivvLock default
-  if (companyLogoUrl) {
-    try {
-      const logoBase64 = await fetchImageAsBase64(companyLogoUrl);
-      const format = logoBase64.includes('image/png') || logoBase64.includes('png') ? 'PNG' : 'JPEG';
-      doc.addImage(logoBase64, format, margin, yPosition - 5, 25, 25); // Custom logo: 25x25mm
-      // Text next to custom logo
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('RIVVLOCK', margin + 28, yPosition);
-    } catch (error) {
-      // Silent fallback to text-only RivvLock
-      logger.warn('Failed to load custom logo, using text-only RivvLock:', error);
-      doc.setFontSize(16);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0);
-      doc.text('RIVVLOCK', margin, yPosition);
-    }
-  } else {
-    // Default: RivvLock logo + text
-    doc.addImage(RIVVLOCK_LOGO_BASE64, 'JPEG', margin, yPosition - 5, 15, 15);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('RIVVLOCK', margin + 18, yPosition);
-  }
-  
-  // FACTURE à droite
+  // RIVVLOCK à gauche et FACTURE à droite sur la même ligne
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
+  doc.text('RIVVLOCK', margin, yPosition);
   doc.text(t?.('invoice.title') || 'FACTURE', rightX, yPosition, { align: 'right' });
   
   yPosition += 8;

@@ -529,7 +529,6 @@ export type Database = {
           avs_number: string | null
           city: string | null
           company_address: string | null
-          company_logo_url: string | null
           company_name: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at: string
@@ -556,7 +555,6 @@ export type Database = {
           avs_number?: string | null
           city?: string | null
           company_address?: string | null
-          company_logo_url?: string | null
           company_name?: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -583,7 +581,6 @@ export type Database = {
           avs_number?: string | null
           city?: string | null
           company_address?: string | null
-          company_logo_url?: string | null
           company_name?: string | null
           country?: Database["public"]["Enums"]["country_code"]
           created_at?: string
