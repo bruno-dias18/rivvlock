@@ -170,54 +170,14 @@ export default function PaymentLinkPage() {
       }
   };
 
-  const handleReturnToDashboard = async () => {
-    if (!user || !transaction) {
+  const handleReturnToDashboard = () => {
+    if (!user) {
       handleAuthRedirect();
       return;
     }
 
-    logger.debug('handleReturnToDashboard called', {
-      userId: user.id,
-      transactionId: transaction.id,
-      currentBuyerId: transaction.buyer_id,
-      sellerId: transaction.user_id,
-      hasToken: !!token
-    });
-
-    // ✅ Si déjà attaché → redirection directe
-    if (transaction.buyer_id === user.id) {
-      logger.info('Transaction already assigned to user, redirecting');
-      navigate('/transactions');
-      return;
-    }
-
-    // ✅ Utiliser la fonction SECURITY DEFINER qui bypass RLS
-    try {
-      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
-      
-      if (!finalToken) {
-        throw new Error('Token manquant');
-      }
-
-      logger.info('Assigning user as buyer for transaction', { transactionId: transaction.id });
-
-      const { data, error } = await supabase.rpc('assign_self_as_buyer', {
-        p_transaction_id: transaction.id,
-        p_token: finalToken
-      });
-
-      if (error) {
-        logger.error('Failed to assign buyer via RPC', { error, transactionId: transaction.id });
-        throw error;
-      }
-      
-      logger.info('Transaction successfully assigned to user');
-      toast.success('Transaction ajoutée à votre compte');
-      navigate('/transactions');
-    } catch (err: any) {
-      logger.error('Error assigning transaction to buyer', err);
-      toast.error(err.message || 'Erreur lors de l\'ajout');
-    }
+    // Simple redirection vers le dashboard
+    navigate('/transactions');
   };
 
   const handlePayNow = async () => {
