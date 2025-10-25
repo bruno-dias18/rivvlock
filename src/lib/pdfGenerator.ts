@@ -103,11 +103,16 @@ export const generateInvoicePDF = async (
   let sellerLogoBase64: string | null = null;
   let logoWidth = 0;
   let logoHeight = 0;
+  let logoFormat: 'PNG' | 'JPEG' = 'PNG'; // Par défaut PNG pour transparence
   
   if (invoiceData.sellerProfile?.company_logo_url) {
     try {
       const response = await fetch(invoiceData.sellerProfile.company_logo_url);
       const blob = await response.blob();
+      
+      // Détecter le format réel de l'image
+      const mimeType = blob.type;
+      logoFormat = mimeType === 'image/jpeg' || mimeType === 'image/jpg' ? 'JPEG' : 'PNG';
       
       // Optimiser l'image pour réduire la taille du PDF
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -133,8 +138,18 @@ export const generateInvoicePDF = async (
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        // Fond blanc si JPEG (pas de transparence)
+        if (logoFormat === 'JPEG') {
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
+        }
+        
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-        sellerLogoBase64 = canvas.toDataURL('image/jpeg', 0.85); // Compression JPEG 85%
+        
+        // Format approprié selon le type
+        const quality = logoFormat === 'JPEG' ? 0.85 : 1.0;
+        const mimeOutput = logoFormat === 'JPEG' ? 'image/jpeg' : 'image/png';
+        sellerLogoBase64 = canvas.toDataURL(mimeOutput, quality);
         
         // Calculer les dimensions pour le PDF (max 40mm de largeur)
         const maxPdfWidth = 40;
@@ -171,7 +186,7 @@ export const generateInvoicePDF = async (
   if (sellerLogoBase64 && logoWidth > 0) {
     // Afficher le logo du vendeur (ratio respecté)
     try {
-      doc.addImage(sellerLogoBase64, 'JPEG', margin, yPosition - 5, logoWidth, logoHeight);
+      doc.addImage(sellerLogoBase64, logoFormat, margin, yPosition - 5, logoWidth, logoHeight);
       // Ajuster yPosition pour tenir compte de la hauteur du logo
       yPosition += Math.max(logoHeight - 5, 0);
     } catch (error) {
@@ -190,7 +205,7 @@ export const generateInvoicePDF = async (
     doc.text('RIVVLOCK', margin, yPosition);
   }
   
-  // FACTURE à droite
+  // FACTURE à droite (ligne 1)
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
@@ -206,9 +221,11 @@ export const generateInvoicePDF = async (
     doc.text('www.rivvlock.com', margin, yPosition + 4);
   }
   
-  // Informations facture (à droite) - sous le titre FACTURE, alignées à droite
+  // Informations facture (à droite) - lignes séparées avec espacement correct
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
   doc.text(`N° ${invoiceNumber}`, rightX, yPosition, { align: 'right' });
-  doc.text(`Date: ${invoiceDate}`, rightX, yPosition + 4, { align: 'right' });
+  doc.text(`Date: ${invoiceDate}`, rightX, yPosition + 5, { align: 'right' });
   
   yPosition += 15;
   
