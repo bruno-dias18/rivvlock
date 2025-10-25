@@ -134,13 +134,6 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * Future: SEPA Instant (< 30 min) could bypass 72h rule
      */
     const paymentMethodTypes = ['card'];
-    const currency = transaction.currency.toLowerCase();
-    
-    // Add Twint if CHF currency (instant payment like card)
-    if (currency === 'chf') {
-      paymentMethodTypes.push('twint');
-      logger.log("✅ [CREATE-PAYMENT-INTENT] Twint available (CHF transaction)");
-    }
     
     // Only allow SEPA Direct Debit if deadline is >= 72 hours (3 days) away
     // SEPA Direct Debit can take 1-3 business days to collect
@@ -150,6 +143,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     } else {
       logger.log("⚠️ [CREATE-PAYMENT-INTENT] SEPA Direct Debit blocked (deadline < 3 days)");
     }
+    
+    // NOTE: Twint is NOT supported - incompatible with escrow model
 
     /**
      * PAYMENT INTENT CONFIGURATION FOR ESCROW

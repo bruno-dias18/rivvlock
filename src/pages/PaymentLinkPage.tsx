@@ -23,7 +23,7 @@ interface TransactionData {
   service_date: string;
   payment_deadline?: string;
   status?: string;
-  payment_method?: 'card' | 'bank_transfer' | 'twint';
+  payment_method?: 'card' | 'bank_transfer';
 }
 
 export default function PaymentLinkPage() {
@@ -35,7 +35,7 @@ export default function PaymentLinkPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | 'twint' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
   const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
 
@@ -232,7 +232,7 @@ export default function PaymentLinkPage() {
         const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
         
         if (hoursUntilDeadline < 72) {
-          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte ou Twint.');
+          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte.');
           return;
         }
       }
@@ -266,7 +266,7 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    // For card and twint: use Stripe Checkout
+    // For card: use Stripe Checkout
     setProcessingPayment(true);
     try {
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {

@@ -94,18 +94,13 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * PAYMENT METHODS AVAILABILITY (V2)
      * 
      * 1. Card: Toujours disponible (instant)
-     * 2. Twint: Disponible si CHF (instant)
-     * 3. SEPA Direct Debit: Seulement si deadline >= 72h (1-3 jours)
-     * 4. Bank Transfer (Customer Balance): Si paymentMethod='bank_transfer' demandé
+     * 2. SEPA Direct Debit: Seulement si deadline >= 72h (1-3 jours)
+     * 3. Bank Transfer (Customer Balance): Si paymentMethod='bank_transfer' demandé
+     * 
+     * NOTE: Twint is NOT supported - incompatible with escrow (direct to seller)
      */
     const paymentMethodTypes = ['card'];
     const currency = transaction.currency.toLowerCase();
-    
-    // Twint support (CHF uniquement)
-    if (currency === 'chf') {
-      paymentMethodTypes.push('twint');
-      logger.log("✅ [CREATE-PAYMENT-V2] Twint available (CHF transaction)");
-    }
     
     // SEPA Direct Debit si deadline permet
     if (hoursUntilDeadline >= 72) {
