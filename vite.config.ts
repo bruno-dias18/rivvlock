@@ -20,81 +20,55 @@ export default defineConfig(({ mode }) => ({
   build: {
     target: 'esnext',
     minify: 'esbuild',
-    sourcemap: false, // Disable sourcemaps in production for smaller bundles
+    sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Core React libraries
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
-            return 'react-core';
-          }
-          if (id.includes('node_modules/react-router')) {
-            return 'react-router';
-          }
+        manualChunks: {
+          // React ecosystem
+          'react-vendor': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
           
-          // UI Libraries - split by category
-          if (id.includes('@radix-ui')) {
-            return 'radix-ui';
-          }
-          if (id.includes('lucide-react')) {
-            return 'icons';
-          }
-          if (id.includes('framer-motion')) {
-            return 'animations';
-          }
+          // UI Libraries
+          'radix-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-label',
+            '@radix-ui/react-select',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-radio-group',
+            '@radix-ui/react-slider',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tooltip',
+          ],
           
-          // Charts & Data Visualization (lazy loaded on demand)
-          if (id.includes('recharts')) {
-            return 'charts';
-          }
-          
-          // PDF & Documents (lazy loaded on demand)
-          if (id.includes('jspdf') || id.includes('jszip') || id.includes('papaparse')) {
-            return 'documents';
-          }
-          
-          // Payment providers
-          if (id.includes('@stripe')) {
-            return 'stripe';
-          }
-          
-          // Supabase & Auth
-          if (id.includes('@supabase')) {
-            return 'supabase';
-          }
-          
-          // React Query
-          if (id.includes('@tanstack/react-query')) {
-            return 'react-query';
-          }
+          // Core services
+          'supabase': ['@supabase/supabase-js'],
+          'tanstack': ['@tanstack/react-query', '@tanstack/react-virtual'],
+          'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
           
           // i18n
-          if (id.includes('i18next')) {
-            return 'i18n';
-          }
+          'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           
-          // Form libraries
-          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
-            return 'forms';
-          }
+          // Forms
+          'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
           
-          // Date utilities
-          if (id.includes('date-fns')) {
-            return 'date-utils';
-          }
-          
-          // Other node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+          // Utilities
+          'date-fns': ['date-fns'],
+          'framer': ['framer-motion'],
+          'icons': ['lucide-react'],
         },
       },
     },
     cssCodeSplit: true,
     cssMinify: true,
     assetsInlineLimit: 4096,
-    chunkSizeWarningLimit: 500, // More aggressive warning
-    reportCompressedSize: false, // Faster builds
+    chunkSizeWarningLimit: 500,
+    reportCompressedSize: false,
   },
   optimizeDeps: {
     include: [
@@ -105,10 +79,12 @@ export default defineConfig(({ mode }) => ({
       '@supabase/supabase-js',
     ],
     exclude: [
+      // Heavy libraries that should be lazy loaded
       'jspdf',
       'jszip',
       'recharts',
       'papaparse',
+      'html2canvas',
     ],
   },
 }));
