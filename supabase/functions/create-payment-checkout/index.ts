@@ -119,6 +119,13 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * Future: QR codes can be added here as payment_method_types
      */
     const paymentMethodTypes: string[] = ['card'];
+    const currency = transaction.currency.toLowerCase();
+    
+    // Add Twint if CHF currency (instant payment)
+    if (currency === 'chf') {
+      paymentMethodTypes.push('twint');
+      logger.log("✅ [CREATE-CHECKOUT] Twint available (CHF transaction)");
+    }
     
     // Add SEPA Direct Debit if deadline allows
     if (hoursUntilDeadline >= 72) {

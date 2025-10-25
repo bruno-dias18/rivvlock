@@ -245,6 +245,94 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       return successResponse({ received: true });
     }
 
+    // ✅ Handle customer.balance.updated (for manual bank transfers via Customer Balance)
+    if (event.type === "customer.balance.updated") {
+      const customer = event.data.object as any; // Customer with balance
+      const customerId = customer.id;
+      
+      logger.info("Customer balance updated", { customerId, balance: customer.balance });
+
+      // Find user with this Stripe customer
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("user_id")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (!profile) {
+        logger.warn("No user found for Stripe customer", { customerId });
+        return successResponse({ received: true });
+      }
+
+      // Find pending transaction for this buyer
+      const { data: transaction } = await adminClient
+        .from("transactions")
+        .select("id, status, price, currency")
+        .eq("buyer_id", profile.user_id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (!transaction) {
+        logger.info("No pending transaction found for this customer", { customerId });
+        return successResponse({ received: true });
+      }
+
+      // Check if balance covers transaction amount
+      const balanceAmount = Math.abs(customer.balance); // Balance is negative when customer has credit
+      const transactionAmount = Math.round(transaction.price * 100);
+
+      if (balanceAmount >= transactionAmount) {
+        logger.info("Sufficient balance for transaction", { 
+          transactionId: transaction.id, 
+          balance: balanceAmount,
+          required: transactionAmount 
+        });
+
+        // Calculate validation deadline (72h)
+        const validationDeadline = new Date();
+        validationDeadline.setHours(validationDeadline.getHours() + 72);
+
+        // Update transaction to paid status (escrow)
+        const { error: updateError } = await adminClient
+          .from("transactions")
+          .update({
+            status: "paid",
+            payment_method: "bank_transfer",
+            payment_blocked_at: new Date().toISOString(),
+            validation_deadline: validationDeadline.toISOString(),
+          })
+          .eq("id", transaction.id)
+          .eq("status", "pending");
+
+        if (updateError) {
+          logger.error("Error updating transaction after balance update", updateError, { transactionId: transaction.id });
+          throw updateError;
+        }
+
+        // Log activity
+        await adminClient
+          .from("activity_logs")
+          .insert({
+            user_id: profile.user_id,
+            activity_type: "funds_blocked",
+            title: "Virement bancaire reçu et bloqué",
+            description: `Montant: ${transaction.price.toFixed(2)} ${transaction.currency.toUpperCase()}`,
+            metadata: {
+              transaction_id: transaction.id,
+              payment_method: "bank_transfer",
+              amount: transactionAmount,
+              currency: transaction.currency,
+            },
+          });
+
+        logger.info("Transaction updated to paid after balance credit", { transactionId: transaction.id });
+      }
+
+      return successResponse({ received: true });
+    }
+
     // ✅ Handle account.updated for Stripe Connect
     if (event.type === "account.updated") {
       const account = event.data.object as Stripe.Account;
