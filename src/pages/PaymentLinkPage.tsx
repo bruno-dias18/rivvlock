@@ -38,6 +38,7 @@ export default function PaymentLinkPage() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
   const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
+  const [autoAttachAttempted, setAutoAttachAttempted] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -49,7 +50,35 @@ export default function PaymentLinkPage() {
     fetchTransaction();
   }, [token]);
 
-  // Remove automatic payment trigger - let user click the button
+  // Auto-attach transaction to logged-in user without click
+  useEffect(() => {
+    if (authLoading) return;
+    if (!transaction) return;
+    if (!user) return; // will retry after login
+    if (autoAttachAttempted) return;
+    if ((transaction as any).buyer_id && (transaction as any).buyer_id === user.id) return;
+
+    const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+    if (!finalToken) { setAutoAttachAttempted(true); return; }
+
+    (async () => {
+      try {
+        setAutoAttachAttempted(true);
+        const { error } = await supabase.rpc('assign_self_as_buyer', {
+          p_transaction_id: transaction.id,
+          p_token: finalToken
+        });
+        if (error) {
+          logger.error('Auto-attach failed', error);
+        } else {
+          // Optimistic local update
+          setTransaction(prev => prev ? ({ ...prev, buyer_id: user.id } as any) : prev);
+        }
+      } catch (e) {
+        logger.error('Auto-attach exception', e);
+      }
+    })();
+  }, [authLoading, user?.id, transaction?.id]);
 
   const fetchTransaction = async () => {
     try {
