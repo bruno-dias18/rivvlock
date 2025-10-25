@@ -111,8 +111,7 @@ export function useLogoUpload(): UseLogoUploadReturn {
 
       return publicUrl;
     } catch (error) {
-      logger.error('Logo upload failed:', error);
-      console.error('Full error details:', error);
+      logger.error('Logo upload failed', error);
       toast.error(error);
       return null;
     } finally {

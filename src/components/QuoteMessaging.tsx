@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { UnifiedMessaging } from './UnifiedMessaging';
+import { logger } from '@/lib/logger';
 
 interface QuoteMessagingProps {
   quoteId: string;
@@ -48,10 +49,10 @@ export const QuoteMessaging = ({
           if (!error && data?.conversation_id) {
             setConversationId(data.conversation_id);
           } else if (error) {
-            console.error('[QuoteMessaging] Error creating conversation:', error);
+            logger.error('QuoteMessaging - Error creating conversation', error);
           }
         } catch (err) {
-          console.error('[QuoteMessaging] Unexpected error:', err);
+          logger.error('QuoteMessaging - Unexpected error', err);
         }
       }
 

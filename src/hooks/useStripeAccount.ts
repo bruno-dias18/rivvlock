@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 
 export interface StripeAccountStatus {
   has_account: boolean;
@@ -51,18 +52,18 @@ export const useStripeAccount = () => {
         throw new Error('User not authenticated');
       }
       
-      console.log('[useStripeAccount] Fetching Stripe status for user:', user.id);
+      logger.info('Fetching Stripe account status for user', { userId: user.id });
       
       let lastError: Error | null = null;
       
       // Retry logic with backoff
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          console.log('[useStripeAccount] Attempt', attempt, '- Invoking check-stripe-account-status');
+          logger.debug('Checking Stripe account status', { attempt });
           const { data, error } = await supabase.functions.invoke('check-stripe-account-status');
           
           if (error) {
-            console.error('[useStripeAccount] Error:', error);
+            logger.warn('Stripe account status check failed', { attempt, error });
             lastError = error;
             
             // Don't retry for authentication errors (401/403)
@@ -75,14 +76,14 @@ export const useStripeAccount = () => {
             // Retry for server errors (500) with exponential backoff
             if (attempt < 3) {
               const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-              console.log('[useStripeAccount] Retrying in', delay, 'ms');
+              logger.debug('Retrying Stripe account check', { delay, attempt });
               await sleep(delay);
               continue;
             }
             
             throw error;
           }
-          console.log('[useStripeAccount] Success:', data);
+          logger.info('Stripe account status retrieved successfully');
           return {
             ...data,
             last_check: new Date().toISOString()

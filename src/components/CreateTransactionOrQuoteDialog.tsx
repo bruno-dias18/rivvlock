@@ -249,7 +249,7 @@ export const CreateTransactionOrQuoteDialog = ({
         }
 
 
-        console.log('📤 [TRANSACTION] Sending data:', {
+        logger.debug('Creating transaction with data', {
           title,
           price: submittedTotalAmount,
           currency: currency.toUpperCase(),
@@ -294,7 +294,7 @@ export const CreateTransactionOrQuoteDialog = ({
       onOpenChange(false);
       resetForm();
     } catch (error: any) {
-      console.error('Error creating form:', error);
+      logger.error('Error creating transaction/quote form', error);
       
       const errorMessage = error?.message || error?.details || 'Erreur inconnue';
       toast.error(`Erreur : ${errorMessage}`);

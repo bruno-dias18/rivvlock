@@ -23,7 +23,7 @@ export const initSentry = () => {
 
   // Only initialize in production and if DSN is provided
   if (!IS_PRODUCTION || !SENTRY_DSN) {
-    console.log('[Sentry] Skipped initialization (development mode or missing DSN)');
+    // No logging needed - this is expected in development
     return;
   }
 
@@ -71,7 +71,7 @@ export const initSentry = () => {
       ],
     });
 
-    console.log('[Sentry] Initialized successfully');
+    // Sentry initialized successfully
   } catch (error) {
     console.error('[Sentry] Initialization failed:', error);
   }
@@ -95,7 +95,7 @@ export const captureException = (
   if (import.meta.env.MODE === 'production') {
     Sentry.captureException(error, context);
   } else {
-    console.error('[Sentry] Would capture:', error, context);
+    // Development mode - error already logged by logger
   }
 };
 

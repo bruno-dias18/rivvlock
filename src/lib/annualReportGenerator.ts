@@ -103,8 +103,7 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
       
       logger.info('Annual Report - Logo dimensions for PDF:', logoWidth, 'x', logoHeight);
     } catch (error) {
-      logger.error('Annual Report - Error loading seller logo:', error);
-      console.error('Annual Report - Full error details:', error);
+      logger.error('Annual Report - Error loading seller logo', error);
       sellerLogoBase64 = null;
     }
   } else {

@@ -9,6 +9,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { useUnreadConversationMessages } from '@/hooks/useUnreadConversationMessages';
+import { logger } from '@/lib/logger';
 
 interface AdminDisputeMessagingProps {
   disputeId: string;
@@ -49,7 +50,7 @@ export const AdminDisputeMessaging = ({
     // Créer automatiquement les conversations si elles n'existent pas
     if (!isLoading && !isReady && !isCreating) {
       createConversations().catch((error) => {
-        console.error('Error creating conversations:', error);
+        logger.error('Error creating admin dispute conversations', error);
         toast.error("Erreur lors de la création des conversations");
       });
     }

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from './useToast';
+import { logger } from '@/lib/logger';
 
 export const useForceEscalateDispute = () => {
   const { toast } = useToast();
@@ -44,7 +45,7 @@ export const useForceEscalateDispute = () => {
         return fallback.data;
       } catch (funcErr) {
         // Second fallback: direct client-side escalate for admins (RLS allows admins)
-        console.warn('[useForceEscalateDispute] Fallback to direct update due to function error', funcErr);
+        logger.warn('useForceEscalateDispute - Fallback to direct update due to function error', funcErr);
         const { data: userRes } = await supabase.auth.getUser();
         const adminId = userRes?.user?.id;
 
@@ -111,7 +112,7 @@ export const useForceEscalateDispute = () => {
         ? (typeof serverBody === 'string' ? serverBody : (serverBody.error || JSON.stringify(serverBody)))
         : '';
 
-      console.error('Force escalate error details:', { error, statusCode, serverBody });
+      logger.error('Force escalate failed', { error, statusCode, serverBody });
       import('sonner').then(({ toast }) => {
         toast.error('Erreur escalade', {
           description: `${friendly} ${serverMsg ? `- ${serverMsg}` : ''} ${raw ? `(${raw})` : ''}${statusCode ? ` (HTTP ${statusCode})` : ''}${code ? ` [${code}]` : ''}`.trim().slice(0, 400),

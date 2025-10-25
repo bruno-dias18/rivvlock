@@ -161,7 +161,7 @@ export default function PaymentLinkPage() {
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       }
       } catch (err: any) {
-        console.error("Error during fetchTransaction:", err);
+        logger.error("Error fetching transaction by token", err);
         const errorMsg = err.message || "Erreur inconnue";
         setError(errorMsg);
       } finally {
@@ -175,48 +175,46 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    console.log('🔍 DEBUG handleReturnToDashboard:', {
+    logger.debug('handleReturnToDashboard called', {
       userId: user.id,
       transactionId: transaction.id,
       currentBuyerId: transaction.buyer_id,
       sellerId: transaction.user_id,
-      token: token
+      hasToken: !!token
     });
 
     // ✅ Si déjà attaché → redirection directe
     if (transaction.buyer_id === user.id) {
-      console.log('✅ Déjà attaché, redirection');
+      logger.info('Transaction already assigned to user, redirecting');
       navigate('/transactions');
       return;
     }
 
     // ✅ Utiliser la fonction SECURITY DEFINER qui bypass RLS
     try {
-      console.log('🔄 Appel fonction assign_self_as_buyer...');
-
       const finalToken = token || new URLSearchParams(window.location.search).get('txId');
       
       if (!finalToken) {
         throw new Error('Token manquant');
       }
 
+      logger.info('Assigning user as buyer for transaction', { transactionId: transaction.id });
+
       const { data, error } = await supabase.rpc('assign_self_as_buyer', {
         p_transaction_id: transaction.id,
         p_token: finalToken
       });
 
-      console.log('📊 Résultat RPC:', { data, error });
-
       if (error) {
-        console.error('❌ RPC error:', error);
+        logger.error('Failed to assign buyer via RPC', { error, transactionId: transaction.id });
         throw error;
       }
       
-      console.log('✅ Assignation réussie');
+      logger.info('Transaction successfully assigned to user');
       toast.success('Transaction ajoutée à votre compte');
       navigate('/transactions');
     } catch (err: any) {
-      console.error('❌ Erreur complète:', err);
+      logger.error('Error assigning transaction to buyer', err);
       toast.error(err.message || 'Erreur lors de l\'ajout');
     }
   };

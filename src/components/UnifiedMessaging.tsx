@@ -68,7 +68,7 @@ export const UnifiedMessaging = ({
   // DEBUG: Log proposals data
   useEffect(() => {
     if (disputeId && proposals.length > 0) {
-      console.log('🔍 UnifiedMessaging - Proposals loaded:', {
+      logger.debug('UnifiedMessaging - Proposals loaded', {
         count: proposals.length,
         proposals: proposals.map((p: any) => ({
           id: p.id,
@@ -367,7 +367,7 @@ export const UnifiedMessaging = ({
                     
                     {isProposal && proposalData && (() => {
                       const shouldShowButtons = proposalData.status === 'pending' && proposalData.proposer_id !== user?.id;
-                      console.log('🔘 Button visibility check:', {
+                      logger.debug('Checking proposal button visibility', {
                         messageId: message.id,
                         proposalId: proposalData.id,
                         status: proposalData.status,
