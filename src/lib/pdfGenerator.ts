@@ -77,7 +77,9 @@ export const generateInvoicePDF = async (
     }
   }
 
-  const doc = new jsPDF();
+  const doc = new jsPDF({
+    compress: true // Active la compression native du PDF
+  });
   
   // Configuration
   const pageWidth = doc.internal.pageSize.width;
