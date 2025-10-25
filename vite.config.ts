@@ -23,44 +23,72 @@ export default defineConfig(({ mode }) => ({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React ecosystem
-          'react-vendor': ['react', 'react-dom'],
-          'react-router': ['react-router-dom'],
-          
-          // UI Libraries
-          'radix-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-label',
-            '@radix-ui/react-select',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-checkbox',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-slider',
-            '@radix-ui/react-switch',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-tooltip',
-          ],
-          
+        manualChunks: (id) => {
+          // Core React
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'react-router';
+          }
+
+          // UI Framework - Split Radix UI separately
+          if (id.includes('@radix-ui')) {
+            return 'radix-ui';
+          }
+
           // Core services
-          'supabase': ['@supabase/supabase-js'],
-          'tanstack': ['@tanstack/react-query', '@tanstack/react-virtual'],
-          'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
-          
+          if (id.includes('@supabase/supabase-js')) {
+            return 'supabase';
+          }
+          if (id.includes('@tanstack/react-query') || id.includes('@tanstack/react-virtual')) {
+            return 'tanstack';
+          }
+          if (id.includes('@stripe/stripe-js') || id.includes('@stripe/react-stripe-js')) {
+            return 'stripe';
+          }
+
           // i18n
-          'i18n': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
-          
+          if (id.includes('i18next') || id.includes('react-i18next')) {
+            return 'i18n';
+          }
+
           // Forms
-          'forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          
-          // Utilities
-          'date-fns': ['date-fns'],
-          'framer': ['framer-motion'],
-          'icons': ['lucide-react'],
+          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform/resolvers')) {
+            return 'forms';
+          }
+
+          // Heavy utilities
+          if (id.includes('date-fns')) {
+            return 'date-fns';
+          }
+          if (id.includes('framer-motion')) {
+            return 'framer';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
+
+          // Dashboard Layout (shared across all pages) - Create separate chunk
+          if (id.includes('/components/layouts/DashboardLayoutWithSidebar') ||
+              id.includes('/components/AppSidebar') ||
+              id.includes('/components/UserMenu') ||
+              id.includes('/components/BottomTabBar')) {
+            return 'layout';
+          }
+
+          // Heavy lazy-loaded libraries (should not be in initial load)
+          if (id.includes('jspdf') || id.includes('jszip') || id.includes('html2canvas')) {
+            return 'documents-lib';
+          }
+          if (id.includes('recharts')) {
+            return 'charts-lib';
+          }
+
+          // Everything else from node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
