@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { logger } from "../_shared/logger.ts";
+import { validateAndUpdateStripeAccount } from "../_shared/stripe-account-validator.ts";
 import { 
   compose, 
   withCors, 
@@ -69,47 +70,28 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       throw new Error("Seller's Stripe account is not ready for transfers");
     }
 
-    // Validate that the Stripe account still exists before proceeding
+    // Validate Stripe account using shared validator
     try {
-      const stripeAccount = await stripe.accounts.retrieve(sellerStripeAccount.stripe_account_id);
-      logStep("Stripe account validated on Stripe", { 
-        accountId: sellerStripeAccount.stripe_account_id,
-        payoutsEnabled: stripeAccount.payouts_enabled,
-        chargesEnabled: stripeAccount.charges_enabled
-      });
+      const { isActive } = await validateAndUpdateStripeAccount(
+        stripe,
+        adminClient!,
+        transaction.user_id,
+        sellerStripeAccount.stripe_account_id
+      );
 
-      // Double-check that the account is still active for transfers
-      if (!stripeAccount.payouts_enabled || !stripeAccount.charges_enabled) {
+      if (!isActive) {
         throw new Error("Seller's Stripe account is no longer active for transfers");
       }
 
-      // Update our database with the latest status
-      await adminClient!
-        .from('stripe_accounts')
-        .update({
-          account_status: stripeAccount.payouts_enabled && stripeAccount.charges_enabled ? 'active' : 'pending',
-          payouts_enabled: stripeAccount.payouts_enabled,
-          charges_enabled: stripeAccount.charges_enabled,
-          last_status_check: new Date().toISOString(),
-        })
-        .eq('user_id', transaction.user_id);
+      logStep("Stripe account validated and active", { 
+        accountId: sellerStripeAccount.stripe_account_id
+      });
 
     } catch (stripeError: any) {
       logStep("ERROR - Stripe account validation failed", { 
         accountId: sellerStripeAccount.stripe_account_id,
         error: stripeError.message 
       });
-
-      // Mark the account as inactive in our database
-      await adminClient!
-        .from('stripe_accounts')
-        .update({
-          account_status: 'inactive',
-          payouts_enabled: false,
-          charges_enabled: false,
-          last_status_check: new Date().toISOString(),
-        })
-        .eq('user_id', transaction.user_id);
 
       return errorResponse(`Le compte Stripe du vendeur n'existe plus ou n'est plus actif. Veuillez contacter le support.`, 400);
     }

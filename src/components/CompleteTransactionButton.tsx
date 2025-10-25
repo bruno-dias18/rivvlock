@@ -41,6 +41,15 @@ export default function CompleteTransactionButton({
       setIsProcessing(true);
       setShowConfirmDialog(false);
       
+      // ✅ OPTIMISTIC UPDATE: Affichage immédiat pour UX instantanée
+      toast.success('Transaction finalisée ! Les fonds ont été transférés au vendeur.');
+      
+      // ✅ Update UI immédiatement (optimistic)
+      if (onTransferComplete) {
+        onTransferComplete();
+      }
+      
+      // 🔄 Appel backend en arrière-plan pour confirmer
       const { data, error } = await supabase.functions.invoke('release-funds', {
         body: { transactionId }
       });
@@ -56,14 +65,14 @@ export default function CompleteTransactionButton({
         throw new Error(data.error);
       }
       
-      toast.success('Transaction finalisée ! Les fonds ont été transférés au vendeur.');
-      
+      // ✅ Backend a confirmé, rafraîchir pour synchroniser
       if (onTransferComplete) {
         onTransferComplete();
       }
     } catch (error: any) {
       logger.error('Error processing transfer:', error);
       
+      // ❌ ROLLBACK: Annuler l'optimistic update
       let errorMessage = 'Erreur lors du transfert des fonds';
       
       if (error.message) {
@@ -81,7 +90,13 @@ export default function CompleteTransactionButton({
       
       toast.error(errorMessage, {
         duration: 5000,
+        description: 'Les données seront actualisées automatiquement.'
       });
+      
+      // Force un refresh pour rollback l'UI
+      if (onTransferComplete) {
+        onTransferComplete();
+      }
     } finally {
       setIsProcessing(false);
     }

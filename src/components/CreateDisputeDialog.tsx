@@ -38,29 +38,54 @@ export function CreateDisputeDialog({ open, onOpenChange, transaction, onDispute
     }
 
     setIsLoading(true);
+    
     try {
+      // ✅ OPTIMISTIC UPDATE: Affichage immédiat
+      toast.success('Litige créé avec succès', {
+        description: 'Le vendeur a été notifié et peut maintenant répondre à votre litige.'
+      });
+      
+      // ✅ Fermer le dialog et reset immédiatement
+      const previousReason = reason;
+      const previousType = disputeType;
+      setReason('');
+      setDisputeType('quality_issue');
+      onOpenChange(false);
+      
+      // ✅ Update UI immédiatement (optimistic)
+      if (onDisputeCreated) {
+        onDisputeCreated();
+      }
+      
+      // 🔄 Appel backend en arrière-plan
       const { data, error } = await supabase.functions.invoke('create-dispute', {
         body: {
           transactionId: transaction.id,
-          disputeType,
-          reason: reason.trim(),
+          disputeType: previousType,
+          reason: previousReason.trim(),
         },
       });
 
       if (error) {
         throw error;
       }
-
-      toast.success('Litige créé avec succès', {
-        description: 'Le vendeur a été notifié et peut maintenant répondre à votre litige.'
-      });
-      setReason('');
-      setDisputeType('quality_issue');
-      onOpenChange(false);
-      onDisputeCreated?.();
+      
+      // ✅ Backend a confirmé, rafraîchir pour synchroniser
+      if (onDisputeCreated) {
+        onDisputeCreated();
+      }
     } catch (error: any) {
       logger.error('Error creating dispute:', error);
-      toast.error(error?.message || 'Erreur lors de la création du litige');
+      
+      // ❌ ROLLBACK: Afficher l'erreur
+      toast.error(error?.message || 'Erreur lors de la création du litige', {
+        description: 'Veuillez réessayer.'
+      });
+      
+      // Force un refresh pour s'assurer de la cohérence
+      if (onDisputeCreated) {
+        onDisputeCreated();
+      }
     } finally {
       setIsLoading(false);
     }

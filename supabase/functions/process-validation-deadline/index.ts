@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { logger } from "../_shared/logger.ts";
+import { validateAndUpdateStripeAccount } from "../_shared/stripe-account-validator.ts";
 import { 
   compose, 
   withCors,
@@ -88,28 +89,21 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           continue;
         }
 
-        // LIVE verification on Stripe to ensure account is truly active
+        // LIVE verification on Stripe using shared validator
         let isSellerAccountActive = false;
         try {
-          const stripeAccount = await stripe.accounts.retrieve(sellerStripeAccount.stripe_account_id);
-          logStep("✅ Stripe account validated live", { 
+          const { isActive } = await validateAndUpdateStripeAccount(
+            stripe,
+            adminClient,
+            transaction.user_id,
+            sellerStripeAccount.stripe_account_id
+          );
+          
+          isSellerAccountActive = isActive;
+          logStep("✅ Stripe account validated", { 
             accountId: sellerStripeAccount.stripe_account_id,
-            payoutsEnabled: stripeAccount.payouts_enabled,
-            chargesEnabled: stripeAccount.charges_enabled
+            isActive 
           });
-
-          isSellerAccountActive = !!(stripeAccount.payouts_enabled && stripeAccount.charges_enabled);
-
-          // Update database with live status
-          await adminClient
-            .from('stripe_accounts')
-            .update({
-              account_status: isSellerAccountActive ? 'active' : 'pending',
-              payouts_enabled: stripeAccount.payouts_enabled || false,
-              charges_enabled: stripeAccount.charges_enabled || false,
-              last_status_check: new Date().toISOString(),
-            })
-            .eq('user_id', transaction.user_id);
 
         } catch (stripeError: any) {
           const code = stripeError?.code || stripeError?.raw?.code;
@@ -124,27 +118,16 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
             message
           });
 
-          // Only mark inactive if account truly doesn't exist
-          if (isMissing) {
-            await adminClient
-              .from('stripe_accounts')
-              .update({
-                account_status: 'inactive',
-                payouts_enabled: false,
-                charges_enabled: false,
-                last_status_check: new Date().toISOString(),
-              })
-              .eq('user_id', transaction.user_id);
-            
-            isSellerAccountActive = false;
-          } else {
-            // Transient error: assume account is still valid, skip this transaction
-            logStep(`⏭️ SKIPPED - Transient Stripe API error, assuming account valid`, { 
+          // If transient error, skip transaction
+          if (!isMissing) {
+            logStep(`⏭️ SKIPPED - Transient Stripe API error`, { 
               transactionId: transaction.id 
             });
             skippedCount++;
             continue;
           }
+          
+          isSellerAccountActive = false;
         }
 
         // Skip if seller account is not active
