@@ -31,13 +31,14 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   let sellerLogoBase64: string | null = null;
   let logoWidth = 0;
   let logoHeight = 0;
+  let logoFormatForPdf: 'JPEG' | 'PNG' = 'PNG';
   
-  logger.info('Annual Report - Seller profile logo_url:', sellerProfile?.logo_url);
+  logger.info('Annual Report - Seller profile company_logo_url:', sellerProfile?.company_logo_url);
   
-  if (sellerProfile?.logo_url) {
+  if (sellerProfile?.company_logo_url) {
     try {
-      logger.info('Annual Report - Fetching logo from:', sellerProfile.logo_url);
-      const response = await fetch(sellerProfile.logo_url);
+      logger.info('Annual Report - Fetching logo from:', sellerProfile.company_logo_url);
+      const response = await fetch(sellerProfile.company_logo_url);
       const blob = await response.blob();
       logger.info('Annual Report - Logo blob size:', blob.size);
       
@@ -77,12 +78,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
       let logoFormat: 'JPEG' | 'PNG' = 'PNG';
       const quality = 0.95;
       
-      if (sellerProfile.logo_url.toLowerCase().endsWith('.jpg') || 
-          sellerProfile.logo_url.toLowerCase().endsWith('.jpeg')) {
+      if (sellerProfile.company_logo_url.toLowerCase().endsWith('.jpg') || 
+          sellerProfile.company_logo_url.toLowerCase().endsWith('.jpeg')) {
         logoFormat = 'JPEG';
-      } else if (sellerProfile.logo_url.toLowerCase().endsWith('.webp')) {
+      } else if (sellerProfile.company_logo_url.toLowerCase().endsWith('.webp')) {
         logoFormat = 'JPEG';
       }
+      logoFormatForPdf = logoFormat;
       
       const mimeOutput = logoFormat === 'JPEG' ? 'image/jpeg' : 'image/png';
       sellerLogoBase64 = canvas.toDataURL(mimeOutput, quality);
@@ -106,13 +108,13 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
       sellerLogoBase64 = null;
     }
   } else {
-    logger.warn('Annual Report - No logo_url found in seller profile');
+    logger.warn('Annual Report - No company_logo_url found in seller profile');
   }
   
   // Afficher le logo en haut à droite
   if (sellerLogoBase64) {
     const logoX = pageWidth - margin - logoWidth;
-    doc.addImage(sellerLogoBase64, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
+    doc.addImage(sellerLogoBase64, logoFormatForPdf, logoX, yPosition - 5, logoWidth, logoHeight);
   }
   
   // === PAGE DE GARDE ===
