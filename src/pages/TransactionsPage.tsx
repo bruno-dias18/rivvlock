@@ -28,7 +28,7 @@ import { PaginationControls } from '@/components/transactions/PaginationControls
 import { useStripeAccount } from '@/hooks/useStripeAccount';
 import { useProfile } from '@/hooks/useProfile';
 import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
-import { generateInvoicePDF } from '@/lib/lazyPdfGenerator';
+import { generateInvoicePDF } from '@/lib/pdfGenerator';
 import { useUnreadTransactionTabCounts } from '@/hooks/useUnreadTransactionTabCounts';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useIsMobile } from '@/lib/mobileUtils';

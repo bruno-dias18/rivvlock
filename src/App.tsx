@@ -28,13 +28,11 @@ const AdminProblematicTransactionsPage = lazy(() => import("./pages/AdminProblem
 const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
-const AdminTestSentryPage = lazy(() => import("./pages/AdminTestSentryPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
 const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
-const InstallPage = lazy(() => import("./pages/InstallPage"));
 
 // Eager-loaded critical components (avoid loading screens)
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -44,7 +42,6 @@ import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
 import { PageSkeleton } from "./components/PageSkeleton";
-import { PrefetchOnAuthSuccess } from "./components/PrefetchOnAuthSuccess";
 
 const App: React.FC = () => {
   return React.createElement(
@@ -57,7 +54,6 @@ const App: React.FC = () => {
         AuthProvider,
         null,
         React.createElement(RealtimeActivitySync),
-        React.createElement(PrefetchOnAuthSuccess),
         React.createElement(Toaster, { position: "top-right" }),
           React.createElement(
             Suspense,
@@ -79,7 +75,6 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/privacy", element: React.createElement(PrivacyPolicyPage) }),
                React.createElement(Route, { path: "/contact", element: React.createElement(ContactPage) }),
                React.createElement(Route, { path: "/faq", element: React.createElement(FAQPage) }),
-               React.createElement(Route, { path: "/install", element: React.createElement(InstallPage) }),
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),
@@ -137,10 +132,6 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/admin/settings", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminSettingsPage)))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/admin/test-sentry", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminTestSentryPage)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 

@@ -2,8 +2,8 @@
 const isDev = self.location && (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1');
 // No-op logger to avoid any console usage being flagged by scanners
 const devLog = (..._args) => {};
-const CACHE_NAME = 'rivvlock-v10';
-const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8', 'rivvlock-v9'];
+const CACHE_NAME = 'rivvlock-v9';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8'];
 const WORKING_DOMAIN = 'https://rivvlock.lovable.app';
 const OLD_DOMAINS = [
   'https://rivv-secure-escrow.lovable.app',
@@ -21,11 +21,9 @@ const urlsToCache = [
 ];
 
 // Runtime cache configuration
-const RUNTIME_CACHE = 'rivvlock-runtime-v10';
-const API_CACHE = 'rivvlock-api-v10';
-const ASSET_CACHE = 'rivvlock-assets-v10';
-const OFFLINE_PAGE_CACHE = 'rivvlock-offline-v10';
-const CURRENT_CACHES = [CACHE_NAME, OFFLINE_PAGE_CACHE, RUNTIME_CACHE, API_CACHE, ASSET_CACHE];
+const RUNTIME_CACHE = 'rivvlock-runtime-v9';
+const API_CACHE = 'rivvlock-api-v9';
+const ASSET_CACHE = 'rivvlock-assets-v9';
 
 // Cache duration in milliseconds
 const CACHE_DURATION = {
@@ -33,44 +31,31 @@ const CACHE_DURATION = {
   assets: 7 * 24 * 60 * 60 * 1000, // 7 days for static assets
 };
 
-// Offline fallback page
-const OFFLINE_URL = '/offline.html';
-
 // Installation du service worker
 self.addEventListener('install', (event) => {
   devLog('🔧 [SW] Installing service worker v9...');
   event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_NAME)
-        .then((cache) => {
-          devLog('🔧 [SW] Caching core assets...');
-          return cache.addAll(urlsToCache);
-        }),
-      caches.open(OFFLINE_PAGE_CACHE)
-        .then((cache) => {
-          devLog('🔧 [SW] Caching offline page...');
-          return cache.add(new Request(OFFLINE_URL, {cache: 'reload'}));
-        })
-        .catch(() => {
-          devLog('⚠️ [SW] Offline page not available yet');
-        })
-    ])
-    .then(() => {
-      devLog('🔧 [SW] Installation complete, taking control...');
-      return self.skipWaiting();
-    })
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        devLog('🔧 [SW] Caching core assets...');
+        return cache.addAll(urlsToCache);
+      })
+      .then(() => {
+        devLog('🔧 [SW] Installation complete, taking control...');
+        return self.skipWaiting();
+      })
   );
 });
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  devLog('🔧 [SW] Activating service worker v10...');
+  devLog('🔧 [SW] Activating service worker v9...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!CURRENT_CACHES.includes(cacheName) || OLD_CACHE_NAMES.includes(cacheName)) {
+            if (cacheName !== CACHE_NAME || OLD_CACHE_NAMES.includes(cacheName)) {
               devLog(`🧹 [SW] Deleting old cache: ${cacheName}`);
               return caches.delete(cacheName);
             }
@@ -79,7 +64,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      devLog('🔧 [SW] Service worker v10 activated and controlling all clients');
+      devLog('🔧 [SW] Service worker v9 activated and controlling all clients');
     })
   );
 });
@@ -110,9 +95,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           devLog('🔄 [SW] Network failed, trying cache fallback for navigation:', req.url);
-          return caches.match('/index.html')
-            .then((cached) => cached || caches.match(OFFLINE_URL))
-            .then((response) => response || new Response('Offline', { status: 503 }));
+          return caches.match('/index.html').then((cached) => cached || fetch('/index.html'));
         })
     );
     return;
@@ -190,74 +173,6 @@ self.addEventListener('fetch', (event) => {
             return caches.match('/index.html');
           }
         });
-      })
-  );
-});
-
-// Messages from clients (manual updates/purge)
-self.addEventListener('message', (event) => {
-  const data = event.data || {};
-  if (data && data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-    return;
-  }
-  if (data && data.type === 'PURGE_CACHES') {
-    event.waitUntil(
-      caches.keys()
-        .then((names) => Promise.all(names.map((n) => caches.delete(n))))
-        .then(() => self.skipWaiting())
-        .then(() => self.clients.claim())
-    );
-  }
-});
-
-// ============= Push Notifications =============
-self.addEventListener('push', (event) => {
-  if (!event.data) {
-    devLog('⚠️ [SW] Push event without data');
-    return;
-  }
-
-  try {
-    const data = event.data.json();
-    const title = data.title || 'RIVVLOCK';
-    const options = {
-      body: data.body || '',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      data: data.data || {},
-      tag: data.tag || 'default',
-      requireInteraction: data.requireInteraction || false,
-      actions: data.actions || [],
-    };
-
-    event.waitUntil(
-      self.registration.showNotification(title, options)
-    );
-  } catch (error) {
-    devLog('❌ [SW] Error handling push event:', error);
-  }
-});
-
-// Gestion des clics sur les notifications
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  const urlToOpen = event.notification.data?.url || '/dashboard';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // Si une fenêtre est déjà ouverte, la focus
-        for (const client of clientList) {
-          if (client.url.includes(urlToOpen) && 'focus' in client) {
-            return client.focus();
-          }
-        }
-        // Sinon, ouvrir une nouvelle fenêtre
-        if (clients.openWindow) {
-          return clients.openWindow(urlToOpen);
-        }
       })
   );
 });

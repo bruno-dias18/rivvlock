@@ -28,60 +28,8 @@
       "purpose": "any maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Nouvelle Transaction",
-      "short_name": "Transaction",
-      "description": "Créer une nouvelle transaction",
-      "url": "/transactions?action=new",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Mes Transactions",
-      "short_name": "Transactions",
-      "description": "Voir toutes mes transactions",
-      "url": "/transactions",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Accéder au tableau de bord",
-      "url": "/dashboard",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
-    }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "GET",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  },
-  "screenshots": [
-    {
-      "src": "/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/icon-512.png",
-      "type": "image/png",
-      "sizes": "512x512",
-      "form_factor": "wide"
-    }
-  ],
   "lang": "fr",
   "dir": "ltr",
-  "prefer_related_applications": false,
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
-  "protocol_handlers": [
-    {
-      "protocol": "web+rivvlock",
-      "url": "/transaction?id=%s"
-    }
-  ]
+  "scope": "/",
+  "prefer_related_applications": false
 }

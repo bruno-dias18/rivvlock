@@ -77,7 +77,7 @@ export function useUnreadGlobalBase(
     staleTime: options?.staleTime ?? 5_000, // 5s par défaut pour réactivité
     gcTime: 5 * 60_000,
     refetchOnMount: true,
-    refetchInterval: options?.refetchInterval ?? 20_000, // 20s par défaut (realtime prioritaire)
+    refetchInterval: options?.refetchInterval ?? 10_000, // 10s par défaut
   });
 
   return { unreadCount, refetch, isLoading };

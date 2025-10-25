@@ -12,114 +12,32 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Fix ESM default export issue from transitive imports of 'lodash/get'
-      "lodash/get": path.resolve(__dirname, "./src/shims/lodash-get.ts"),
-      "lodash/get.js": path.resolve(__dirname, "./src/shims/lodash-get.ts"),
     },
   },
   define: {
     'process.env': {}
   },
   build: {
+    // Optimize build output
     target: 'esnext',
     minify: 'esbuild',
-    sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Core React
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
-            return 'react-vendor';
-          }
-          if (id.includes('node_modules/react-router')) {
-            return 'react-router';
-          }
-
-          // UI Framework - Split Radix UI separately
-          if (id.includes('@radix-ui')) {
-            return 'radix-ui';
-          }
-
-          // Core services - Keep separate for better caching
-          if (id.includes('@supabase/supabase-js')) {
-            return 'supabase';
-          }
-          if (id.includes('@tanstack/react-query') || id.includes('@tanstack/react-virtual')) {
-            return 'tanstack';
-          }
-          if (id.includes('@stripe/stripe-js') || id.includes('@stripe/react-stripe-js')) {
-            return 'stripe';
-          }
-
-          // i18n
-          if (id.includes('i18next') || id.includes('react-i18next')) {
-            return 'i18n';
-          }
-
-          // Forms
-          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform/resolvers')) {
-            return 'forms';
-          }
-
-          // Utilities
-          if (id.includes('date-fns')) {
-            return 'date-fns';
-          }
-          if (id.includes('framer-motion')) {
-            return 'framer';
-          }
-          if (id.includes('lucide-react')) {
-            return 'icons';
-          }
-
-          // Dashboard Layout (shared across all pages)
-          if (id.includes('/components/layouts/DashboardLayoutWithSidebar') ||
-              id.includes('/components/AppSidebar') ||
-              id.includes('/components/UserMenu') ||
-              id.includes('/components/BottomTabBar')) {
-            return 'layout';
-          }
-
-          // Heavy lazy-loaded libraries (will be loaded only when needed via dynamic imports)
-          if (id.includes('node_modules/jspdf')) {
-            return 'jspdf';
-          }
-          if (id.includes('node_modules/jszip')) {
-            return 'jszip';
-          }
-          if (id.includes('node_modules/html2canvas')) {
-            return 'html2canvas';
-          }
-          if (id.includes('node_modules/recharts')) {
-            return 'recharts';
-          }
-
-          // NO CATCH-ALL VENDOR CHUNK - Let Vite optimize the rest automatically
-          // This prevents creating a huge vendor.js bundle
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-select'],
+          'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
+          'supabase': ['@supabase/supabase-js'],
         },
       },
     },
     cssCodeSplit: true,
     cssMinify: true,
-    assetsInlineLimit: 4096,
-    chunkSizeWarningLimit: 500,
-    reportCompressedSize: false,
+    assetsInlineLimit: 4096, // Inline assets < 4KB
+    chunkSizeWarningLimit: 1000,
   },
   optimizeDeps: {
-    include: [
-      'react', 
-      'react-dom', 
-      'react-router-dom',
-      '@tanstack/react-query',
-      '@supabase/supabase-js',
-    ],
-    exclude: [
-      // Heavy libraries that should be lazy loaded
-      'jspdf',
-      'jszip',
-      'recharts',
-      'papaparse',
-      'html2canvas',
-    ],
+    include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: [],
   },
 }));

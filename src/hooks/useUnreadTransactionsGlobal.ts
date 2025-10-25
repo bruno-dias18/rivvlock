@@ -38,7 +38,7 @@ export const useUnreadTransactionsGlobal = () => {
     ['unread-transactions-global', user?.id],
     {
       staleTime: 5_000,
-      refetchInterval: 20_000,
+      refetchInterval: 10_000,
     }
   );
 

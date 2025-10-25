@@ -118,11 +118,11 @@ jobs:
           BUILD_SIZE=$(du -sh dist | cut -f1)
           echo "Build size: $BUILD_SIZE"
           
-  # ============= E2E Tests =============
+  # ============= E2E Tests (Optional) =============
   test-e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request'
     
     steps:
       - name: Checkout code

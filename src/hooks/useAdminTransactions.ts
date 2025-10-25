@@ -30,6 +30,6 @@ export const useAdminTransactions = (limit = 10) => {
 
       return data as AdminTransaction[];
     },
-    refetchInterval: 90000, // 90s avec realtime prioritaire
+    refetchInterval: 60000, // Réduit à 60s
   });
 };

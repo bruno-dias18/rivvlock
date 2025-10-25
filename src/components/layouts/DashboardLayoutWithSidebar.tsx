@@ -3,13 +3,11 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/s
 import { AppSidebar } from '@/components/AppSidebar';
 import { UserMenu } from '@/components/UserMenu';
 import { BottomTabBar } from '@/components/BottomTabBar';
-import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useDisputeRealtimeNotifications } from '@/hooks/useDisputeRealtimeNotifications';
-import { usePushSubscriptionSync } from '@/hooks/usePushSubscriptionSync';
 import { useIsMobile } from '@/lib/mobileUtils';
 
 interface Props {
@@ -21,7 +19,6 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
   useDisputeRealtimeNotifications();
-  usePushSubscriptionSync(); // Auto-sync push subscriptions
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
@@ -99,9 +96,6 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
           {isMobile && <BottomTabBar />}
         </SidebarInset>
       </div>
-      
-      {/* Push Notification Prompt - non-invasif */}
-      <PushNotificationPrompt />
     </SidebarProvider>
   );
 }

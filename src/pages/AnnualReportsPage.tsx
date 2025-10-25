@@ -8,7 +8,7 @@ import { useAnnualTransactions } from '@/hooks/useAnnualTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, FileSpreadsheet, FileArchive, TrendingUp, DollarSign, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { generateAnnualReportPDF, downloadAllInvoicesAsZip } from '@/lib/lazyAnnualReportGenerator';
+import { generateAnnualReportPDF, downloadAllInvoicesAsZip } from '@/lib/annualReportGenerator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';

@@ -150,6 +150,6 @@ export const useAdminAnalytics = (period: AnalyticsPeriod = '30d', customStartDa
     },
     staleTime: 60000, // 1 minute - data stays fresh
     gcTime: 300000, // 5 minutes - keep in cache
-    refetchInterval: period === '7d' ? 60000 : 90000, // 60s pour 7d, 90s pour périodes longues
+    refetchInterval: period === '7d' ? 30000 : 60000, // More frequent refresh for shorter periods
   });
 };

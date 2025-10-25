@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText, Bug } from 'lucide-react';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -18,9 +18,8 @@ import { fr } from 'date-fns/locale';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
-import { LazyAdminAnalyticsCharts } from '@/components/lazy/LazyAdminAnalyticsCharts';
+import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
 import { AdminProblematicTransactions } from '@/components/AdminProblematicTransactions';
-import { getSentryStatus } from '@/lib/sentry';
 
 export default function AdminPage() {
   const { t } = useTranslation();
@@ -32,15 +31,13 @@ export default function AdminPage() {
   const { data: analytics, isLoading: analyticsLoading } = useAdminAnalytics(analyticsPeriod);
   const { data: disputeStats, isLoading: disputeStatsLoading } = useAdminDisputeStats();
   
-// Hook pour les notifications de litiges escaladés
-useAdminDisputeNotifications();
+  // Hook pour les notifications de litiges escaladés
+  useAdminDisputeNotifications();
 
-const sentry = getSentryStatus();
-
-const getCurrencySymbol = (currency: string) => {
-  const symbols: Record<string, string> = {
-    EUR: '€',
-    USD: '$',
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: Record<string, string> = {
+      EUR: '€',
+      USD: '$',
       CHF: 'CHF',
       GBP: '£'
     };
@@ -463,7 +460,7 @@ const getCurrencySymbol = (currency: string) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <LazyAdminAnalyticsCharts 
+              <AdminAnalyticsCharts 
                 analytics={analytics}
                 isLoading={analyticsLoading}
               />
@@ -482,34 +479,11 @@ const getCurrencySymbol = (currency: string) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Sentry status */}
-              <div className="rounded-md border p-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Statut Sentry</p>
-                  <p className="text-xs text-muted-foreground">Env: {sentry.mode} • DSN: {sentry.dsnConfigured ? 'configuré' : 'absent'}</p>
-                </div>
-                <Badge variant={sentry.initialized ? 'default' : 'destructive'}>
-                  {sentry.initialized ? 'Actif' : 'Inactif'}
-                </Badge>
-              </div>
-
               <div>
                 <p className="text-sm text-muted-foreground mb-3">
                   Validation des comptes Stripe Connect
                 </p>
                 <ValidateStripeAccountsButton />
-              </div>
-              
-              <div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Test de monitoring Sentry
-                </p>
-                <Button asChild variant="outline" className="w-full">
-                  <Link to="/dashboard/admin/test-sentry" className="flex items-center justify-center gap-2">
-                    <Bug className="h-4 w-4" />
-                    Test Sentry
-                  </Link>
-                </Button>
               </div>
             </CardContent>
           </Card>

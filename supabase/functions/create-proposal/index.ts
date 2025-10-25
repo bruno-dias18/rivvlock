@@ -160,27 +160,8 @@ const handler = async (_req: Request, ctx: any) => {
     if (notificationError) {
       logger.error("Error sending notification:", notificationError);
     }
-
-    // 🔔 Send push notification to counterparty
-    const counterpartyId = user.id === dispute.reporter_id
-      ? (transaction.user_id === user.id ? transaction.buyer_id : transaction.user_id)
-      : dispute.reporter_id;
-
-    if (counterpartyId) {
-      await adminClient.functions.invoke('send-push-notification', {
-        body: {
-          userId: counterpartyId,
-          title: '💡 Nouvelle proposition',
-          body: proposalText,
-          url: `/transactions?dispute=${disputeId}`,
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          tag: `proposal-${proposal.id}`,
-        },
-      });
-    }
   } catch (notificationError) {
-    logger.error("Error invoking notifications:", notificationError);
+    logger.error("Error invoking send-notifications:", notificationError);
   }
 
   return successResponse({ proposal });

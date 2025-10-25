@@ -1,3 +1,4 @@
+import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
@@ -40,9 +41,6 @@ export const generateInvoicePDF = async (
   returnBlob = false,
   existingInvoiceNumber?: string
 ): Promise<Blob | void> => {
-  // Dynamic import of jsPDF - lazy loading
-  const { default: jsPDF } = await import('jspdf');
-  
   const { language = 'fr', t } = invoiceData;
   
   // Generate unique invoice number

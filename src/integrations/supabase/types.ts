@@ -603,36 +603,6 @@ export type Database = {
         }
         Relationships: []
       }
-      push_subscriptions: {
-        Row: {
-          created_at: string
-          id: string
-          last_used_at: string | null
-          subscription: Json
-          updated_at: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          last_used_at?: string | null
-          subscription: Json
-          updated_at?: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          last_used_at?: string | null
-          subscription?: Json
-          updated_at?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       quotes: {
         Row: {
           archived_by_client: boolean | null
@@ -1186,7 +1156,6 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_logs: { Args: never; Returns: undefined }
-      cleanup_old_push_subscriptions: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_webhook_events: { Args: never; Returns: undefined }
       create_escalated_dispute_conversations: {

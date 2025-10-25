@@ -18,14 +18,12 @@ import * as Sentry from '@sentry/react';
  * Only runs in production to avoid noise during development
  */
 export const initSentry = () => {
-  // DSN resolution with runtime/URL/localStorage fallbacks (works in preview and production)
-  const urlDsn = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('sentryDsn') : null;
-  const runtimeDsn = typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : null;
-  const debugDsn = typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || runtimeDsn) : null;
-  const SENTRY_DSN = (import.meta.env.VITE_SENTRY_DSN || urlDsn || debugDsn) as string | undefined;
+  const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+  const IS_PRODUCTION = import.meta.env.MODE === 'production';
 
-  if (!SENTRY_DSN) {
-    try { (window as any).__SENTRY_INITIALIZED__ = false; } catch {}
+  // Only initialize in production and if DSN is provided
+  if (!IS_PRODUCTION || !SENTRY_DSN) {
+    console.log('[Sentry] Skipped initialization (development mode or missing DSN)');
     return;
   }
 
@@ -73,10 +71,9 @@ export const initSentry = () => {
       ],
     });
 
-    try { (window as any).__SENTRY_INITIALIZED__ = true; (window as any).__SENTRY_DSN__ = SENTRY_DSN; } catch {}
+    console.log('[Sentry] Initialized successfully');
   } catch (error) {
     console.error('[Sentry] Initialization failed:', error);
-    try { (window as any).__SENTRY_INITIALIZED__ = false; } catch {}
   }
 };
 
@@ -95,7 +92,7 @@ export const captureException = (
   error: Error,
   context?: Record<string, any>
 ) => {
-  if (import.meta.env.PROD) {
+  if (import.meta.env.MODE === 'production') {
     Sentry.captureException(error, context);
   } else {
     console.error('[Sentry] Would capture:', error, context);
@@ -110,7 +107,7 @@ export const captureException = (
  * setUser({ id: user.id, email: user.email });
  */
 export const setUser = (user: { id: string; email?: string } | null) => {
-  if (import.meta.env.PROD) {
+  if (import.meta.env.MODE === 'production') {
     Sentry.setUser(user);
   }
 };
@@ -127,19 +124,7 @@ export const setUser = (user: { id: string; email?: string } | null) => {
  * });
  */
 export const addBreadcrumb = (breadcrumb: Record<string, any>) => {
-  if (import.meta.env.PROD) {
+  if (import.meta.env.MODE === 'production') {
     Sentry.addBreadcrumb(breadcrumb);
   }
-};
-
-export const getSentryStatus = () => {
-  const runtimeDsn = (typeof window !== 'undefined' ? (window as any).__SENTRY_DSN__ : undefined) as string | undefined;
-  const previewDsn = !import.meta.env.PROD && typeof window !== 'undefined' ? (localStorage.getItem('VITE_SENTRY_DSN_DEBUG') || undefined) : undefined;
-  const envDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
-  const resolvedDsn = envDsn || previewDsn || runtimeDsn;
-  return {
-    initialized: typeof window !== 'undefined' ? Boolean((window as any).__SENTRY_INITIALIZED__) : false,
-    dsnConfigured: Boolean(resolvedDsn),
-    mode: import.meta.env.MODE,
-  } as const;
 };

@@ -53,8 +53,7 @@ export { useActivityHistory } from './useActivityHistory';
 export { useRecentActivity } from './useRecentActivity';
 export { useNewItemsNotifications } from './useNewItemsNotifications';
 export { useRealtimeActivityRefresh } from './useRealtimeActivityRefresh';
-export { usePushNotifications } from './usePushNotifications';
-export { usePushSubscriptionSync } from './usePushSubscriptionSync';
+export { useAutoSync } from './useAutoSync';
 
 // PWA & Install
 export { useInstallPrompt } from './useInstallPrompt';

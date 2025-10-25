@@ -95,7 +95,7 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
     staleTime: 5_000, // 5s pour réactivité immédiate des badges
     gcTime: 5 * 60_000,
     refetchOnWindowFocus: false,
-    refetchInterval: 20_000, // Refetch toutes les 20s en backup (realtime prioritaire)
+    refetchInterval: 10_000, // Refetch toutes les 10s en backup
   });
 
   return {

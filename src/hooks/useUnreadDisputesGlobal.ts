@@ -35,7 +35,7 @@ export const useUnreadDisputesGlobal = () => {
     ['unread-disputes-global', user?.id],
     {
       staleTime: 5_000,
-      refetchInterval: 20_000,
+      refetchInterval: 10_000,
     }
   );
 
