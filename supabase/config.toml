@@ -307,6 +307,9 @@ verify_jwt = true
 [functions.validate-stripe-accounts]
 verify_jwt = true
 
+[functions.health]
+verify_jwt = false
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083
