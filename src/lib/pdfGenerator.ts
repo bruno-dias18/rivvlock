@@ -99,17 +99,57 @@ export const generateInvoicePDF = async (
   const lightGray = [245, 245, 245];
   const darkGray = [64, 64, 64];
 
-  // Charger le logo du vendeur si disponible
+  // Charger et optimiser le logo du vendeur si disponible
   let sellerLogoBase64: string | null = null;
+  let logoWidth = 0;
+  let logoHeight = 0;
+  
   if (invoiceData.sellerProfile?.company_logo_url) {
     try {
       const response = await fetch(invoiceData.sellerProfile.company_logo_url);
       const blob = await response.blob();
-      sellerLogoBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
+      
+      // Optimiser l'image pour réduire la taille du PDF
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = URL.createObjectURL(blob);
       });
+      
+      // Redimensionner l'image à max 300px de largeur (optimisation)
+      const maxWidth = 300;
+      let targetWidth = img.width;
+      let targetHeight = img.height;
+      
+      if (targetWidth > maxWidth) {
+        targetHeight = (targetHeight * maxWidth) / targetWidth;
+        targetWidth = maxWidth;
+      }
+      
+      // Canvas pour redimensionner et compresser
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        sellerLogoBase64 = canvas.toDataURL('image/jpeg', 0.85); // Compression JPEG 85%
+        
+        // Calculer les dimensions pour le PDF (max 40mm de largeur)
+        const maxPdfWidth = 40;
+        const aspectRatio = targetHeight / targetWidth;
+        logoWidth = maxPdfWidth;
+        logoHeight = maxPdfWidth * aspectRatio;
+        
+        // Limiter la hauteur à 20mm max
+        if (logoHeight > 20) {
+          logoHeight = 20;
+          logoWidth = 20 / aspectRatio;
+        }
+      }
+      
+      URL.revokeObjectURL(img.src);
     } catch (error) {
       logger.error('Failed to load seller logo:', error);
       sellerLogoBase64 = null;
@@ -128,19 +168,19 @@ export const generateInvoicePDF = async (
   const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
   
   // LOGO DU VENDEUR (si disponible) ou RIVVLOCK texte + FACTURE à droite
-  if (sellerLogoBase64) {
-    // Afficher le logo du vendeur (dimensions max 40x15mm)
+  if (sellerLogoBase64 && logoWidth > 0) {
+    // Afficher le logo du vendeur (ratio respecté)
     try {
-      const logoWidth = 40;
-      const logoHeight = 15;
       doc.addImage(sellerLogoBase64, 'JPEG', margin, yPosition - 5, logoWidth, logoHeight);
+      // Ajuster yPosition pour tenir compte de la hauteur du logo
+      yPosition += Math.max(logoHeight - 5, 0);
     } catch (error) {
       // Si erreur d'affichage, fallback sur texte
       logger.error('Error displaying logo:', error);
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(0, 0, 0);
-      doc.text(invoiceData.sellerName, margin, yPosition);
+      doc.text('RIVVLOCK', margin, yPosition);
     }
   } else {
     // Texte RIVVLOCK par défaut
@@ -158,11 +198,13 @@ export const generateInvoicePDF = async (
   
   yPosition += 8;
   
-  // Sous-informations RIVVLOCK (à gauche)
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(t?.('invoice.secureEscrowPlatform') || 'Plateforme d\'escrow sécurisée', margin, yPosition);
-  doc.text('www.rivvlock.com', margin, yPosition + 4);
+  // Sous-informations uniquement si pas de logo personnalisé
+  if (!sellerLogoBase64) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(t?.('invoice.secureEscrowPlatform') || 'Plateforme d\'escrow sécurisée', margin, yPosition);
+    doc.text('www.rivvlock.com', margin, yPosition + 4);
+  }
   
   // Informations facture (à droite) - sous le titre FACTURE, alignées à droite
   doc.text(`N° ${invoiceNumber}`, rightX, yPosition, { align: 'right' });
