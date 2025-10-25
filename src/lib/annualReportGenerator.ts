@@ -32,15 +32,25 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   let logoWidth = 0;
   let logoHeight = 0;
   
+  logger.info('Annual Report - Seller profile logo_url:', sellerProfile?.logo_url);
+  
   if (sellerProfile?.logo_url) {
     try {
+      logger.info('Annual Report - Fetching logo from:', sellerProfile.logo_url);
       const response = await fetch(sellerProfile.logo_url);
       const blob = await response.blob();
+      logger.info('Annual Report - Logo blob size:', blob.size);
       
       const img = new Image();
       const imgLoadPromise = new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = reject;
+        img.onload = () => {
+          logger.info('Annual Report - Logo loaded successfully:', img.width, 'x', img.height);
+          resolve();
+        };
+        img.onerror = (e) => {
+          logger.error('Annual Report - Logo load error:', e);
+          reject(e);
+        };
       });
       img.src = URL.createObjectURL(blob);
       await imgLoadPromise;
@@ -88,10 +98,15 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
         logoHeight = 22;
         logoWidth = 22 / aspectRatio;
       }
+      
+      logger.info('Annual Report - Logo dimensions for PDF:', logoWidth, 'x', logoHeight);
     } catch (error) {
-      logger.error('Error loading seller logo for annual report:', error);
+      logger.error('Annual Report - Error loading seller logo:', error);
+      console.error('Annual Report - Full error details:', error);
       sellerLogoBase64 = null;
     }
+  } else {
+    logger.warn('Annual Report - No logo_url found in seller profile');
   }
   
   // Afficher le logo en haut à droite
