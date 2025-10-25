@@ -170,14 +170,52 @@ export default function PaymentLinkPage() {
       }
   };
 
-  const handleReturnToDashboard = () => {
+  const handleReturnToDashboard = async () => {
     if (!user) {
       handleAuthRedirect();
       return;
     }
 
-    // Simple redirection vers le dashboard
-    navigate('/transactions');
+    // Si pas de transaction chargée, redirection simple
+    if (!transaction) {
+      navigate('/transactions');
+      return;
+    }
+
+    // Si la transaction est déjà attachée à l'utilisateur, redirection simple
+    if (transaction.buyer_id === user.id) {
+      navigate('/transactions');
+      return;
+    }
+
+    // Sinon, attacher la transaction à l'utilisateur avant de rediriger
+    try {
+      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+      
+      if (!finalToken) {
+        // Si pas de token, on ne peut pas assigner mais on redirige quand même
+        navigate('/transactions');
+        return;
+      }
+
+      const { error } = await supabase.rpc('assign_self_as_buyer', {
+        p_transaction_id: transaction.id,
+        p_token: finalToken
+      });
+
+      if (error) {
+        logger.error('Failed to assign buyer', error);
+        // Même en cas d'erreur, on redirige (l'utilisateur pourra réessayer)
+        toast.error('Impossible d\'ajouter la transaction à votre compte');
+      } else {
+        toast.success('Transaction ajoutée à votre espace');
+      }
+      
+      navigate('/transactions');
+    } catch (err: any) {
+      logger.error('Error assigning transaction', err);
+      navigate('/transactions');
+    }
   };
 
   const handlePayNow = async () => {
