@@ -298,6 +298,86 @@ export default function ProfilePage() {
           </Card>
         )}
 
+        {/* Company Logo Section - Only for company/independent users */}
+        {(profile?.user_type === 'company' || profile?.user_type === 'independent') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('profile.companyLogo')}</CardTitle>
+              <CardDescription>
+                {t('profile.companyLogoDescription')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profile?.company_logo_url && (
+                <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
+                  <img 
+                    src={profile.company_logo_url} 
+                    alt="Company Logo" 
+                    className="max-w-[200px] max-h-[200px] object-contain"
+                  />
+                </div>
+              )}
+              <div className="text-sm text-muted-foreground">
+                {t('profile.logoGuidelines')}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  {t('profile.uploadLogo')}
+                </Button>
+                {profile?.company_logo_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!confirm(t('profile.confirmDeleteLogo'))) return;
+                      try {
+                        const { deleteCompanyLogo } = await import('@/lib/logoUpload');
+                        await deleteCompanyLogo(user!.id);
+                        toast.success(t('profile.logoDeleted'));
+                        refetch();
+                      } catch (error) {
+                        logger.error('Logo delete error:', error);
+                        toast.error(t('profile.logoDeleteError'));
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('profile.deleteLogo')}
+                  </Button>
+                )}
+              </div>
+              <input
+                id="logo-upload"
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  
+                  try {
+                    const { uploadCompanyLogo } = await import('@/lib/logoUpload');
+                    await uploadCompanyLogo(file, user!.id);
+                    toast.success(t('profile.logoUploaded'));
+                    refetch();
+                  } catch (error: any) {
+                    logger.error('Logo upload error:', error);
+                    toast.error(error.message || t('profile.logoUploadError'));
+                  }
+                  
+                  // Reset input
+                  e.target.value = '';
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>{t('profile.accountSettings')}</CardTitle>
