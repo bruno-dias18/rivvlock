@@ -111,10 +111,11 @@ export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
     logger.warn('Annual Report - No company_logo_url found in seller profile');
   }
   
-  // Afficher le logo en haut à droite
+  // Afficher le logo en haut à gauche (comme sur les factures)
   if (sellerLogoBase64) {
-    const logoX = pageWidth - margin - logoWidth;
-    doc.addImage(sellerLogoBase64, logoFormatForPdf, logoX, yPosition - 5, logoWidth, logoHeight);
+    doc.addImage(sellerLogoBase64, logoFormatForPdf, margin, yPosition - 5, logoWidth, logoHeight);
+    // Ajuster yPosition pour tenir compte de la hauteur du logo
+    yPosition += Math.max(logoHeight - 5, 0);
   }
   
   // === PAGE DE GARDE ===
