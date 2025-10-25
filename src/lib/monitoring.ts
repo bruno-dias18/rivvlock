@@ -215,3 +215,54 @@ export function getWebVitalsSummary(): Record<string, WebVitalMetric> {
   
   return summary;
 }
+
+/**
+ * #3 Quick Win: Advanced business error tracking
+ * Track critical business events with context for proactive debugging
+ */
+interface BusinessError {
+  type: 'payment_failed' | 'dispute_escalation' | 'stripe_webhook_failed' | 'transaction_blocked' | 'refund_failed';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  metadata: Record<string, any>;
+  userId?: string;
+  transactionId?: string;
+}
+
+export function trackBusinessError(error: BusinessError): void {
+  const errorMessage = `Business Error: ${error.type}`;
+  
+  // Log with appropriate level
+  if (error.severity === 'critical' || error.severity === 'high') {
+    logger.error(errorMessage, error.metadata);
+  } else {
+    logger.warn(errorMessage, error.metadata);
+  }
+
+  // Send to Sentry if available (production only)
+  if (import.meta.env.PROD && typeof window !== 'undefined' && (window as any).Sentry) {
+    const Sentry = (window as any).Sentry;
+    Sentry.captureEvent({
+      message: errorMessage,
+      level: error.severity === 'critical' ? 'fatal' : error.severity === 'high' ? 'error' : error.severity === 'medium' ? 'warning' : 'info',
+      tags: {
+        error_type: error.type,
+        business_event: 'true',
+      },
+      extra: {
+        ...error.metadata,
+        userId: error.userId,
+        transactionId: error.transactionId,
+      },
+    });
+  }
+}
+
+/**
+ * Track successful business operations for analytics
+ */
+export function trackBusinessSuccess(event: {
+  type: 'payment_completed' | 'dispute_resolved' | 'transaction_validated' | 'funds_released';
+  metadata: Record<string, any>;
+}): void {
+  logger.info(`Business Success: ${event.type}`, event.metadata);
+}

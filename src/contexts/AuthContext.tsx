@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { setUser as setSentryUser } from '@/lib/sentry';
+import { queryClient } from '@/lib/queryClient';
 
 interface AuthContextType {
   user: User | null;
@@ -38,6 +39,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Update Sentry user context for error tracking
           if (session?.user) {
             setSentryUser({ id: session.user.id, email: session.user.email });
+            
+            // #2 Quick Win: Prefetch critical data on login
+            // Preload profile and transactions for instant navigation
+            logger.info('Prefetching critical data for user:', session.user.id);
+            
+            queryClient.prefetchQuery({
+              queryKey: ['profile', session.user.id],
+              queryFn: async () => {
+                const { data } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('user_id', session.user.id)
+                  .single();
+                return data;
+              },
+            });
+            
+            queryClient.prefetchQuery({
+              queryKey: ['transactions', session.user.id],
+              queryFn: async () => {
+                const { data } = await supabase
+                  .from('transactions')
+                  .select('*')
+                  .or(`user_id.eq.${session.user.id},buyer_id.eq.${session.user.id}`)
+                  .order('updated_at', { ascending: false })
+                  .limit(20);
+                return data;
+              },
+            });
           } else {
             setSentryUser(null);
           }
