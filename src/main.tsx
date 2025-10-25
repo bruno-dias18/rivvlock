@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+
 import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
@@ -96,4 +96,14 @@ if (import.meta.env.PROD) {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const rootEl = document.getElementById("root")!;
+
+import('./App.tsx')
+  .then(({ default: App }) => {
+    createRoot(rootEl).render(<App />);
+  })
+  .catch((err) => {
+    logger.error('Failed to bootstrap app:', err);
+    captureException(err, { tags: { source: 'bootstrap' } });
+    attemptCacheRecovery('import-app-failed');
+  });
