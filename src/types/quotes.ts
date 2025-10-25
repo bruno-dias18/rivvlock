@@ -52,7 +52,7 @@ export interface QuoteMessage {
   sender_name: string;
   message: string;
   message_type: 'text' | 'proposal_update';
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 

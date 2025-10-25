@@ -4,16 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateInvoicePDF, InvoiceData } from './pdfGenerator';
 import { logger } from '@/lib/logger';
 
+import { Transaction, Invoice, Profile } from '@/types';
+
 export interface AnnualReportData {
   year: number;
-  transactions: any[];
-  invoices: any[];
+  transactions: Partial<Transaction>[];
+  invoices: Partial<Invoice>[];
   currencyTotals: Record<string, number>;
   currency: string;
-  sellerProfile: any;
+  sellerProfile: Partial<Profile>;
   sellerEmail: string;
   language?: string;
-  t?: any;
+  t?: ((key: string, options?: Record<string, unknown>) => string) | ((key: string, defaultValue?: string) => string);
 }
 
 export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
@@ -473,7 +475,7 @@ export const downloadAllInvoicesAsZip = async (
   year: number,
   sellerId: string,
   language: string,
-  t: any,
+  t: ((key: string, options?: Record<string, unknown>) => string) | ((key: string, defaultValue?: string) => string),
   onProgress?: (current: number, total: number) => void
 ) => {
   try {

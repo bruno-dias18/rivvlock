@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { Profile } from '@/types';
 
 import { formatAvsDisplay } from '@/lib/utils';
 
@@ -14,12 +15,12 @@ export interface InvoiceData {
   buyerName: string;  
   serviceDate?: string;
   validatedDate: string;
-  sellerProfile?: any;
-  buyerProfile?: any;
+  sellerProfile?: Partial<Profile>;
+  buyerProfile?: Partial<Profile>;
   sellerEmail?: string;
   buyerEmail?: string;
   language?: string;
-  t?: any;
+  t?: ((key: string, options?: Record<string, unknown>) => string) | ((key: string, defaultValue?: string) => string);
   viewerRole?: 'seller' | 'buyer';
   refundStatus?: 'none' | 'partial' | 'full';
   refundPercentage?: number;

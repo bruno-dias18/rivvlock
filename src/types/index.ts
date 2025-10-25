@@ -19,9 +19,9 @@ export const isTransactionPending = (status: TransactionStatus): boolean => {
 };
 export type DisputeStatus = 'open' | 'negotiating' | 'responded' | 'escalated' | 'resolved' | 'resolved_refund' | 'resolved_release';
 export type RefundStatus = 'none' | 'partial' | 'full';
-export type UserType = 'individual' | 'company';
+export type UserType = 'individual' | 'company' | 'independent';
 export type CountryCode = 'FR' | 'CH' | 'DE' | 'BE' | 'LU';
-export type Currency = 'eur' | 'chf';
+export type Currency = 'eur' | 'chf' | 'EUR' | 'CHF';
 export type UserRole = 'seller' | 'buyer';
 export type DisputeType = 'quality_issue' | 'not_as_described' | 'damaged_item' | 'not_received' | 'other';
 export type ProposalType = 'full_refund' | 'partial_refund' | 'no_refund';
@@ -37,6 +37,7 @@ export interface Profile {
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;
+  company_logo_url: string | null;
   user_type: UserType;
   country: CountryCode;
   address: string | null;
@@ -218,18 +219,27 @@ export interface ActivityLog {
   activity_type: string;
   title: string;
   description: string | null;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 }
 
 // ============= Component Props Types =============
 
 /**
+ * Auth user type from Supabase
+ */
+export interface AuthUser {
+  id: string;
+  email?: string;
+  [key: string]: unknown;
+}
+
+/**
  * Common props for transaction-related components
  */
 export interface TransactionComponentProps {
   transaction: Transaction;
-  user: any; // Auth user type
+  user: AuthUser;
   onRefetch?: () => void;
 }
 

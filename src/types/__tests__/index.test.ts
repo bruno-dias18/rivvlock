@@ -69,11 +69,11 @@ describe('Type definitions', () => {
     });
 
     it('should have correct Currency values', () => {
-      expectTypeOf<Currency>().toEqualTypeOf<'eur' | 'chf'>();
+      expectTypeOf<Currency>().toEqualTypeOf<'eur' | 'chf' | 'EUR' | 'CHF'>();
     });
 
     it('should have correct UserType values', () => {
-      expectTypeOf<UserType>().toEqualTypeOf<'individual' | 'company'>();
+      expectTypeOf<UserType>().toEqualTypeOf<'individual' | 'company' | 'independent'>();
     });
   });
 });

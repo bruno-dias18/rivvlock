@@ -79,7 +79,7 @@ describe('pdfGenerator', () => {
     const dataWithProfile = {
       ...mockInvoiceData,
       sellerProfile: {
-        user_type: 'company',
+        user_type: 'company' as const,
         company_name: 'Test Company',
         siret_uid: '12345678901234',
         vat_number: 'FR12345678901',
@@ -87,7 +87,7 @@ describe('pdfGenerator', () => {
         address: '123 Test Street',
         postal_code: '75001',
         city: 'Paris',
-        country: 'FR',
+        country: 'FR' as const,
       },
     };
 
@@ -100,11 +100,11 @@ describe('pdfGenerator', () => {
     const dataWithBuyer = {
       ...mockInvoiceData,
       buyerProfile: {
-        user_type: 'individual',
+        user_type: 'individual' as const,
         address: '456 Test Avenue',
         postal_code: '69001',
         city: 'Lyon',
-        country: 'FR',
+        country: 'FR' as const,
       },
     };
 

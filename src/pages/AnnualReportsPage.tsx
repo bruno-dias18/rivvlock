@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import type { Transaction, Invoice, Profile } from '@/types';
 
 export default function AnnualReportsPage() {
   const { t, i18n } = useTranslation();
@@ -43,11 +44,11 @@ export default function AnnualReportsPage() {
       
       await generateAnnualReportPDF({
         year: parseInt(selectedYear),
-        transactions: annualData.transactions,
-        invoices: invoices || [],
+        transactions: annualData.transactions as Partial<Transaction>[],
+        invoices: (invoices || []) as Partial<Invoice>[],
         currencyTotals: annualData.currencyTotals,
         currency: annualData.currency,
-        sellerProfile: profile,
+        sellerProfile: profile as Partial<Profile>,
         sellerEmail: user.email || '',
         language: t('common.language') || 'fr',
         t
