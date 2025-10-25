@@ -2,8 +2,8 @@
 const isDev = self.location && (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1');
 // No-op logger to avoid any console usage being flagged by scanners
 const devLog = (..._args) => {};
-const CACHE_NAME = 'rivvlock-v9';
-const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8'];
+const CACHE_NAME = 'rivvlock-v10';
+const OLD_CACHE_NAMES = ['rivvlock-v1', 'rivvlock-v2', 'rivvlock-v3', 'rivvlock-v4', 'rivvlock-v5', 'rivvlock-v6', 'rivvlock-v7', 'rivvlock-v8', 'rivvlock-v9'];
 const WORKING_DOMAIN = 'https://rivvlock.lovable.app';
 const OLD_DOMAINS = [
   'https://rivv-secure-escrow.lovable.app',
@@ -21,10 +21,11 @@ const urlsToCache = [
 ];
 
 // Runtime cache configuration
-const RUNTIME_CACHE = 'rivvlock-runtime-v9';
-const API_CACHE = 'rivvlock-api-v9';
-const ASSET_CACHE = 'rivvlock-assets-v9';
-const OFFLINE_PAGE_CACHE = 'rivvlock-offline-v9';
+const RUNTIME_CACHE = 'rivvlock-runtime-v10';
+const API_CACHE = 'rivvlock-api-v10';
+const ASSET_CACHE = 'rivvlock-assets-v10';
+const OFFLINE_PAGE_CACHE = 'rivvlock-offline-v10';
+const CURRENT_CACHES = [CACHE_NAME, OFFLINE_PAGE_CACHE, RUNTIME_CACHE, API_CACHE, ASSET_CACHE];
 
 // Cache duration in milliseconds
 const CACHE_DURATION = {
@@ -63,13 +64,13 @@ self.addEventListener('install', (event) => {
 
 // Activation du service worker
 self.addEventListener('activate', (event) => {
-  devLog('🔧 [SW] Activating service worker v9...');
+  devLog('🔧 [SW] Activating service worker v10...');
   event.waitUntil(
     Promise.all([
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME && cacheName !== OFFLINE_PAGE_CACHE || OLD_CACHE_NAMES.includes(cacheName)) {
+            if (!CURRENT_CACHES.includes(cacheName) || OLD_CACHE_NAMES.includes(cacheName)) {
               devLog(`🧹 [SW] Deleting old cache: ${cacheName}`);
               return caches.delete(cacheName);
             }
@@ -78,7 +79,7 @@ self.addEventListener('activate', (event) => {
       }),
       self.clients.claim()
     ]).then(() => {
-      devLog('🔧 [SW] Service worker v9 activated and controlling all clients');
+      devLog('🔧 [SW] Service worker v10 activated and controlling all clients');
     })
   );
 });
@@ -191,6 +192,23 @@ self.addEventListener('fetch', (event) => {
         });
       })
   );
+});
+
+// Messages from clients (manual updates/purge)
+self.addEventListener('message', (event) => {
+  const data = event.data || {};
+  if (data && data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  if (data && data.type === 'PURGE_CACHES') {
+    event.waitUntil(
+      caches.keys()
+        .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+        .then(() => self.skipWaiting())
+        .then(() => self.clients.claim())
+    );
+  }
 });
 
 // ============= Push Notifications =============
