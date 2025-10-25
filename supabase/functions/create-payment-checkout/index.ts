@@ -147,10 +147,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     /**
      * Create Checkout Session
      * 
-     * Key escrow features:
-     * - payment_intent_data.capture_method: 'manual'
-     * - Funds authorized but NOT captured immediately
-     * - Platform captures later after service validation
+     * CRITICAL: Twint requires AUTOMATIC capture (instant payment)
+     * - Twint does NOT support manual capture (escrow)
+     * - Card/SEPA: manual capture for escrow
+     * - Twint: automatic capture (instant, but we still track for refunds if needed)
      */
     const sessionData: Stripe.Checkout.SessionCreateParams = {
       customer: buyerProfile?.stripe_customer_id,
@@ -170,8 +170,18 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       ],
       mode: 'payment',
       payment_method_types: paymentMethodTypes,
-      payment_intent_data: {
-        capture_method: 'manual', // CRITICAL for escrow
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: {
+        transaction_id: transactionId,
+        buyer_id: user!.id,
+      },
+    };
+
+    // CRITICAL: Only add payment_intent_data if NOT Twint (Twint doesn't support manual capture)
+    if (!paymentMethodTypes.includes('twint')) {
+      sessionData.payment_intent_data = {
+        capture_method: 'manual', // CRITICAL for escrow (card/SEPA only)
         metadata: {
           transaction_id: transactionId,
           seller_id: transaction.user_id,
@@ -181,14 +191,23 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           rivvlock_escrow: 'true',
           payment_deadline: paymentDeadline.toISOString(),
         },
-      },
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata: {
-        transaction_id: transactionId,
-        buyer_id: user!.id,
-      },
-    };
+      };
+    } else {
+      // Twint: automatic capture (instant payment, no escrow hold)
+      sessionData.payment_intent_data = {
+        capture_method: 'automatic', // Required for Twint
+        metadata: {
+          transaction_id: transactionId,
+          seller_id: transaction.user_id,
+          buyer_id: user!.id,
+          service_date: transaction.service_date,
+          platform: 'rivvlock',
+          rivvlock_twint: 'true', // Mark as Twint (instant capture)
+          payment_deadline: paymentDeadline.toISOString(),
+        },
+      };
+      logger.log("⚡ [CREATE-CHECKOUT] Twint mode: automatic capture (instant payment)");
+    }
 
     const session = await stripe.checkout.sessions.create(sessionData);
     logger.log("✅ [CREATE-CHECKOUT] Checkout session created:", session.id);

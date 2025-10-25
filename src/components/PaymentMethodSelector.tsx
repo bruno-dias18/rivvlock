@@ -100,16 +100,23 @@ export const PaymentMethodSelector = ({
             >
               <div className="flex items-start gap-3">
                 <Smartphone className="h-5 w-5 mt-0.5 text-primary" />
-                <div className="flex-1">
+                <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
                     <p className="font-medium">Twint</p>
                     <Badge variant="secondary" className="text-xs">
                       🇨🇭 CHF uniquement
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Paiement mobile instantané
+                  <p className="text-sm text-muted-foreground">
+                    Paiement mobile instantané (capture automatique)
                   </p>
+                  <Alert className="border-amber-500/50 bg-amber-500/5">
+                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                    <AlertDescription className="text-xs">
+                      ⚠️ <strong>Paiement instantané :</strong> Les fonds sont transférés immédiatement 
+                      (pas de blocage escrow traditionnel). Remboursement possible en cas de litige.
+                    </AlertDescription>
+                  </Alert>
                 </div>
               </div>
             </Label>

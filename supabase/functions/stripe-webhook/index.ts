@@ -98,6 +98,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
       // Determine payment method used
       let paymentMethod = 'card';
+      const isTwint = paymentIntent.metadata.rivvlock_twint === 'true';
+      
       if (paymentIntent.payment_method) {
         const pm = await stripe.paymentMethods.retrieve(paymentIntent.payment_method as string);
         if (pm.type === 'customer_balance') {
@@ -107,6 +109,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           paymentMethod = 'card';
           logger.debug("Card payment detected");
         }
+      }
+      
+      // Twint is instant capture (no escrow hold, but we still mark as paid)
+      if (isTwint) {
+        paymentMethod = 'twint';
+        logger.info("⚡ Twint instant payment detected (automatic capture)");
       }
 
       // ✅ Validate transaction exists and can be updated
@@ -153,9 +161,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         .insert({
           user_id: paymentIntent.metadata.buyer_id,
           activity_type: "funds_blocked",
-          title: paymentMethod === 'bank_transfer' 
-            ? "Virement bancaire reçu et bloqué" 
-            : "Paiement par carte reçu et bloqué",
+          title: paymentMethod === 'twint' 
+            ? "Paiement Twint reçu (instantané)" 
+            : paymentMethod === 'bank_transfer' 
+              ? "Virement bancaire reçu et bloqué" 
+              : "Paiement par carte reçu et bloqué",
           description: `Montant: ${(paymentIntent.amount / 100).toFixed(2)} ${paymentIntent.currency.toUpperCase()}`,
           metadata: {
             transaction_id: transactionId,
@@ -163,10 +173,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
             payment_method: paymentMethod,
             amount: paymentIntent.amount,
             currency: paymentIntent.currency,
+            instant_capture: isTwint,
           },
         });
 
-      logger.info("Transaction updated to paid", { transactionId, paymentMethod });
+      logger.info("Transaction updated to paid", { transactionId, paymentMethod, isTwint });
 
       return successResponse({ received: true });
     }
