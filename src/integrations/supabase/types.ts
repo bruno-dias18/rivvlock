@@ -529,6 +529,7 @@ export type Database = {
           avs_number: string | null
           city: string | null
           company_address: string | null
+          company_logo_url: string | null
           company_name: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at: string
@@ -555,6 +556,7 @@ export type Database = {
           avs_number?: string | null
           city?: string | null
           company_address?: string | null
+          company_logo_url?: string | null
           company_name?: string | null
           country: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -581,6 +583,7 @@ export type Database = {
           avs_number?: string | null
           city?: string | null
           company_address?: string | null
+          company_logo_url?: string | null
           company_name?: string | null
           country?: Database["public"]["Enums"]["country_code"]
           created_at?: string
@@ -600,6 +603,36 @@ export type Database = {
           vat_number?: string | null
           vat_rate?: number | null
           verified?: boolean
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string | null
+          subscription: Json
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          subscription: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string | null
+          subscription?: Json
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1156,6 +1189,7 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_logs: { Args: never; Returns: undefined }
+      cleanup_old_push_subscriptions: { Args: never; Returns: undefined }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
       cleanup_old_webhook_events: { Args: never; Returns: undefined }
       create_escalated_dispute_conversations: {

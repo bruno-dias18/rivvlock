@@ -98,6 +98,23 @@ export const generateInvoicePDF = async (
   const primaryBlue = [24, 119, 242]; // RivvLock blue
   const lightGray = [245, 245, 245];
   const darkGray = [64, 64, 64];
+
+  // Charger le logo du vendeur si disponible
+  let sellerLogoBase64: string | null = null;
+  if (invoiceData.sellerProfile?.company_logo_url) {
+    try {
+      const response = await fetch(invoiceData.sellerProfile.company_logo_url);
+      const blob = await response.blob();
+      sellerLogoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      logger.error('Failed to load seller logo:', error);
+      sellerLogoBase64 = null;
+    }
+  }
   
   // === EN-TÊTE SIMPLIFIÉ (selon modèle) ===
   
@@ -110,11 +127,33 @@ export const generateInvoicePDF = async (
   const locale = language === 'de' ? 'de-DE' : language === 'en' ? 'en-US' : 'fr-FR';
   const invoiceDate = new Date(invoiceData.validatedDate).toLocaleDateString(locale, dateOptions);
   
-  // RIVVLOCK à gauche et FACTURE à droite sur la même ligne
+  // LOGO DU VENDEUR (si disponible) ou RIVVLOCK texte + FACTURE à droite
+  if (sellerLogoBase64) {
+    // Afficher le logo du vendeur (dimensions max 40x15mm)
+    try {
+      const logoWidth = 40;
+      const logoHeight = 15;
+      doc.addImage(sellerLogoBase64, 'JPEG', margin, yPosition - 5, logoWidth, logoHeight);
+    } catch (error) {
+      // Si erreur d'affichage, fallback sur texte
+      logger.error('Error displaying logo:', error);
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text(invoiceData.sellerName, margin, yPosition);
+    }
+  } else {
+    // Texte RIVVLOCK par défaut
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('RIVVLOCK', margin, yPosition);
+  }
+  
+  // FACTURE à droite
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('RIVVLOCK', margin, yPosition);
   doc.text(t?.('invoice.title') || 'FACTURE', rightX, yPosition, { align: 'right' });
   
   yPosition += 8;

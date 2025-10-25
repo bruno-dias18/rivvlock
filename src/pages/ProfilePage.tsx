@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
-import { Edit, Trash2, FileText, Mail, ExternalLink, Download } from 'lucide-react';
+import { Edit, Trash2, FileText, Mail, ExternalLink, Download, Upload, Image as ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +20,7 @@ import { ProfileAccessLogsCard } from '@/components/ProfileAccessLogsCard';
 import { SellerTransactionsCountdownCard } from '@/components/SellerTransactionsCountdownCard';
 import { logger } from '@/lib/logger';
 import { HelpCircle } from 'lucide-react';
+import { useLogoUpload } from '@/hooks/useLogoUpload';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -30,6 +31,32 @@ export default function ProfilePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const queryClient = useQueryClient();
+  const { uploadLogo, deleteLogo, isUploading } = useLogoUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    const logoUrl = await uploadLogo(file, user.id);
+    if (logoUrl) {
+      refetch();
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!profile?.company_logo_url || !user) return;
+
+    const success = await deleteLogo(profile.company_logo_url, user.id);
+    if (success) {
+      refetch();
+    }
+  };
 
   const handleExportData = async () => {
     setIsExportingData(true);
@@ -297,6 +324,63 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5" />
+              Logo de facture
+            </CardTitle>
+            <CardDescription>
+              Ajouter votre logo pour personnaliser vos factures
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profile?.company_logo_url && (
+              <div className="flex flex-col items-center gap-4">
+                <img 
+                  src={profile.company_logo_url} 
+                  alt="Logo" 
+                  className="h-24 w-24 object-contain border rounded-lg p-2"
+                />
+              </div>
+            )}
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
+              onChange={handleLogoUpload}
+              className="hidden"
+            />
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="flex-1"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {profile?.company_logo_url ? 'Changer' : 'Ajouter'}
+              </Button>
+              
+              {profile?.company_logo_url && (
+                <Button
+                  variant="destructive"
+                  onClick={handleLogoDelete}
+                  disabled={isUploading}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG ou WEBP • Max 2MB • Recommandé : carré, fond transparent
+            </p>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
