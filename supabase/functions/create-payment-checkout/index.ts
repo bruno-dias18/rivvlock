@@ -202,9 +202,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       };
       logger.log("⚡ [CREATE-CHECKOUT] Twint session configured with automatic capture");
     } else {
-      // Card/SEPA: manual capture for escrow
+      // Card/SEPA: automatic capture; funds are captured to platform balance and transferred to seller upon validation
       sessionData.payment_intent_data = {
-        capture_method: 'manual', // CRITICAL for escrow
+        capture_method: 'automatic',
         metadata: {
           transaction_id: transactionId,
           seller_id: transaction.user_id,
@@ -215,7 +215,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           payment_deadline: paymentDeadline.toISOString(),
         },
       };
-      logger.log("🔒 [CREATE-CHECKOUT] Standard session configured with manual capture (escrow)");
+      logger.log("✅ [CREATE-CHECKOUT] Standard session configured with automatic capture (platform hold)");
     }
 
     const session = await stripe.checkout.sessions.create(sessionData);

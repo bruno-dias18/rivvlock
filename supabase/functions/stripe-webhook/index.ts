@@ -9,7 +9,7 @@ import {
   Handler,
   HandlerContext
 } from "../_shared/middleware.ts";
-import { rateLimiter } from "../_shared/rate-limiter.ts";
+import { checkRateLimit, getClientIp } from "../_shared/rate-limiter.ts";
 
 // Rate limit configuration for webhooks (protect against abuse)
 const WEBHOOK_RATE_LIMIT = {
@@ -21,17 +21,11 @@ const WEBHOOK_RATE_LIMIT = {
 const handler: Handler = async (req, ctx: HandlerContext) => {
   // ✅ RATE LIMITING: Check rate limit before processing
   const identifier = req.headers.get("stripe-signature")?.substring(0, 20) || 'unknown';
-  const rateLimitResult = await rateLimiter(
-    `webhook_${identifier}`,
-    WEBHOOK_RATE_LIMIT.maxRequests,
-    WEBHOOK_RATE_LIMIT.windowMs
-  );
-  
-  if (!rateLimitResult.allowed) {
-    logger.warn("Webhook rate limit exceeded", { 
-      identifier,
-      attemptsSoFar: rateLimitResult.current 
-    });
+  const clientIp = getClientIp(req) || identifier;
+  try {
+    await checkRateLimit(clientIp);
+  } catch (_e) {
+    logger.warn("Webhook rate limit exceeded", { identifier: clientIp });
     return errorResponse("Rate limit exceeded", 429);
   }
 
