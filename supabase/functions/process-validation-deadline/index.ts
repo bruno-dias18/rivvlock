@@ -188,6 +188,28 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           continue;
         }
 
+        // SECURITY: Check if charge has been refunded before creating transfer
+        const charge = await stripe.charges.retrieve(chargeId);
+        if (charge.amount_refunded > 0) {
+          logStep("⚠️ Charge has been refunded, cannot transfer", { 
+            chargeId,
+            amountRefunded: charge.amount_refunded,
+            amountCaptured: charge.amount_captured
+          });
+          
+          // Update transaction to refunded status
+          await adminClient
+            .from("transactions")
+            .update({ 
+              status: "refunded", 
+              updated_at: new Date().toISOString() 
+            })
+            .eq("id", transaction.id);
+          
+          errorCount++;
+          continue;
+        }
+
         // Calculate transfer amount
         const platformFeePercent = 0.05;
         const originalAmount = Math.round(transaction.price * 100);

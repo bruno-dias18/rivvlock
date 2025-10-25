@@ -118,56 +118,6 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 /**
- * Helper function to measure async operations
- */
-export async function measureAsync<T>(
-  name: string,
-  operation: () => Promise<T>
-): Promise<T> {
-  performanceMonitor.startMeasure(name);
-  try {
-    const result = await operation();
-    return result;
-  } finally {
-    const duration = performanceMonitor.endMeasure(name);
-    if (duration !== null) {
-      logger.log(`${name} completed in ${duration.toFixed(2)}ms`);
-    }
-  }
-}
-
-/**
- * Helper function to measure sync operations
- */
-export function measureSync<T>(name: string, operation: () => T): T {
-  performanceMonitor.startMeasure(name);
-  try {
-    const result = operation();
-    return result;
-  } finally {
-    const duration = performanceMonitor.endMeasure(name);
-    if (duration !== null) {
-      logger.log(`${name} completed in ${duration.toFixed(2)}ms`);
-    }
-  }
-}
-
-/**
- * React hook for component render monitoring
- */
-export function useRenderMonitor(componentName: string) {
-  if (typeof window === 'undefined') return;
-
-  const measureName = `render-${componentName}`;
-  performanceMonitor.startMeasure(measureName);
-
-  // Use effect cleanup to measure
-  return () => {
-    performanceMonitor.endMeasure(measureName);
-  };
-}
-
-/**
  * Core Web Vitals monitoring
  * Tracks key performance metrics: LCP, INP, CLS, FCP, TTFB
  */
