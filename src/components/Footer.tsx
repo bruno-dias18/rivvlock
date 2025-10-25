@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Separator } from '@/components/ui/separator';
+import { ExternalLink } from 'lucide-react';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -31,6 +32,23 @@ export function Footer() {
             >
               {t('footer.contact')}
             </Link>
+            <Separator orientation="vertical" className="h-4" />
+            <Link
+              to="/api-docs"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              API Docs
+            </Link>
+            <Separator orientation="vertical" className="h-4" />
+            <a
+              href="https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/health"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              Status
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
           <p className="text-xs text-muted-foreground text-center">
             {t('footer.copyright')}
