@@ -34,10 +34,13 @@ export const useTransactions = (pageSize = 20) => {
       }
       
       // Normalize payload to array (handles both {data: [...]} and [...] for backward compat)
-      const payload: any = data;
+      interface EnrichedResponse {
+        data?: unknown[];
+      }
+      const payload = data as unknown[] | EnrichedResponse;
       const list = Array.isArray(payload)
         ? payload
-        : (Array.isArray(payload?.data) ? payload.data : []);
+        : (Array.isArray((payload as EnrichedResponse)?.data) ? (payload as EnrichedResponse).data : []);
       
       return list;
     },

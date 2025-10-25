@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import type { Dispute } from '@/types';
 
 export interface UsePaginatedAdminDisputesOptions {
   page?: number;
@@ -10,8 +11,33 @@ export interface UsePaginatedAdminDisputesOptions {
   sortOrder?: 'asc' | 'desc';
 }
 
+interface DisputeWithTransaction {
+  id: string;
+  transaction_id: string;
+  dispute_type: string;
+  reason: string;
+  status: string;
+  resolution: string | null;
+  dispute_deadline: string | null;
+  escalated_at: string | null;
+  resolved_at: string | null;
+  archived_by_seller: boolean;
+  archived_by_buyer: boolean;
+  created_at: string;
+  updated_at: string;
+  transactions: {
+    id: string;
+    title: string;
+    price: number;
+    currency: string;
+    user_id: string;
+    buyer_id: string | null;
+    status: string;
+  };
+}
+
 export interface PaginatedAdminDisputesResult {
-  disputes: any[];
+  disputes: DisputeWithTransaction[];
   totalCount: number;
   totalPages: number;
   currentPage: number;
@@ -63,12 +89,13 @@ export function usePaginatedAdminDisputes(options: UsePaginatedAdminDisputesOpti
         if (statusFilter === 'resolved') {
           query = query.or('status.eq.resolved,status.eq.resolved_refund,status.eq.resolved_release');
         } else {
-          query = query.eq('status', statusFilter as any);
+          // Safe cast since statusFilter is validated
+          query = query.eq('status', statusFilter as 'open' | 'negotiating' | 'escalated' | 'responded');
         }
       }
 
       // Apply sorting
-      query = query.order(sortBy as any, { ascending: sortOrder === 'asc' });
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       // Apply pagination
       const from = (page - 1) * pageSize;
@@ -85,7 +112,7 @@ export function usePaginatedAdminDisputes(options: UsePaginatedAdminDisputesOpti
       const totalPages = Math.ceil(totalCount / pageSize);
 
       return {
-        disputes: (data || []) as any[],
+        disputes: (data || []) as DisputeWithTransaction[],
         totalCount,
         totalPages,
         currentPage: page,

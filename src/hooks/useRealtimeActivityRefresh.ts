@@ -64,7 +64,11 @@ export const useRealtimeActivityRefresh = () => {
           table: 'transactions',
         },
         (payload) => {
-          const transaction = payload.new as any;
+          interface TransactionPayload {
+            user_id: string;
+            buyer_id: string | null;
+          }
+          const transaction = payload.new as TransactionPayload;
           // Vérifier si l'utilisateur est participant
           if (transaction.user_id === user.id || transaction.buyer_id === user.id) {
             logger.info('🔄 Realtime: Transaction changed', payload);
@@ -119,7 +123,11 @@ export const useRealtimeActivityRefresh = () => {
           table: 'quotes',
         },
         (payload) => {
-          const quote = payload.new as any;
+          interface QuotePayload {
+            seller_id: string;
+            client_user_id: string | null;
+          }
+          const quote = payload.new as QuotePayload;
           // Vérifier si l'utilisateur est participant
           if (quote.seller_id === user.id || quote.client_user_id === user.id) {
             logger.info('🔄 Realtime: Quote changed', payload);
@@ -141,7 +149,11 @@ export const useRealtimeActivityRefresh = () => {
           table: 'messages',
         },
         (payload) => {
-          const message = payload.new as any;
+          interface MessagePayload {
+            conversation_id: string;
+            sender_id: string;
+          }
+          const message = payload.new as MessagePayload;
           // Ignorer ses propres messages
           if (message.sender_id === user.id) return;
           
@@ -195,7 +207,11 @@ export const useRealtimeActivityRefresh = () => {
           filter: 'conversation_id=in.(select id from conversations where dispute_id is not null)'
         },
         async (payload) => {
-          const message = payload.new as any;
+          interface MessagePayload {
+            conversation_id: string;
+            sender_id: string;
+          }
+          const message = payload.new as MessagePayload;
           // Ignorer ses propres messages
           if (message.sender_id === user.id) return;
           

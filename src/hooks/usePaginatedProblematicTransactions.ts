@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Transaction } from '@/types';
 
 export interface UsePaginatedProblematicTransactionsOptions {
   page?: number;
@@ -9,7 +10,7 @@ export interface UsePaginatedProblematicTransactionsOptions {
 }
 
 export interface PaginatedProblematicTransactionsResult {
-  transactions: any[];
+  transactions: Transaction[];
   totalCount: number;
   totalPages: number;
   currentPage: number;
@@ -41,7 +42,7 @@ export function usePaginatedProblematicTransactions(options: UsePaginatedProblem
         .is('buyer_id', null);
 
       // Apply sorting
-      query = query.order(sortBy as any, { ascending: sortOrder === 'asc' });
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
 
       // Apply pagination
       const from = (page - 1) * pageSize;
@@ -58,7 +59,7 @@ export function usePaginatedProblematicTransactions(options: UsePaginatedProblem
       const totalPages = Math.ceil(totalCount / pageSize);
 
       return {
-        transactions: (data || []) as any[],
+        transactions: (data || []) as unknown as Transaction[],
         totalCount,
         totalPages,
         currentPage: page,

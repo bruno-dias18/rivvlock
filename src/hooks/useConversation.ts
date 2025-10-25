@@ -6,7 +6,7 @@ interface UnifiedMessage {
   sender_id: string;
   message: string;
   message_type: 'text' | 'system' | 'proposal_update';
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 }
 

@@ -45,10 +45,22 @@ export const useAnnualTransactions = (year: number) => {
         .in('transaction_id', transactionIds);
       
       // Create map of refund percentages
+      interface DisputeProposal {
+        status: string;
+        proposal_type: string;
+        refund_percentage?: number;
+      }
+      
+      interface DisputeWithProposals {
+        transaction_id: string;
+        resolution: string | null;
+        dispute_proposals: DisputeProposal[] | null;
+      }
+      
       const refundMap = new Map<string, number>();
-      disputes?.forEach(dispute => {
-        const proposals = (dispute.dispute_proposals as any[]) || [];
-        const acceptedProposal = proposals.find((p: any) => p.status === 'accepted' && (p.proposal_type === 'partial_refund' || (p.refund_percentage ?? 0) > 0));
+      (disputes as DisputeWithProposals[] | null)?.forEach(dispute => {
+        const proposals = dispute.dispute_proposals || [];
+        const acceptedProposal = proposals.find((p) => p.status === 'accepted' && (p.proposal_type === 'partial_refund' || (p.refund_percentage ?? 0) > 0));
         if (acceptedProposal?.refund_percentage) {
           refundMap.set(dispute.transaction_id, Number(acceptedProposal.refund_percentage));
           return;

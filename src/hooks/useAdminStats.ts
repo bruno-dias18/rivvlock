@@ -69,7 +69,13 @@ export const useAdminStats = () => {
       if (transPrevError) throw transPrevError;
 
       // Calculer les volumes par devise
-      const calculateVolumesByCurrency = (transactions: any[]) => {
+      interface TransactionVolume {
+        price: number;
+        status: string;
+        currency: string;
+      }
+      
+      const calculateVolumesByCurrency = (transactions: TransactionVolume[]) => {
         const volumes: Record<string, number> = {};
         transactions
           ?.filter(t => t.status === 'paid' || t.status === 'validated')

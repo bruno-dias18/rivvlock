@@ -16,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
-import type { Dispute } from '@/types';
+import type { Dispute, Transaction } from '@/types';
 import { getUserFriendlyError, ErrorMessages } from '@/lib/errorMessages';
 
 export const useDisputesUnified = () => {
@@ -52,8 +52,14 @@ export const useDisputesUnified = () => {
       if (conversations.length === 0) return [];
 
       // Extraire et dédupliquer les disputes
-      const disputeMap = new Map();
-      conversations.forEach((conv: any) => {
+      interface ConversationWithDispute {
+        dispute: Dispute | null;
+        seller_id?: string;
+        buyer_id?: string;
+      }
+      
+      const disputeMap = new Map<string, Dispute>();
+      (conversations as ConversationWithDispute[]).forEach((conv) => {
         if (conv.dispute && !disputeMap.has(conv.dispute.id)) {
           disputeMap.set(conv.dispute.id, conv.dispute);
         }
@@ -64,14 +70,14 @@ export const useDisputesUnified = () => {
 
       // Build quick lookup to recover participants if transactions query is restricted by RLS
       const convByDisputeId = new Map(
-        conversations
-          .filter((c: any) => c.dispute)
-          .map((c: any) => [c.dispute.id, c] as const)
+        (conversations as ConversationWithDispute[])
+          .filter((c) => c.dispute)
+          .map((c) => [c.dispute!.id, c] as const)
       );
 
       // Fetch related transactions
       const transactionIds = Array.from(
-        new Set(disputes.map((d: any) => d.transaction_id).filter(Boolean))
+        new Set(disputes.map((d) => d.transaction_id).filter(Boolean))
       );
 
       if (transactionIds.length === 0) return disputes;
@@ -86,12 +92,12 @@ export const useDisputesUnified = () => {
         return disputes;
       }
 
-      const txMap = new Map((transactions || []).map((t: any) => [t.id, t] as const));
+      const txMap = new Map((transactions || []).map((t) => [t.id, t] as const));
 
       // Enrich disputes with transaction data and filter by archival status.
       // Always attach a minimal fallback transaction to avoid UI drops when RLS blocks tx SELECT.
       const enriched = disputes
-        .map((d: any) => {
+        .map((d) => {
           const tx = txMap.get(d.transaction_id);
           if (tx) return { ...d, transactions: tx };
 
@@ -106,10 +112,10 @@ export const useDisputesUnified = () => {
             currency: 'eur',
             status: 'disputed',
             title: undefined,
-          } as any;
+          };
           return { ...d, transactions: fallbackTx };
         })
-        .filter((dispute: any) => {
+        .filter((dispute) => {
           const tx = dispute.transactions;
           if (!tx) return true; // keep if transaction still missing (failsafe)
 

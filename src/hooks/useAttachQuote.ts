@@ -30,11 +30,12 @@ export const useAttachQuote = () => {
         toast.success('✅ Ce devis est maintenant dans votre espace');
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Error attaching quote:', error);
       
       // Special case: email mismatch (UI will handle this with AlertDialog)
-      if (error.message?.includes('email_mismatch') || error.error === 'email_mismatch') {
+      const errorWithCode = error as Error & { error?: string };
+      if (error.message?.includes('email_mismatch') || errorWithCode.error === 'email_mismatch') {
         // Don't show toast, let the parent component handle the alert
         return;
       }

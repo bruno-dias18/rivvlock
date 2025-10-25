@@ -7,7 +7,7 @@ export interface ActivityLog {
   activity_type: string;
   title: string;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   transaction?: {
     id: string;
@@ -53,12 +53,16 @@ export const useRecentActivity = () => {
       }
 
       // Get unique transaction IDs from metadata
+      interface ActivityMetadata {
+        transaction_id?: string;
+      }
+      
       const transactionIds = activities
         .map(activity => {
-          const metadata = activity.metadata as Record<string, any> | null;
+          const metadata = activity.metadata as ActivityMetadata | null;
           return metadata?.transaction_id;
         })
-        .filter(Boolean);
+        .filter((id): id is string => Boolean(id));
 
       let transactionsMap = new Map();
 
@@ -75,8 +79,12 @@ export const useRecentActivity = () => {
       }
 
       // Combine activities with transaction data
+      interface ActivityMetadata {
+        transaction_id?: string;
+      }
+      
       return activities.map(activity => {
-        const metadata = activity.metadata as Record<string, any> | null;
+        const metadata = activity.metadata as ActivityMetadata | null;
         const transactionId = metadata?.transaction_id;
         
         return {

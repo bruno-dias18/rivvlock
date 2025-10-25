@@ -374,13 +374,20 @@ export default function TransactionsPage() {
   const disputedTransactions = sortTransactions(disputedData?.transactions || []);
   
   // Compteurs basés sur TOUTES les transactions (non paginées) pour les tabs
-  const pendingCount = allTransactions.filter(t => t.status === 'pending').length;
-  const blockedCount = allTransactions.filter(t => t.status === 'paid').length;
-  const completedCount = allTransactions.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id)).length;
+  interface TransactionLike {
+    id: string;
+    status: string;
+    conversation_id: string | null;
+  }
+  const txList = allTransactions as TransactionLike[];
+  const pendingCount = txList.filter(t => t.status === 'pending').length;
+  const blockedCount = txList.filter(t => t.status === 'paid').length;
+  const completedCount = txList.filter(t => t.status === 'validated' || resolvedTxIds.has(t.id)).length;
   // Pour les litiges, compter les DISPUTES non résolus, pas les transactions
-  const disputedCount = disputes.filter((d: any) => !d?.status || !String(d.status).startsWith('resolved')).length;
+  interface DisputeLike { status?: string; }
+  const disputedCount = (disputes as DisputeLike[]).filter((d) => !d?.status || !String(d.status).startsWith('resolved')).length;
   // Get unread messages counts per tab with unified system
-  const tabCounts = useUnreadTransactionTabCounts(allTransactions);
+  const tabCounts = useUnreadTransactionTabCounts(txList);
 
   const handleCopyLink = async (text: string) => {
     try {

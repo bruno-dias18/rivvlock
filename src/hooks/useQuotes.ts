@@ -23,8 +23,17 @@ export const useQuotes = () => {
 
       if (error) throw error;
       
+      interface QuoteFromDb {
+        seller_id: string;
+        client_user_id: string | null;
+        archived_by_seller: boolean;
+        archived_by_client: boolean;
+        items: unknown;
+        [key: string]: unknown;
+      }
+      
       // Filter out archived quotes based on user role
-      const filteredData = (data || []).filter((q: any) => {
+      const filteredData = (data as QuoteFromDb[] || []).filter((q) => {
         // Si je suis le vendeur et j'ai archivé → masquer
         if (q.seller_id === user.id && q.archived_by_seller) return false;
         // Si je suis le client et j'ai archivé → masquer
@@ -33,11 +42,11 @@ export const useQuotes = () => {
       });
       
       // Parse items from JSON and ensure all fields are present
-      return filteredData.map((q: any) => ({
+      return filteredData.map((q) => ({
         ...q,
         client_user_id: q.client_user_id || null,
-        items: (q.items as any) || []
-      })) as Quote[];
+        items: q.items || []
+      })) as unknown as Quote[];
     },
     enabled: !!user?.id,
     staleTime: 30000,
@@ -110,7 +119,12 @@ export const useQuotes = () => {
       data: {
         title: string;
         description: string | null;
-        items: any[];
+        items: Array<{
+          description: string;
+          quantity: number;
+          unit_price: number;
+          subtotal: number;
+        }>;
         currency: string;
         service_date: string | null;
         service_end_date: string | null;
@@ -157,7 +171,7 @@ export const useQuotes = () => {
       queryClient.invalidateQueries({ queryKey: ['unread-quote-tabs'] });
       toast.success('Devis accepté avec succès !');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       logger.error('Error accepting quote:', error);
       toast.error(error.message || 'Erreur lors de l\'acceptation du devis');
     }

@@ -74,7 +74,7 @@ export const useDisputeProposals = (disputeId: string) => {
 
         if (error) throw error;
         return data;
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Surface a user-friendly message so UI can display the cause
         const { getUserFriendlyError } = await import('@/lib/errorMessages');
         throw new Error(getUserFriendlyError(err, { details: err }));
@@ -100,7 +100,7 @@ export const useDisputeProposals = (disputeId: string) => {
         });
       });
     },
-    onError: async (err: any) => {
+    onError: async (err: unknown) => {
       const { toast } = await import('sonner');
       const { getUserFriendlyError } = await import('@/lib/errorMessages');
       toast.error(getUserFriendlyError(err, { details: err }));
@@ -116,7 +116,12 @@ export const useDisputeProposals = (disputeId: string) => {
 
         if (error) {
           // Try to extract server-provided error payload from the Edge Function response
-          const ctx: any = error as any;
+          interface ErrorContext {
+            context?: {
+              response?: Response;
+            };
+          }
+          const ctx = error as ErrorContext;
           const resp: Response | undefined = ctx?.context?.response;
           if (resp) {
             try {
@@ -149,7 +154,7 @@ export const useDisputeProposals = (disputeId: string) => {
         }
         
         return { success: true, partial: false };
-      } catch (err: any) {
+      } catch (err: unknown) {
         // Normalize to a friendly error with details if available
         const { getUserFriendlyError } = await import('@/lib/errorMessages');
         throw new Error(getUserFriendlyError(err, { details: err }));

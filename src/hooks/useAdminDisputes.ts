@@ -29,7 +29,8 @@ export const useAdminDisputes = (status?: string, pageSize = 20) => {
           const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
           query = query.gte('created_at', last30Days.toISOString());
         } else {
-          query = query.eq('status', status as any);
+          // Safe cast since status is validated by component
+          query = query.eq('status', status as 'open' | 'negotiating' | 'escalated' | 'responded');
         }
       }
 
