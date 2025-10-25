@@ -44,6 +44,7 @@ import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
 import { ScrollToTop } from "./components/ScrollToTop";
 import { RealtimeActivitySync } from "./components/RealtimeActivitySync";
 import { PageSkeleton } from "./components/PageSkeleton";
+import { PrefetchOnAuthSuccess } from "./components/PrefetchOnAuthSuccess";
 
 const App: React.FC = () => {
   return React.createElement(
@@ -56,6 +57,7 @@ const App: React.FC = () => {
         AuthProvider,
         null,
         React.createElement(RealtimeActivitySync),
+        React.createElement(PrefetchOnAuthSuccess),
         React.createElement(Toaster, { position: "top-right" }),
           React.createElement(
             Suspense,

@@ -18,7 +18,7 @@ import { fr } from 'date-fns/locale';
 import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 import { ValidateStripeAccountsButton } from '@/components/ValidateStripeAccountsButton';
 import { AdminAnalyticsKPIs } from '@/components/AdminAnalyticsKPIs';
-import { AdminAnalyticsCharts } from '@/components/AdminAnalyticsCharts';
+import { LazyAdminAnalyticsCharts } from '@/components/lazy/LazyAdminAnalyticsCharts';
 import { AdminProblematicTransactions } from '@/components/AdminProblematicTransactions';
 import { getSentryStatus } from '@/lib/sentry';
 
@@ -463,7 +463,7 @@ const getCurrencySymbol = (currency: string) => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AdminAnalyticsCharts 
+              <LazyAdminAnalyticsCharts 
                 analytics={analytics}
                 isLoading={analyticsLoading}
               />

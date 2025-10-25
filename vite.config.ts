@@ -18,26 +18,97 @@ export default defineConfig(({ mode }) => ({
     'process.env': {}
   },
   build: {
-    // Optimize build output
     target: 'esnext',
     minify: 'esbuild',
+    sourcemap: false, // Disable sourcemaps in production for smaller bundles
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-select'],
-          'stripe': ['@stripe/stripe-js', '@stripe/react-stripe-js'],
-          'supabase': ['@supabase/supabase-js'],
+        manualChunks: (id) => {
+          // Core React libraries
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-core';
+          }
+          if (id.includes('node_modules/react-router')) {
+            return 'react-router';
+          }
+          
+          // UI Libraries - split by category
+          if (id.includes('@radix-ui')) {
+            return 'radix-ui';
+          }
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
+          if (id.includes('framer-motion')) {
+            return 'animations';
+          }
+          
+          // Charts & Data Visualization (lazy loaded on demand)
+          if (id.includes('recharts')) {
+            return 'charts';
+          }
+          
+          // PDF & Documents (lazy loaded on demand)
+          if (id.includes('jspdf') || id.includes('jszip') || id.includes('papaparse')) {
+            return 'documents';
+          }
+          
+          // Payment providers
+          if (id.includes('@stripe')) {
+            return 'stripe';
+          }
+          
+          // Supabase & Auth
+          if (id.includes('@supabase')) {
+            return 'supabase';
+          }
+          
+          // React Query
+          if (id.includes('@tanstack/react-query')) {
+            return 'react-query';
+          }
+          
+          // i18n
+          if (id.includes('i18next')) {
+            return 'i18n';
+          }
+          
+          // Form libraries
+          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
+            return 'forms';
+          }
+          
+          // Date utilities
+          if (id.includes('date-fns')) {
+            return 'date-utils';
+          }
+          
+          // Other node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
     cssCodeSplit: true,
     cssMinify: true,
-    assetsInlineLimit: 4096, // Inline assets < 4KB
-    chunkSizeWarningLimit: 1000,
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 500, // More aggressive warning
+    reportCompressedSize: false, // Faster builds
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: [],
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      '@tanstack/react-query',
+      '@supabase/supabase-js',
+    ],
+    exclude: [
+      'jspdf',
+      'jszip',
+      'recharts',
+      'papaparse',
+    ],
   },
 }));
