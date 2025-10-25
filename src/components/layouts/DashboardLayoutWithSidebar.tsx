@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { useDisputeRealtimeNotifications } from '@/hooks/useDisputeRealtimeNotifications';
+import { usePushSubscriptionSync } from '@/hooks/usePushSubscriptionSync';
 import { useIsMobile } from '@/lib/mobileUtils';
 
 interface Props {
@@ -20,6 +21,7 @@ export function DashboardLayoutWithSidebar({ children, onSyncPayments }: Props) 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
   useDisputeRealtimeNotifications();
+  usePushSubscriptionSync(); // Auto-sync push subscriptions
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>

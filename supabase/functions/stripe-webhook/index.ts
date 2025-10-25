@@ -168,6 +168,32 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
       logger.info("Transaction updated to paid", { transactionId, paymentMethod });
 
+      // 🔔 Send push notification to seller
+      try {
+        const { data: txData } = await adminClient
+          .from("transactions")
+          .select("user_id, title, buyer_display_name")
+          .eq("id", transactionId)
+          .single();
+
+        if (txData) {
+          await adminClient.functions.invoke('send-push-notification', {
+            body: {
+              userId: txData.user_id,
+              title: '💰 Paiement reçu',
+              body: `${txData.buyer_display_name || 'L\'acheteur'} a payé pour "${txData.title}"`,
+              url: `/transactions`,
+              icon: '/icon-192.png',
+              badge: '/icon-192.png',
+              tag: `payment-${transactionId}`,
+            },
+          });
+        }
+      } catch (notifError) {
+        logger.error("Failed to send payment notification", notifError);
+        // Non-blocking: continue even if notification fails
+      }
+
       return successResponse({ received: true });
     }
 

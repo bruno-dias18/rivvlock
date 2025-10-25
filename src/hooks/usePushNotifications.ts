@@ -60,21 +60,24 @@ export const usePushNotifications = () => {
       let subscription = await registration.pushManager.getSubscription();
       
       if (!subscription) {
-        // VAPID public key (à générer plus tard via backend)
-        // Pour l'instant, on prépare juste la structure
+        const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+        
+        if (!vapidPublicKey) {
+          logger.warn('VAPID public key not configured');
+          return null;
+        }
+
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(
-            // Cette clé sera fournie par le backend
-            import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
-          ) as BufferSource,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
         });
 
         setState(prev => ({ ...prev, subscription }));
-        
-        // TODO: Envoyer la subscription au backend pour stockage
         logger.info('Push subscription created');
       }
+
+      // Sauvegarder la subscription dans la DB
+      await savePushSubscription(subscription);
 
       return subscription;
     } catch (error) {
@@ -83,19 +86,70 @@ export const usePushNotifications = () => {
     }
   };
 
+  const savePushSubscription = async (subscription: PushSubscription) => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const subscriptionData = subscription.toJSON();
+      
+      const { error } = await supabase.functions.invoke('save-push-subscription', {
+        body: {
+          subscription: {
+            endpoint: subscriptionData.endpoint,
+            keys: {
+              p256dh: subscriptionData.keys?.p256dh || '',
+              auth: subscriptionData.keys?.auth || '',
+            },
+          },
+        },
+      });
+
+      if (error) {
+        logger.error('Error saving push subscription:', error);
+      } else {
+        logger.info('Push subscription saved to database');
+      }
+    } catch (error) {
+      logger.error('Error saving push subscription:', error);
+    }
+  };
+
   const unsubscribe = async (): Promise<boolean> => {
     if (!state.subscription) return false;
 
     try {
+      const endpoint = state.subscription.endpoint;
+      
+      // Supprimer la subscription du navigateur
       await state.subscription.unsubscribe();
       setState(prev => ({ ...prev, subscription: null }));
       
-      // TODO: Notifier le backend de la désinscription
+      // Supprimer de la DB
+      await deletePushSubscription(endpoint);
+      
       logger.info('Push subscription removed');
       return true;
     } catch (error) {
       logger.error('Error unsubscribing from push:', error);
       return false;
+    }
+  };
+
+  const deletePushSubscription = async (endpoint: string) => {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { error } = await supabase.functions.invoke('delete-push-subscription', {
+        body: { endpoint },
+      });
+
+      if (error) {
+        logger.error('Error deleting push subscription:', error);
+      } else {
+        logger.info('Push subscription deleted from database');
+      }
+    } catch (error) {
+      logger.error('Error deleting push subscription:', error);
     }
   };
 

@@ -167,6 +167,30 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   logger.log('[CREATE-DISPUTE] Created:', dispute.id);
 
+  // 🔔 Send push notification to counterparty
+  try {
+    const counterpartyId = transaction.user_id === user!.id 
+      ? transaction.buyer_id 
+      : transaction.user_id;
+
+    if (counterpartyId) {
+      await adminClient!.functions.invoke('send-push-notification', {
+        body: {
+          userId: counterpartyId,
+          title: '⚠️ Nouveau litige',
+          body: `Un litige a été ouvert sur "${transaction.title}"`,
+          url: `/transactions?dispute=${dispute.id}`,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: `dispute-${dispute.id}`,
+        },
+      });
+    }
+  } catch (notifError) {
+    logger.error("Failed to send dispute notification", notifError);
+    // Non-blocking
+  }
+
   return successResponse({ 
     disputeId: dispute.id,
     message: 'Dispute created successfully'

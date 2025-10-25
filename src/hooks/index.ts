@@ -54,6 +54,7 @@ export { useRecentActivity } from './useRecentActivity';
 export { useNewItemsNotifications } from './useNewItemsNotifications';
 export { useRealtimeActivityRefresh } from './useRealtimeActivityRefresh';
 export { usePushNotifications } from './usePushNotifications';
+export { usePushSubscriptionSync } from './usePushSubscriptionSync';
 
 // PWA & Install
 export { useInstallPrompt } from './useInstallPrompt';
