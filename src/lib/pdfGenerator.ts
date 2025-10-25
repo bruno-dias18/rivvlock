@@ -153,16 +153,16 @@ export const generateInvoicePDF = async (
         const mimeOutput = logoFormat === 'JPEG' ? 'image/jpeg' : 'image/png';
         sellerLogoBase64 = canvas.toDataURL(mimeOutput, quality);
         
-        // Calculer les dimensions pour le PDF (max 30mm de largeur)
-        const maxPdfWidth = 30;
+        // Calculer les dimensions pour le PDF (max 45mm de largeur - bien visible)
+        const maxPdfWidth = 45;
         const aspectRatio = targetHeight / targetWidth;
         logoWidth = maxPdfWidth;
         logoHeight = maxPdfWidth * aspectRatio;
         
-        // Limiter la hauteur à 15mm max
-        if (logoHeight > 15) {
-          logoHeight = 15;
-          logoWidth = 15 / aspectRatio;
+        // Limiter la hauteur à 22mm max
+        if (logoHeight > 22) {
+          logoHeight = 22;
+          logoWidth = 22 / aspectRatio;
         }
       }
       
