@@ -110,29 +110,36 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * 2. Stripe Checkout (this function):
      *    - Card: Always available
      *    - SEPA Direct Debit: Only if deadline >= 72 hours
+     *    - Twint (CHF only): Requires separate session (automatic capture)
      * 
-     * This ensures NO REGRESSION + Full Escrow:
-     * - All payments go through Stripe
-     * - All methods have escrow protection
-     * - 72h rule applies to both bank methods (SEPA + manual transfer)
+     * CRITICAL: Twint cannot be mixed with other payment methods in same session
+     * because it requires automatic capture while others use manual capture for escrow.
      * 
      * Future: QR codes can be added here as payment_method_types
      */
-    const paymentMethodTypes: string[] = ['card'];
+    
+    const { payment_method } = body;
     const currency = transaction.currency.toLowerCase();
+    let paymentMethodTypes: string[] = [];
+    let isTwintSession = false;
     
-    // Add Twint if CHF currency (instant payment)
-    if (currency === 'chf') {
-      paymentMethodTypes.push('twint');
-      logger.log("✅ [CREATE-CHECKOUT] Twint available (CHF transaction)");
-    }
-    
-    // Add SEPA Direct Debit if deadline allows
-    if (hoursUntilDeadline >= 72) {
-      paymentMethodTypes.push('sepa_debit');
-      logger.log("✅ [CREATE-CHECKOUT] SEPA Direct Debit available (deadline > 3 days)");
+    // Determine payment methods based on user's choice
+    if (payment_method === 'twint' && currency === 'chf') {
+      // Twint requires its own session with automatic capture
+      paymentMethodTypes = ['twint'];
+      isTwintSession = true;
+      logger.log("✅ [CREATE-CHECKOUT] Creating Twint-only session (automatic capture)");
     } else {
-      logger.log("⚠️ [CREATE-CHECKOUT] SEPA Direct Debit not available (deadline < 3 days)");
+      // Standard session with manual capture for escrow
+      paymentMethodTypes = ['card'];
+      
+      // Add SEPA Direct Debit if deadline allows
+      if (hoursUntilDeadline >= 72) {
+        paymentMethodTypes.push('sepa_debit');
+        logger.log("✅ [CREATE-CHECKOUT] SEPA Direct Debit available (deadline > 3 days)");
+      } else {
+        logger.log("⚠️ [CREATE-CHECKOUT] SEPA Direct Debit not available (deadline < 3 days)");
+      }
     }
 
     // Determine success/cancel URLs
@@ -178,22 +185,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       },
     };
 
-    // CRITICAL: Only add payment_intent_data if NOT Twint (Twint doesn't support manual capture)
-    if (!paymentMethodTypes.includes('twint')) {
-      sessionData.payment_intent_data = {
-        capture_method: 'manual', // CRITICAL for escrow (card/SEPA only)
-        metadata: {
-          transaction_id: transactionId,
-          seller_id: transaction.user_id,
-          buyer_id: user!.id,
-          service_date: transaction.service_date,
-          platform: 'rivvlock',
-          rivvlock_escrow: 'true',
-          payment_deadline: paymentDeadline.toISOString(),
-        },
-      };
-    } else {
-      // Twint: automatic capture (instant payment, no escrow hold)
+    // Configure capture method based on session type
+    if (isTwintSession) {
+      // Twint: automatic capture (instant payment)
       sessionData.payment_intent_data = {
         capture_method: 'automatic', // Required for Twint
         metadata: {
@@ -206,7 +200,22 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           payment_deadline: paymentDeadline.toISOString(),
         },
       };
-      logger.log("⚡ [CREATE-CHECKOUT] Twint mode: automatic capture (instant payment)");
+      logger.log("⚡ [CREATE-CHECKOUT] Twint session configured with automatic capture");
+    } else {
+      // Card/SEPA: manual capture for escrow
+      sessionData.payment_intent_data = {
+        capture_method: 'manual', // CRITICAL for escrow
+        metadata: {
+          transaction_id: transactionId,
+          seller_id: transaction.user_id,
+          buyer_id: user!.id,
+          service_date: transaction.service_date,
+          platform: 'rivvlock',
+          rivvlock_escrow: 'true',
+          payment_deadline: paymentDeadline.toISOString(),
+        },
+      };
+      logger.log("🔒 [CREATE-CHECKOUT] Standard session configured with manual capture (escrow)");
     }
 
     const session = await stripe.checkout.sessions.create(sessionData);
@@ -217,7 +226,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       .from("transactions")
       .update({ 
         stripe_payment_intent_id: session.payment_intent as string,
-        payment_method: 'card' // Will be updated by webhook with actual method used
+        payment_method: isTwintSession ? 'twint' : 'card' // Will be updated by webhook with actual method used
       })
       .eq("id", transactionId);
 
