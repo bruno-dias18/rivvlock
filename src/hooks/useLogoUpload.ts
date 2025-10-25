@@ -30,15 +30,51 @@ export function useLogoUpload(): UseLogoUploadReturn {
         return null;
       }
 
-      // Générer un nom de fichier unique
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/logo.${fileExt}`;
+      // 1. Récupérer l'ancien logo depuis le profil
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('company_logo_url')
+        .eq('user_id', userId)
+        .single();
 
-      // Upload vers Storage
+      if (profileError) {
+        logger.error('Error fetching profile:', profileError);
+      }
+
+      // 2. Supprimer l'ancien logo du storage s'il existe
+      if (profile?.company_logo_url) {
+        try {
+          const urlParts = profile.company_logo_url.split('/company-logos/');
+          if (urlParts.length >= 2) {
+            const oldFilePath = urlParts[1];
+            logger.info('Deleting old logo:', oldFilePath);
+            
+            const { error: deleteError } = await supabase.storage
+              .from('company-logos')
+              .remove([oldFilePath]);
+
+            if (deleteError) {
+              logger.warn('Could not delete old logo (may not exist):', deleteError);
+              // Ne pas bloquer l'upload si la suppression échoue
+            } else {
+              logger.info('Old logo deleted successfully');
+            }
+          }
+        } catch (error) {
+          logger.warn('Error during old logo deletion:', error);
+          // Ne pas bloquer l'upload si la suppression échoue
+        }
+      }
+
+      // 3. Générer un nom de fichier unique avec timestamp pour éviter les conflits de cache
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const fileName = `${userId}/logo-${timestamp}.${fileExt}`;
+
+      // 4. Upload vers Storage
       const { error: uploadError } = await supabase.storage
         .from('company-logos')
         .upload(fileName, file, {
-          upsert: true, // Remplacer si existe déjà
           cacheControl: '3600'
         });
 
@@ -47,12 +83,12 @@ export function useLogoUpload(): UseLogoUploadReturn {
         throw uploadError;
       }
 
-      // Obtenir l'URL publique
+      // 5. Obtenir l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('company-logos')
         .getPublicUrl(fileName);
 
-      // Mettre à jour le profil
+      // 6. Mettre à jour le profil
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ company_logo_url: publicUrl })
