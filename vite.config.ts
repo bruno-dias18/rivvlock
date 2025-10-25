@@ -12,10 +12,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Fix lodash/get ESM import issues by redirecting to lodash-es
-      "lodash": "lodash-es",
-      "lodash/get": "lodash-es/get",
-      "lodash/get.js": "lodash-es/get",
     },
   },
   define: {
