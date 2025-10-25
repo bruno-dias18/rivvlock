@@ -1,5 +1,3 @@
-import jsPDF from 'jspdf';
-import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 import { generateInvoicePDF, InvoiceData } from './pdfGenerator';
 import { logger } from '@/lib/logger';
@@ -17,6 +15,9 @@ export interface AnnualReportData {
 }
 
 export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
+  // Dynamic import of jsPDF - lazy loading
+  const { default: jsPDF } = await import('jspdf');
+  
   const { year, transactions, invoices, currencyTotals, currency, sellerProfile, sellerEmail, language = 'fr', t } = reportData;
   
   const doc = new jsPDF();
@@ -386,6 +387,9 @@ export const downloadAllInvoicesAsZip = async (
   t: any,
   onProgress?: (current: number, total: number) => void
 ) => {
+  // Dynamic import of JSZip - lazy loading
+  const { default: JSZip } = await import('jszip');
+  
   try {
   // Fetch all validated transactions for the year
   const { data: transactions, error: txError } = await supabase

@@ -77,6 +77,20 @@ export default defineConfig(({ mode }) => ({
             return 'layout';
           }
 
+          // Heavy lazy-loaded libraries (will be loaded only when needed via dynamic imports)
+          if (id.includes('node_modules/jspdf')) {
+            return 'jspdf';
+          }
+          if (id.includes('node_modules/jszip')) {
+            return 'jszip';
+          }
+          if (id.includes('node_modules/html2canvas')) {
+            return 'html2canvas';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'recharts';
+          }
+
           // NO CATCH-ALL VENDOR CHUNK - Let Vite optimize the rest automatically
           // This prevents creating a huge vendor.js bundle
         },
