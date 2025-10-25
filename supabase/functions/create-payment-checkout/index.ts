@@ -101,18 +101,20 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     /**
      * OPTION C: Payment Method Configuration
      * 
-     * 1. Manual Bank Transfer (NOT via Stripe):
+     * 1. Manual Bank Transfer (VIA Stripe Customer Balance):
      *    - User selects "bank_transfer" in frontend
-     *    - Shows BankTransferInstructions component
-     *    - Does NOT create Stripe session
+     *    - Shows BankTransferInstructions with Stripe virtual IBAN
+     *    - Funds arrive on Stripe → escrow enabled
+     *    - ⚠️ Requires 72h deadline (1-3 days for transfer)
      * 
      * 2. Stripe Checkout (this function):
      *    - Card: Always available
      *    - SEPA Direct Debit: Only if deadline >= 72 hours
      * 
-     * This ensures NO REGRESSION:
-     * - Manual transfers work exactly as before
-     * - Stripe adds SEPA as bonus option when applicable
+     * This ensures NO REGRESSION + Full Escrow:
+     * - All payments go through Stripe
+     * - All methods have escrow protection
+     * - 72h rule applies to both bank methods (SEPA + manual transfer)
      * 
      * Future: QR codes can be added here as payment_method_types
      */

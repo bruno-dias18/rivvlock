@@ -224,6 +224,18 @@ export default function PaymentLinkPage() {
 
     // If bank transfer is selected, mark transaction method and show instructions
     if (selectedPaymentMethod === 'bank_transfer') {
+      // Check if there's enough time for bank transfer (72h minimum)
+      if (transaction.payment_deadline) {
+        const deadline = new Date(transaction.payment_deadline);
+        const now = new Date();
+        const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+        
+        if (hoursUntilDeadline < 72) {
+          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte.');
+          return;
+        }
+      }
+
       try {
         const { error: updateError } = await supabase
           .from('transactions')

@@ -103,24 +103,35 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * 
      * Card: Always available (instant processing)
      * 
-     * Bank Transfer (SEPA Direct Debit): Only if deadline >= 72 hours
-     * Rationale:
-     * - SEPA Direct Debit can take 1-3 business days to process
-     * - We need buffer time to ensure payment arrives before deadline
-     * - 72h = 3 days minimum ensures safe processing window
+     * Bank Transfer Methods (both require 72h):
      * 
-     * SEPA Direct Debit vs SEPA Transfer:
-     * - sepa_debit: Stripe collects directly from bank account (like carte)
-     * - SEPA Instant: Customer initiates transfer (manual, not via Stripe)
+     * A) SEPA Direct Debit (via Stripe Checkout):
+     *    - Stripe prélève automatiquement depuis compte client
+     *    - Processing time: 1-3 business days
+     *    - Only available if deadline ≥ 72h
+     *    - Escrow: ✅ (funds on Stripe)
+     * 
+     * B) Manual Bank Transfer (via Stripe Customer Balance):
+     *    - Client fait virement vers IBAN Stripe virtuel
+     *    - Processing time: 1-3 business days (SEPA standard/instant)
+     *    - Only available if deadline ≥ 72h
+     *    - Escrow: ✅ (funds on Stripe)
+     * 
+     * Why 72h minimum?
+     * - Standard SEPA transfers: 1-3 business days
+     * - Need buffer to ensure funds arrive before deadline
+     * - 72h = 3 days minimum ensures safe processing window
      * 
      * Example:
      * - Transaction created Monday 10:00
      * - Payment deadline Friday 10:00 (96 hours)
-     * - SEPA Direct Debit available: YES (96h > 72h)
+     * - Both bank methods available: YES (96h > 72h)
      * 
      * - Transaction created Wednesday 10:00
      * - Payment deadline Friday 10:00 (48 hours)
-     * - SEPA Direct Debit available: NO (48h < 72h), only card
+     * - Bank methods available: NO (48h < 72h), only card
+     * 
+     * Future: SEPA Instant (< 30 min) could bypass 72h rule
      */
     const paymentMethodTypes = ['card'];
     

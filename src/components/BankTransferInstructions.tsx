@@ -20,13 +20,20 @@ export const BankTransferInstructions = ({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // In production, these would come from Stripe or Supabase
+  // In production, these would come from Stripe PaymentIntent with customer_balance
+  // For now using placeholder - will be replaced with dynamic IBAN from create-payment-intent
   const bankDetails = {
-    iban: "FR76 1234 5678 9012 3456 7890 123",
+    iban: "FR76 1234 5678 9012 3456 7890 123", // TODO: Replace with Stripe virtual IBAN
     bic: "RIVVFRPP",
     accountHolder: "RIVVLOCK SAS",
     reference: `RIVV-${transaction.id.slice(0, 8).toUpperCase()}`,
   };
+
+  // TODO: Fetch actual Stripe virtual IBAN from PaymentIntent
+  // const { data: paymentData } = await supabase.functions.invoke('create-payment-intent', {
+  //   body: { transactionId: transaction.id, paymentMethod: 'bank_transfer' }
+  // });
+  // bankDetails = paymentData.bankTransferInstructions;
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -186,10 +193,15 @@ export const BankTransferInstructions = ({
           </div>
 
           <Alert>
-            <AlertDescription className="text-sm">
-              <strong>Important :</strong> Une fois le virement effectué, vous recevrez une 
-              confirmation par email dès réception des fonds. La transaction passera alors au 
-              statut "Payé" et les fonds seront bloqués jusqu'à validation.
+            <AlertDescription className="text-sm space-y-2">
+              <p>
+                <strong>Important :</strong> Cet IBAN est généré par Stripe et crédite automatiquement 
+                votre transaction. Les fonds restent bloqués en escrow jusqu'à validation du service.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Une fois le virement reçu (1-3 jours), vous recevrez une confirmation par email. 
+                La transaction passera au statut "Payé" et les fonds seront sécurisés.
+              </p>
             </AlertDescription>
           </Alert>
         </CardContent>
