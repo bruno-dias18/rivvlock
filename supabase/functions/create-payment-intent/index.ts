@@ -103,30 +103,34 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      * 
      * Card: Always available (instant processing)
      * 
-     * Bank Transfer (SEPA): Only if deadline >= 72 hours
+     * Bank Transfer (SEPA Direct Debit): Only if deadline >= 72 hours
      * Rationale:
-     * - SEPA transfers can take 1-3 business days to process
+     * - SEPA Direct Debit can take 1-3 business days to process
      * - We need buffer time to ensure payment arrives before deadline
      * - 72h = 3 days minimum ensures safe processing window
+     * 
+     * SEPA Direct Debit vs SEPA Transfer:
+     * - sepa_debit: Stripe collects directly from bank account (like carte)
+     * - SEPA Instant: Customer initiates transfer (manual, not via Stripe)
      * 
      * Example:
      * - Transaction created Monday 10:00
      * - Payment deadline Friday 10:00 (96 hours)
-     * - Bank transfer available: YES (96h > 72h)
+     * - SEPA Direct Debit available: YES (96h > 72h)
      * 
      * - Transaction created Wednesday 10:00
      * - Payment deadline Friday 10:00 (48 hours)
-     * - Bank transfer available: NO (48h < 72h), only card
+     * - SEPA Direct Debit available: NO (48h < 72h), only card
      */
     const paymentMethodTypes = ['card'];
     
-    // Only allow bank transfer if deadline is >= 72 hours (3 days) away
-    // SEPA standard can take 1-3 business days
+    // Only allow SEPA Direct Debit if deadline is >= 72 hours (3 days) away
+    // SEPA Direct Debit can take 1-3 business days to collect
     if (hoursUntilDeadline >= 72) {
-      paymentMethodTypes.push('customer_balance');
-      logger.log("✅ [CREATE-PAYMENT-INTENT] Bank transfer available (deadline > 3 days)");
+      paymentMethodTypes.push('sepa_debit');
+      logger.log("✅ [CREATE-PAYMENT-INTENT] SEPA Direct Debit available (deadline > 3 days)");
     } else {
-      logger.log("⚠️ [CREATE-PAYMENT-INTENT] Bank transfer blocked (deadline < 3 days)");
+      logger.log("⚠️ [CREATE-PAYMENT-INTENT] SEPA Direct Debit blocked (deadline < 3 days)");
     }
 
     /**
