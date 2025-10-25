@@ -12,7 +12,9 @@ interface OptimizedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> 
 }
 
 /**
- * Optimized image component with WebP support and lazy loading
+ * Optimized image component with WebP support and native lazy loading
+ * 
+ * #4 IMPROVEMENT: Uses native loading="lazy" for better performance
  */
 export function OptimizedImage({
   src,
@@ -79,7 +81,8 @@ export function OptimizedImage({
         src={lazy ? undefined : optimizedSrc}
         data-src={lazy ? optimizedSrc : undefined}
         alt={alt}
-        loading={lazy ? 'lazy' : 'eager'}
+        loading="lazy"
+        decoding="async"
         onLoad={handleLoad}
         onError={handleError}
         className={cn(

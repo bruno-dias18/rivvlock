@@ -169,3 +169,5 @@ export const AdminAnalyticsCharts = ({ analytics, isLoading }: AdminAnalyticsCha
     </Tabs>
   );
 };
+
+export default AdminAnalyticsCharts;

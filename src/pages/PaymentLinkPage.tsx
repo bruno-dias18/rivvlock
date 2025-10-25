@@ -211,8 +211,8 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    // Si la transaction est déjà attachée à l'utilisateur, redirection simple
-    if (transaction.buyer_id === user.id) {
+    // ✅ FIX: Si auto-attach déjà tenté OU transaction déjà attachée, redirection simple
+    if (autoAttachAttempted || transaction.buyer_id === user.id) {
       navigate('/transactions');
       return;
     }
