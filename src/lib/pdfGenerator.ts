@@ -122,8 +122,8 @@ export const generateInvoicePDF = async (
         image.src = URL.createObjectURL(blob);
       });
       
-      // Redimensionner l'image à max 200px de largeur (optimisation forte)
-      const maxWidth = 200;
+      // Redimensionner l'image à max 150px de largeur (optimisation maximale)
+      const maxWidth = 150;
       let targetWidth = img.width;
       let targetHeight = img.height;
       
@@ -146,21 +146,21 @@ export const generateInvoicePDF = async (
         
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
         
-        // Compression plus forte pour JPEG (92% au lieu de 85%)
-        const quality = logoFormat === 'JPEG' ? 0.92 : 1.0;
+        // Compression maximale optimisée (95% pour JPEG)
+        const quality = logoFormat === 'JPEG' ? 0.95 : 1.0;
         const mimeOutput = logoFormat === 'JPEG' ? 'image/jpeg' : 'image/png';
         sellerLogoBase64 = canvas.toDataURL(mimeOutput, quality);
         
-        // Calculer les dimensions pour le PDF (max 35mm de largeur)
-        const maxPdfWidth = 35;
+        // Calculer les dimensions pour le PDF (max 30mm de largeur)
+        const maxPdfWidth = 30;
         const aspectRatio = targetHeight / targetWidth;
         logoWidth = maxPdfWidth;
         logoHeight = maxPdfWidth * aspectRatio;
         
-        // Limiter la hauteur à 18mm max
-        if (logoHeight > 18) {
-          logoHeight = 18;
-          logoWidth = 18 / aspectRatio;
+        // Limiter la hauteur à 15mm max
+        if (logoHeight > 15) {
+          logoHeight = 15;
+          logoWidth = 15 / aspectRatio;
         }
       }
       
