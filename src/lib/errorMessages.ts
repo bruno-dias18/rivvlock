@@ -8,26 +8,34 @@ import i18n from '@/i18n/config';
 export interface ErrorContext {
   code?: string;
   statusCode?: number;
-  details?: any;
+  details?: unknown;
 }
 
 /**
  * Convert technical error to user-friendly message
  */
-export const getUserFriendlyError = (error: any, context?: ErrorContext): string => {
-  const rawMessage = (error as any)?.message ?? (typeof error === 'string' ? error : '');
-  let errorMessage = rawMessage || String(error);
+export const getUserFriendlyError = (error: unknown, context?: ErrorContext): string => {
+  const rawMessage = (error as Record<string, unknown>)?.message ?? (typeof error === 'string' ? error : '');
+  let errorMessage: string = typeof rawMessage === 'string' ? rawMessage : String(rawMessage);
+  
   // Try to extract server-provided JSON { error: "..." }
   try {
-    if (rawMessage && rawMessage.trim().startsWith('{')) {
-      const parsed = JSON.parse(rawMessage);
-      errorMessage = parsed.error || parsed.message || rawMessage;
-    } else if ((error as any)?.error && typeof (error as any).error === 'string') {
-      errorMessage = (error as any).error;
+    if (typeof errorMessage === 'string' && errorMessage.trim().startsWith('{')) {
+      const parsed = JSON.parse(errorMessage);
+      errorMessage = parsed.error || parsed.message || errorMessage;
+    } else if ((error as Record<string, unknown>)?.error && typeof (error as Record<string, unknown>).error === 'string') {
+      errorMessage = (error as Record<string, unknown>).error as string;
     }
   } catch {}
-  const errorCode = (error as any)?.code || context?.code;
-  const statusCode = (error as any)?.statusCode || (error as any)?.status || context?.statusCode;
+  
+  const errorCode = typeof (error as Record<string, unknown>)?.code === 'string' 
+    ? (error as Record<string, unknown>).code 
+    : context?.code;
+  const statusCode = typeof (error as Record<string, unknown>)?.statusCode === 'number'
+    ? (error as Record<string, unknown>).statusCode
+    : typeof (error as Record<string, unknown>)?.status === 'number'
+    ? (error as Record<string, unknown>).status
+    : context?.statusCode;
   // Authentication errors
   if (errorCode === 'invalid_credentials' || errorMessage.includes('Invalid login credentials')) {
     return i18n.t('errors.auth.invalidCredentials', { 
@@ -98,7 +106,7 @@ export const getUserFriendlyError = (error: any, context?: ErrorContext): string
     });
   }
   
-  if (errorCode?.startsWith('23') || errorMessage.includes('constraint')) {
+  if ((typeof errorCode === 'string' && errorCode.startsWith('23')) || errorMessage.includes('constraint')) {
     return i18n.t('errors.database.constraint', { 
       defaultValue: 'This action violates database constraints. Please check your input.' 
     });
@@ -132,7 +140,7 @@ export const getUserFriendlyError = (error: any, context?: ErrorContext): string
   }
 
   // Server errors
-  if (statusCode && statusCode >= 500) {
+  if (typeof statusCode === 'number' && statusCode >= 500) {
     return i18n.t('errors.server.generic', { 
       defaultValue: 'Server error. Our team has been notified. Please try again later.' 
     });

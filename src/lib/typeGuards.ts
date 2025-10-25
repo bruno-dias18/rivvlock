@@ -29,8 +29,8 @@ export const isCurrency = (currency: string): currency is Currency => {
 /**
  * Type guard for checking if error is a Supabase error
  */
-export const isSupabaseError = (error: any): error is { message: string; code?: string; details?: string } => {
-  return error && typeof error === 'object' && 'message' in error;
+export const isSupabaseError = (error: unknown): error is { message: string; code?: string; details?: string } => {
+  return error !== null && error !== undefined && typeof error === 'object' && 'message' in error;
 };
 
 /**
