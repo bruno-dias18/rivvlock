@@ -53,6 +53,9 @@ export const BankTransferInstructions = ({
             <p className="text-xs text-muted-foreground mt-2">
               ⚠️ Un virement SEPA standard peut prendre <strong>1-3 jours ouvrables</strong>
             </p>
+            <p className="text-xs mt-2 text-muted-foreground">
+              💡 <strong>Alternative :</strong> Si vous payez par carte bancaire, SEPA Direct Debit sera disponible (prélèvement automatique, si délai ≥ 3 jours)
+            </p>
           </div>
         </AlertDescription>
       </Alert>
