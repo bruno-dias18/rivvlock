@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-
+import App from "./App.tsx";
 import "./index.css";
 import { forceCorrectUrl } from "./lib/appUrl";
 import { logger } from "./lib/logger";
@@ -15,6 +15,12 @@ initWebVitals();
 // Ensure public domain for shared links (redirect from editor/preview domains)
 if (import.meta.env.PROD) {
   forceCorrectUrl();
+}
+
+// Emergency flag to disable Service Worker quickly
+const NO_SW = /(?:^|[?&])no-sw=1(?:&|$)/.test(location.search) || localStorage.getItem('NO_SW') === '1';
+if (/(?:^|[?&])no-sw=1(?:&|$)/.test(location.search)) {
+  try { localStorage.setItem('NO_SW', '1'); } catch {}
 }
 
 // Runtime cache recovery helper for production
@@ -70,12 +76,15 @@ window.addEventListener('unhandledrejection', (e: PromiseRejectionEvent) => {
 if (import.meta.env.PROD) {
   // Register SW only in production
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    if (NO_SW) {
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+      if ('caches' in window) { caches.keys().then(names => names.forEach(n => caches.delete(n))); }
+    } else {
       navigator.serviceWorker.register('/sw.js')
         .catch((registrationError) => {
           logger.error('SW registration failed:', registrationError);
         });
-    });
+    }
   }
 } else {
   // In development, clear all existing service workers and caches
@@ -96,14 +105,4 @@ if (import.meta.env.PROD) {
   }
 }
 
-const rootEl = document.getElementById("root")!;
-
-import('./App.tsx')
-  .then(({ default: App }) => {
-    createRoot(rootEl).render(<App />);
-  })
-  .catch((err) => {
-    logger.error('Failed to bootstrap app:', err);
-    captureException(err, { tags: { source: 'bootstrap' } });
-    attemptCacheRecovery('import-app-failed');
-  });
+createRoot(document.getElementById("root")!).render(<App />);
