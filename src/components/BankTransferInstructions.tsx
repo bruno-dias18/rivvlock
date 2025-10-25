@@ -10,30 +10,36 @@ import { fr } from "date-fns/locale";
 
 interface BankTransferInstructionsProps {
   transaction: Transaction;
-  paymentIntentId?: string;
+  virtualIBAN?: {
+    iban: string;
+    bic: string;
+    account_holder_name: string;
+    bank_name: string;
+    country: string;
+  } | null;
 }
 
 export const BankTransferInstructions = ({ 
   transaction, 
-  paymentIntentId = '' 
+  virtualIBAN = null 
 }: BankTransferInstructionsProps) => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // In production, these would come from Stripe PaymentIntent with customer_balance
-  // For now using placeholder - will be replaced with dynamic IBAN from create-payment-intent
-  const bankDetails = {
-    iban: "FR76 1234 5678 9012 3456 7890 123", // TODO: Replace with Stripe virtual IBAN
-    bic: "RIVVFRPP",
-    accountHolder: "RIVVLOCK SAS",
+  // Use virtual IBAN from Stripe or fallback to placeholder
+  const bankDetails = virtualIBAN ? {
+    iban: virtualIBAN.iban,
+    bic: virtualIBAN.bic,
+    accountHolder: virtualIBAN.account_holder_name,
+    reference: `RIVV-${transaction.id.slice(0, 8).toUpperCase()}`,
+    bankName: virtualIBAN.bank_name,
+    country: virtualIBAN.country,
+  } : {
+    iban: "IBAN EN COURS DE GÉNÉRATION...",
+    bic: "BIC EN COURS...",
+    accountHolder: "RIVVLOCK (via Stripe)",
     reference: `RIVV-${transaction.id.slice(0, 8).toUpperCase()}`,
   };
-
-  // TODO: Fetch actual Stripe virtual IBAN from PaymentIntent
-  // const { data: paymentData } = await supabase.functions.invoke('create-payment-intent', {
-  //   body: { transactionId: transaction.id, paymentMethod: 'bank_transfer' }
-  // });
-  // bankDetails = paymentData.bankTransferInstructions;
 
   const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
@@ -195,12 +201,20 @@ export const BankTransferInstructions = ({
           <Alert>
             <AlertDescription className="text-sm space-y-2">
               <p>
-                <strong>Important :</strong> Cet IBAN est généré par Stripe et crédite automatiquement 
-                votre transaction. Les fonds restent bloqués en escrow jusqu'à validation du service.
+                <strong>💡 Compte virtuel Stripe (Escrow sécurisé) :</strong> Cet IBAN est un compte virtuel 
+                généré par Stripe spécialement pour votre transaction. Dès réception des fonds, 
+                votre transaction passera automatiquement en statut <strong>"bloquée"</strong> (escrow).
               </p>
               <p className="text-xs text-muted-foreground">
-                Une fois le virement reçu (1-3 jours), vous recevrez une confirmation par email. 
-                La transaction passera au statut "Payé" et les fonds seront sécurisés.
+                {virtualIBAN ? (
+                  <>
+                    Banque : {virtualIBAN.bank_name} ({virtualIBAN.country})
+                    <br />
+                    Les fonds restent sur Stripe jusqu'à validation du service. Vous recevrez une confirmation par email une fois le virement reçu (1-3 jours, ou moins de 30 min avec SEPA Instant).
+                  </>
+                ) : (
+                  "Génération de l'IBAN virtuel en cours..."
+                )}
               </p>
             </AlertDescription>
           </Alert>

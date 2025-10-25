@@ -23,7 +23,7 @@ interface TransactionData {
   service_date: string;
   payment_deadline?: string;
   status?: string;
-  payment_method?: 'card' | 'bank_transfer';
+  payment_method?: 'card' | 'bank_transfer' | 'twint';
 }
 
 export default function PaymentLinkPage() {
@@ -35,8 +35,9 @@ export default function PaymentLinkPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | 'twint' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
+  const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
 
   useEffect(() => {
     if (!token) {
@@ -222,7 +223,7 @@ export default function PaymentLinkPage() {
   const handlePayNow = async () => {
     if (!user || !transaction || processingPayment) return;
 
-    // If bank transfer is selected, mark transaction method and show instructions
+    // If bank transfer is selected, generate virtual IBAN and show instructions
     if (selectedPaymentMethod === 'bank_transfer') {
       // Check if there's enough time for bank transfer (72h minimum)
       if (transaction.payment_deadline) {
@@ -231,30 +232,43 @@ export default function PaymentLinkPage() {
         const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
         
         if (hoursUntilDeadline < 72) {
-          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte.');
+          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte ou Twint.');
           return;
         }
       }
 
+      setProcessingPayment(true);
       try {
-        const { error: updateError } = await supabase
-          .from('transactions')
-          .update({ payment_method: 'bank_transfer' })
-          .eq('id', transaction.id);
+        // Call create-payment-intent-v2 to generate virtual IBAN
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment-intent-v2', {
+          body: { 
+            transactionId: transaction.id,
+            paymentMethod: 'bank_transfer'
+          }
+        });
 
-        if (updateError) throw updateError;
+        if (paymentError) throw paymentError;
+        if (paymentData.error) throw new Error(paymentData.error);
 
+        if (!paymentData.virtualIBAN) {
+          throw new Error('IBAN virtuel non généré. Veuillez réessayer ou contacter le support.');
+        }
+
+        // Store virtual IBAN and show instructions
+        setVirtualIBAN(paymentData.virtualIBAN);
         setShowBankInstructions(true);
       } catch (err: any) {
-        logger.error('Error updating payment method:', err);
-        setError(err.message || 'Erreur lors de la sélection du mode de paiement');
+        logger.error('Error generating virtual IBAN:', err);
+        setError(err.message || 'Erreur lors de la génération de l\'IBAN virtuel');
+      } finally {
+        setProcessingPayment(false);
       }
       return;
     }
 
+    // For card and twint: use Stripe Checkout
     setProcessingPayment(true);
     try {
-      // Create Stripe Checkout session (transaction already joined by auto-attach)
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
         body: { 
           transactionId: transaction.id,
@@ -410,7 +424,10 @@ export default function PaymentLinkPage() {
                 loading="lazy"
               />
             </div>
-            <BankTransferInstructions transaction={transaction} />
+            <BankTransferInstructions 
+              transaction={transaction} 
+              virtualIBAN={virtualIBAN}
+            />
               <Button 
                 variant="outline"
                 onClick={() => setShowBankInstructions(false)}
