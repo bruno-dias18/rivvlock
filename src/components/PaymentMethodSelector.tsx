@@ -24,7 +24,19 @@ export const PaymentMethodSelector = ({
     : 0;
   const hoursUntilDeadline = timeUntilDeadline / (1000 * 60 * 60);
   const bankTransferAllowed = hoursUntilDeadline >= 72;
-  const isCHF = transaction.currency.toUpperCase() === 'CHF';
+  
+  // Check if currency is CHF (case insensitive)
+  const currencyUpper = (transaction.currency || '').toUpperCase();
+  const isCHF = currencyUpper === 'CHF';
+  
+  // Debug log
+  console.log('💳 PaymentMethodSelector:', { 
+    currency: transaction.currency, 
+    currencyUpper, 
+    isCHF,
+    hoursUntilDeadline: Math.round(hoursUntilDeadline),
+    bankTransferAllowed 
+  });
 
   return (
       <div className="space-y-4" data-testid="payment-method-selector">
