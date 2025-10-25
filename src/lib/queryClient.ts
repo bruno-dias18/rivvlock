@@ -2,6 +2,30 @@ import { QueryClient } from '@tanstack/react-query';
 import { logger } from './logger';
 
 /**
+ * Optimized stale times by data category
+ * Reduces unnecessary API calls while maintaining data freshness
+ */
+export const STALE_TIME = {
+  // Real-time data (5-10s)
+  UNREAD_COUNTS: 5000,
+  PENDING_TRANSACTIONS: 10000,
+  
+  // Frequently updated (30s-1min)
+  ACTIVE_CONVERSATIONS: 30000,
+  TRANSACTIONS: 60000,
+  DISPUTES: 60000,
+  
+  // Moderately updated (5min)
+  QUOTES: 300000,
+  ACTIVITY_LOGS: 300000,
+  
+  // Rarely updated (30min+)
+  PROFILES: 1800000,
+  COMPLETED_TRANSACTIONS: 1800000,
+  STRIPE_ACCOUNTS: 1800000,
+} as const;
+
+/**
  * #5 IMPROVEMENT: Enhanced error recovery with exponential backoff
  * Automatically retries failed mutations with circuit breaker pattern
  */

@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { fr, enUS, de } from 'date-fns/locale';
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { 
   Activity,
   ArrowRight,
@@ -231,4 +231,6 @@ export function RecentActivityCard() {
       </CardContent>
     </Card>
   );
-}
+};
+
+export default memo(RecentActivityCard);
