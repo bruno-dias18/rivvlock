@@ -79,7 +79,8 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
   const discountAmount = subtotal * (discountPercentage / 100);
   const subtotalAfterDiscount = subtotal - discountAmount;
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
-  const taxAmount = subtotalAfterDiscount * (taxRate / 100);
+  // ✅ Arrondi sécurisé pour éviter les erreurs comptables
+  const taxAmount = Math.round(subtotalAfterDiscount * taxRate) / 100;
   const totalAmount = subtotalAfterDiscount + taxAmount;
 
   const totalFees = totalAmount * PLATFORM_FEE_RATE;
@@ -119,7 +120,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
     }
 
     const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const currentTaxAmount = currentSubtotal * (taxRate / 100);
+    const currentTaxAmount = Math.round(currentSubtotal * taxRate) / 100;
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
     
     const submittedTotalAmount = autoDistributionApplied 

@@ -2,6 +2,8 @@ import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
+import { formatAvsDisplay } from '@/lib/utils';
+
 export interface InvoiceData {
   transactionId: string;
   title: string;
@@ -317,7 +319,7 @@ export const generateInvoicePDF = async (
       
       // Pour les indépendants, ajouter le numéro AVS si disponible
       if (profile.user_type === 'independent' && profile.avs_number) {
-        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${profile.avs_number}`, margin, leftColumnY);
+        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${formatAvsDisplay(profile.avs_number)}`, margin, leftColumnY);
         leftColumnY += 4;
       }
       
@@ -423,7 +425,7 @@ export const generateInvoicePDF = async (
       
       // Pour les indépendants, ajouter le numéro AVS si disponible
       if (profile.user_type === 'independent' && profile.avs_number) {
-        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${profile.avs_number}`, clientX, rightColumnY);
+        doc.text(`${t?.('invoice.avsNumber') || 'N° AVS'}: ${formatAvsDisplay(profile.avs_number)}`, clientX, rightColumnY);
         rightColumnY += 4;
       }
       

@@ -22,6 +22,8 @@ import { logger } from '@/lib/logger';
 import { HelpCircle } from 'lucide-react';
 import { useLogoUpload } from '@/hooks/useLogoUpload';
 
+import { formatAvsDisplay } from '@/lib/utils';
+
 export default function ProfilePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -233,7 +235,7 @@ export default function ProfilePage() {
               <div>
                 <label className="text-sm font-medium">{t('user.avs')}</label>
                 <p className="text-sm text-muted-foreground">
-                  {profile?.avs_number || t('profile.notProvided')}
+                  {profile?.avs_number ? formatAvsDisplay(profile.avs_number) : t('profile.notProvided')}
                 </p>
               </div>
             )}

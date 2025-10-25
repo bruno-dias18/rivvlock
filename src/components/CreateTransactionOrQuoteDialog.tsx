@@ -113,7 +113,8 @@ export const CreateTransactionOrQuoteDialog = ({
 
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
-  const taxAmount = subtotal * (taxRate / 100);
+  // ✅ Arrondi sécurisé pour éviter les erreurs comptables (ex: 100.005 → 100.01)
+  const taxAmount = Math.round(subtotal * taxRate) / 100;
   const totalAmount = subtotal + taxAmount;
 
   const totalFees = totalAmount * PLATFORM_FEE_RATE;
@@ -141,7 +142,7 @@ export const CreateTransactionOrQuoteDialog = ({
     }
 
     const baseSubtotal = originalItems.reduce((sum, item) => sum + item.total, 0);
-    const baseTaxAmount = baseSubtotal * (taxRate / 100);
+    const baseTaxAmount = Math.round(baseSubtotal * taxRate) / 100;
     const baseTotalAmount = baseSubtotal + baseTaxAmount;
     
     const baseTotalFees = baseTotalAmount * PLATFORM_FEE_RATE;
@@ -187,7 +188,7 @@ export const CreateTransactionOrQuoteDialog = ({
     }
 
     const currentSubtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const currentTaxAmount = currentSubtotal * (taxRate / 100);
+    const currentTaxAmount = Math.round(currentSubtotal * taxRate) / 100;
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
     
     const submittedTotalAmount = autoDistributionApplied 

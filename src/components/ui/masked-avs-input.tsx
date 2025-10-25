@@ -13,25 +13,29 @@ export const MaskedAvsInput = forwardRef<HTMLInputElement, MaskedAvsInputProps>(
     const [isFocused, setIsFocused] = useState(false);
 
     // Format AVS with dots for readability (756.XXXX.XXXX.XX)
+    // Auto-formatte pendant la saisie - utilisateur ne tape que les chiffres
     const formatAvsValue = (digits: string): string => {
       // Remove all non-digits
       const cleaned = digits.replace(/\D/g, '');
       
-      // Always start with 756 prefix
-      if (cleaned.length === 0) return '756.';
+      // Empty input
+      if (cleaned.length === 0) return '';
       
-      // If user tries to change the 756 prefix, restore it
+      // Always ensure 756 prefix
+      let finalDigits = cleaned;
       if (!cleaned.startsWith('756')) {
-        const withoutPrefix = cleaned.replace(/^756/, '');
-        const correctedDigits = '756' + withoutPrefix;
-        return formatAvsValue(correctedDigits);
+        // Auto-prepend 756 si l'user commence par autre chose
+        finalDigits = '756' + cleaned.slice(0, 10);
       }
       
-      // Apply formatting: 756.XXXX.XXXX.XX
-      if (cleaned.length <= 3) return '756.';
-      if (cleaned.length <= 7) return `756.${cleaned.slice(3)}`;
-      if (cleaned.length <= 11) return `756.${cleaned.slice(3, 7)}.${cleaned.slice(7)}`;
-      return `756.${cleaned.slice(3, 7)}.${cleaned.slice(7, 11)}.${cleaned.slice(11, 13)}`;
+      // Limit to 13 digits maximum
+      finalDigits = finalDigits.slice(0, 13);
+      
+      // Apply formatting progressively: 756.XXXX.XXXX.XX
+      if (finalDigits.length <= 3) return finalDigits;
+      if (finalDigits.length <= 7) return `${finalDigits.slice(0, 3)}.${finalDigits.slice(3)}`;
+      if (finalDigits.length <= 11) return `${finalDigits.slice(0, 3)}.${finalDigits.slice(3, 7)}.${finalDigits.slice(7)}`;
+      return `${finalDigits.slice(0, 3)}.${finalDigits.slice(3, 7)}.${finalDigits.slice(7, 11)}.${finalDigits.slice(11)}`;
     };
 
     // Extract only digits from input
@@ -43,20 +47,25 @@ export const MaskedAvsInput = forwardRef<HTMLInputElement, MaskedAvsInputProps>(
       const inputValue = e.target.value;
       let digits = extractDigits(inputValue);
       
-      // Ensure it starts with 756
-      if (digits.length >= 3 && !digits.startsWith('756')) {
-        // If user is typing and doesn't have 756, prepend it to their input
-        if (digits.length > 0) {
-          digits = '756' + digits.slice(0, 10); // Limit additional digits to 10
-        }
+      // Si l'user efface tout, autoriser
+      if (digits.length === 0) {
+        setDisplayValue('');
+        onChange?.('');
+        return;
       }
       
-      // Limit to 13 digits maximum (756 + 10 additional)
+      // Auto-prepend 756 si l'user tape autre chose
+      if (!digits.startsWith('756')) {
+        digits = '756' + digits.slice(0, 10);
+      }
+      
+      // Limit to 13 digits maximum
       const limitedDigits = digits.slice(0, 13);
       const formatted = formatAvsValue(limitedDigits);
       
       setDisplayValue(formatted);
-      onChange?.(limitedDigits); // Pass only digits to parent
+      // Toujours envoyer les chiffres sans points à la DB
+      onChange?.(limitedDigits);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -79,20 +88,12 @@ export const MaskedAvsInput = forwardRef<HTMLInputElement, MaskedAvsInputProps>(
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
-      // If empty, show the prefix
-      if (displayValue === '') {
-        setDisplayValue('756.');
-      }
+      // Pas de pré-remplissage au focus - l'user tape directement
       onFocus?.(e);
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
-      // If only prefix remains, clear the field
-      if (displayValue === '756.') {
-        setDisplayValue('');
-        onChange?.('');
-      }
       onBlur?.(e);
     };
 

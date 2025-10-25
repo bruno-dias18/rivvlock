@@ -172,12 +172,14 @@ export const swissAvsSchema = z
   .string()
   .trim()
   .refine((val) => {
-    // Accepte les chiffres uniquement (format envoyé par MaskedAvsInput)
+    // Accepte les chiffres uniquement (format envoyé par MaskedAvsInput - sans points)
     const cleaned = val.replace(/\D/g, '');
     return cleaned.length === 13 && cleaned.startsWith('756');
   }, {
     message: 'Le numéro AVS doit contenir exactement 13 chiffres (756.XXXX.XXXX.XX)'
-  });
+  })
+  // ✅ Toujours stocker SANS points en DB (normalisation)
+  .transform(val => val.replace(/\D/g, ''));
 
 // VAT number validation
 export const vatNumberSchema = (country: 'FR' | 'CH') => {
