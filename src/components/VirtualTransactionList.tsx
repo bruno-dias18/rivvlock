@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { TransactionCard } from './TransactionCard';
 import { LocalErrorBoundary } from './LocalErrorBoundary';
 import type { Transaction } from '@/types';
@@ -34,7 +34,7 @@ interface VirtualTransactionListProps {
   CompleteButtonComponent: React.ComponentType<any>;
 }
 
-export const VirtualTransactionList: React.FC<VirtualTransactionListProps> = ({
+const VirtualTransactionListComponent: React.FC<VirtualTransactionListProps> = ({
   transactions,
   user,
   transactionsWithNewActivity,
@@ -114,3 +114,5 @@ export const VirtualTransactionList: React.FC<VirtualTransactionListProps> = ({
     </LocalErrorBoundary>
   );
 };
+
+export const VirtualTransactionList = memo(VirtualTransactionListComponent);

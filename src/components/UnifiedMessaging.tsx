@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,7 +28,7 @@ interface UnifiedMessagingProps {
   inline?: boolean; // If true, render without Dialog wrapper (for nested dialogs)
 }
 
-export const UnifiedMessaging = ({ 
+const UnifiedMessagingComponent = ({ 
   conversationId,
   open, 
   onOpenChange,
@@ -484,3 +484,5 @@ export const UnifiedMessaging = ({
     </Dialog>
   );
 };
+
+export const UnifiedMessaging = memo(UnifiedMessagingComponent);

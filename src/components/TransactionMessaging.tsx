@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { UnifiedMessaging } from './UnifiedMessaging';
@@ -14,7 +14,7 @@ interface TransactionMessagingProps {
   otherParticipantName?: string;
 }
 
-export const TransactionMessaging = ({ 
+const TransactionMessagingComponent = ({ 
   transactionId, 
   open, 
   onOpenChange,
@@ -106,3 +106,5 @@ export const TransactionMessaging = ({
 
   return null;
 };
+
+export const TransactionMessaging = memo(TransactionMessagingComponent);
