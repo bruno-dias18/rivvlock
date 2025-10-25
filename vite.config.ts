@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Fix ESM default export issue from transitive imports of 'lodash/get'
+      "lodash/get": path.resolve(__dirname, "./src/shims/lodash-get.ts"),
+      "lodash/get.js": path.resolve(__dirname, "./src/shims/lodash-get.ts"),
     },
   },
   define: {
