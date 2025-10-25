@@ -19,13 +19,86 @@ export interface AnnualReportData {
 export const generateAnnualReportPDF = async (reportData: AnnualReportData) => {
   const { year, transactions, invoices, currencyTotals, currency, sellerProfile, sellerEmail, language = 'fr', t } = reportData;
   
-  const doc = new jsPDF();
+  const doc = new jsPDF({ compress: true });
   const pageWidth = doc.internal.pageSize.width;
   const pageHeight = doc.internal.pageSize.height;
   const margin = 15;
   let yPosition = 20;
   
   const primaryBlue: [number, number, number] = [24, 119, 242];
+  
+  // === LOGO VENDEUR (haut à droite) ===
+  let sellerLogoBase64: string | null = null;
+  let logoWidth = 0;
+  let logoHeight = 0;
+  
+  if (sellerProfile?.logo_url) {
+    try {
+      const response = await fetch(sellerProfile.logo_url);
+      const blob = await response.blob();
+      
+      const img = new Image();
+      const imgLoadPromise = new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+      });
+      img.src = URL.createObjectURL(blob);
+      await imgLoadPromise;
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      
+      // Dimensions optimales (max 600px)
+      const maxSize = 600;
+      let targetWidth = img.width;
+      let targetHeight = img.height;
+      
+      if (img.width > maxSize || img.height > maxSize) {
+        const ratio = Math.min(maxSize / img.width, maxSize / img.height);
+        targetWidth = Math.round(img.width * ratio);
+        targetHeight = Math.round(img.height * ratio);
+      }
+      
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+      
+      // Détection du format - WebP converti en JPEG
+      let logoFormat: 'JPEG' | 'PNG' = 'PNG';
+      const quality = 0.95;
+      
+      if (sellerProfile.logo_url.toLowerCase().endsWith('.jpg') || 
+          sellerProfile.logo_url.toLowerCase().endsWith('.jpeg')) {
+        logoFormat = 'JPEG';
+      } else if (sellerProfile.logo_url.toLowerCase().endsWith('.webp')) {
+        logoFormat = 'JPEG';
+      }
+      
+      const mimeOutput = logoFormat === 'JPEG' ? 'image/jpeg' : 'image/png';
+      sellerLogoBase64 = canvas.toDataURL(mimeOutput, quality);
+      
+      // Calculer les dimensions pour le PDF (max 45mm de largeur - bien visible)
+      const maxPdfWidth = 45;
+      const aspectRatio = targetHeight / targetWidth;
+      logoWidth = maxPdfWidth;
+      logoHeight = maxPdfWidth * aspectRatio;
+      
+      // Limiter la hauteur à 22mm max
+      if (logoHeight > 22) {
+        logoHeight = 22;
+        logoWidth = 22 / aspectRatio;
+      }
+    } catch (error) {
+      logger.error('Error loading seller logo for annual report:', error);
+      sellerLogoBase64 = null;
+    }
+  }
+  
+  // Afficher le logo en haut à droite
+  if (sellerLogoBase64) {
+    const logoX = pageWidth - margin - logoWidth;
+    doc.addImage(sellerLogoBase64, 'JPEG', logoX, yPosition - 5, logoWidth, logoHeight);
+  }
   
   // === PAGE DE GARDE ===
   doc.setFontSize(24);
