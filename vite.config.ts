@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => ({
             return 'radix-ui';
           }
 
-          // Core services
+          // Core services - Keep separate for better caching
           if (id.includes('@supabase/supabase-js')) {
             return 'supabase';
           }
@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => ({
             return 'forms';
           }
 
-          // Heavy utilities
+          // Utilities
           if (id.includes('date-fns')) {
             return 'date-fns';
           }
@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => ({
             return 'icons';
           }
 
-          // Dashboard Layout (shared across all pages) - Create separate chunk
+          // Dashboard Layout (shared across all pages)
           if (id.includes('/components/layouts/DashboardLayoutWithSidebar') ||
               id.includes('/components/AppSidebar') ||
               id.includes('/components/UserMenu') ||
@@ -77,18 +77,8 @@ export default defineConfig(({ mode }) => ({
             return 'layout';
           }
 
-          // Heavy lazy-loaded libraries (should not be in initial load)
-          if (id.includes('jspdf') || id.includes('jszip') || id.includes('html2canvas')) {
-            return 'documents-lib';
-          }
-          if (id.includes('recharts')) {
-            return 'charts-lib';
-          }
-
-          // Everything else from node_modules
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+          // NO CATCH-ALL VENDOR CHUNK - Let Vite optimize the rest automatically
+          // This prevents creating a huge vendor.js bundle
         },
       },
     },
