@@ -29,7 +29,10 @@ export function useEscalatedDisputeConversations({
         .from('transactions')
         .select('user_id, buyer_id')
         .eq('id', transactionId)
-        .single();
+        .maybeSingle();
+
+      if (txError) throw txError;
+      if (!transaction) throw new Error('Transaction not found');
 
       if (txError) throw txError;
 

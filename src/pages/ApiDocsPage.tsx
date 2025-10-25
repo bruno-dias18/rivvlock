@@ -4,6 +4,7 @@ import 'swagger-ui-react/swagger-ui.css';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '@/lib/logger';
 
 const ApiDocsPage = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ const ApiDocsPage = () => {
         setSpec(yamlText);
       })
       .catch((err) => {
-        console.error('Failed to load OpenAPI spec:', err);
+        logger.error('Failed to load OpenAPI spec:', err);
       });
   }, []);
 

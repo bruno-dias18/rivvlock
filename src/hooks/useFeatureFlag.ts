@@ -49,7 +49,7 @@ export function useFeatureFlag(featureKey: string): UseFeatureFlagResult {
         .from('feature_flags')
         .select('*')
         .eq('feature_key', featureKey)
-        .single();
+        .maybeSingle();
 
       if (error) {
         // Si la flag n'existe pas, on considère qu'elle est désactivée

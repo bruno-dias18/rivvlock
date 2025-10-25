@@ -204,7 +204,7 @@ export const useRealtimeActivityRefresh = () => {
             .from('conversations')
             .select('dispute_id')
             .eq('id', message.conversation_id)
-            .single();
+            .maybeSingle();
           
           if (conversation?.dispute_id) {
             logger.debug('Realtime: New dispute message (unified)', payload);

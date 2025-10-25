@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                   .from('profiles')
                   .select('*')
                   .eq('user_id', session.user.id)
-                  .single();
+                  .maybeSingle();
                 return data;
               },
             });

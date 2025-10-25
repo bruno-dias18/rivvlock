@@ -63,7 +63,7 @@ export const useDisputeRealtimeNotifications = () => {
                   .from('transactions')
                   .select('title')
                   .eq('id', conversation.transaction_id)
-                  .single();
+                  .maybeSingle();
                 txTitle = tx?.title as string | undefined;
               }
 

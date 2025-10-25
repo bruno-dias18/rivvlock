@@ -31,7 +31,7 @@ export const QuoteMessaging = ({
         .from('quotes')
         .select('conversation_id')
         .eq('id', quoteId)
-        .single();
+        .maybeSingle();
       
       if (quoteData?.conversation_id) {
         setConversationId(quoteData.conversation_id);

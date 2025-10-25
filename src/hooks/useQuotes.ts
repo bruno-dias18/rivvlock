@@ -56,7 +56,10 @@ export const useQuotes = () => {
         .from('quotes')
         .select('seller_id, client_user_id')
         .eq('id', quoteId)
-        .single();
+        .maybeSingle();
+      
+      if (fetchError) throw fetchError;
+      if (!quote) throw new Error('Quote not found');
       
       if (fetchError) throw fetchError;
       

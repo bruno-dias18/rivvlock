@@ -553,7 +553,7 @@ export const downloadAllInvoicesAsZip = async (
       .from('profiles')
       .select('user_id, first_name, last_name, company_name, user_type, country, address, postal_code, city, siret_uid, vat_rate, tva_rate, is_subject_to_vat, avs_number, vat_number, company_address, phone')
       .eq('user_id', sellerId)
-      .single();
+      .maybeSingle();
 
     if (sellerError || !sellerProfile) {
       throw new Error('Impossible de récupérer le profil vendeur');

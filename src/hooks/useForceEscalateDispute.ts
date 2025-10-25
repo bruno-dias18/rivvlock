@@ -19,7 +19,7 @@ export const useForceEscalateDispute = () => {
         body: { disputeId },
         headers: authHeaders,
       });
-      console.debug('[useForceEscalateDispute] force-escalate-dispute result', { data: first.data, error: first.error, disputeId });
+      logger.debug('[useForceEscalateDispute] force-escalate-dispute result', { data: first.data, error: first.error, disputeId });
       if (!first.error) {
         if ((first.data as any)?.error) {
           const err: any = new Error((first.data as any).error);
@@ -35,7 +35,7 @@ export const useForceEscalateDispute = () => {
           body: { action: 'escalate', disputeId },
           headers: authHeaders,
         });
-        console.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
+        logger.debug('[useForceEscalateDispute] admin-dispute-actions result', { data: fallback.data, error: fallback.error, disputeId });
         if (fallback.error) throw fallback.error;
         if ((fallback.data as any)?.error) {
           const err: any = new Error((fallback.data as any).error);

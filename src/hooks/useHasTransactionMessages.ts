@@ -16,7 +16,7 @@ export const useHasTransactionMessages = (transactionId: string | undefined) => 
         .from('transactions')
         .select('conversation_id')
         .eq('id', transactionId)
-        .single();
+        .maybeSingle();
 
       if (txError || !transaction?.conversation_id) {
         logger.error('Error fetching transaction conversation:', txError);
@@ -29,7 +29,7 @@ export const useHasTransactionMessages = (transactionId: string | undefined) => 
         .select('id')
         .eq('conversation_id', transaction.conversation_id)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 is "no rows returned" which means no messages exist
