@@ -77,8 +77,10 @@ export interface Transaction {
   service_end_date: string | null;
   payment_deadline: string | null;
   validation_deadline: string | null;
-  payment_method?: 'card' | 'bank_transfer';
+  payment_method?: 'card' | 'bank_transfer' | 'twint';
+  payment_provider?: 'stripe' | 'adyen';
   stripe_payment_intent_id: string | null;
+  adyen_psp_reference?: string | null;
   stripe_transfer_id: string | null;
   shared_link_token: string | null;
   shared_link_expires_at: string | null;

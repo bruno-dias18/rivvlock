@@ -6,6 +6,7 @@ import { Loader2, AlertCircle, CreditCard, Users, Calendar, ArrowLeft } from 'lu
 import { Button } from '@/components/ui/button';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
+import { PaymentProviderSelector } from '@/components/PaymentProviderSelector';
 import { BankTransferInstructions } from '@/components/BankTransferInstructions';
 import { Transaction } from '@/types';
 import { logger } from '@/lib/logger';
@@ -35,7 +36,8 @@ export default function PaymentLinkPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | 'twint' | null>(null);
+  const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<'stripe' | 'adyen'>('stripe');
   const [showBankInstructions, setShowBankInstructions] = useState(false);
   const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
   const [autoAttachAttempted, setAutoAttachAttempted] = useState(false);
@@ -252,6 +254,48 @@ export default function PaymentLinkPage() {
   const handlePayNow = async () => {
     if (!user || !transaction || processingPayment) return;
 
+    // ✅ ADYEN FLOW: Route to create-adyen-payment
+    if (selectedPaymentProvider === 'adyen') {
+      setProcessingPayment(true);
+      try {
+        const { data: adyenData, error: adyenError } = await supabase.functions.invoke('create-adyen-payment', {
+          body: { 
+            transactionId: transaction.id,
+            paymentMethod: selectedPaymentMethod === 'bank_transfer' 
+              ? 'bank_transfer' 
+              : selectedPaymentMethod === 'twint'
+              ? 'twint'
+              : 'card'
+          }
+        });
+
+        if (adyenError) throw adyenError;
+        if (adyenData.error) throw new Error(adyenData.error);
+
+        // Handle Adyen response (action contains redirect or 3DS challenge)
+        if (adyenData.action) {
+          // Redirect to Adyen hosted payment page
+          if (adyenData.action.url) {
+            window.location.href = adyenData.action.url;
+          } else {
+            throw new Error('Adyen action URL manquante');
+          }
+        } else if (adyenData.resultCode === 'Authorised') {
+          // Payment already authorized (rare case)
+          toast.success('Paiement autorisé !');
+          navigate('/payment-success');
+        } else {
+          throw new Error(`Adyen resultCode inattendu: ${adyenData.resultCode}`);
+        }
+      } catch (err: any) {
+        logger.error('Error initiating Adyen payment:', err);
+        setError(err.message || 'Erreur lors de la préparation du paiement Adyen');
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
+    // ✅ STRIPE FLOW: Existing logic
     // If bank transfer is selected, generate virtual IBAN and show instructions
     if (selectedPaymentMethod === 'bank_transfer') {
       // Check if there's enough time for bank transfer (72h minimum)
@@ -593,12 +637,21 @@ export default function PaymentLinkPage() {
           <div className="bg-card border rounded-lg p-6 space-y-4">
             <h1 className="text-2xl font-bold text-center">Paiement sécurisé</h1>
             
-            {/* Payment Method Selector - Moved to top for visibility */}
+            {/* Payment Provider Selector - Choose between Stripe and Adyen */}
+            <div className="bg-accent/5 border-2 border-accent/20 rounded-lg p-4">
+              <PaymentProviderSelector
+                selectedProvider={selectedPaymentProvider}
+                onProviderSelect={setSelectedPaymentProvider}
+              />
+            </div>
+
+            {/* Payment Method Selector - Card or Bank Transfer */}
             <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-4">
               <PaymentMethodSelector
                 transaction={transaction}
                 selectedMethod={selectedPaymentMethod}
                 onMethodSelect={setSelectedPaymentMethod}
+                paymentProvider={selectedPaymentProvider}
               />
             </div>
             
@@ -635,9 +688,9 @@ export default function PaymentLinkPage() {
                 <p className="text-sm text-muted-foreground">
                   Préparation de votre paiement sécurisé...
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Vous allez être redirigé vers Stripe
-                </p>
+                 <p className="text-xs text-muted-foreground mt-1">
+                   Vous allez être redirigé vers {selectedPaymentProvider === 'stripe' ? 'Stripe' : 'Adyen'}
+                 </p>
               </div>
             ) : (
               <Button 
@@ -661,6 +714,8 @@ export default function PaymentLinkPage() {
                       ? 'Préparation...'
                       : selectedPaymentMethod === 'bank_transfer' 
                         ? 'Payer — voir les instructions de virement'
+                        : selectedPaymentMethod === 'twint'
+                        ? 'Payer avec Twint'
                         : 'Payer par carte'
                 }
               </Button>
@@ -668,7 +723,7 @@ export default function PaymentLinkPage() {
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Paiement sécurisé par Stripe • Vos données sont protégées
+            Paiement sécurisé par {selectedPaymentProvider === 'stripe' ? 'Stripe' : 'Adyen'} • Vos données sont protégées
           </p>
         </div>
         </div>

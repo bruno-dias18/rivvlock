@@ -10,20 +10,25 @@ import { fr } from "date-fns/locale";
 
 interface PaymentMethodSelectorProps {
   transaction: Transaction;
-  onMethodSelect: (method: 'card' | 'bank_transfer') => void;
-  selectedMethod: 'card' | 'bank_transfer' | null;
+  onMethodSelect: (method: 'card' | 'bank_transfer' | 'twint') => void;
+  selectedMethod: 'card' | 'bank_transfer' | 'twint' | null;
+  paymentProvider?: 'stripe' | 'adyen';
 }
 
 export const PaymentMethodSelector = ({ 
   transaction, 
   onMethodSelect,
-  selectedMethod 
+  selectedMethod,
+  paymentProvider = 'stripe'
 }: PaymentMethodSelectorProps) => {
   const timeUntilDeadline = transaction.payment_deadline 
     ? new Date(transaction.payment_deadline).getTime() - Date.now()
     : 0;
   const hoursUntilDeadline = timeUntilDeadline / (1000 * 60 * 60);
   const bankTransferAllowed = hoursUntilDeadline >= 72;
+  
+  // Twint only available with Adyen and CHF currency
+  const twintAvailable = paymentProvider === 'adyen' && transaction.currency.toUpperCase() === 'CHF';
 
   return (
       <div className="space-y-4" data-testid="payment-method-selector">
@@ -55,7 +60,7 @@ export const PaymentMethodSelector = ({
 
       <RadioGroup 
         value={selectedMethod || undefined} 
-        onValueChange={(value) => onMethodSelect(value as 'card' | 'bank_transfer')}
+        onValueChange={(value) => onMethodSelect(value as 'card' | 'bank_transfer' | 'twint')}
         className="space-y-3"
       >
         {/* Card payment option */}
@@ -76,6 +81,32 @@ export const PaymentMethodSelector = ({
             </div>
           </Label>
         </div>
+
+        {/* Twint option (Adyen + CHF only) */}
+        {twintAvailable && (
+          <div className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-accent transition-colors">
+            <RadioGroupItem value="twint" id="twint" />
+            <Label 
+              htmlFor="twint" 
+              className="flex-1 cursor-pointer"
+            >
+              <div className="flex items-start gap-3">
+                <Zap className="h-5 w-5 mt-0.5 text-primary" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">Twint</p>
+                    <Badge variant="secondary" className="text-xs">
+                      CHF uniquement
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Paiement mobile instantané via Adyen
+                  </p>
+                </div>
+              </div>
+            </Label>
+          </div>
+        )}
 
         {/* Bank transfer option */}
         <div 
