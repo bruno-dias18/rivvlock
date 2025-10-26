@@ -11,6 +11,7 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog';
 import BankAccountSetupCard from '@/components/BankAccountSetupCard';
 import { AdyenBankAccountCard } from '@/components/AdyenBankAccountCard';
+import { KycVerificationCard } from '@/components/KycVerificationCard';
 import { Edit, Trash2, FileText, Mail, ExternalLink, Download, Upload, Image as ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -499,6 +500,8 @@ export default function ProfilePage() {
         <BankAccountSetupCard />
 
         <AdyenBankAccountCard />
+
+        <KycVerificationCard />
 
         <SellerTransactionsCountdownCard />
 
