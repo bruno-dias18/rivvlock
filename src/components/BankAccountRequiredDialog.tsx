@@ -120,7 +120,7 @@ const handleStartSetup = async () => {
             Configuration bancaire requise
           </DialogTitle>
           <DialogDescription>
-            Vous devez configurer vos coordonnées bancaires avant de pouvoir créer une transaction.
+            Choisissez Stripe ou Adyen pour recevoir vos paiements.
           </DialogDescription>
         </DialogHeader>
 
@@ -137,10 +137,7 @@ const handleStartSetup = async () => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Pour créer une transaction et recevoir des paiements, vous devez d'abord 
-                  configurer vos coordonnées bancaires avec Stripe. Cette étape garantit 
-                  que les fonds peuvent être automatiquement transférés sur votre compte 
-                  après chaque transaction complétée.
+                  Pour créer une transaction, vous devez configurer <strong>au moins un</strong> moyen de paiement (Stripe ou Adyen).
                 </AlertDescription>
               </Alert>
 
@@ -154,14 +151,27 @@ const handleStartSetup = async () => {
                 </ul>
               </div>
 
-              <div className="flex justify-end space-x-3">
-                <Button variant="outline" onClick={handleCancel}>
+              <div className="space-y-3">
+                <Button variant="outline" onClick={handleCancel} className="w-full">
                   Annuler
                 </Button>
-                <Button onClick={handleStartSetup}>
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Configurer maintenant
-                </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button onClick={handleStartSetup} className="w-full">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Stripe
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      onOpenChange(false);
+                      window.location.href = '/seller-verification?tab=adyen';
+                    }}
+                    className="w-full"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Adyen
+                  </Button>
+                </div>
               </div>
             </>
           )}

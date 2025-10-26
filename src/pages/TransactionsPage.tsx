@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { useTransactions, useSyncStripePayments } from '@/hooks/useTransactions';
 import { usePaginatedTransactions } from '@/hooks/usePaginatedTransactions';
 import { PaginationControls } from '@/components/transactions/PaginationControls';
-import { useStripeAccount } from '@/hooks/useStripeAccount';
+import { usePaymentReadiness } from '@/hooks/usePaymentReadiness';
 import { useProfile } from '@/hooks/useProfile';
 import { useTransactionsWithNewActivity } from '@/hooks/useTransactionsWithNewActivity';
 import { generateInvoicePDF } from '@/lib/pdfGenerator';
@@ -196,7 +196,7 @@ export default function TransactionsPage() {
   const availableYears: number[] = Array.from(yearsSet).sort((a, b) => b - a);
   
   const { data: disputes = [], refetch: refetchDisputes } = useDisputes();
-  const { data: stripeAccount } = useStripeAccount();
+  const { isAnyReady } = usePaymentReadiness(user?.id);
   const { syncPayments } = useSyncStripePayments();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
   const { unreadCount: unreadAdminMessages } = useUnreadAdminMessages();
@@ -700,13 +700,7 @@ export default function TransactionsPage() {
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
           <Button 
             onClick={() => {
-              // Check if Stripe account is properly configured
-              const isStripeReady = stripeAccount?.has_account && 
-                                   stripeAccount?.payouts_enabled && 
-                                   stripeAccount?.charges_enabled && 
-                                   stripeAccount?.details_submitted;
-              
-              if (!isStripeReady) {
+              if (!isAnyReady) {
                 setIsBankAccountDialogOpen(true);
               } else {
                 setIsNewTransactionOpen(true);

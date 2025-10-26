@@ -8,7 +8,7 @@ import { Plus, Users, Clock, CheckCircle2, Lock, Settings, AlertTriangle, Bell, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTransactionCounts, useSyncStripePayments } from '@/hooks/useTransactions';
 import { useDisputes } from '@/hooks/useDisputes';
-import { useStripeAccount } from '@/hooks/useStripeAccount';
+import { usePaymentReadiness } from '@/hooks/usePaymentReadiness';
 import { useNewItemsNotifications } from '@/hooks/useNewItemsNotifications';
 import { useUnreadAdminMessages } from '@/hooks/useUnreadAdminMessages';
 import { useUnreadDisputesGlobal } from '@/hooks/useUnreadDisputesGlobal';
@@ -39,7 +39,7 @@ export default function DashboardPage() {
   }, [isAdmin, navigate]);
 
   const { data: counts, isLoading: countsLoading, error: countsError, refetch: refetchCounts } = useTransactionCounts();
-  const { data: stripeAccount, isLoading: isStripeLoading, error: stripeError } = useStripeAccount();
+  const { isAnyReady, isLoading: paymentLoading } = usePaymentReadiness(user?.id);
   const { syncPayments } = useSyncStripePayments();
   const { data: disputes } = useDisputes();
   const { newCounts, markAsSeen, refetch: refetchNotifications } = useNewItemsNotifications();
@@ -142,13 +142,7 @@ export default function DashboardPage() {
       description: t('dashboard.newTransactionDesc'),
       icon: Plus,
       onClick: () => {
-        // Check if Stripe account is properly configured
-        const isStripeReady = stripeAccount?.has_account && 
-                             stripeAccount?.payouts_enabled && 
-                             stripeAccount?.charges_enabled && 
-                             stripeAccount?.details_submitted;
-        
-        if (!isStripeReady) {
+        if (!isAnyReady) {
           setIsBankAccountDialogOpen(true);
         } else {
           setIsNewTransactionOpen(true);
