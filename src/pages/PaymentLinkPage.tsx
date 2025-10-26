@@ -67,6 +67,8 @@ export default function PaymentLinkPage() {
     (async () => {
       try {
         setAutoAttachAttempted(true);
+        const hadNoBuyer = !(transaction as any).buyer_id;
+        
         const { error } = await supabase.rpc('assign_self_as_buyer', {
           p_transaction_id: transaction.id,
           p_token: finalToken
@@ -75,13 +77,11 @@ export default function PaymentLinkPage() {
           logger.error('Auto-attach failed', error);
         } else {
           // Optimistic local update
-          setTransaction(prev => {
-            if (!prev) return prev as any;
-            if ((prev as any).buyer_id === user.id) return prev as any;
-            return ({ ...prev, buyer_id: user.id } as any);
-          });
-          // No toast on auto-attach to avoid duplicate message
-          logger.info('Auto-attach: transaction linked to user; toast suppressed');
+          setTransaction(prev => prev ? ({ ...prev, buyer_id: user.id } as any) : prev);
+          // Show toast only if transaction was not attached before
+          if (hadNoBuyer) {
+            toast.success('✅ Transaction ajoutée à votre espace');
+          }
         }
       } catch (e) {
         logger.error('Auto-attach exception', e);
