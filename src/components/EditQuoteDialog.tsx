@@ -95,12 +95,18 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
       return;
     }
 
+    // Sauvegarder les valeurs originales avant de les modifier
+    setOriginalItems(JSON.parse(JSON.stringify(items)));
+
     const ratio = finalPrice / totalAmount;
-    const adjustedItems = items.map(item => ({
-      ...item,
-      unit_price: item.unit_price * ratio,
-      total: item.quantity * (item.unit_price * ratio)
-    }));
+    const adjustedItems = items.map(item => {
+      const newUnitPrice = Math.round(item.unit_price * ratio * 100) / 100;
+      return {
+        ...item,
+        unit_price: newUnitPrice,
+        total: Math.round(item.quantity * newUnitPrice * 100) / 100
+      };
+    });
 
     setItems(adjustedItems);
     setAutoDistributionApplied(true);

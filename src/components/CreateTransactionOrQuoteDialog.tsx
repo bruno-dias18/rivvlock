@@ -118,11 +118,14 @@ export const CreateTransactionOrQuoteDialog = ({
 
     // Répartir les frais sur toutes les lignes
     const ratio = finalPrice / baseTotalAmount;
-    const adjustedItems = items.map(item => ({
-      ...item,
-      unit_price: item.unit_price * ratio,
-      total: item.quantity * (item.unit_price * ratio)
-    }));
+    const adjustedItems = items.map(item => {
+      const newUnitPrice = Math.round(item.unit_price * ratio * 100) / 100;
+      return {
+        ...item,
+        unit_price: newUnitPrice,
+        total: Math.round(item.quantity * newUnitPrice * 100) / 100
+      };
+    });
 
     setItems(adjustedItems);
     setAutoDistributionApplied(true);
