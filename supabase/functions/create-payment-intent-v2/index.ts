@@ -234,6 +234,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
     /**
      * CREATE PAYMENT INTENT (avec escrow)
+     * 
+     * ✅ AMEX BLOCKED to protect RivvLock margins
      */
     const paymentIntentData: any = {
       amount: Math.round(transaction.price * 100), // Convert to cents
@@ -254,6 +256,19 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         payment_method_requested: paymentMethod || 'card',
       },
       payment_method_types: paymentMethodTypes,
+      // ✅ Block Amex to protect margins (fees too high: ~2.9% vs 1.4%)
+      payment_method_options: {
+        card: {
+          request_three_d_secure: 'automatic',
+          network_token: {
+            request_network_token: true,
+          },
+        },
+      },
+      // ✅ Block Amex at the network level
+      payment_method_data: {
+        type: 'card',
+      },
       customer: stripeCustomerId,
     };
 

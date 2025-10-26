@@ -313,6 +313,19 @@ verify_jwt = true
 [functions.health]
 verify_jwt = false
 
+# ============================================================
+# ADYEN PAYMENT FUNCTIONS (parallel to Stripe)
+# ============================================================
+
+[functions.create-adyen-payment]
+verify_jwt = true
+
+[functions.adyen-webhook]
+verify_jwt = false
+
+[functions.release-funds-adyen]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 inspector_port = 8083
