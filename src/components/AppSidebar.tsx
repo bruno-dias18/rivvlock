@@ -72,6 +72,11 @@ const adminNavigationItems = [
     url: '/dashboard/admin/payouts',
     icon: Wallet,
   },
+  {
+    title: 'Admin',
+    url: '/dashboard/admin',
+    icon: Users,
+  },
 ];
 
 export function AppSidebar() {

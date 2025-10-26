@@ -69,6 +69,11 @@ export function BottomTabBar() {
       url: '/dashboard/admin/payouts',
       icon: Wallet,
     },
+    {
+      title: 'Admin',
+      url: '/dashboard/admin',
+      icon: Users,
+    },
   ] : [...navigationItems];
 
   return (
