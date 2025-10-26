@@ -45,6 +45,7 @@ export const CreateTransactionOrQuoteDialog = ({
   const [formType, setFormType] = useState<FormType>(defaultType);
   const [feeRatio, setFeeRatio] = useState(0);
   const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
+  const [originalItems, setOriginalItems] = useState<ItemRow[]>([]);
 
   // Share dialog
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -111,6 +112,9 @@ export const CreateTransactionOrQuoteDialog = ({
       toast.info('Aucune répartition à appliquer (frais client à 0% ou montant à 0)');
       return;
     }
+
+    // Sauvegarder les valeurs originales avant de les modifier
+    setOriginalItems(JSON.parse(JSON.stringify(items)));
 
     // Répartir les frais sur toutes les lignes
     const ratio = finalPrice / baseTotalAmount;
@@ -445,9 +449,13 @@ export const CreateTransactionOrQuoteDialog = ({
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        // Restaurer les valeurs originales
+                        if (originalItems.length > 0) {
+                          setItems(JSON.parse(JSON.stringify(originalItems)));
+                        }
                         setAutoDistributionApplied(false);
                         setFeeRatio(0);
-                        toast.info('Répartition annulée');
+                        toast.info('Répartition annulée - montants restaurés');
                       }}
                       className="w-full"
                     >

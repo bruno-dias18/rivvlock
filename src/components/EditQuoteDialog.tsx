@@ -40,6 +40,7 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
   const [autoDistributionApplied, setAutoDistributionApplied] = useState(false);
   const [discountPercentage, setDiscountPercentage] = useState(quote.discount_percentage ?? 0);
   const [isFeeDistributionOpen, setIsFeeDistributionOpen] = useState(false);
+  const [originalItems, setOriginalItems] = useState<QuoteItem[]>([]);
 
   const [clientEmail] = useState(quote.client_email);
   const [clientName] = useState(quote.client_name || '');
@@ -492,6 +493,26 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
                           >
                             {autoDistributionApplied ? "Réappliquer" : "Répartir automatiquement"}
                           </Button>
+
+                          {autoDistributionApplied && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // Restaurer les valeurs originales
+                                if (originalItems.length > 0) {
+                                  setItems(JSON.parse(JSON.stringify(originalItems)));
+                                }
+                                setAutoDistributionApplied(false);
+                                setFeeRatio(quote.fee_ratio_client ?? 0);
+                                toast.info('Répartition annulée - montants restaurés');
+                              }}
+                              className="w-full"
+                            >
+                              Annuler la répartition automatique
+                            </Button>
+                          )}
 
                           {!autoDistributionApplied && (
                             <div className="flex justify-between font-bold text-lg border-t pt-3">
