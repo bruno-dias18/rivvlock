@@ -128,7 +128,7 @@ export const getUserFriendlyError = (error: unknown, context?: ErrorContext): st
     errorMessage.toLowerCase().includes('only admins can force escalate disputes')
   ) {
     return i18n.t('errors.permission.denied', {
-      defaultValue: 'Vous n’avez pas les droits pour effectuer cette action.'
+      defaultValue: 'You do not have permission to perform this action.'
     });
   }
 

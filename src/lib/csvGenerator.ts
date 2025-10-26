@@ -25,7 +25,7 @@ export const generateAnnualReportCSV = (
     ? ['Date de validation', 'N° Facture', 'Client', 'Description', 'Montant HT', 'TVA', 'Montant TTC', 'Frais RivvLock', 'Net reçu', 'Devise']
     : language === 'de'
     ? ['Validierungsdatum', 'Rechnungsnr.', 'Kunde', 'Beschreibung', 'Betrag ohne MwSt.', 'MwSt.', 'Betrag mit MwSt.', 'RivvLock Gebühren', 'Nettobetrag', 'Währung']
-    : ['Validation Date', 'Invoice No.', 'Client', 'Description', 'Amount excl. VAT', 'VAT', 'Amount incl. VAT', 'RivvLock Fees', 'Net Received', 'Currency'];
+    : ['Validation Date', 'Invoice Number', 'Client', 'Description', 'Amount excl. VAT', 'VAT', 'Amount incl. VAT', 'RivvLock Fees', 'Net Received', 'Currency'];
   
   const invoiceMap = new Map(invoices.map(inv => [inv.transaction_id, inv.invoice_number]));
   
@@ -46,7 +46,7 @@ export const generateAnnualReportCSV = (
     
     const rivvlockFee = amountPaid * 0.05;
     let amountReceived = amountPaid - rivvlockFee;
-    const invoiceNumber = invoiceMap.get(transaction.id) || '-';
+    const invoiceNumber = invoiceMap.get(transaction.id) || 'N/A';
     
     let description = transaction.description || transaction.title;
     if ((transaction.refund_status === 'partial' || pct > 0) && pct > 0) {
