@@ -78,6 +78,8 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
   const hasDetailedItems = transactionData.items && Array.isArray(transactionData.items) && transactionData.items.length > 0;
   const hasQuoteItems = !hasDetailedItems && quoteDetails?.items && Array.isArray(quoteDetails.items) && quoteDetails.items.length > 0;
   
+  // When no detailed items exist, create a virtual item with the transaction price
+  // The transaction.price is already the final TTC amount
   const displayItems = hasDetailedItems
     ? transactionData.items
     : hasQuoteItems
@@ -85,8 +87,8 @@ export const TransactionDetailsDialog: React.FC<TransactionDetailsDialogProps> =
       : [{
           description: transaction.title,
           quantity: 1,
-          unit_price: transaction.price / (1 + ((transactionData.fee_ratio_client || quoteDetails?.fee_ratio_client || 0) / 100)),
-          total: transaction.price / (1 + ((transactionData.fee_ratio_client || quoteDetails?.fee_ratio_client || 0) / 100))
+          unit_price: transaction.price,
+          total: transaction.price
         }];
   
   // Calculate subtotal from items
