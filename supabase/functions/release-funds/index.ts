@@ -135,21 +135,52 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     }
     logStep("Charge ID retrieved", { chargeId });
 
-    // Calculate transfer amount (subtract platform fee)
-    const platformFeePercent = 0.05; // 5% platform fee
+    // ✅ Seller always receives 95% of the original amount
+    // RivvLock keeps 5% (gross) and pays processor fees from this amount
+    const SELLER_PERCENTAGE = 0.95; // Seller receives 95%
+    const RIVVLOCK_PERCENTAGE = 0.05; // RivvLock keeps 5%
+    
     const originalAmount = Math.round(transaction.price * 100); // Convert to cents
-    const platformFee = Math.round(originalAmount * platformFeePercent);
-    const transferAmount = originalAmount - platformFee;
+    const sellerTransferAmount = Math.round(originalAmount * SELLER_PERCENTAGE);
 
-    logStep("Transfer amount calculated", { 
+    logStep("Transfer calculation", { 
       originalAmount, 
-      platformFee, 
-      transferAmount 
+      sellerPercentage: SELLER_PERCENTAGE,
+      sellerTransferAmount,
+      rivvlockGrossCommission: originalAmount * RIVVLOCK_PERCENTAGE
     });
+
+    // ✅ Retrieve the charge to get actual available balance after processor fees
+    const charge = await stripe.charges.retrieve(chargeId);
+    logStep("Charge retrieved", { 
+      chargeId, 
+      chargeAmount: charge.amount,
+      applicationFeeAmount: charge.application_fee_amount
+    });
+
+    // ✅ Calculate net available balance (after Stripe fees)
+    const stripeFees = originalAmount - (charge.amount - (charge.application_fee_amount || 0));
+    const netAvailableBalance = charge.amount - (charge.application_fee_amount || 0);
+
+    logStep("Balance calculation", {
+      originalAmount,
+      stripeFees,
+      netAvailableBalance,
+      sellerTransferAmount,
+      sufficient: netAvailableBalance >= sellerTransferAmount
+    });
+
+    // ✅ Critical verification: ensure we have enough balance for the transfer
+    if (sellerTransferAmount > netAvailableBalance) {
+      const shortfall = sellerTransferAmount - netAvailableBalance;
+      throw new Error(
+        `Insufficient balance for transfer. Need ${sellerTransferAmount}, have ${netAvailableBalance} (shortfall: ${shortfall} cents)`
+      );
+    }
 
     // Create transfer to connected account using charge ID
     const transfer = await stripe.transfers.create({
-      amount: transferAmount,
+      amount: sellerTransferAmount,
       currency: transaction.currency.toLowerCase(),
       destination: sellerStripeAccount.stripe_account_id,
       source_transaction: chargeId,
@@ -162,6 +193,18 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     });
 
     logStep("Transfer created", { transferId: transfer.id });
+
+    // ✅ Calculate RivvLock's actual net margin (what remains in balance)
+    const rivvlockNetMargin = netAvailableBalance - sellerTransferAmount;
+    const rivvlockNetMarginPercent = (rivvlockNetMargin / originalAmount * 100).toFixed(2);
+
+    logStep("RivvLock net margin calculated", {
+      grossCommission: originalAmount * RIVVLOCK_PERCENTAGE,
+      processorFees: stripeFees,
+      netMargin: rivvlockNetMargin,
+      netMarginPercent: rivvlockNetMarginPercent + '%',
+      sellerReceived: sellerTransferAmount,
+    });
 
     // Update transaction status to validated and mark funds as released
     const { error: updateError } = await adminClient!
@@ -211,24 +254,27 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       }
     }
 
-    // Log the activity for seller
+    // Log the activity for seller with actual amounts
     await adminClient!
       .from('activity_logs')
       .insert({
         user_id: transaction.user_id,
         activity_type: 'funds_released',
         title: 'Fonds transférés vers votre compte',
-        description: `${(transferAmount / 100).toFixed(2)} ${transaction.currency} reçus pour la transaction "${transaction.title}"`,
+        description: `${(sellerTransferAmount / 100).toFixed(2)} ${transaction.currency} reçus pour "${transaction.title}"`,
         metadata: {
           transaction_id: transaction.id,
           transfer_id: transfer.id,
-          amount: transferAmount,
+          amount: sellerTransferAmount,
           currency: transaction.currency,
-          platform_fee: platformFee
+          seller_percentage: SELLER_PERCENTAGE * 100,
+          original_amount: originalAmount,
+          processor_fees: stripeFees,
+          rivvlock_net_margin: rivvlockNetMargin
         }
       });
 
-    // Log for buyer as well
+    // Log for buyer
     await adminClient!
       .from('activity_logs')
       .insert({
@@ -239,7 +285,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         metadata: {
           transaction_id: transaction.id,
           transfer_id: transfer.id,
-          amount: transferAmount,
+          amount: sellerTransferAmount,
           currency: transaction.currency
         }
       });
@@ -251,9 +297,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       message: "Funds released and transferred successfully",
       transactionId,
       transferId: transfer.id,
-      amountTransferred: transferAmount,
+      amountTransferred: sellerTransferAmount,
       currency: transaction.currency,
-      platformFee: platformFee
+      rivvlockNetMargin: rivvlockNetMargin,
+      rivvlockNetMarginPercent: rivvlockNetMarginPercent + '%'
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
