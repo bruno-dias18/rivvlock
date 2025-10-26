@@ -84,7 +84,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     // Get buyer profile
     const { data: buyerProfile } = await adminClient!
       .from("profiles")
-      .select("stripe_customer_id, first_name, last_name")
+      .select("stripe_customer_id, first_name, last_name, country")
       .eq("user_id", user!.id)
       .single();
 
@@ -110,6 +110,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       logger.log("⚠️ [CREATE-PAYMENT-V2] SEPA Direct Debit blocked (deadline < 3 days)");
     }
 
+    // Validation devise pour SEPA Direct Debit
+    if (paymentMethod === 'sepa_debit' && currency !== 'eur') {
+      logger.error("❌ [CREATE-PAYMENT-V2] SEPA Direct Debit requires EUR currency", { currency });
+      return errorResponse("Le prélèvement SEPA est uniquement possible en EUR. Veuillez payer par carte ou changer la devise en EUR.", 400);
+    }
+ 
     /**
      * CUSTOMER BALANCE (Virtual IBAN pour virement manuel)
      * 
@@ -153,20 +159,33 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       }
 
       try {
+        // Pré-validation devise & pays pour SEPA (Customer Balance)
+        const fundingCurrency = 'eur';
+        if (currency !== fundingCurrency) {
+          logger.error("❌ [CREATE-PAYMENT-V2] Bank transfer/SEPA requires EUR currency", { currency });
+          return errorResponse("Le virement SEPA n'est disponible qu'en EUR. Veuillez payer par carte/SEPA Direct Debit ou changer la devise en EUR.", 400);
+        }
+
+        const supportedEUCountries = ['DE','FR','NL','ES','IE','BE','AT','IT','LU','PT','FI'];
+        const buyerCountry = (buyerProfile?.country as string | undefined) ?? 'DE';
+        const euCountry = supportedEUCountries.includes(buyerCountry) ? buyerCountry : 'DE';
+
         logger.log("🔍 [CREATE-PAYMENT-V2] Attempting to create funding instructions...", {
           customer: stripeCustomerId,
-          currency: currency,
+          currency: fundingCurrency,
           hoursUntilDeadline: hoursUntilDeadline.toFixed(2),
+          euCountry,
         });
 
-        // Créer Customer Balance Funding Instructions
+        // Créer Customer Balance Funding Instructions (SEPA)
         const fundingInstructions = await stripe.customers.createFundingInstructions(
           stripeCustomerId!,
           {
             bank_transfer: {
               type: 'eu_bank_transfer',
+              eu_bank_transfer: { country: euCountry },
             },
-            currency: currency,
+            currency: fundingCurrency,
             funding_type: 'bank_transfer',
           }
         );
