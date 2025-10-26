@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature } from 'lucide-react';
+import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature, ShieldCheck, Wallet } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -44,6 +44,11 @@ const userNavigationItems = [
     icon: FileText,
   },
   {
+    title: 'Vérification vendeur',
+    url: '/seller/verification',
+    icon: ShieldCheck,
+  },
+  {
     title: 'navigation.profile',
     url: '/dashboard/profile',
     icon: User,
@@ -81,6 +86,16 @@ const adminNavigationItems = [
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
+  },
+  {
+    title: 'Vérification KYC',
+    url: '/dashboard/admin/kyc',
+    icon: ShieldCheck,
+  },
+  {
+    title: 'Paiements Adyen',
+    url: '/dashboard/admin/payouts',
+    icon: Wallet,
   },
 ];
 

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText, CheckCircle, XCircle, Clock, AlertCircle, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 
 const KYC_DOCUMENT_TYPES = [
   { value: 'id_front', label: 'Pièce d\'identité (recto)', required: true },
@@ -91,7 +92,8 @@ export default function SellerVerification() {
     .every(dt => isDocumentUploaded(dt.value));
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 px-4">
+    <DashboardLayoutWithSidebar>
+      <div className="container max-w-4xl mx-auto py-8 px-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Vérification vendeur</h1>
         <p className="text-muted-foreground">
@@ -401,5 +403,6 @@ export default function SellerVerification() {
         </TabsContent>
       </Tabs>
     </div>
+    </DashboardLayoutWithSidebar>
   );
 }

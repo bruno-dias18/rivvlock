@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertCircle, CheckCircle, Clock, Download, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { DashboardLayoutWithSidebar } from '@/components/layouts/DashboardLayoutWithSidebar';
 // Format currency helper
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('fr-CH', {
@@ -62,7 +63,8 @@ export default function AdminAdyenPayouts() {
   };
 
   return (
-    <div className="container max-w-7xl mx-auto py-8 px-4">
+    <DashboardLayoutWithSidebar>
+      <div className="container max-w-7xl mx-auto py-8 px-4">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Comptabilité Adyen</h1>
         <p className="text-muted-foreground">
@@ -345,5 +347,6 @@ export default function AdminAdyenPayouts() {
         })}
       </Tabs>
     </div>
+    </DashboardLayoutWithSidebar>
   );
 }
