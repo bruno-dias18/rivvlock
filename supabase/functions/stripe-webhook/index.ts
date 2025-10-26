@@ -124,11 +124,15 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         return successResponse({ received: true, idempotent: true });
       }
 
+      // ⚠️ IMPORTANT: With manual capture, payment_intent.succeeded is sent AFTER capture
+      // This means funds have been captured and we can mark as truly "paid" (ready for payout)
+      // The webhook should only update to "paid" after manual capture is done
+      
       // Calculate validation deadline (72h for service transactions)
       const validationDeadline = new Date();
       validationDeadline.setHours(validationDeadline.getHours() + 72);
 
-      // Update transaction to paid status
+      // Update transaction to paid status (funds blocked/captured)
       const { error: updateError } = await adminClient
         .from("transactions")
         .update({
@@ -166,7 +170,102 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           },
         });
 
-      logger.info("Transaction updated to paid", { transactionId, paymentMethod });
+      logger.info("Transaction updated to paid (funds blocked)", { transactionId, paymentMethod });
+
+      return successResponse({ received: true });
+    }
+
+    // ✅ Handle payment authorization (manual capture) - when funds are authorized but not yet captured
+    if (event.type === "charge.succeeded") {
+      const charge = event.data.object as Stripe.Charge;
+      const paymentIntentId = charge.payment_intent as string;
+      
+      if (!paymentIntentId) {
+        logger.debug("No payment_intent on charge (might be direct charge)");
+        return successResponse({ received: true });
+      }
+
+      // Retrieve payment intent to get transaction_id
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const transactionId = paymentIntent.metadata.transaction_id;
+      
+      if (!transactionId) {
+        logger.debug("No transaction_id in payment intent metadata");
+        return successResponse({ received: true });
+      }
+
+      // Check if payment intent is in requires_capture state (manual capture)
+      if (paymentIntent.capture_method === 'manual' && paymentIntent.status === 'requires_capture') {
+        logger.info("Charge authorized (manual capture), blocking funds", { transactionId, chargeId: charge.id });
+
+        // Validate transaction exists
+        const { data: transaction } = await adminClient
+          .from("transactions")
+          .select("id, status")
+          .eq("id", transactionId)
+          .single();
+
+        if (!transaction) {
+          logger.error("Transaction not found", { transactionId });
+          throw new Error("Transaction not found");
+        }
+
+        if (transaction.status !== "pending") {
+          logger.info("Transaction not in pending status", { transactionId, status: transaction.status });
+          return successResponse({ received: true });
+        }
+
+        // Determine payment method
+        let paymentMethod = 'card';
+        if (charge.payment_method_details?.type === 'sepa_debit') {
+          paymentMethod = 'sepa_debit';
+        } else if (charge.payment_method_details?.type === 'card') {
+          paymentMethod = 'card';
+        }
+
+        // Calculate validation deadline (72h)
+        const validationDeadline = new Date();
+        validationDeadline.setHours(validationDeadline.getHours() + 72);
+
+        // Update transaction to paid status (funds authorized/blocked)
+        const { error: updateError } = await adminClient
+          .from("transactions")
+          .update({
+            status: "paid",
+            payment_method: paymentMethod,
+            payment_blocked_at: new Date().toISOString(),
+            validation_deadline: validationDeadline.toISOString(),
+          })
+          .eq("id", transactionId)
+          .eq("status", "pending");
+
+        if (updateError) {
+          logger.error("Error updating transaction after charge authorization", updateError, { transactionId });
+          throw updateError;
+        }
+
+        // Log activity
+        await adminClient
+          .from("activity_logs")
+          .insert({
+            user_id: paymentIntent.metadata.buyer_id,
+            activity_type: "funds_blocked",
+            title: paymentMethod === 'sepa_debit'
+              ? "Prélèvement SEPA autorisé et bloqué"
+              : "Paiement par carte autorisé et bloqué",
+            description: `Montant: ${(charge.amount / 100).toFixed(2)} ${charge.currency.toUpperCase()} - En attente de validation`,
+            metadata: {
+              transaction_id: transactionId,
+              payment_intent_id: paymentIntentId,
+              charge_id: charge.id,
+              payment_method: paymentMethod,
+              amount: charge.amount,
+              currency: charge.currency,
+            },
+          });
+
+        logger.info("Transaction updated to paid (funds authorized and blocked)", { transactionId, paymentMethod });
+      }
 
       return successResponse({ received: true });
     }

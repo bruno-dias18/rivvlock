@@ -139,7 +139,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     /**
      * Create Checkout Session
      * 
-     * All payment methods use AUTOMATIC capture with funds held on platform balance.
+     * All payment methods use MANUAL capture for escrow (funds blocked on platform).
      * Funds are transferred to seller only after validation via process-automatic-transfer.
      */
     const sessionData: Stripe.Checkout.SessionCreateParams = {
@@ -167,7 +167,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         buyer_id: user!.id,
       },
       payment_intent_data: {
-        capture_method: 'automatic',
+        capture_method: 'manual',
         metadata: {
           transaction_id: transactionId,
           seller_id: transaction.user_id,
@@ -180,7 +180,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       },
     };
     
-    logger.log("✅ [CREATE-CHECKOUT] Session configured with automatic capture (platform escrow)");
+    logger.log("✅ [CREATE-CHECKOUT] Session configured with manual capture (platform escrow)");
 
     const session = await stripe.checkout.sessions.create(sessionData);
     logger.log("✅ [CREATE-CHECKOUT] Checkout session created:", session.id);
