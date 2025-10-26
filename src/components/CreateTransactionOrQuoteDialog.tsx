@@ -78,9 +78,6 @@ export const CreateTransactionOrQuoteDialog = ({
   const [items, setItems] = useState<ItemRow[]>([
     { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0, total: 0 }
   ]);
-  const [originalItems, setOriginalItems] = useState<ItemRow[]>([
-    { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0, total: 0 }
-  ]);
 
   useEffect(() => {
     if (profile?.country) {
@@ -97,79 +94,26 @@ export const CreateTransactionOrQuoteDialog = ({
     }
   }, [serviceDate, serviceEndDate]);
 
-  // Sync originalItems and detect structural changes
-  useEffect(() => {
-    // Detect structural changes (different number of items or different IDs)
-    const structuralChange = 
-      items.length !== originalItems.length ||
-      items.some((item, idx) => item.id !== originalItems[idx]?.id);
-    
-    if (structuralChange && autoDistributionApplied) {
-      // Reset distribution when structure changes
-      setAutoDistributionApplied(false);
-      setOriginalItems([...items]);
-    } else if (!autoDistributionApplied) {
-      // Normal sync when distribution not applied
-      setOriginalItems([...items]);
-    }
-  }, [items, autoDistributionApplied, originalItems]);
-
-  const handleItemsChange = (newItems: ItemRow[]) => {
-    setItems(newItems);
-    if (!autoDistributionApplied) {
-      setOriginalItems(newItems);
-    }
-  };
-
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const taxRate = profile?.vat_rate || profile?.tva_rate || 0;
   // ✅ Arrondi sécurisé pour éviter les erreurs comptables (ex: 100.005 → 100.01)
   const taxAmount = Math.round(subtotal * taxRate) / 100;
-  const totalAmount = subtotal + taxAmount;
+  const baseTotalAmount = subtotal + taxAmount;
 
-  const totalFees = totalAmount * PLATFORM_FEE_RATE;
+  const totalFees = baseTotalAmount * PLATFORM_FEE_RATE;
   const clientFees = totalFees * (feeRatio / 100);
-  const finalPrice = totalAmount + clientFees;
-
-  const roundToNearestFiveCents = (value: number): number => {
-    return Math.ceil(value * 20) / 20;
-  };
+  const sellerFees = totalFees * (1 - feeRatio / 100);
+  const finalPrice = baseTotalAmount + clientFees;
+  const sellerReceives = baseTotalAmount - sellerFees;
 
   const applyAutoDistribution = () => {
-    if (feeRatio === 0) {
-      setItems(originalItems.map(item => ({
-        ...item,
-        total: item.quantity * item.unit_price
-      })));
-      setAutoDistributionApplied(false);
-      toast.info('Frais client à 0% : prix de base restaurés');
-      return;
-    }
-
-    if (totalAmount === 0) {
+    if (baseTotalAmount === 0) {
       toast.info('Aucune répartition à appliquer (montant total à 0)');
       return;
     }
 
-    const baseSubtotal = originalItems.reduce((sum, item) => sum + item.total, 0);
-    const baseTaxAmount = Math.round(baseSubtotal * taxRate) / 100;
-    const baseTotalAmount = baseSubtotal + baseTaxAmount;
-    
-    const baseTotalFees = baseTotalAmount * PLATFORM_FEE_RATE;
-    const baseClientFees = baseTotalFees * (feeRatio / 100);
-    const baseFinalPrice = baseTotalAmount + baseClientFees;
-    
-    const ratio = baseFinalPrice / baseTotalAmount;
-
-    const adjustedItems = originalItems.map(item => ({
-      ...item,
-      unit_price: roundToNearestFiveCents(item.unit_price * ratio),
-      total: roundToNearestFiveCents(item.quantity * (item.unit_price * ratio))
-    }));
-
-    setItems(adjustedItems);
     setAutoDistributionApplied(true);
-    toast.success(`Frais répartis automatiquement (${feeRatio}% client)`);
+    toast.success(`Répartition des frais appliquée : ${feeRatio}% client, ${100 - feeRatio}% vendeur`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,9 +145,8 @@ export const CreateTransactionOrQuoteDialog = ({
     const currentTaxAmount = Math.round(currentSubtotal * taxRate) / 100;
     const currentTotalAmount = currentSubtotal + currentTaxAmount;
     
-    const submittedTotalAmount = autoDistributionApplied 
-      ? currentTotalAmount 
-      : finalPrice;
+    // If fee distribution is applied, submit the final price that the client will pay
+    const submittedTotalAmount = autoDistributionApplied ? finalPrice : currentTotalAmount;
 
     setIsLoading(true);
     try {
@@ -322,7 +265,6 @@ export const CreateTransactionOrQuoteDialog = ({
     setTitle('');
     setDescription('');
     setItems([resetItem]);
-    setOriginalItems([resetItem]);
     setServiceDate(undefined);
     setServiceEndDate(undefined);
     setServiceTime('');
@@ -431,7 +373,7 @@ export const CreateTransactionOrQuoteDialog = ({
                 <DetailedItemsEditor
                   items={items}
                   currency={currency.toUpperCase()}
-                  onItemsChange={handleItemsChange}
+                  onItemsChange={setItems}
                 />
 
                 {/* Totals */}
@@ -446,20 +388,62 @@ export const CreateTransactionOrQuoteDialog = ({
                       <span>{taxAmount.toFixed(2)} {currency.toUpperCase()}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold border-t pt-2">
-                      <span>Total TTC</span>
-                      <span>{totalAmount.toFixed(2)} {currency.toUpperCase()}</span>
+                      <span>{autoDistributionApplied && feeRatio > 0 ? 'Montant base TTC' : 'Total TTC'}</span>
+                      <span>{baseTotalAmount.toFixed(2)} {currency.toUpperCase()}</span>
                     </div>
+                    
+                    {autoDistributionApplied && feeRatio > 0 && (
+                      <>
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>+ Frais plateforme client ({feeRatio}%)</span>
+                          <span>+{clientFees.toFixed(2)} {currency.toUpperCase()}</span>
+                        </div>
+                        <div className="flex justify-between text-xl font-bold border-t pt-2 text-primary">
+                          <span>Total à facturer au client</span>
+                          <span>{finalPrice.toFixed(2)} {currency.toUpperCase()}</span>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3 mt-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-green-900 dark:text-green-100">
+                              💰 Vous recevrez
+                            </span>
+                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
+                              {sellerReceives.toFixed(2)} {currency.toUpperCase()}
+                            </span>
+                          </div>
+                          <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                            Après déduction des frais RivvLock à votre charge ({(100 - feeRatio)}% de {totalFees.toFixed(2)} {currency.toUpperCase()})
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
 
-                  {totalAmount > 0 && (
+                  {baseTotalAmount > 0 && !autoDistributionApplied && (
                     <FeeDistributionSlider
-                      totalAmount={totalAmount}
+                      totalAmount={baseTotalAmount}
                       currency={currency.toUpperCase()}
                       feeRatio={feeRatio}
                       onFeeRatioChange={setFeeRatio}
                       onApplyDistribution={applyAutoDistribution}
                       showApplyButton={true}
                     />
+                  )}
+                  
+                  {autoDistributionApplied && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAutoDistributionApplied(false);
+                        setFeeRatio(0);
+                        toast.info('Répartition annulée');
+                      }}
+                      className="w-full"
+                    >
+                      Annuler la répartition automatique
+                    </Button>
                   )}
                 </div>
 
