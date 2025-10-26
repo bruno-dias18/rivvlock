@@ -192,20 +192,26 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
         logger.log("✅ [CREATE-PAYMENT-V2] Funding instructions created:", JSON.stringify(fundingInstructions));
 
-        // Extraire l'IBAN virtuel
-        if (fundingInstructions.bank_transfer?.eu_bank_transfer) {
-          const ibanData = fundingInstructions.bank_transfer.eu_bank_transfer;
+        // Extraire l'IBAN virtuel (structure funding_instructions)
+        const bt: any = (fundingInstructions as any).bank_transfer;
+        const financialAddresses = bt?.financial_addresses || bt?.eu_bank_transfer?.financial_addresses || [];
+        const ibanEntry = Array.isArray(financialAddresses)
+          ? financialAddresses.find((addr: any) => addr.type === 'iban' && addr.iban)
+          : null;
+
+        if (ibanEntry?.iban?.iban) {
+          const ibanData = ibanEntry.iban;
           virtualIBAN = {
             iban: ibanData.iban,
             bic: ibanData.bic,
             account_holder_name: ibanData.account_holder_name,
-            bank_name: ibanData.bank_name,
-            country: ibanData.country,
-          };
+            bank_name: ibanData.bank_address?.line1 ? `${ibanData.bank_address.line1}, ${ibanData.bank_address.city}` : undefined,
+            country: ibanData.country || bt?.country,
+          } as any;
           logger.log("✅ [CREATE-PAYMENT-V2] Virtual IBAN generated:", virtualIBAN.iban);
         } else {
-          logger.error("❌ [CREATE-PAYMENT-V2] No IBAN in funding instructions response");
-          return errorResponse("Stripe did not return virtual IBAN. Customer Balance may not be enabled in your Stripe account.", 500);
+          logger.error("❌ [CREATE-PAYMENT-V2] No IBAN in funding instructions response", { fundingInstructions: JSON.stringify(fundingInstructions) });
+          return errorResponse("Stripe n’a pas retourné d’IBAN virtuel. Vérifiez Customer Balance et SEPA dans votre Dashboard Stripe.", 500);
         }
       } catch (error: any) {
         logger.error("❌ [CREATE-PAYMENT-V2] Error generating virtual IBAN:", {
