@@ -2,89 +2,90 @@
 
 ---
 
-**Objet:** Demande d'accès Balance Platform pour RivvLock (Test + Production)
+**À:** support@adyen.com  
+**Objet:** Request Balance Platform Test Environment - RivvLock Marketplace
 
 ---
 
-Bonjour [Nom Account Manager Adyen],
+Bonjour,
 
-J'espère que vous allez bien.
+Je vous contacte concernant notre plateforme **RivvLock**, une marketplace B2B de transactions sécurisées (escrow) actuellement hébergée sur votre solution Adyen en mode test.
 
-Je vous contacte concernant notre plateforme **RivvLock** (marketplace B2B de transactions sécurisées) actuellement hébergée sur votre solution Adyen Checkout en mode test.
+**Merchant Account actuel :** [Remplacer par ton ADYEN_MERCHANT_ACCOUNT]
 
-Nous souhaitons évoluer vers **Adyen Balance Platform** pour automatiser notre gestion des paiements escrow et des virements aux vendeurs.
+## 🎯 Contexte et objectif
 
-## 📊 Contexte actuel
+Nous développons une plateforme d'escrow pour professionnels en Suisse (freelances, artisans, PME). Notre système capture les paiements via Adyen, les retient en escrow, puis les libère au vendeur après validation de la prestation.
 
-- **Produit** : Marketplace B2B (transactions sécurisées entre professionnels)
-- **Setup actuel** : Adyen Checkout (test environment)
-- **Volume projeté** : 
+Nous souhaitons **tester Balance Platform en environnement sandbox** afin d'automatiser nos virements vendeurs et déléguer le KYC/AML.
+
+## 📊 Informations business
+
+- **Secteur** : Marketplace B2B (escrow payments)
+- **Pays** : Suisse, France, Allemagne
+- **Status** : Beta privée (5-10 testeurs, lancement prévu mi-2026)
+- **Volume projeté** :
   - Phase 1 (3 mois) : CHF 50'000-100'000/mois
   - Phase 2 (6 mois) : CHF 200'000-500'000/mois
 - **Nombre de vendeurs** : 10-20 actifs (phase 1), 50-100 (phase 2)
-- **Cas d'usage** : Escrow (capture → hold → release vers vendeur)
+- **Ticket moyen** : CHF 500-2'000
 
-## 🎯 Objectifs Balance Platform
+## 🔧 Use case technique
 
-1. **Automatisation des paiements** : Virements automatiques vers vendeurs après validation
-2. **Conformité KYC/AML** : Délégation de la vérification vendeurs à Adyen
-3. **Comptabilité simplifiée** : Split automatique (95% vendeur / 5% plateforme)
-4. **Scaling** : Préparer la croissance internationale (CH, FR, DE)
+Nous avons déjà implémenté :
+- ✅ Capture Adyen (payments API)
+- ✅ Delayed capture (escrow hold 7-30 jours)
+- ✅ KYC manuel (conforme LBA Suisse)
+- ✅ Virements SEPA manuels
 
-## 🔍 Demande spécifique
+**Ce que Balance Platform nous apporterait** :
+1. Automatisation des virements vendeurs (Transfers API)
+2. KYC vendeurs délégué à Adyen (Legal Entity API)
+3. Split automatique 95% vendeur / 5% plateforme
+4. Scaling international (multi-devises)
 
-Pourriez-vous nous **donner accès au test environment Balance Platform** afin que nous puissions :
-- Tester l'onboarding vendeur (KYC)
-- Implémenter les transfers API
-- Valider l'architecture technique avant la production
+## 🙏 Demande spécifique
 
-## 📅 Timeline souhaitée
+Pourriez-vous **activer Balance Platform sur notre compte test** (TEST environment) afin que nous puissions :
+- Tester l'onboarding vendeur (Account Holders API)
+- Implémenter les transfers (Transfers API)
+- Valider l'architecture avant go-live production
 
-- **Maintenant** : Accès test environment + documentation
-- **Semaine 2-4** : Implémentation et tests
-- **Semaine 6-8** : Validation et passage en production
+**Timeline souhaitée** :
+- Semaine 1-2 : Tests et intégration API
+- Semaine 4-6 : Validation business case
+- Mois 3-6 : Go-live production (selon volumes)
 
 ## 📞 Coordonnées
 
-- **Nom** : [Votre nom]
+- **Nom** : Bruno Dias
 - **Entreprise** : RivvLock
-- **Email** : [Votre email]
-- **Merchant Account actuel** : [Votre ADYEN_MERCHANT_ACCOUNT]
+- **Email** : [Ton email]
+- **Téléphone** : [Ton téléphone]
+- **Merchant Account** : [Ton ADYEN_MERCHANT_ACCOUNT]
 
-Merci d'avance pour votre retour. N'hésitez pas si vous avez besoin d'informations complémentaires sur notre business model ou architecture technique.
+Merci d'avance pour votre retour. Je reste disponible pour toute information complémentaire sur notre business model ou architecture technique.
 
 Cordialement,  
-[Votre nom]  
-[Votre titre]  
-RivvLock
+Bruno Dias  
+Founder - RivvLock
 
 ---
 
-## 📝 Notes internes (ne pas inclure dans l'email)
+## 📝 Annexe (si demandée)
 
-**Informations à préparer si demandées par Adyen** :
+**Stack technique** :
+- Frontend : React + TypeScript (Lovable)
+- Backend : Supabase Edge Functions (Deno)
+- Hosting : AWS Frankfurt (GDPR compliant)
+- Intégration Adyen actuelle : Checkout API + Payments API
 
-1. **Business case détaillé** :
-   - Secteur : B2B services (freelance, consulting, artisans)
-   - Flow : Acheteur paie → RivvLock hold → Vendeur livre → Release funds
-   - Commission : 5% sur chaque transaction
+**Compliance** :
+- KYC manuel opérationnel
+- Conservation documents 10 ans (LBA Suisse)
+- RLS policies (Row Level Security)
+- Limite CHF 1'000/transaction sans KYC vérifié
 
-2. **Volumes prévisionnels** :
-   - Ticket moyen : CHF 500-2'000
-   - Transactions/mois : 50-100 (phase 1)
-   - Taux de conversion : 15-20%
+---
 
-3. **Technical stack** :
-   - Frontend : React + TypeScript
-   - Backend : Supabase Edge Functions (Deno)
-   - Hosting : Supabase Cloud (AWS Frankfurt)
-
-4. **Compliance** :
-   - Système KYC manuel déjà implémenté
-   - Conservation documents 10 ans (LBA Suisse)
-   - Limites actuelles : CHF 1'000/transaction sans KYC vérifié
-
-5. **Alternatives considérées** :
-   - Stripe Connect (coûts plus élevés)
-   - Solution in-house + SEPA (complexité opérationnelle)
-   - Raison du choix Adyen : Fees compétitifs + Support EU + KYC intégré
+**Alternative** : Si vous préférez un échange téléphonique, je suis disponible aux horaires suivants : [Propose 2-3 créneaux]
