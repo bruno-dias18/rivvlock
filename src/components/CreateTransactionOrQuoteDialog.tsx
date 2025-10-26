@@ -97,12 +97,22 @@ export const CreateTransactionOrQuoteDialog = ({
     }
   }, [serviceDate, serviceEndDate]);
 
-  // Sync originalItems when items change (if no auto-distribution applied)
+  // Sync originalItems and detect structural changes
   useEffect(() => {
-    if (!autoDistributionApplied) {
+    // Detect structural changes (different number of items or different IDs)
+    const structuralChange = 
+      items.length !== originalItems.length ||
+      items.some((item, idx) => item.id !== originalItems[idx]?.id);
+    
+    if (structuralChange && autoDistributionApplied) {
+      // Reset distribution when structure changes
+      setAutoDistributionApplied(false);
+      setOriginalItems([...items]);
+    } else if (!autoDistributionApplied) {
+      // Normal sync when distribution not applied
       setOriginalItems([...items]);
     }
-  }, [items, autoDistributionApplied]);
+  }, [items, autoDistributionApplied, originalItems]);
 
   const handleItemsChange = (newItems: ItemRow[]) => {
     setItems(newItems);
