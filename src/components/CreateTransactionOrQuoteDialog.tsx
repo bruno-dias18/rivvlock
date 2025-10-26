@@ -107,13 +107,22 @@ export const CreateTransactionOrQuoteDialog = ({
   const sellerReceives = baseTotalAmount - sellerFees;
 
   const applyAutoDistribution = () => {
-    if (baseTotalAmount === 0) {
-      toast.info('Aucune répartition à appliquer (montant total à 0)');
+    if (feeRatio === 0 || baseTotalAmount === 0) {
+      toast.info('Aucune répartition à appliquer (frais client à 0% ou montant à 0)');
       return;
     }
 
+    // Répartir les frais sur toutes les lignes
+    const ratio = finalPrice / baseTotalAmount;
+    const adjustedItems = items.map(item => ({
+      ...item,
+      unit_price: item.unit_price * ratio,
+      total: item.quantity * (item.unit_price * ratio)
+    }));
+
+    setItems(adjustedItems);
     setAutoDistributionApplied(true);
-    toast.success(`Répartition des frais appliquée : ${feeRatio}% client, ${100 - feeRatio}% vendeur`);
+    toast.success('Frais répartis automatiquement sur toutes les lignes');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -420,14 +429,25 @@ export const CreateTransactionOrQuoteDialog = ({
                   </div>
 
                   {baseTotalAmount > 0 && !autoDistributionApplied && (
-                    <FeeDistributionSlider
-                      totalAmount={baseTotalAmount}
-                      currency={currency.toUpperCase()}
-                      feeRatio={feeRatio}
-                      onFeeRatioChange={setFeeRatio}
-                      onApplyDistribution={applyAutoDistribution}
-                      showApplyButton={true}
-                    />
+                    <>
+                      <FeeDistributionSlider
+                        totalAmount={baseTotalAmount}
+                        currency={currency.toUpperCase()}
+                        feeRatio={feeRatio}
+                        onFeeRatioChange={setFeeRatio}
+                        onApplyDistribution={applyAutoDistribution}
+                        showApplyButton={true}
+                      />
+                      
+                      <div className="text-sm text-muted-foreground space-y-1 mt-2">
+                        <p>💡 <strong>Astuce :</strong> La répartition automatique ajoute les frais RivvLock proportionnellement sur toutes vos lignes.</p>
+                        <p>Vous pouvez aussi :</p>
+                        <ul className="list-disc list-inside ml-4 space-y-0.5">
+                          <li>Ajuster manuellement le prix de chaque ligne</li>
+                          <li>Ajouter une ligne spécifique "Frais de plateforme RivvLock"</li>
+                        </ul>
+                      </div>
+                    </>
                   )}
                   
                   {autoDistributionApplied && (
