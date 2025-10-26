@@ -112,6 +112,179 @@ export type Database = {
         }
         Relationships: []
       }
+      adyen_payout_accounts: {
+        Row: {
+          account_holder_name: string
+          bank_name: string | null
+          bic: string | null
+          country: string
+          created_at: string
+          iban: string
+          id: string
+          is_default: boolean | null
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          account_holder_name: string
+          bank_name?: string | null
+          bic?: string | null
+          country: string
+          created_at?: string
+          iban: string
+          id?: string
+          is_default?: boolean | null
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          account_holder_name?: string
+          bank_name?: string | null
+          bic?: string | null
+          country?: string
+          created_at?: string
+          iban?: string
+          id?: string
+          is_default?: boolean | null
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      adyen_payouts: {
+        Row: {
+          account_holder_name: string
+          admin_notes: string | null
+          bank_reference: string | null
+          batch_reference: string | null
+          bic: string | null
+          completed_at: string | null
+          created_at: string
+          currency: string
+          estimated_processor_fees: number
+          gross_amount: number
+          iban_destination: string
+          id: string
+          metadata: Json | null
+          net_platform_revenue: number
+          platform_commission: number
+          seller_amount: number
+          seller_id: string
+          sent_at: string | null
+          status: string
+          transaction_id: string
+        }
+        Insert: {
+          account_holder_name: string
+          admin_notes?: string | null
+          bank_reference?: string | null
+          batch_reference?: string | null
+          bic?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency: string
+          estimated_processor_fees: number
+          gross_amount: number
+          iban_destination: string
+          id?: string
+          metadata?: Json | null
+          net_platform_revenue: number
+          platform_commission: number
+          seller_amount: number
+          seller_id: string
+          sent_at?: string | null
+          status?: string
+          transaction_id: string
+        }
+        Update: {
+          account_holder_name?: string
+          admin_notes?: string | null
+          bank_reference?: string | null
+          batch_reference?: string | null
+          bic?: string | null
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          estimated_processor_fees?: number
+          gross_amount?: number
+          iban_destination?: string
+          id?: string
+          metadata?: Json | null
+          net_platform_revenue?: number
+          platform_commission?: number
+          seller_amount?: number
+          seller_id?: string
+          sent_at?: string | null
+          status?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adyen_payouts_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aml_checks: {
+        Row: {
+          check_type: string
+          checked_by: string | null
+          created_at: string
+          flags: Json | null
+          id: string
+          notes: string | null
+          provider: string | null
+          provider_response: Json | null
+          risk_score: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          check_type: string
+          checked_by?: string | null
+          created_at?: string
+          flags?: Json | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          provider_response?: Json | null
+          risk_score?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          check_type?: string
+          checked_by?: string | null
+          created_at?: string
+          flags?: Json | null
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          provider_response?: Json | null
+          risk_score?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversation_reads: {
         Row: {
           conversation_id: string
@@ -430,6 +603,93 @@ export type Database = {
           pdf_metadata?: Json | null
           seller_id?: string
           transaction_id?: string
+        }
+        Relationships: []
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          mime_type: string | null
+          notes: string | null
+          updated_at: string
+          user_id: string
+          verified: boolean | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
+      kyc_status: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          notes: string | null
+          rejection_reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          rejection_reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: []
       }
@@ -1189,6 +1449,7 @@ export type Database = {
         Args: { profile_user_id: string }
         Returns: boolean
       }
+      can_create_transaction: { Args: { p_user_id: string }; Returns: boolean }
       check_admin_role: { Args: { _user_id: string }; Returns: boolean }
       check_token_abuse_secure: {
         Args: { check_ip?: string; check_token: string }
@@ -1210,6 +1471,18 @@ export type Database = {
         Returns: boolean
       }
       generate_secure_token: { Args: never; Returns: string }
+      get_adyen_accounting_summary: {
+        Args: never
+        Returns: {
+          pending_payouts_amount: number
+          pending_payouts_count: number
+          total_captured: number
+          total_estimated_fees: number
+          total_net_revenue: number
+          total_owed_to_sellers: number
+          total_platform_commission: number
+        }[]
+      }
       get_buyer_invoice_data: {
         Args: { p_buyer_id: string; p_requesting_user_id: string }
         Returns: {
