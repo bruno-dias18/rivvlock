@@ -59,6 +59,7 @@ export { FAQSection } from './FAQSection';
 // Stripe & Banking
 export { BankAccountRequiredDialog } from './BankAccountRequiredDialog';
 export { default as BankAccountSetupCard } from './BankAccountSetupCard';
+export { AdyenBankAccountCard } from './AdyenBankAccountCard';
 export { EmbeddedStripeOnboarding } from './EmbeddedStripeOnboarding';
 export { ValidateStripeAccountsButton } from './ValidateStripeAccountsButton';
 
