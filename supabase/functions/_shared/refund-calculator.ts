@@ -1,3 +1,9 @@
+import {
+  calculatePlatformFeeForRefund,
+  toCents,
+  fromCents,
+} from './fee-calculator.ts';
+
 /**
  * Centralized Refund Calculator for RivvLock
  * 
@@ -83,11 +89,11 @@ export function calculateRefund(
   }
 
   // Convert to cents (Stripe works in smallest currency unit)
-  const totalAmount = Math.round(transactionPrice * 100);
+  const totalAmount = toCents(transactionPrice);
   
   // Platform fee is ALWAYS 5% of the original transaction amount
   // This ensures platform revenue is predictable regardless of refund
-  const platformFee = Math.round(totalAmount * 0.05);
+  const platformFee = calculatePlatformFeeForRefund(totalAmount);
   
   // Calculate refund amount based on percentage
   const refundAmount = Math.round((totalAmount * refundPercentage) / 100);

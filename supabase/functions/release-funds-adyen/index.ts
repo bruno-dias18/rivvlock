@@ -11,6 +11,10 @@ import {
   Handler,
   HandlerContext,
 } from "../_shared/middleware.ts";
+import {
+  calculateAdyenPayout,
+  fromCents,
+} from "../_shared/fee-calculator.ts";
 
 const schema = z.object({
   transactionId: z.string().uuid(),
@@ -63,18 +67,16 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       });
     }
 
-    // ✅ Seller always receives 95% (same logic as Stripe)
-    const SELLER_PERCENTAGE = 0.95;
-    const RIVVLOCK_PERCENTAGE = 0.05;
-
-    const originalAmount = Math.round(transaction.price * 100);
-    const sellerTransferAmount = Math.round(originalAmount * SELLER_PERCENTAGE);
+    // ✅ Calculate payout using centralized fee calculator
+    const payoutCalc = calculateAdyenPayout(transaction.price);
 
     logStep("Transfer calculation", {
-      originalAmount,
-      sellerPercentage: SELLER_PERCENTAGE,
-      sellerTransferAmount,
-      rivvlockGrossCommission: originalAmount * RIVVLOCK_PERCENTAGE,
+      grossAmount: payoutCalc.grossAmount,
+      platformCommission: payoutCalc.platformCommission,
+      sellerAmount: payoutCalc.sellerAmount,
+      estimatedProcessorFees: payoutCalc.estimatedProcessorFees,
+      netPlatformRevenue: payoutCalc.netPlatformRevenue,
+      netMarginPercent: payoutCalc.netMarginPercent,
     });
 
     // Initialize Adyen API
@@ -107,7 +109,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     const captureRequest = {
       merchantAccount: adyenMerchantAccount,
       amount: {
-        value: originalAmount,
+        value: payoutCalc.grossAmount,
         currency: transaction.currency.toUpperCase(),
       },
       reference: `RIVV-CAPTURE-${transactionId}`,
@@ -141,32 +143,13 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       pspReference: captureData.pspReference,
     });
 
-    // For balance verification, we estimate Adyen fees
-    // Typical Adyen fees: ~1.4% + CHF 0.25
-    const estimatedAdyenFees = Math.round(originalAmount * 0.014 + 25);
-    const netAvailableBalance = originalAmount - estimatedAdyenFees;
-
     logStep("Balance estimation", {
-      originalAmount,
-      estimatedAdyenFees,
-      netAvailableBalance,
-      sellerTransferAmount,
-      sufficient: netAvailableBalance >= sellerTransferAmount,
-    });
-
-    // ✅ Calculate RivvLock's actual net margin
-    const rivvlockNetMargin = netAvailableBalance - sellerTransferAmount;
-    const rivvlockNetMarginPercent = (
-      (rivvlockNetMargin / originalAmount) *
-      100
-    ).toFixed(2);
-
-    logStep("RivvLock net margin calculated", {
-      grossCommission: originalAmount * RIVVLOCK_PERCENTAGE,
-      processorFees: estimatedAdyenFees,
-      netMargin: rivvlockNetMargin,
-      netMarginPercent: rivvlockNetMarginPercent + "%",
-      sellerReceived: sellerTransferAmount,
+      grossAmount: payoutCalc.grossAmount,
+      estimatedProcessorFees: payoutCalc.estimatedProcessorFees,
+      platformCommission: payoutCalc.platformCommission,
+      sellerAmount: payoutCalc.sellerAmount,
+      netPlatformRevenue: payoutCalc.netPlatformRevenue,
+      netMarginPercent: payoutCalc.netMarginPercent,
     });
 
     // ✅ Create payout entry in adyen_payouts table
@@ -175,11 +158,11 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       .insert({
         transaction_id: transactionId,
         seller_id: transaction.user_id,
-        gross_amount: originalAmount,
-        platform_commission: Math.round(originalAmount * RIVVLOCK_PERCENTAGE),
-        seller_amount: sellerTransferAmount,
-        estimated_processor_fees: estimatedAdyenFees,
-        net_platform_revenue: rivvlockNetMargin,
+        gross_amount: payoutCalc.grossAmount,
+        platform_commission: payoutCalc.platformCommission,
+        seller_amount: payoutCalc.sellerAmount,
+        estimated_processor_fees: payoutCalc.estimatedProcessorFees,
+        net_platform_revenue: payoutCalc.netPlatformRevenue,
         currency: transaction.currency.toUpperCase(),
         iban_destination: payoutAccount.iban,
         bic: payoutAccount.bic,
@@ -217,18 +200,18 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       user_id: transaction.user_id,
       activity_type: "funds_released",
       title: "Fonds transférés (Adyen)",
-      description: `${(sellerTransferAmount / 100).toFixed(2)} ${
+      description: `${fromCents(payoutCalc.sellerAmount).toFixed(2)} ${
         transaction.currency
       } reçus pour "${transaction.title}"`,
       metadata: {
         transaction_id: transaction.id,
         psp_reference: transaction.adyen_psp_reference,
-        amount: sellerTransferAmount,
+        amount: payoutCalc.sellerAmount,
         currency: transaction.currency,
-        seller_percentage: SELLER_PERCENTAGE * 100,
-        original_amount: originalAmount,
-        processor_fees: estimatedAdyenFees,
-        rivvlock_net_margin: rivvlockNetMargin,
+        seller_percentage: 95,
+        gross_amount: payoutCalc.grossAmount,
+        processor_fees: payoutCalc.estimatedProcessorFees,
+        rivvlock_net_margin: payoutCalc.netPlatformRevenue,
         payment_provider: "adyen",
       },
     });
@@ -242,7 +225,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       metadata: {
         transaction_id: transaction.id,
         psp_reference: transaction.adyen_psp_reference,
-        amount: sellerTransferAmount,
+        amount: payoutCalc.sellerAmount,
         currency: transaction.currency,
         payment_provider: "adyen",
       },
@@ -255,10 +238,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       message: "Funds released via Adyen successfully",
       transactionId,
       pspReference: transaction.adyen_psp_reference,
-      amountTransferred: sellerTransferAmount,
+      amountTransferred: payoutCalc.sellerAmount,
       currency: transaction.currency,
-      rivvlockNetMargin: rivvlockNetMargin,
-      rivvlockNetMarginPercent: rivvlockNetMarginPercent + "%",
+      rivvlockNetMargin: payoutCalc.netPlatformRevenue,
+      rivvlockNetMarginPercent: payoutCalc.netMarginPercent + "%",
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
