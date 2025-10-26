@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/useToast';
 import { QuoteMessaging } from '@/components/QuoteMessaging';
+import { useAttachQuote } from '@/hooks/useAttachQuote';
 
 interface QuoteItem {
   description: string;
@@ -48,7 +49,14 @@ export default function QuoteViewPage() {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [processing, setProcessing] = useState(false);
   const [messagingOpen, setMessagingOpen] = useState(false);
+  const attachQuote = useAttachQuote();
 
+  useEffect(() => {
+    if (user && token && quote?.id) {
+      // Rattacher automatiquement si non assigné (la fonction gère les cas déjà assignés)
+      attachQuote.mutate({ quoteId: quote.id, token });
+    }
+  }, [user, token, quote?.id]);
   useEffect(() => {
     if (!token) {
       setError('Lien invalide');

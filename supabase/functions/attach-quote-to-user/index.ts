@@ -47,31 +47,65 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     return successResponse({ message: 'Vous êtes le vendeur de ce devis' });
   }
 
-  // CRITICAL SECURITY: Verify email matches
-  if (user!.email !== quote.client_email) {
-    logger.log(`[attach-quote] Email mismatch blocked for quote ${quoteId}`);
-    
-    // Log for audit
+  // If quote already assigned to a different user, block
+  if (quote.client_user_id && quote.client_user_id !== user!.id) {
+    logger.log('[attach-quote] Quote already attached to another user');
+    return errorResponse('Ce devis est déjà rattaché à un autre compte', 400);
+  }
+
+  // If user is the seller, no attachment needed
+  if (quote.seller_id === user!.id) {
+    logger.log('[attach-quote] User is the seller, no attachment needed');
+    return successResponse({ message: 'Vous êtes le vendeur de ce devis' });
+  }
+
+  // If unassigned, attach current authenticated user regardless of client_email
+  if (!quote.client_user_id) {
+    logger.log('[attach-quote] Attaching unassigned quote to current user');
+    const { error: updateError } = await adminClient!
+      .from('quotes')
+      .update({ client_user_id: user!.id })
+      .eq('id', quoteId)
+      .eq('secure_token', token)
+      .is('client_user_id', null);
+
+    if (updateError) {
+      logger.error('[attach-quote] Update error:', updateError);
+      return errorResponse('Erreur lors du rattachement', 500);
+    }
+  }
+
+  // After attaching, ensure conversation is updated and return success
+  if (!quote.client_user_id) {
+    const { data: quoteWithConvAfter } = await supabaseClient!
+      .from('quotes')
+      .select('conversation_id')
+      .eq('id', quoteId)
+      .single();
+
+    if (quoteWithConvAfter?.conversation_id) {
+      await adminClient!
+        .from('conversations')
+        .update({ buyer_id: user!.id })
+        .eq('id', quoteWithConvAfter.conversation_id)
+        .is('buyer_id', null);
+      logger.log(`[attach-quote] Updated conversation ${quoteWithConvAfter.conversation_id}`);
+    }
+
     await supabaseClient!.from('activity_logs').insert({
       user_id: user!.id,
-      activity_type: 'quote_attach_blocked',
-      title: 'Tentative de rattachement bloquée',
-      description: 'Adresse email différente du destinataire',
-      metadata: { quote_id: quoteId, email_match: false }
+      activity_type: 'quote_attached',
+      title: 'Devis rattaché avec succès',
+      description: `Le devis "${quote.title}" a été rattaché`,
+      metadata: { quote_id: quoteId, email_match: null }
     });
-    
-    return errorResponse(
-      `Ce devis a été envoyé à ${quote.client_email}. Veuillez vous connecter avec cette adresse.`,
-      403,
-      { error: 'email_mismatch', client_email: quote.client_email }
-    );
+
+    return successResponse({ message: 'Devis rattaché avec succès', quote_id: quoteId });
   }
 
   // If already attached to this user
   if (quote.client_user_id === user!.id) {
     logger.log('[attach-quote] Quote already attached to this user');
-    
-    // Make sure conversation is also updated
     const { data: quoteWithConv } = await supabaseClient!
       .from('quotes')
       .select('conversation_id')
@@ -84,64 +118,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
         .update({ buyer_id: user!.id })
         .eq('id', quoteWithConv.conversation_id)
         .is('buyer_id', null);
-      
       logger.log(`[attach-quote] Updated conversation ${quoteWithConv.conversation_id}`);
     }
-    
     return successResponse({ message: 'Devis déjà rattaché à votre compte' });
   }
-
-  // If already attached to another user
-  if (quote.client_user_id && quote.client_user_id !== user!.id) {
-    logger.log('[attach-quote] Quote already attached to another user');
-    return errorResponse('Ce devis est déjà rattaché à un autre compte', 400);
-  }
-
-  // Attach quote to user (use admin client to bypass RLS)
-  const { error: updateError } = await adminClient!
-    .from('quotes')
-    .update({ client_user_id: user!.id })
-    .eq('id', quoteId)
-    .eq('secure_token', token)
-    .is('client_user_id', null);
-
-  if (updateError) {
-    logger.error('[attach-quote] Update error:', updateError);
-    return errorResponse('Erreur lors du rattachement', 500);
-  }
-
-  logger.log(`[attach-quote] Successfully attached quote ${quoteId}`);
-
-  // Update conversation buyer_id if conversation exists
-  const { data: quoteWithConv } = await supabaseClient!
-    .from('quotes')
-    .select('conversation_id')
-    .eq('id', quoteId)
-    .single();
-
-  if (quoteWithConv?.conversation_id) {
-    await adminClient!
-      .from('conversations')
-      .update({ buyer_id: user!.id })
-      .eq('id', quoteWithConv.conversation_id)
-      .is('buyer_id', null);
-    
-    logger.log(`[attach-quote] Updated conversation ${quoteWithConv.conversation_id}`);
-  }
-
-  // Log activity with email_match for audit
-  await supabaseClient!.from('activity_logs').insert({
-    user_id: user!.id,
-    activity_type: 'quote_attached',
-    title: 'Devis rattaché avec succès',
-    description: `Le devis "${quote.title}" a été rattaché`,
-    metadata: { quote_id: quoteId, email_match: true }
-  });
-
-  return successResponse({ 
-    message: 'Devis rattaché avec succès',
-    quote_id: quoteId 
-  });
 };
 
 const composedHandler = compose(
