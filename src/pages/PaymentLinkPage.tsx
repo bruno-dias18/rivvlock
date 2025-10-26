@@ -25,6 +25,7 @@ interface TransactionData {
   payment_deadline?: string;
   status?: string;
   payment_method?: 'card' | 'bank_transfer';
+  buyer_id?: string;
 }
 
 export default function PaymentLinkPage() {
@@ -106,22 +107,23 @@ export default function PaymentLinkPage() {
           p_token: finalToken,
         });
 
-        if (!rpcError && rpcData && rpcData.length > 0) {
-          const t = rpcData[0];
-          payload = { transaction: {
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            price: Number(t.price),
-            currency: t.currency,
-            seller_display_name: t.seller_display_name,
-            service_date: t.service_date,
-            payment_deadline: t.payment_deadline,
-            status: t.status,
-          }};
-        } else {
-          throw new Error(rpcError?.message || 'Transaction non trouvée');
-        }
+          if (!rpcError && rpcData && rpcData.length > 0) {
+            const t = rpcData[0];
+            payload = { transaction: {
+              id: t.id,
+              title: t.title,
+              description: t.description,
+              price: Number(t.price),
+              currency: t.currency,
+              seller_display_name: t.seller_display_name,
+              service_date: t.service_date,
+              payment_deadline: t.payment_deadline,
+              status: t.status,
+              buyer_id: t.buyer_id,
+            }};
+          } else {
+            throw new Error(rpcError?.message || 'Transaction non trouvée');
+          }
       } else {
         // Production: use edge function with rate limiting
         const endpoint = `https://slthyxqruhfuyfmextwr.supabase.co/functions/v1/get-transaction-by-token?token=${encodeURIComponent(finalToken)}`;
@@ -165,6 +167,7 @@ export default function PaymentLinkPage() {
               service_date: t.service_date,
               payment_deadline: t.payment_deadline,
               status: t.status,
+              buyer_id: t.buyer_id,
             }};
           } else {
             const reason = json?.error || json?.message || rpcError?.message || 'Edge Function non disponible';
