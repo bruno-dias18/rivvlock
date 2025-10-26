@@ -7,7 +7,7 @@ interface CopyOptions {
 
 interface CopyResult {
   success: boolean;
-  method: 'clipboard' | 'execCommand' | 'textarea' | 'prompt' | 'share' | 'failed';
+  method: 'clipboard' | 'execCommand' | 'textarea' | 'prompt' | 'share' | 'failed' | 'none';
   error?: string;
 }
 

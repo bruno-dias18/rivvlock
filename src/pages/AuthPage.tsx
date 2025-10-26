@@ -285,6 +285,15 @@ export default function AuthPage() {
              isSignUp ? t('auth.subtitle') : 
              t('auth.subtitle')}
           </p>
+          
+          {/* Show redirect notice for payment flows */}
+          {redirectTo && redirectTo.includes('payment-link') && !isSignUp && !isForgotPassword && !isResetPassword && (
+            <div className="mt-4 rounded-md bg-primary/10 border border-primary/20 p-3">
+              <p className="text-sm text-primary text-center">
+                🔒 Après connexion, vous serez redirigé vers la page de paiement
+              </p>
+            </div>
+          )}
         </div>
 
         <Form {...form}>

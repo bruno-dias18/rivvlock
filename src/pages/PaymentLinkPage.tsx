@@ -73,6 +73,8 @@ export default function PaymentLinkPage() {
         } else {
           // Optimistic local update
           setTransaction(prev => prev ? ({ ...prev, buyer_id: user.id } as any) : prev);
+          // Show success toast
+          toast.success('✅ Transaction ajoutée à votre espace');
         }
       } catch (e) {
         logger.error('Auto-attach exception', e);
@@ -425,8 +427,97 @@ export default function PaymentLinkPage() {
   }
 
 
-  // Show transaction details and processing state for authenticated users
+  // Show transaction details for all users, but payment options only for authenticated users
   if (transaction) {
+    // If user is NOT authenticated, show login prompt
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="p-4">
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/'}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour à l'accueil
+            </Button>
+          </div>
+          <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4">
+            <div className="max-w-md w-full space-y-6">
+              <div className="text-center">
+                <img 
+                  src="/assets/rivvlock-logo.webp" 
+                  alt="RIVVLOCK Logo" 
+                  className="mx-auto h-16 w-auto object-contain mb-6"
+                  loading="lazy"
+                />
+              </div>
+
+              <div className="bg-card border rounded-lg p-6 space-y-4">
+                <h1 className="text-2xl font-bold text-center">Détails de la transaction</h1>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Service</label>
+                    <p className="font-semibold">{transaction.title}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Description</label>
+                    <p className="text-sm">{transaction.description}</p>
+                  </div>
+                  
+                  {transaction.service_date && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Date du service</label>
+                      <p className="font-medium flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {format(new Date(transaction.service_date), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Vendeur</label>
+                    <p className="font-medium">{transaction.seller_display_name}</p>
+                  </div>
+
+                  <div className="pt-4 border-t">
+                    <label className="text-sm font-medium text-muted-foreground">Montant</label>
+                    <p className="text-2xl font-bold text-primary">
+                      {transaction.price.toFixed(2)} {transaction.currency}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    🔒 Connectez-vous pour procéder au paiement sécurisé
+                  </p>
+                  <Button 
+                    onClick={handleAuthRedirect}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Users className="w-5 h-5 mr-2" />
+                    Se connecter pour payer
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    La transaction sera automatiquement ajoutée à votre espace
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-center text-muted-foreground">
+                Paiement sécurisé par Stripe • Vos données sont protégées
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Show bank transfer instructions if selected
     if (showBankInstructions) {
       return (
