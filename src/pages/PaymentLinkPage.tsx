@@ -228,6 +228,29 @@ export default function PaymentLinkPage() {
       }
   };
 
+  // Ensure current user is attached as buyer before starting payment
+  const ensureBuyerAttached = async (): Promise<void> => {
+    try {
+      if (!user || !transaction) return;
+      const finalToken = token || new URLSearchParams(window.location.search).get('txId');
+      if (!finalToken) return;
+
+      if ((transaction as any).buyer_id === user.id) return;
+
+      const { error } = await supabase.rpc('assign_self_as_buyer', {
+        p_transaction_id: transaction.id,
+        p_token: finalToken
+      });
+      if (!error) {
+        setTransaction(prev => prev ? ({ ...prev, buyer_id: user.id } as any) : prev);
+      } else {
+        logger.warn('ensureBuyerAttached: RPC returned error (continuing anyway)', error);
+      }
+    } catch (e) {
+      logger.warn('ensureBuyerAttached exception (continuing anyway)', e);
+    }
+  };
+
   const handleReturnToDashboard = async () => {
     if (!user) {
       handleAuthRedirect();
@@ -286,6 +309,15 @@ export default function PaymentLinkPage() {
     }
     if (transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()) {
       setError('Lien expiré — Le délai de paiement est dépassé.');
+      return;
+    }
+
+    // Ensure buyer attachment before proceeding (avoids 403)
+    await ensureBuyerAttached();
+
+    // If attached to another user, stop here with a clear message
+    if ((transaction as any).buyer_id && (transaction as any).buyer_id !== user.id) {
+      setError("Cette transaction est déjà liée à un autre compte. Connectez-vous avec le bon compte pour payer.");
       return;
     }
 
@@ -377,12 +409,23 @@ export default function PaymentLinkPage() {
     // For card: use Stripe Checkout
     setProcessingPayment(true);
     try {
+      const { data: currentSession } = await supabase.auth.getSession();
+      const accessToken = currentSession?.session?.access_token;
+      if (!accessToken) {
+        setError('Session expirée. Veuillez vous reconnecter pour poursuivre le paiement.');
+        const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
+        navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
+        setProcessingPayment(false);
+        return;
+      }
+
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-payment-checkout', {
         body: { 
           transactionId: transaction.id,
           transactionToken: token || new URLSearchParams(window.location.search).get('txId'),
           payment_method: selectedPaymentMethod
-        }
+        },
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
 
       if (checkoutError) throw checkoutError;
@@ -396,16 +439,32 @@ export default function PaymentLinkPage() {
       }
     } catch (err: any) {
       logger.error('Error initiating payment:', err);
-      // Try to extract a detailed message from Supabase edge function error
-      const detailed = (err?.context?.body || err?.context?.response?.error || err?.context?.response?.text || err?.message);
-      const msg = (typeof detailed === 'string' && detailed.length > 0) ? detailed : 'Erreur lors de la préparation du paiement';
-      const text = String(msg).toLowerCase();
-      if (text.includes('401') || text.includes('unauthorized') || text.includes('jwt') || text.includes('session')) {
+      // Try to extract a detailed message and status from Supabase edge function error
+      const status = err?.context?.response?.status ?? err?.context?.status ?? err?.status;
+      const rawBody = err?.context?.response?.error || err?.context?.response?.data || err?.context?.body;
+      const rawMsg = typeof rawBody === 'string' ? rawBody : err?.message;
+      let msg = (typeof rawMsg === 'string' && rawMsg.length > 0) ? rawMsg : 'Erreur lors de la préparation du paiement';
+
+      if (status === 401) {
         setError('Session expirée. Veuillez vous reconnecter pour poursuivre le paiement.');
         const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
         navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
-      } else {
+      } else if (status === 403) {
+        setError("Ce lien est réservé à l’acheteur. Nous venons d’essayer de l’attacher à votre compte. Réessayez.");
+      } else if (status === 404) {
+        setError('Transaction introuvable ou lien invalide.');
+      } else if (status === 400) {
         setError(msg);
+      } else {
+        // Fallback: pattern matching
+        const text = String(msg).toLowerCase();
+        if (text.includes('unauthorized') || text.includes('jwt') || text.includes('session')) {
+          setError('Session expirée. Veuillez vous reconnecter pour poursuivre le paiement.');
+          const redirectUrl = `/payment-link/${token || new URLSearchParams(window.location.search).get('txId')}`;
+          navigate(`/auth?redirect=${encodeURIComponent(redirectUrl)}`);
+        } else {
+          setError(msg);
+        }
       }
       setProcessingPayment(false);
     }
