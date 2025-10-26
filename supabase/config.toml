@@ -124,6 +124,9 @@ verify_jwt = true
 [functions.create-payment-intent]
 verify_jwt = true
 
+[functions.create-payment-intent-v2]
+verify_jwt = true
+
 [functions.create-proposal]
 verify_jwt = true
 

@@ -84,7 +84,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     // Get buyer profile
     const { data: buyerProfile } = await adminClient!
       .from("profiles")
-      .select("stripe_customer_id, first_name, last_name, email")
+      .select("stripe_customer_id, first_name, last_name")
       .eq("user_id", user!.id)
       .single();
 
@@ -127,7 +127,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     // Créer Stripe Customer si n'existe pas
     if (!stripeCustomerId) {
       const customer = await stripe.customers.create({
-        email: buyerProfile?.email || user!.email,
+        email: user!.email,
         name: `${buyerProfile?.first_name || ''} ${buyerProfile?.last_name || ''}`.trim(),
         metadata: {
           user_id: user!.id,
@@ -153,6 +153,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       }
 
       try {
+        logger.log("🔍 [CREATE-PAYMENT-V2] Attempting to create funding instructions...", {
+          customer: stripeCustomerId,
+          currency: currency,
+          hoursUntilDeadline: hoursUntilDeadline.toFixed(2),
+        });
+
         // Créer Customer Balance Funding Instructions
         const fundingInstructions = await stripe.customers.createFundingInstructions(
           stripeCustomerId!,
@@ -165,6 +171,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           }
         );
 
+        logger.log("✅ [CREATE-PAYMENT-V2] Funding instructions created:", JSON.stringify(fundingInstructions));
+
         // Extraire l'IBAN virtuel
         if (fundingInstructions.bank_transfer?.eu_bank_transfer) {
           const ibanData = fundingInstructions.bank_transfer.eu_bank_transfer;
@@ -176,10 +184,26 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
             country: ibanData.country,
           };
           logger.log("✅ [CREATE-PAYMENT-V2] Virtual IBAN generated:", virtualIBAN.iban);
+        } else {
+          logger.error("❌ [CREATE-PAYMENT-V2] No IBAN in funding instructions response");
+          return errorResponse("Stripe did not return virtual IBAN. Customer Balance may not be enabled in your Stripe account.", 500);
         }
-      } catch (error) {
-        logger.error("❌ [CREATE-PAYMENT-V2] Error generating virtual IBAN:", error);
-        return errorResponse("Failed to generate virtual IBAN. Please contact support.", 500);
+      } catch (error: any) {
+        logger.error("❌ [CREATE-PAYMENT-V2] Error generating virtual IBAN:", {
+          message: error?.message,
+          type: error?.type,
+          code: error?.code,
+          statusCode: error?.statusCode,
+          raw: JSON.stringify(error),
+        });
+        
+        // Message d'erreur détaillé pour diagnostiquer
+        const errorMsg = error?.message || String(error);
+        if (errorMsg.includes('not enabled') || errorMsg.includes('Customer Balance')) {
+          return errorResponse("Customer Balance is not enabled in your Stripe account. Please enable it in Stripe Dashboard → Settings → Customer Balance.", 500);
+        }
+        
+        return errorResponse(`Failed to generate virtual IBAN: ${errorMsg}`, 500);
       }
     }
 
