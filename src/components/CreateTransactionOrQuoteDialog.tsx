@@ -429,25 +429,14 @@ export const CreateTransactionOrQuoteDialog = ({
                   </div>
 
                   {baseTotalAmount > 0 && !autoDistributionApplied && (
-                    <>
-                      <FeeDistributionSlider
-                        totalAmount={baseTotalAmount}
-                        currency={currency.toUpperCase()}
-                        feeRatio={feeRatio}
-                        onFeeRatioChange={setFeeRatio}
-                        onApplyDistribution={applyAutoDistribution}
-                        showApplyButton={true}
-                      />
-                      
-                      <div className="text-sm text-muted-foreground space-y-1 mt-2">
-                        <p>💡 <strong>Astuce :</strong> La répartition automatique ajoute les frais RivvLock proportionnellement sur toutes vos lignes.</p>
-                        <p>Vous pouvez aussi :</p>
-                        <ul className="list-disc list-inside ml-4 space-y-0.5">
-                          <li>Ajuster manuellement le prix de chaque ligne</li>
-                          <li>Ajouter une ligne spécifique "Frais de plateforme RivvLock"</li>
-                        </ul>
-                      </div>
-                    </>
+                    <FeeDistributionSlider
+                      totalAmount={baseTotalAmount}
+                      currency={currency.toUpperCase()}
+                      feeRatio={feeRatio}
+                      onFeeRatioChange={setFeeRatio}
+                      onApplyDistribution={applyAutoDistribution}
+                      showApplyButton={true}
+                    />
                   )}
                   
                   {autoDistributionApplied && (

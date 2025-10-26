@@ -494,21 +494,10 @@ export const EditQuoteDialog = ({ quote, open, onOpenChange, onSuccess }: Props)
                           </Button>
 
                           {!autoDistributionApplied && (
-                            <>
-                              <div className="flex justify-between font-bold text-lg border-t pt-3">
-                                <span>Prix final pour le client:</span>
-                                <span className="text-primary">{finalPrice.toFixed(2)} {currency.toUpperCase()}</span>
-                              </div>
-                              
-                              <div className="text-sm text-muted-foreground space-y-1 mt-2 border-t pt-2">
-                                <p>💡 <strong>Astuce :</strong> La répartition automatique ajoute les frais RivvLock proportionnellement sur toutes vos lignes.</p>
-                                <p>Vous pouvez aussi :</p>
-                                <ul className="list-disc list-inside ml-4 space-y-0.5">
-                                  <li>Ajuster manuellement le prix de chaque ligne</li>
-                                  <li>Ajouter une ligne spécifique "Frais de plateforme RivvLock"</li>
-                                </ul>
-                              </div>
-                            </>
+                            <div className="flex justify-between font-bold text-lg border-t pt-3">
+                              <span>Prix final pour le client:</span>
+                              <span className="text-primary">{finalPrice.toFixed(2)} {currency.toUpperCase()}</span>
+                            </div>
                           )}
                         </div>
                       </div>
