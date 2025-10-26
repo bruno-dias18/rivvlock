@@ -694,7 +694,7 @@ export default function TransactionsPage() {
 
   return (
     <DashboardLayoutWithSidebar onSyncPayments={handleSyncPayments}>
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-x-hidden">
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>{t('transactions.title')}</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
@@ -995,10 +995,10 @@ export default function TransactionsPage() {
         </TabsContent>
 
         <TabsContent value="completed">
-          <Card>
+          <Card className={isMobile ? 'overflow-x-hidden' : ''}>
             <CardHeader className="pb-3">
               <div className={`flex ${isMobile ? 'flex-col gap-3' : 'justify-between items-start'}`}>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <CardTitle>Transactions complétées</CardTitle>
                   <CardDescription className="mt-1.5">
                     Transactions validées et terminées
