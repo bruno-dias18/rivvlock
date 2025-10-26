@@ -694,7 +694,7 @@ export default function TransactionsPage() {
 
   return (
     <DashboardLayoutWithSidebar onSyncPayments={handleSyncPayments}>
-      <div className="space-y-6">
+      <div className={isMobile ? "space-y-4 max-w-screen-sm mx-auto px-4" : "space-y-6"}>
       <div className={`${isMobile ? 'space-y-4' : 'flex justify-between items-center'}`}>
         <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold text-foreground`}>{t('transactions.title')}</h1>
         <div className={`flex gap-2 ${isMobile ? 'flex-col sm:flex-row' : ''}`}>
