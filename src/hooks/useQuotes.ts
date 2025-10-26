@@ -81,7 +81,7 @@ export const useQuotes = () => {
       const { error } = await supabase
         .from('quotes')
         .update(updateData)
-        .eq('id', quoteId);
+        .match({ id: quoteId });
       
       if (error) throw error;
     },

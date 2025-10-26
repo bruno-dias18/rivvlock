@@ -9,6 +9,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    exclude: [
+      'e2e/**', // Exclude Playwright specs from Vitest
+      'supabase/functions/**', // Deno/Edge function tests run with Deno, not Vitest
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

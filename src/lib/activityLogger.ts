@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
 export type ActivityType = 
@@ -49,6 +48,7 @@ const sanitizeLogMetadata = (metadata: Record<string, any>): Record<string, any>
 
 export const logActivity = async ({ type, title, description, metadata }: LogActivityParams) => {
   try {
+    const { supabase } = await import('@/integrations/supabase/client');
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {

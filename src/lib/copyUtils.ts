@@ -21,7 +21,7 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
   logger.debug('[COPY] Environment:', { isInIframe, isSecureContext, hasClipboard: !!navigator.clipboard });
 
   // Method 1: Modern Clipboard API (most reliable when available)
-  if (navigator.clipboard && navigator.clipboard.writeText && isSecureContext) {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
     try {
       await navigator.clipboard.writeText(text);
       logger.debug('[COPY] Success with Clipboard API');
@@ -88,7 +88,7 @@ export const copyToClipboard = async (text: string, options: CopyOptions = {}): 
   logger.debug('[COPY] All methods failed');
   return { 
     success: false, 
-    method: 'failed', 
+    method: 'none', 
     error: 'Toutes les méthodes de copie ont échoué' 
   };
 };

@@ -16,13 +16,12 @@ export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Get user initials from email
   const getInitials = (email: string) => {
-    const parts = email.split('@')[0].split('.');
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+    const local = email.split('@')[0];
+    if (local.length >= 2) {
+      return (local[0] + local[1]).toUpperCase();
     }
-    return email[0].toUpperCase();
+    return local[0]?.toUpperCase() || 'U';
   };
 
   return (

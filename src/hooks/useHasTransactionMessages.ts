@@ -6,33 +6,21 @@ import { logger } from '@/lib/logger';
 export const useHasTransactionMessages = (transactionId: string | undefined) => {
   const { user } = useAuth();
 
-  const { data: hasMessages = false } = useQuery({
+  const { data: hasMessages = false } = useQuery<boolean>({
     queryKey: ['transaction-has-messages', transactionId],
     queryFn: async () => {
       if (!transactionId) return false;
 
-      // First, get the conversation_id from the transaction
-      const { data: transaction, error: txError } = await supabase
-        .from('transactions')
-        .select('conversation_id')
-        .eq('id', transactionId)
-        .maybeSingle();
-
-      if (txError || !transaction?.conversation_id) {
-        logger.error('Error fetching transaction conversation:', txError);
-        return false;
-      }
-
-      // Then check if there are any messages in this conversation
-      const { data, error } = await supabase
+      // Check if there are any messages linked directly to this transaction
+      const { data, error } = await (supabase as any)
         .from('messages')
         .select('id')
-        .eq('conversation_id', transaction.conversation_id)
+        .eq('transaction_id', transactionId)
         .limit(1)
-        .maybeSingle();
+        .single();
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "no rows returned" which means no messages exist
+      // PGRST116 is "no rows returned" which means no messages exist
+      if (error && (error as any).code !== 'PGRST116') {
         logger.error('Error checking messages:', error);
         return false;
       }
