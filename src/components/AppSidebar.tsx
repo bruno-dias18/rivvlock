@@ -44,11 +44,6 @@ const userNavigationItems = [
     icon: FileText,
   },
   {
-    title: 'Vérification vendeur',
-    url: '/seller/verification',
-    icon: ShieldCheck,
-  },
-  {
     title: 'navigation.profile',
     url: '/dashboard/profile',
     icon: User,
