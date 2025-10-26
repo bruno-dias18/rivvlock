@@ -153,9 +153,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
     // Générer virtual IBAN si bank_transfer demandé
     if (paymentMethod === 'bank_transfer') {
-      if (hoursUntilDeadline < 72) {
-        logger.error("❌ [CREATE-PAYMENT-V2] Bank transfer requires 72h deadline");
-        return errorResponse("Bank transfer requires at least 72 hours before payment deadline", 400);
+      if (hoursUntilDeadline < 48) {
+        logger.error("❌ [CREATE-PAYMENT-V2] Bank transfer requires 48h deadline");
+        return errorResponse("Bank transfer requires at least 48 hours before payment deadline", 400);
       }
 
       try {

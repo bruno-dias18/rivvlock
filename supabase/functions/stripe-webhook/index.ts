@@ -176,6 +176,79 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     }
 
     // ✅ Handle payment authorization (manual capture) - when funds are authorized but not yet captured
+    // ✅ Handle payment intent amount capturable updated (manual capture authorization)
+    if (event.type === "payment_intent.amount_capturable_updated") {
+      const pi = event.data.object as Stripe.PaymentIntent;
+
+      if (pi.capture_method === 'manual' && pi.status === 'requires_capture') {
+        const transactionId = pi.metadata?.transaction_id;
+        if (!transactionId) {
+          logger.debug("No transaction_id in payment intent metadata for amount_capturable_updated");
+          return successResponse({ received: true });
+        }
+
+        // Validate transaction exists
+        const { data: transaction } = await adminClient
+          .from("transactions")
+          .select("id, status")
+          .eq("id", transactionId)
+          .single();
+
+        if (!transaction) {
+          logger.error("Transaction not found on amount_capturable_updated", { transactionId });
+          return successResponse({ received: true });
+        }
+
+        if (transaction.status !== "pending") {
+          logger.info("Transaction already updated (skip)", { transactionId, status: transaction.status });
+          return successResponse({ received: true });
+        }
+
+        // Calculate validation deadline (48h)
+        const validationDeadline = new Date();
+        validationDeadline.setHours(validationDeadline.getHours() + 48);
+
+        // Update transaction to paid (funds authorized/blocked)
+        const { error: updateError } = await adminClient
+          .from("transactions")
+          .update({
+            status: "paid",
+            payment_method: "card",
+            payment_blocked_at: new Date().toISOString(),
+            validation_deadline: validationDeadline.toISOString(),
+          })
+          .eq("id", transactionId)
+          .eq("status", "pending");
+
+        if (updateError) {
+          logger.error("Error updating transaction on amount_capturable_updated", updateError, { transactionId });
+          throw updateError;
+        }
+
+        // Log activity
+        await adminClient
+          .from("activity_logs")
+          .insert({
+            user_id: pi.metadata?.buyer_id,
+            activity_type: "funds_blocked",
+            title: "Paiement par carte autorisé et bloqué",
+            description: `Montant: ${(pi.amount / 100).toFixed(2)} ${pi.currency.toUpperCase()} - En attente de validation`,
+            metadata: {
+              transaction_id: transactionId,
+              payment_intent_id: pi.id,
+              payment_method: "card",
+              amount: pi.amount,
+              currency: pi.currency,
+            },
+          });
+
+        logger.info("Transaction updated to paid (requires_capture)", { transactionId });
+      }
+
+      return successResponse({ received: true });
+    }
+
+    // ✅ Handle payment authorization (manual capture) - when funds are authorized but not yet captured
     if (event.type === "charge.succeeded") {
       const charge = event.data.object as Stripe.Charge;
       const paymentIntentId = charge.payment_intent as string;

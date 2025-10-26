@@ -329,8 +329,8 @@ export default function PaymentLinkPage() {
         const now = new Date();
         const hoursUntilDeadline = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
         
-        if (hoursUntilDeadline < 72) {
-          setError('Le virement bancaire nécessite un délai minimum de 3 jours (72h) avant la date limite de paiement. Veuillez choisir le paiement par carte.');
+        if (hoursUntilDeadline < 48) {
+          setError('Le virement bancaire nécessite un délai minimum de 2 jours (48h) avant la date limite de paiement. Veuillez choisir le paiement par carte.');
           return;
         }
       }

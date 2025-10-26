@@ -26,10 +26,9 @@ const schema = z.object({
  * Create Stripe Checkout Session with escrow configuration
  * 
  * This creates a Stripe Checkout Session (hosted payment page):
- * - Supports card payments (always)
- * - Supports SEPA Direct Debit (if deadline >= 72 hours)
- * - Uses manual capture for escrow
- * - Returns redirect URL to Stripe Checkout
+ * - Supports card payments (toujours)
+ * - Utilise manual capture pour l'escrow
+ * - Retourne l'URL de Stripe Checkout
  * 
  * Option C Implementation:
  * - Manual bank transfer: User sees instructions (NOT via Stripe)
@@ -118,14 +117,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
      */
     
     const paymentMethodTypes: string[] = ['card'];
-    
-    // Add SEPA Direct Debit if deadline allows
-    if (hoursUntilDeadline >= 72) {
-      paymentMethodTypes.push('sepa_debit');
-      logger.log("✅ [CREATE-CHECKOUT] SEPA Direct Debit available (deadline > 3 days)");
-    } else {
-      logger.log("⚠️ [CREATE-CHECKOUT] SEPA Direct Debit not available (deadline < 3 days)");
-    }
+    // SEPA Direct Debit désactivé avec manual capture pour éviter les erreurs Stripe
 
     // Determine success/cancel URLs
     const origin = req.headers.get("origin") || 'https://slthyxqruhfuyfmextwr.supabase.co';
