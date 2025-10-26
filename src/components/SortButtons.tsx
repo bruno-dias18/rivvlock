@@ -28,7 +28,7 @@ export function SortButtons({ sortBy, sortOrder, onSortChange, isMobile, options
   const sortOptions = options || defaultOptions;
 
   return (
-    <div className={`flex gap-1.5 ${isMobile ? 'w-full overflow-x-hidden' : ''}`}>
+    <div className={`flex gap-1.5 ${isMobile ? 'w-full' : ''}`}>
       {sortOptions.map((option) => {
         const Icon = option.icon;
         return (
@@ -37,12 +37,12 @@ export function SortButtons({ sortBy, sortOrder, onSortChange, isMobile, options
             variant={sortBy === option.value ? 'default' : 'outline'}
             size="sm"
             onClick={() => onSortChange(option.value)}
-            className={`text-xs ${isMobile ? 'flex-1 min-w-0 px-2' : ''}`}
+            className={`${isMobile ? 'flex-1 min-w-0 px-2 text-[11px]' : 'text-xs'}`}
           >
-            <Icon className="h-3 w-3 flex-shrink-0" />
-            <span className={`truncate ${isMobile ? 'mx-1' : 'ml-1'}`}>{option.label}</span>
+            <Icon className={`h-3 w-3 flex-shrink-0 ${isMobile ? '' : 'mr-1'}`} />
+            <span className={`truncate ${isMobile ? 'mx-0.5' : 'ml-1'}`}>{option.label}</span>
             {sortBy === option.value && (
-              <span className="text-xs flex-shrink-0">
+              <span className={`flex-shrink-0 ${isMobile ? 'text-[11px] ml-0.5' : 'text-xs ml-1'}`}>
                 {sortOrder === 'desc' ? '↓' : '↑'}
               </span>
             )}
