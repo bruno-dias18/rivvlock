@@ -75,9 +75,13 @@ export default function PaymentLinkPage() {
           logger.error('Auto-attach failed', error);
         } else {
           // Optimistic local update
-          setTransaction(prev => prev ? ({ ...prev, buyer_id: user.id } as any) : prev);
-          // Show success toast
-          toast.success('✅ Transaction ajoutée à votre espace');
+          setTransaction(prev => {
+            if (!prev) return prev as any;
+            if ((prev as any).buyer_id === user.id) return prev as any;
+            return ({ ...prev, buyer_id: user.id } as any);
+          });
+          // No toast on auto-attach to avoid duplicate message
+          logger.info('Auto-attach: transaction linked to user; toast suppressed');
         }
       } catch (e) {
         logger.error('Auto-attach exception', e);
