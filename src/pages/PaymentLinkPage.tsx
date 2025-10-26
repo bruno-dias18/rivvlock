@@ -67,7 +67,25 @@ export default function PaymentLinkPage() {
     (async () => {
       try {
         setAutoAttachAttempted(true);
-        const hadNoBuyer = !(transaction as any).buyer_id;
+        
+        // Snapshot buyer_id from server to avoid missing field in edge response
+        let beforeBuyerId: string | null | undefined = (transaction as any).buyer_id;
+        try {
+          const { data: snapData } = await supabase.rpc('get_transaction_by_token_safe', { p_token: finalToken });
+          if (snapData && snapData.length > 0) {
+            beforeBuyerId = snapData[0].buyer_id;
+          }
+        } catch (_) {
+          // Non bloquant
+        }
+
+        // If already attached to this user, skip silently
+        if (beforeBuyerId && beforeBuyerId === user.id) {
+          logger.info('Auto-attach skipped: already attached to this user');
+          return;
+        }
+
+        const hadNoBuyer = !beforeBuyerId;
         
         const { error } = await supabase.rpc('assign_self_as_buyer', {
           p_transaction_id: transaction.id,
