@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText } from 'lucide-react';
+import { Users, CreditCard, BarChart3, Download, TrendingUp, TrendingDown, Activity, Clock, AlertTriangle, FileText, ShieldCheck, Wallet } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -381,6 +381,54 @@ export default function AdminPage() {
                 Aucune transaction trouvée
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* KYC Verification */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <ShieldCheck className="h-4 w-4" />
+              <span>Vérification KYC</span>
+            </CardTitle>
+            <CardDescription>
+              Validation des documents vendeurs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Gérez les demandes de vérification KYC des vendeurs
+            </p>
+            <Link to="/dashboard/admin/kyc">
+              <Button variant="outline" className="w-full">
+                <ShieldCheck className="h-4 w-4 mr-2" />
+                Gérer KYC
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Adyen Payouts */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Wallet className="h-4 w-4" />
+              <span>Paiements Adyen</span>
+            </CardTitle>
+            <CardDescription>
+              Comptabilité et versements vendeurs
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Suivez et validez les paiements vers les vendeurs
+            </p>
+            <Link to="/dashboard/admin/payouts">
+              <Button variant="outline" className="w-full">
+                <Wallet className="h-4 w-4 mr-2" />
+                Gérer Paiements
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 
