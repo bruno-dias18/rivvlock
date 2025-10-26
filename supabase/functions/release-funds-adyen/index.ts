@@ -85,15 +85,22 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       throw new Error("Adyen configuration missing");
     }
 
-    // ✅ Get seller's Adyen balance account (would need to be stored in stripe_accounts table)
-    // For now, we'll skip the actual transfer implementation
-    // In production, you'd need to:
-    // 1. Store seller's Adyen balanceAccountId in the database
-    // 2. Call Adyen Transfers API to transfer funds
+    // ✅ Get seller's payout account (IBAN)
+    const { data: payoutAccount, error: payoutAccountError } = await adminClient!
+      .from("adyen_payout_accounts")
+      .select("*")
+      .eq("user_id", transaction.user_id)
+      .eq("is_default", true)
+      .eq("verified", true)
+      .single();
 
-    logStep("WARN - Adyen transfers not fully implemented yet", {
-      sellerTransferAmount,
-      note: "Would transfer to seller's Adyen balance account",
+    if (payoutAccountError || !payoutAccount) {
+      throw new Error("Le vendeur n'a pas configuré de compte bancaire vérifié");
+    }
+
+    logStep("Seller payout account found", {
+      iban: payoutAccount.iban.substring(0, 8) + "****", // Log partiel pour sécurité
+      verified: payoutAccount.verified,
     });
 
     // ✅ Capture the payment (release escrow)
@@ -161,6 +168,33 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       netMarginPercent: rivvlockNetMarginPercent + "%",
       sellerReceived: sellerTransferAmount,
     });
+
+    // ✅ Create payout entry in adyen_payouts table
+    const { error: payoutError } = await adminClient!
+      .from("adyen_payouts")
+      .insert({
+        transaction_id: transactionId,
+        seller_id: transaction.user_id,
+        gross_amount: originalAmount,
+        platform_commission: Math.round(originalAmount * RIVVLOCK_PERCENTAGE),
+        seller_amount: sellerTransferAmount,
+        estimated_processor_fees: estimatedAdyenFees,
+        net_platform_revenue: rivvlockNetMargin,
+        currency: transaction.currency.toUpperCase(),
+        iban_destination: payoutAccount.iban,
+        bic: payoutAccount.bic,
+        account_holder_name: payoutAccount.account_holder_name,
+        status: "pending",
+        metadata: {
+          psp_reference: transaction.adyen_psp_reference,
+          capture_reference: `RIVV-CAPTURE-${transactionId}`,
+        },
+      });
+
+    if (payoutError) {
+      throw new Error(`Failed to create payout entry: ${payoutError.message}`);
+    }
+    logStep("Payout entry created in adyen_payouts with status pending");
 
     // Update transaction status
     const { error: updateError } = await adminClient!

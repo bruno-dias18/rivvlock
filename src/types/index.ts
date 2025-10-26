@@ -225,6 +225,111 @@ export interface ActivityLog {
   created_at: string;
 }
 
+// ============= KYC/AML Types =============
+
+export type KycStatus = 'pending' | 'in_review' | 'approved' | 'rejected' | 'additional_info_required';
+export type KycDocumentType = 'id_front' | 'id_back' | 'bank_statement' | 'business_registry' | 'proof_of_address' | 'other';
+export type AmlCheckType = 'manual' | 'automated' | 'periodic';
+export type AmlCheckStatus = 'pending' | 'passed' | 'failed' | 'flagged';
+
+export interface KycStatusRecord {
+  id: string;
+  user_id: string;
+  status: KycStatus;
+  rejection_reason?: string;
+  verified_by?: string;
+  verified_at?: string;
+  notes?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KycDocument {
+  id: string;
+  user_id: string;
+  document_type: KycDocumentType;
+  file_url: string;
+  file_name: string;
+  file_size?: number;
+  mime_type?: string;
+  verified: boolean;
+  verified_by?: string;
+  verified_at?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AmlCheck {
+  id: string;
+  user_id: string;
+  check_type: AmlCheckType;
+  status: AmlCheckStatus;
+  risk_score?: number;
+  flags?: any[];
+  checked_by?: string;
+  provider?: string;
+  provider_response?: Record<string, any>;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============= Adyen Accounting Types =============
+
+export type AdyenPayoutStatus = 'pending' | 'sent' | 'completed' | 'failed';
+
+export interface AdyenPayoutAccount {
+  id: string;
+  user_id: string;
+  iban: string;
+  bic?: string;
+  account_holder_name: string;
+  bank_name?: string;
+  country: string;
+  verified: boolean;
+  verified_by?: string;
+  verified_at?: string;
+  is_default: boolean;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdyenPayout {
+  id: string;
+  transaction_id: string;
+  seller_id: string;
+  gross_amount: number;
+  platform_commission: number;
+  seller_amount: number;
+  estimated_processor_fees: number;
+  net_platform_revenue: number;
+  currency: string;
+  iban_destination: string;
+  bic?: string;
+  account_holder_name: string;
+  status: AdyenPayoutStatus;
+  batch_reference?: string;
+  bank_reference?: string;
+  admin_notes?: string;
+  created_at: string;
+  sent_at?: string;
+  completed_at?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface AdyenAccountingSummary {
+  total_captured: number;
+  total_owed_to_sellers: number;
+  total_platform_commission: number;
+  total_estimated_fees: number;
+  total_net_revenue: number;
+  pending_payouts_amount: number;
+  pending_payouts_count: number;
+}
+
 // ============= Component Props Types =============
 
 /**
