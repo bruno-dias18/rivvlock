@@ -13,6 +13,7 @@ import {
   HandlerContext
 } from "../_shared/middleware.ts";
 import { logger } from "../_shared/logger.ts";
+import { calculateStripePayout, fromCents, formatFeeCalculation } from "../_shared/fee-calculator.ts";
 
 const processTransferSchema = z.object({
   transaction_id: z.string().uuid(),
@@ -88,17 +89,10 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     apiVersion: "2024-06-20",
   });
 
-  // Calculate transfer amount (subtract platform fee if any)
-  const platformFeePercent = 0.05; // 5% platform fee
-  const originalAmount = Math.round(transaction.price * 100); // Convert to cents
-  const platformFee = Math.round(originalAmount * platformFeePercent);
-  const transferAmount = originalAmount - platformFee;
-
-  logStep("Transfer amount calculated", { 
-    originalAmount, 
-    platformFee, 
-    transferAmount 
-  });
+  // ✅ Calculate payout using centralized fee calculator
+  const payoutCalc = calculateStripePayout(transaction.price);
+  
+  logStep("Stripe payout calculated", formatFeeCalculation(payoutCalc, transaction.currency));
 
   // Get the charge ID from the payment intent
   const paymentIntent = await stripe.paymentIntents.retrieve(transaction.stripe_payment_intent_id);
@@ -112,7 +106,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   // Create transfer to connected account
   const transfer = await stripe.transfers.create({
-    amount: transferAmount,
+    amount: payoutCalc.sellerAmount,
     currency: transaction.currency.toLowerCase(),
     destination: sellerStripeAccount.stripe_account_id,
     source_transaction: chargeId,
@@ -120,11 +114,19 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     metadata: {
       transaction_id: transaction.id,
       seller_id: transaction.user_id,
-      buyer_id: transaction.buyer_id
+      buyer_id: transaction.buyer_id,
+      platform_commission: payoutCalc.platformCommission,
+      estimated_processor_fees: payoutCalc.estimatedProcessorFees,
+      net_platform_revenue: payoutCalc.netPlatformRevenue
     }
   });
 
-  logStep("Transfer created", { transferId: transfer.id });
+  logStep("Transfer created successfully", { 
+    transferId: transfer.id,
+    sellerReceived: `${fromCents(payoutCalc.sellerAmount).toFixed(2)} ${transaction.currency}`,
+    netRevenue: `${fromCents(payoutCalc.netPlatformRevenue).toFixed(2)} ${transaction.currency}`,
+    netMarginPercent: payoutCalc.netMarginPercent + '%'
+  });
 
   // Update transaction status
   const { error: updateError } = await adminClient!
@@ -146,13 +148,15 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       user_id: transaction.user_id,
       activity_type: 'funds_released',
       title: 'Fonds transférés vers votre compte',
-      description: `Received ${(transferAmount / 100).toFixed(2)} ${transaction.currency} for transaction: ${transaction.title}`,
+      description: `Received ${fromCents(payoutCalc.sellerAmount).toFixed(2)} ${transaction.currency} for transaction: ${transaction.title}`,
       metadata: {
         transaction_id: transaction.id,
         transfer_id: transfer.id,
-        amount: transferAmount,
+        amount: payoutCalc.sellerAmount,
         currency: transaction.currency,
-        platform_fee: platformFee
+        platform_commission: payoutCalc.platformCommission,
+        estimated_processor_fees: payoutCalc.estimatedProcessorFees,
+        net_platform_revenue: payoutCalc.netPlatformRevenue
       }
     },
     {
@@ -163,7 +167,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       metadata: {
         transaction_id: transaction.id,
         transfer_id: transfer.id,
-        amount: transferAmount,
+        amount: payoutCalc.sellerAmount,
         currency: transaction.currency
       }
     }
@@ -173,9 +177,12 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   return successResponse({
     transfer_id: transfer.id,
-    amount_transferred: transferAmount,
+    amount_transferred: payoutCalc.sellerAmount,
     currency: transaction.currency,
-    platform_fee: platformFee,
+    platform_commission: payoutCalc.platformCommission,
+    estimated_processor_fees: payoutCalc.estimatedProcessorFees,
+    net_platform_revenue: payoutCalc.netPlatformRevenue,
+    net_margin_percent: payoutCalc.netMarginPercent + '%',
     transaction_status: 'validated'
   });
 };

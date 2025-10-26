@@ -32,6 +32,13 @@ export const ADYEN_FEE_PERCENTAGE = 0.014;
 export const ADYEN_FIXED_FEE_CENTS = 25;
 
 /**
+ * Stripe typical processing fees
+ * ~2.9% + CHF 0.30 per transaction for European cards
+ */
+export const STRIPE_FEE_PERCENTAGE = 0.029;
+export const STRIPE_FIXED_FEE_CENTS = 30;
+
+/**
  * Result of platform fee calculation
  */
 export interface PlatformFeeResult {
@@ -54,6 +61,24 @@ export interface AdyenPayoutCalculation {
   /** Amount to transfer to seller (95% of gross) in cents */
   sellerAmount: number;
   /** Estimated Adyen processor fees in cents */
+  estimatedProcessorFees: number;
+  /** Net revenue for RivvLock after processor fees in cents */
+  netPlatformRevenue: number;
+  /** Net margin percentage */
+  netMarginPercent: string;
+}
+
+/**
+ * Result of payout calculation for Stripe transactions
+ */
+export interface StripePayoutCalculation {
+  /** Original transaction amount in cents */
+  grossAmount: number;
+  /** Platform commission (5% of gross) in cents */
+  platformCommission: number;
+  /** Amount to transfer to seller (95% of gross) in cents */
+  sellerAmount: number;
+  /** Estimated Stripe processor fees in cents */
   estimatedProcessorFees: number;
   /** Net revenue for RivvLock after processor fees in cents */
   netPlatformRevenue: number;
@@ -169,6 +194,63 @@ export function calculateAdyenPayout(
 }
 
 /**
+ * Calculate Stripe payout amounts with platform commission and processor fees
+ * 
+ * Formula:
+ * 1. grossAmount = transactionPrice * 100 (convert to cents)
+ * 2. platformCommission = grossAmount * 5%
+ * 3. sellerAmount = grossAmount * 95%
+ * 4. estimatedProcessorFees = grossAmount * 2.9% + 30 cents
+ * 5. netPlatformRevenue = platformCommission - estimatedProcessorFees
+ * 
+ * @param transactionPrice - Transaction price in major currency unit (e.g., CHF)
+ * @returns Complete payout calculation with all amounts in cents
+ * 
+ * @example
+ * calculateStripePayout(100)
+ * // => {
+ * //   grossAmount: 10000,           // 100 CHF
+ * //   platformCommission: 500,      // 5 CHF (5%)
+ * //   sellerAmount: 9500,           // 95 CHF (95%)
+ * //   estimatedProcessorFees: 320,  // 3.20 CHF (2.9% + 0.30)
+ * //   netPlatformRevenue: 180,      // 1.80 CHF (5% - 3.20%)
+ * //   netMarginPercent: "1.80"
+ * // }
+ */
+export function calculateStripePayout(
+  transactionPrice: number
+): StripePayoutCalculation {
+  if (transactionPrice < 0) {
+    throw new Error(`Invalid transaction price: ${transactionPrice}. Must be non-negative.`);
+  }
+
+  // Convert to cents
+  const grossAmount = Math.round(transactionPrice * 100);
+
+  // Platform takes 5%, seller receives 95%
+  const platformCommission = Math.round(grossAmount * RIVVLOCK_PERCENTAGE);
+  const sellerAmount = Math.round(grossAmount * SELLER_PERCENTAGE);
+
+  // Estimate Stripe processor fees (2.9% + CHF 0.30)
+  const estimatedProcessorFees = Math.round(
+    grossAmount * STRIPE_FEE_PERCENTAGE + STRIPE_FIXED_FEE_CENTS
+  );
+
+  // Net revenue after processor fees
+  const netPlatformRevenue = platformCommission - estimatedProcessorFees;
+  const netMarginPercent = ((netPlatformRevenue / grossAmount) * 100).toFixed(2);
+
+  return {
+    grossAmount,
+    platformCommission,
+    sellerAmount,
+    estimatedProcessorFees,
+    netPlatformRevenue,
+    netMarginPercent,
+  };
+}
+
+/**
  * Calculate platform fee for refund scenarios
  * Platform ALWAYS takes 5% of original transaction, regardless of refund amount
  * 
@@ -214,13 +296,16 @@ export function fromCents(cents: number): number {
  * @returns Formatted string
  */
 export function formatFeeCalculation(
-  result: PlatformFeeResult | AdyenPayoutCalculation,
+  result: PlatformFeeResult | AdyenPayoutCalculation | StripePayoutCalculation,
   currency: string = 'CHF'
 ): string {
   if ('sellerAmount' in result && 'grossAmount' in result) {
-    // AdyenPayoutCalculation
+    // AdyenPayoutCalculation or StripePayoutCalculation
+    const processorName = 'estimatedProcessorFees' in result ? 
+      (result.estimatedProcessorFees > 200 ? 'Stripe' : 'Adyen') : 'Processor';
+    
     return [
-      `Adyen Payout Calculation:`,
+      `${processorName} Payout Calculation:`,
       `- Gross Amount: ${fromCents(result.grossAmount).toFixed(2)} ${currency}`,
       `- Platform Commission (5%): ${fromCents(result.platformCommission).toFixed(2)} ${currency}`,
       `- Seller Amount (95%): ${fromCents(result.sellerAmount).toFixed(2)} ${currency}`,
