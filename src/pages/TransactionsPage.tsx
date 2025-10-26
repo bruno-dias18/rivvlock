@@ -931,6 +931,7 @@ export default function TransactionsPage() {
                   onPageChange={setPendingPage}
                   totalCount={pendingData.totalCount}
                   pageSize={pageSize}
+                  isMobile={isMobile}
                 />
               )}
             </CardContent>
@@ -988,6 +989,7 @@ export default function TransactionsPage() {
                   onPageChange={setBlockedPage}
                   totalCount={blockedData.totalCount}
                   pageSize={pageSize}
+                  isMobile={isMobile}
                 />
               )}
             </CardContent>
@@ -1054,6 +1056,7 @@ export default function TransactionsPage() {
                   onPageChange={setCompletedPage}
                   totalCount={completedData.totalCount}
                   pageSize={pageSize}
+                  isMobile={isMobile}
                 />
               )}
             </CardContent>

@@ -9,6 +9,7 @@ interface PaginationControlsProps {
   onPageChange: (page: number) => void;
   totalCount: number;
   pageSize: number;
+  isMobile?: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export function PaginationControls({
   onPageChange,
   totalCount,
   pageSize,
+  isMobile = false,
 }: PaginationControlsProps) {
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalCount);
@@ -30,10 +32,12 @@ export function PaginationControls({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 border-t">
-      <div className="text-sm text-muted-foreground">
-        Affichage de {startItem} à {endItem} sur {totalCount} transactions
-      </div>
+    <div className={`flex items-center ${isMobile ? 'justify-center' : 'justify-between'} px-4 py-3 border-t`}>
+      {!isMobile && (
+        <div className="text-sm text-muted-foreground">
+          Affichage de {startItem} à {endItem} sur {totalCount} transactions
+        </div>
+      )}
       
       <div className="flex items-center gap-2">
         <Button
@@ -41,9 +45,10 @@ export function PaginationControls({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPreviousPage}
+          className={isMobile ? 'px-2' : ''}
         >
           <ChevronLeft className="h-4 w-4" />
-          Précédent
+          {!isMobile && 'Précédent'}
         </Button>
 
         <div className="flex items-center gap-1">
@@ -79,8 +84,9 @@ export function PaginationControls({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
+          className={isMobile ? 'px-2' : ''}
         >
-          Suivant
+          {!isMobile && 'Suivant'}
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
