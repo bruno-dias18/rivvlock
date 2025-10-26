@@ -971,6 +971,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          adyen_psp_reference: string | null
           buyer_display_name: string | null
           buyer_id: string | null
           buyer_validated: boolean | null
@@ -993,6 +994,7 @@ export type Database = {
           payment_deadline: string | null
           payment_deadline_hours: number | null
           payment_method: string | null
+          payment_provider: string | null
           price: number
           proposed_service_date: string | null
           proposed_service_end_date: string | null
@@ -1015,6 +1017,7 @@ export type Database = {
           validation_deadline: string | null
         }
         Insert: {
+          adyen_psp_reference?: string | null
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
@@ -1037,6 +1040,7 @@ export type Database = {
           payment_deadline?: string | null
           payment_deadline_hours?: number | null
           payment_method?: string | null
+          payment_provider?: string | null
           price: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
@@ -1059,6 +1063,7 @@ export type Database = {
           validation_deadline?: string | null
         }
         Update: {
+          adyen_psp_reference?: string | null
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
@@ -1081,6 +1086,7 @@ export type Database = {
           payment_deadline?: string | null
           payment_deadline_hours?: number | null
           payment_method?: string | null
+          payment_provider?: string | null
           price?: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
