@@ -279,6 +279,16 @@ export default function PaymentLinkPage() {
   const handlePayNow = async () => {
     if (!user || !transaction || processingPayment) return;
 
+    // Guard: transaction must be payable
+    if (transaction.status && transaction.status !== 'pending') {
+      setError(`Cette transaction n’est plus payable (statut: ${transaction.status}).`);
+      return;
+    }
+    if (transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()) {
+      setError('Lien expiré — Le délai de paiement est dépassé.');
+      return;
+    }
+
     // ✅ ADYEN FLOW: Route to create-adyen-payment
     if (selectedPaymentProvider === 'adyen') {
       setProcessingPayment(true);
@@ -386,7 +396,9 @@ export default function PaymentLinkPage() {
       }
     } catch (err: any) {
       logger.error('Error initiating payment:', err);
-      const msg = err?.message || 'Erreur lors de la préparation du paiement';
+      // Try to extract a detailed message from Supabase edge function error
+      const detailed = (err?.context?.body || err?.context?.response?.error || err?.context?.response?.text || err?.message);
+      const msg = (typeof detailed === 'string' && detailed.length > 0) ? detailed : 'Erreur lors de la préparation du paiement';
       const text = String(msg).toLowerCase();
       if (text.includes('401') || text.includes('unauthorized') || text.includes('jwt') || text.includes('session')) {
         setError('Session expirée. Veuillez vous reconnecter pour poursuivre le paiement.');
@@ -718,16 +730,17 @@ export default function PaymentLinkPage() {
                  </p>
               </div>
             ) : (
-              <Button 
-                onClick={handlePayNow}
-                className="w-full"
-                size="lg"
-                aria-label="Payer"
-                data-testid="pay-now"
-                disabled={
+                <Button 
+                  onClick={handlePayNow}
+                  className="w-full"
+                  size="lg"
+                  aria-label="Payer"
+                  data-testid="pay-now"
+                  disabled={
                   !selectedPaymentMethod ||
                   processingPayment || 
-                  (transaction.payment_deadline ? new Date(transaction.payment_deadline) < new Date() : false)
+                  (transaction.payment_deadline ? new Date(transaction.payment_deadline) < new Date() : false) ||
+                  (transaction.status ? transaction.status !== 'pending' : false)
                 }
               >
                 <CreditCard className="w-5 h-5 mr-2" />
@@ -735,13 +748,15 @@ export default function PaymentLinkPage() {
                   ? 'Payer — choisissez un mode de paiement'
                   : transaction.payment_deadline && new Date(transaction.payment_deadline) < new Date()
                     ? 'Délai expiré'
-                    : processingPayment 
-                      ? 'Préparation...'
-                      : selectedPaymentMethod === 'bank_transfer' 
-                        ? 'Payer — voir les instructions de virement'
-                        : selectedPaymentMethod === 'twint'
-                        ? 'Payer avec Twint'
-                        : 'Payer par carte'
+                    : transaction.status && transaction.status !== 'pending'
+                      ? 'Non payable (déjà traité)'
+                      : processingPayment 
+                        ? 'Préparation...'
+                        : selectedPaymentMethod === 'bank_transfer' 
+                          ? 'Payer — voir les instructions de virement'
+                          : selectedPaymentMethod === 'twint'
+                          ? 'Payer avec Twint'
+                          : 'Payer par carte'
                 }
               </Button>
             )}
