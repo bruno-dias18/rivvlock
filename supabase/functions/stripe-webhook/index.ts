@@ -128,9 +128,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       // This means funds have been captured and we can mark as truly "paid" (ready for payout)
       // The webhook should only update to "paid" after manual capture is done
       
-      // Calculate validation deadline (72h for service transactions)
+      // Calculate validation deadline (48h for service transactions)
       const validationDeadline = new Date();
-      validationDeadline.setHours(validationDeadline.getHours() + 72);
+      validationDeadline.setHours(validationDeadline.getHours() + 48);
 
       // Update transaction to paid status (funds blocked/captured)
       const { error: updateError } = await adminClient
@@ -223,9 +223,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           paymentMethod = 'card';
         }
 
-        // Calculate validation deadline (72h)
+        // Calculate validation deadline (48h)
         const validationDeadline = new Date();
-        validationDeadline.setHours(validationDeadline.getHours() + 72);
+        validationDeadline.setHours(validationDeadline.getHours() + 48);
 
         // Update transaction to paid status (funds authorized/blocked)
         const { error: updateError } = await adminClient
@@ -389,9 +389,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           required: transactionAmount 
         });
 
-        // Calculate validation deadline (72h)
+        // Calculate validation deadline (48h)
         const validationDeadline = new Date();
-        validationDeadline.setHours(validationDeadline.getHours() + 72);
+        validationDeadline.setHours(validationDeadline.getHours() + 48);
 
         // Update transaction to paid status (escrow)
         const { error: updateError } = await adminClient
