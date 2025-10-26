@@ -58,31 +58,6 @@ const userNavigationItems = [
 // Navigation pour les admins uniquement
 const adminNavigationItems = [
   {
-    title: 'navigation.admin',
-    url: '/dashboard/admin',
-    icon: Users,
-  },
-  {
-    title: 'Transactions',
-    url: '/dashboard/transactions',
-    icon: CreditCard,
-  },
-  {
-    title: 'Transactions problématiques',
-    url: '/dashboard/admin/problematic',
-    icon: AlertTriangle,
-  },
-  {
-    title: "Logs d'activité",
-    url: '/dashboard/admin/logs',
-    icon: FileText,
-  },
-  {
-    title: 'Utilisateurs',
-    url: '/dashboard/admin/users',
-    icon: Users,
-  },
-  {
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
@@ -150,7 +125,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={isActive(item.url)}>
                       <NavLink to={item.url} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
-                        <span>{t(item.title)}</span>
+                        <span>{item.title}</span>
                         {item.url === '/dashboard/admin/disputes' && disputesUnread > 0 && (
                           <Badge 
                             variant="destructive" 

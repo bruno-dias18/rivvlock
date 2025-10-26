@@ -1,4 +1,4 @@
-import { Home, CreditCard, FileText, FileSignature, User, Users } from 'lucide-react';
+import { Home, CreditCard, FileText, FileSignature, User, Users, AlertTriangle, ShieldCheck, Wallet } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -52,14 +52,24 @@ export function BottomTabBar() {
     return location.pathname.startsWith(path);
   };
 
-  const allItems = [...navigationItems];
-  if (isAdmin) {
-    allItems.push({
-      title: 'navigation.admin',
-      url: '/dashboard/admin',
-      icon: Users,
-    });
-  }
+  // Navigation différente pour admins
+  const allItems = isAdmin ? [
+    {
+      title: 'Litiges',
+      url: '/dashboard/admin/disputes',
+      icon: AlertTriangle,
+    },
+    {
+      title: 'KYC',
+      url: '/dashboard/admin/kyc',
+      icon: ShieldCheck,
+    },
+    {
+      title: 'Paiements',
+      url: '/dashboard/admin/payouts',
+      icon: Wallet,
+    },
+  ] : [...navigationItems];
 
   return (
     <nav className="bottom-tab-bar fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t border-border">
@@ -78,7 +88,8 @@ export function BottomTabBar() {
             >
               <div className="relative">
                 <item.icon className={`h-5 w-5 mb-1 ${isItemActive ? 'text-primary' : ''}`} />
-                {item.url === '/dashboard/transactions' && (transactionsUnread > 0 || disputesUnread > 0) && (
+                {/* Badge disputes pour users normaux */}
+                {!isAdmin && item.url === '/dashboard/transactions' && (transactionsUnread > 0 || disputesUnread > 0) && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
@@ -86,24 +97,26 @@ export function BottomTabBar() {
                     {(transactionsUnread + disputesUnread) > 9 ? '9+' : (transactionsUnread + disputesUnread)}
                   </Badge>
                 )}
-                {item.url === '/dashboard/quotes' && quotesUnread > 0 && (
+                {/* Badge quotes pour users normaux */}
+                {!isAdmin && item.url === '/dashboard/quotes' && quotesUnread > 0 && (
                   <Badge 
                     className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold bg-purple-500 hover:bg-purple-600"
                   >
                     {quotesUnread > 9 ? '9+' : quotesUnread}
                   </Badge>
                 )}
-                {item.url === '/dashboard/admin' && unreadCount > 0 && (
+                {/* Badge litiges pour admins */}
+                {isAdmin && item.url === '/dashboard/admin/disputes' && disputesUnread > 0 && (
                   <Badge 
                     variant="destructive" 
                     className="absolute -top-1 -right-2 h-4 min-w-[16px] px-1 flex items-center justify-center text-[10px] font-bold"
                   >
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {disputesUnread > 9 ? '9+' : disputesUnread}
                   </Badge>
                 )}
               </div>
               <span className="text-xs font-medium truncate">
-                {t(item.title)}
+                {isAdmin ? item.title : t(item.title)}
               </span>
             </NavLink>
           );
