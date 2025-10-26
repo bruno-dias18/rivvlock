@@ -3,6 +3,45 @@
 
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
+// IBAN Validation Utilities (server-side)
+function isCreditCardNumber(value: string): boolean {
+  const cleaned = value.replace(/[\s-]/g, '');
+  if (!/^\d+$/.test(cleaned)) return false;
+  
+  const creditCardPrefixes = [
+    '4111', '4222', '4444', '4012', // Visa
+    '5555', '5105', '5200', '5454', // Mastercard
+    '3782', '3714', '3787', // Amex
+    '6011', '6500', // Discover
+  ];
+  
+  return creditCardPrefixes.some(prefix => cleaned.startsWith(prefix));
+}
+
+function isValidIBANFormat(iban: string): boolean {
+  const cleaned = iban.replace(/[\s-]/g, '').toUpperCase();
+  const formatRegex = /^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/;
+  return formatRegex.test(cleaned) && cleaned.length >= 15 && cleaned.length <= 34;
+}
+
+function isValidIBANChecksum(iban: string): boolean {
+  const cleaned = iban.replace(/[\s-]/g, '').toUpperCase();
+  if (!isValidIBANFormat(cleaned)) return false;
+  
+  const rearranged = cleaned.substring(4) + cleaned.substring(0, 4);
+  const numericString = rearranged.replace(/[A-Z]/g, (char) => {
+    return (char.charCodeAt(0) - 55).toString();
+  });
+  
+  let remainder = numericString;
+  while (remainder.length > 2) {
+    const block = remainder.substring(0, 9);
+    remainder = (parseInt(block, 10) % 97).toString() + remainder.substring(block.length);
+  }
+  
+  return parseInt(remainder, 10) % 97 === 1;
+}
+
 // Schémas de base
 const uuidSchema = z.string().uuid({ message: "ID invalide" });
 const tokenSchema = z.string().min(20, { message: "Token invalide" });
@@ -142,6 +181,33 @@ export const requestDateChangeSchema = z.object({
   message: z.string()
     .max(500, { message: "Le message ne peut pas dépasser 500 caractères" })
     .optional(),
+});
+
+// Adyen payout account validation schema
+export const adyenPayoutAccountSchema = z.object({
+  iban: z.string()
+    .trim()
+    .min(1, 'IBAN requis')
+    .transform(val => val.replace(/[\s-]/g, '').toUpperCase())
+    .refine((val) => !isCreditCardNumber(val), {
+      message: 'Ceci est un numéro de carte bancaire, pas un IBAN',
+    })
+    .refine((val) => isValidIBANFormat(val), {
+      message: 'Format IBAN invalide',
+    })
+    .refine((val) => isValidIBANChecksum(val), {
+      message: 'IBAN invalide (numéro de contrôle incorrect)',
+    }),
+  bic: z.string().trim().optional(),
+  account_holder_name: z.string()
+    .trim()
+    .min(2, 'Le nom du titulaire doit contenir au moins 2 caractères')
+    .max(100, 'Le nom du titulaire ne peut pas dépasser 100 caractères'),
+  bank_name: z.string().trim().optional(),
+  country: z.string().length(2, 'Code pays invalide'),
+  user_id: z.string().uuid('ID utilisateur invalide'),
+  is_default: z.boolean().optional(),
+  metadata: z.record(z.any()).optional(),
 });
 
 /**

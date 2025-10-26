@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle, Clock, Plus, Edit } from 'lucide-react';
+import { CreditCard, CheckCircle, Clock, Plus, Edit, AlertCircle } from 'lucide-react';
+import { formatIBAN, getIBANValidationMessage, getExpectedIBANLength } from '@/lib/ibanValidation';
 
 export function AdyenBankAccountCard() {
   const { user } = useAuth();
@@ -21,6 +22,42 @@ export function AdyenBankAccountCard() {
     bank_name: '',
     country: 'CH',
   });
+  const [ibanError, setIbanError] = useState<string | null>(null);
+  const [ibanTouched, setIbanTouched] = useState(false);
+
+  const handleIBANChange = (value: string) => {
+    setBankFormData({ ...bankFormData, iban: value.toUpperCase() });
+    
+    // Only show errors after user has started typing
+    if (value.length > 0) {
+      setIbanTouched(true);
+      const error = getIBANValidationMessage(value);
+      setIbanError(error);
+    } else {
+      setIbanError(null);
+    }
+  };
+
+  const handleIBANBlur = () => {
+    setIbanTouched(true);
+    if (bankFormData.iban) {
+      const error = getIBANValidationMessage(bankFormData.iban);
+      setIbanError(error);
+      
+      // Auto-format on blur if valid
+      if (!error) {
+        setBankFormData({ ...bankFormData, iban: formatIBAN(bankFormData.iban) });
+      }
+    }
+  };
+
+  const isFormValid = () => {
+    return (
+      bankFormData.iban &&
+      bankFormData.account_holder_name.length >= 2 &&
+      !getIBANValidationMessage(bankFormData.iban)
+    );
+  };
 
   const handleBankAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +77,8 @@ export function AdyenBankAccountCard() {
         bank_name: '',
         country: 'CH',
       });
+      setIbanError(null);
+      setIbanTouched(false);
     } catch (error) {
       // Error handled by hook
     }
@@ -132,11 +171,27 @@ export function AdyenBankAccountCard() {
               <Input
                 id="iban"
                 value={bankFormData.iban}
-                onChange={(e) => setBankFormData({ ...bankFormData, iban: e.target.value.toUpperCase() })}
+                onChange={(e) => handleIBANChange(e.target.value)}
+                onBlur={handleIBANBlur}
                 placeholder="CH93 0076 2011 6238 5295 7"
                 required
-                pattern="[A-Z]{2}[0-9]{2}[A-Z0-9]+"
+                className={ibanTouched && ibanError ? 'border-destructive' : ''}
               />
+              {ibanTouched && ibanError && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <span>{ibanError}</span>
+                </div>
+              )}
+              {ibanTouched && !ibanError && bankFormData.iban && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-success">
+                  <CheckCircle className="h-4 w-4" />
+                  <span>✓ IBAN valide</span>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Exemple: CH93 0076 2011 6238 5295 7 (21 caractères pour la Suisse)
+              </p>
             </div>
 
             <div>
@@ -171,10 +226,22 @@ export function AdyenBankAccountCard() {
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={addPayoutAccount.isPending} className="flex-1">
+              <Button 
+                type="submit" 
+                disabled={addPayoutAccount.isPending || !isFormValid()} 
+                className="flex-1"
+              >
                 {addPayoutAccount.isPending ? 'Enregistrement...' : 'Enregistrer'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setShowBankForm(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowBankForm(false);
+                  setIbanError(null);
+                  setIbanTouched(false);
+                }}
+              >
                 Annuler
               </Button>
             </div>
