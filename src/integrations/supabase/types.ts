@@ -1661,6 +1661,7 @@ export type Database = {
         | "validated"
         | "disputed"
         | "expired"
+        | "refunded"
       user_type: "individual" | "company" | "independent"
     }
     CompositeTypes: {
@@ -1814,6 +1815,7 @@ export const Constants = {
         "validated",
         "disputed",
         "expired",
+        "refunded",
       ],
       user_type: ["individual", "company", "independent"],
     },

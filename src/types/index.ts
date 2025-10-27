@@ -11,7 +11,8 @@ export type TransactionStatus =
   | 'paid' 
   | 'validated' 
   | 'disputed' 
-  | 'expired';
+  | 'expired'
+  | 'refunded'; // Transactions remboursées (full ou partial)
 
 // Helper function pour détecter statuts "pending"
 export const isTransactionPending = (status: TransactionStatus): boolean => {

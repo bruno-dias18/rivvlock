@@ -26,7 +26,9 @@ export const useUnreadTransactionTabCounts = (transactions: TransactionLike[]) =
       // Grouper les transactions par statut
       const pending = transactions.filter(t => t.status === 'pending');
       const blocked = transactions.filter(t => t.status === 'paid');
-      const completed = transactions.filter(t => t.status === 'validated');
+  const completed = transactions.filter(t => 
+    t.status === 'validated' || t.status === 'refunded'
+  );
       
       // Pour disputed, on va compter séparément en regardant la table disputes
       const { data: disputedTransactionIds } = await supabase

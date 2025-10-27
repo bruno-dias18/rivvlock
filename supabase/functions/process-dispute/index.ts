@@ -98,7 +98,7 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
     const { refundAmount, sellerAmount, platformFee, totalAmount } = refundCalc;
     const currency = String(transaction.currency).toLowerCase();
 
-    let newTransactionStatus: 'validated' | 'disputed' = 'disputed';
+    let newTransactionStatus: 'validated' | 'disputed' | 'refunded' = 'disputed';
     let disputeStatus: 'resolved_refund' | 'resolved_release' = 'resolved_refund';
 
     if (action === 'refund') {
@@ -148,7 +148,7 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
         return errorResponse(`PaymentIntent not refundable in status: ${paymentIntent.status}`, 400);
       }
 
-      newTransactionStatus = 'disputed';
+      newTransactionStatus = 'refunded'; // Full ou partial refund → status 'refunded'
       disputeStatus = 'resolved_refund';
     } else {
       // release

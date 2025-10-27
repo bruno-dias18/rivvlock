@@ -9,7 +9,7 @@ import type { Transaction, Dispute, Profile, Currency } from '@/types';
  * Check if value is a valid transaction status
  */
 export const isTransactionStatus = (status: string): status is Transaction['status'] => {
-  return ['pending', 'paid', 'validated', 'disputed', 'expired'].includes(status);
+  return ['pending', 'paid', 'validated', 'disputed', 'expired', 'refunded'].includes(status);
 };
 
 /**

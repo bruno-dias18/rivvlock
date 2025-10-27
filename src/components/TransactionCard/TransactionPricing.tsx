@@ -13,7 +13,7 @@ const TransactionPricingComponent = ({ transaction, userRole }: TransactionPrici
   const { t } = useTranslation();
   const isMobile = useIsMobile();
 
-  const hasRefund = transaction.status === 'validated' && 
+  const hasRefund = (transaction.status === 'validated' || transaction.status === 'refunded') && 
     transaction.refund_status !== 'none' && 
     transaction.refund_status;
 

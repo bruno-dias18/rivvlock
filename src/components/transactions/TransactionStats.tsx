@@ -14,7 +14,9 @@ export function TransactionStats({ transactions }: TransactionStatsProps) {
   const stats = {
     pending: transactions.filter(t => t.status === 'pending').length,
     blocked: transactions.filter(t => t.status === 'paid').length,
-    completed: transactions.filter(t => t.status === 'validated').length,
+    completed: transactions.filter(t => 
+      t.status === 'validated' || t.status === 'refunded'
+    ).length,
     disputed: transactions.filter(t => t.status === 'disputed').length,
   };
 
