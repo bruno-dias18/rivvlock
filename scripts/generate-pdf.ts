@@ -1,5 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface CompetitorData {
   name: string;
@@ -185,7 +187,7 @@ const COMPETITORS: CompetitorData[] = [
 
 const RIVVLOCK_LOGO_BASE64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHJ4PSI4IiBmaWxsPSIjOUI4N0YzIi8+CiAgPHBhdGggZD0iTTggMTJIMjRWMjBIOFYxMloiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=';
 
-export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
+const generatePDF = (): Buffer => {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -197,7 +199,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
 
-  // Colors
   const rivvlockPrimary = '#9B87F3';
   const rivvlockSecondary = '#7E69AB';
   const textPrimary = '#1A1F2C';
@@ -207,14 +208,12 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.setFillColor(251, 251, 251);
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-  // Logo (optional, simplified for now)
   try {
     doc.addImage(RIVVLOCK_LOGO_BASE64, 'SVG', margin, margin - 5, 15, 15);
   } catch (e) {
     console.log('Logo not added:', e);
   }
 
-  // Title
   doc.setFontSize(28);
   doc.setTextColor(textPrimary);
   doc.setFont('helvetica', 'bold');
@@ -225,7 +224,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.setFont('helvetica', 'normal');
   doc.text('Marchés Suisse, France, Allemagne', pageWidth / 2, margin + 18, { align: 'center' });
 
-  // Key Stats Box
   doc.setFillColor(rivvlockPrimary);
   doc.roundedRect(margin, margin + 25, pageWidth - 2 * margin, 25, 3, 3, 'F');
 
@@ -241,7 +239,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.text('Swiss Compliance (nLPD)', pageWidth - margin - 60, margin + 33);
   doc.text('Setup No-code en 5 min', pageWidth - margin - 60, margin + 40);
 
-  // Positioning Summary
   doc.setFontSize(11);
   doc.setTextColor(textPrimary);
   doc.setFont('helvetica', 'bold');
@@ -270,7 +267,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.setFont('helvetica', 'bold');
   doc.text('Tableau Comparatif Détaillé', pageWidth / 2, margin, { align: 'center' });
 
-  // Prepare table data
   const tableData = COMPETITORS.map((comp) => [
     comp.name,
     comp.zone,
@@ -319,7 +315,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
       fillColor: [248, 248, 250],
     },
     didParseCell: function (data) {
-      // Highlight RivvLock row
       if (data.row.index === 0 && data.section === 'body') {
         data.cell.styles.fillColor = [220, 252, 231];
         data.cell.styles.fontStyle = 'bold';
@@ -348,7 +343,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.setFont('helvetica', 'bold');
   doc.text('Forces & Différenciateurs RivvLock', pageWidth / 2, margin, { align: 'center' });
 
-  // Strengths boxes
   const strengths = [
     {
       title: '💰 Prix Transparent',
@@ -392,29 +386,24 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
     const x = margin + col * (boxWidth + margin);
     const y = startY + row * (boxHeight + 6);
 
-    // Box background
     doc.setFillColor(248, 248, 250);
     doc.roundedRect(x, y, boxWidth, boxHeight, 2, 2, 'F');
 
-    // Border
     doc.setDrawColor(155, 135, 243);
     doc.setLineWidth(0.3);
     doc.roundedRect(x, y, boxWidth, boxHeight, 2, 2, 'S');
 
-    // Title
     doc.setFontSize(11);
     doc.setTextColor(textPrimary);
     doc.setFont('helvetica', 'bold');
     doc.text(strength.title, x + 4, y + 6);
 
-    // Description
     doc.setFontSize(8.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     const descLines = doc.splitTextToSize(strength.desc, boxWidth - 8);
     doc.text(descLines, x + 4, y + 11);
 
-    // Comparison
     doc.setFontSize(7.5);
     doc.setTextColor(textSecondary);
     doc.setFont('helvetica', 'italic');
@@ -430,7 +419,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
   doc.setFont('helvetica', 'bold');
   doc.text('Recommandations Stratégiques pour Fongit', pageWidth / 2, margin, { align: 'center' });
 
-  // Positioning Statement Box
   doc.setFillColor(155, 135, 243);
   doc.roundedRect(margin, margin + 10, pageWidth - 2 * margin, 22, 3, 3, 'F');
 
@@ -448,7 +436,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
     { align: 'center' }
   );
 
-  // Target Segments
   startY = margin + 40;
   doc.setFontSize(13);
   doc.setTextColor(textPrimary);
@@ -489,7 +476,6 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
     startY += 3;
   });
 
-  // Arguments vs Key Competitors
   startY += 5;
   doc.setFontSize(13);
   doc.setTextColor(textPrimary);
@@ -551,6 +537,17 @@ export const generateCompetitorAnalysisPDF = async (): Promise<void> => {
     );
   }
 
-  // Save PDF
-  doc.save('RivvLock_Analyse_Concurrentielle_2025.pdf');
+  return Buffer.from(doc.output('arraybuffer'));
 };
+
+// Generate and save PDF
+const pdfBuffer = generatePDF();
+const outputPath = path.join(process.cwd(), 'public', 'RivvLock_Analyse_Concurrentielle_2025.pdf');
+
+// Ensure public directory exists
+if (!fs.existsSync(path.dirname(outputPath))) {
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+}
+
+fs.writeFileSync(outputPath, pdfBuffer);
+console.log('✅ PDF generated successfully at:', outputPath);
