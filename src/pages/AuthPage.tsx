@@ -18,6 +18,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import rivvlockLogo from '@/assets/rivvlock-logo-lock.webp';
+import { generateCompetitorAnalysisPDF } from '@/lib/competitorPdfGenerator';
+import { toast } from 'sonner';
 
 type UserType = 'individual' | 'company' | 'independent';
 type Country = 'FR' | 'CH';
@@ -35,6 +37,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   
   // Watch form values for dynamic validation
   const [country, setCountry] = useState<'FR' | 'CH'>('FR');
@@ -159,6 +162,18 @@ export default function AuthPage() {
       setError(t('auth.resetEmailError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadCompetitorPDF = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      await generateCompetitorAnalysisPDF();
+      toast.success('PDF téléchargé avec succès !');
+    } catch (e) {
+      toast.error('Erreur lors de la génération du PDF');
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -292,6 +307,18 @@ export default function AuthPage() {
               <p className="text-sm text-primary text-center">
                 🔒 Après connexion, vous serez redirigé vers la page de paiement
               </p>
+            </div>
+          )}
+
+          {/* Quick access to competitor analysis PDF */}
+          {!isSignUp && !isForgotPassword && !isResetPassword && (
+            <div className="mt-4 rounded-md bg-secondary/15 border border-secondary/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-foreground">Besoin du PDF d'analyse concurrentielle ?</span>
+                <Button variant="secondary" size="sm" onClick={handleDownloadCompetitorPDF} disabled={isGeneratingPdf}>
+                  {isGeneratingPdf ? 'Génération...' : 'Télécharger le PDF'}
+                </Button>
+              </div>
             </div>
           )}
         </div>
