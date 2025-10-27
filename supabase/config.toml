@@ -249,6 +249,9 @@ verify_jwt = true
 [functions.send-email]
 verify_jwt = false
 
+[functions.send-pdf]
+verify_jwt = false
+
 [functions.send-notifications]
 verify_jwt = false
 
