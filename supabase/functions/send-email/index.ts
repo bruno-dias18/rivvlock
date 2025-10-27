@@ -64,7 +64,7 @@ const handler: Handler = async (_req, ctx: HandlerContext) => {
     }
 
     const { error: resendError } = await resend.emails.send({
-      from: 'RivvLock <onboarding@resend.dev>',
+      from: 'RivvLock <noreply@notifications.rivvlock.com>',
       to: [to],
       subject,
       html,
