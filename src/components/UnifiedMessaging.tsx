@@ -54,6 +54,12 @@ const UnifiedMessagingComponent = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastMessageTimeRef = useRef<number>(0);
   const atBottomRef = useRef(true);
+
+  // Layout refs to compute available height for the scroll area (iOS keyboard friendly)
+  const contentRootRef = useRef<HTMLDivElement>(null);
+  const headerMeasureRef = useRef<HTMLDivElement>(null);
+  const footerMeasureRef = useRef<HTMLDivElement>(null);
+  const [listHeight, setListHeight] = useState<number>(0);
  
   const { messages, isLoading, sendMessage, isSendingMessage } = useConversation(conversationId);
   
@@ -137,6 +143,32 @@ const UnifiedMessagingComponent = ({
       textareaRef.current.focus({ preventScroll: true });
     }
   }, [open]);
+
+  // Recompute the exact scrollable height on mobile (iOS keyboard friendly)
+  useLayoutEffect(() => {
+    const recompute = () => {
+      const root = contentRootRef.current;
+      const header = headerMeasureRef.current;
+      const footer = footerMeasureRef.current;
+      if (!root || !header || !footer) return;
+      const available = root.clientHeight;
+      const h = available - header.offsetHeight - footer.offsetHeight;
+      setListHeight(Math.max(100, h));
+    };
+
+    recompute();
+    const vv = (window as any).visualViewport as VisualViewport | undefined;
+    window.addEventListener('resize', recompute);
+    vv?.addEventListener('resize', recompute);
+    return () => {
+      window.removeEventListener('resize', recompute);
+      vv?.removeEventListener('resize', recompute);
+    };
+  }, [open, keyboardInset]);
+
+  useEffect(() => {
+    if (open && atBottomRef.current) ensureBottom();
+  }, [listHeight]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || isSendingMessage) return;
@@ -299,9 +331,10 @@ const UnifiedMessagingComponent = ({
   };
 
   const messagingContent = (
-    <>
-      <DialogHeader className="bg-background p-4 border-b shrink-0 relative">
-        <DialogTitle className="pr-10">
+    <div ref={contentRootRef} className="flex flex-col h-full">
+      <div ref={headerMeasureRef}>
+        <DialogHeader className="bg-background p-4 border-b shrink-0 relative">
+          <DialogTitle className="pr-10">
           {title || (otherParticipantName 
             ? `${t('conversation.with', 'Conversation avec')} ${otherParticipantName}`
             : t('conversation.title', 'Messagerie')
@@ -320,15 +353,18 @@ const UnifiedMessagingComponent = ({
           </DialogClose>
         )}
       </DialogHeader>
+      </div>
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-background"
+        className="overflow-y-auto overflow-x-hidden p-4 bg-background"
         style={{ 
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorY: 'contain',
           touchAction: 'pan-y',
-          maxHeight: '100%'
+          height: listHeight ? `${listHeight}px` : undefined,
+          paddingBottom: isMobile ? Math.max(0, keyboardInset - 8) : 0,
+          pointerEvents: 'auto'
         }}
       >
         {isLoading ? (
@@ -459,7 +495,7 @@ const UnifiedMessagingComponent = ({
           {newMessage.length}/500
         </div>
       </div>
-    </>
+    </div>
   );
 
   if (inline) {
@@ -480,7 +516,6 @@ const UnifiedMessagingComponent = ({
             height: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             top: 'env(safe-area-inset-top, 0px)',
-            paddingBottom: `${keyboardInset}px`,
             overscrollBehavior: 'contain',
           } : {
             height: '85vh',
