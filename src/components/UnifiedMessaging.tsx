@@ -362,8 +362,7 @@ const UnifiedMessagingComponent = ({
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorY: 'contain',
           touchAction: 'pan-y',
-          height: listHeight ? `${listHeight}px` : undefined,
-          paddingBottom: isMobile ? Math.max(0, keyboardInset - 8) : 0,
+          height: listHeight ? `${Math.max(100, listHeight - keyboardInset)}px` : undefined,
           pointerEvents: 'auto'
         }}
       >
@@ -463,10 +462,6 @@ const UnifiedMessagingComponent = ({
         ref={footerMeasureRef}
         className="border-t p-3 shrink-0 bg-background" 
         style={isMobile ? { 
-          position: 'sticky',
-          bottom: 0,
-          transform: keyboardInset ? `translateY(-${keyboardInset}px)` : undefined,
-          willChange: 'transform',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
           flexShrink: 0 
         } : undefined}
