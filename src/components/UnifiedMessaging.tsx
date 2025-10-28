@@ -357,14 +357,14 @@ const UnifiedMessagingComponent = ({
 
       <div 
         ref={messagesContainerRef}
-        className="overflow-y-auto overflow-x-hidden p-4 bg-background"
-        style={{ 
+        className="overflow-y-auto overflow-x-hidden p-4 bg-background flex-1"
+        style={isMobile ? { 
           WebkitOverflowScrolling: 'touch',
           overscrollBehaviorY: 'contain',
           touchAction: 'pan-y',
           height: listHeight ? `${Math.max(100, listHeight - keyboardInset)}px` : undefined,
           pointerEvents: 'auto'
-        }}
+        } : undefined}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
