@@ -459,9 +459,11 @@ const UnifiedMessagingComponent = ({
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t p-3 shrink-0 bg-background" 
+      <div 
+        ref={footerMeasureRef}
+        className="border-t p-3 shrink-0 bg-background" 
         style={isMobile ? { 
-          paddingBottom: '12px',
+          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${Math.max(12, keyboardInset)}px)`,
           flexShrink: 0 
         } : undefined}
       >
