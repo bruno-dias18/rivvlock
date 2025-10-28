@@ -72,11 +72,25 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     const userEmail = userData.user.email;
     logger.log(`[attach-quote] User email retrieved: ${userEmail}`);
     
+    // Retrieve user name from profile
+    const { data: profileData, error: profileError } = await supabaseClient!
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('user_id', user!.id)
+      .single();
+    
+    let clientName = null;
+    if (profileData && !profileError) {
+      clientName = [profileData.first_name, profileData.last_name].filter(Boolean).join(' ') || null;
+      logger.log(`[attach-quote] User name retrieved: ${clientName}`);
+    }
+    
     const { error: updateError } = await adminClient!
       .from('quotes')
       .update({ 
         client_user_id: user!.id,
-        client_email: userEmail
+        client_email: userEmail,
+        client_name: clientName
       })
       .eq('id', quoteId)
       .eq('secure_token', token)
