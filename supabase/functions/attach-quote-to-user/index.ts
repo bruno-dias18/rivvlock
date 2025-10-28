@@ -62,9 +62,22 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   // If unassigned, attach current authenticated user regardless of client_email
   if (!quote.client_user_id) {
     logger.log('[attach-quote] Attaching unassigned quote to current user');
+    
+    // Retrieve user email from auth
+    const { data: userData, error: userError } = await adminClient!.auth.admin.getUserById(user!.id);
+    if (userError || !userData?.user?.email) {
+      logger.error('[attach-quote] Could not fetch user email:', userError);
+      return errorResponse('Impossible de récupérer l\'email utilisateur', 500);
+    }
+    const userEmail = userData.user.email;
+    logger.log(`[attach-quote] User email retrieved: ${userEmail}`);
+    
     const { error: updateError } = await adminClient!
       .from('quotes')
-      .update({ client_user_id: user!.id })
+      .update({ 
+        client_user_id: user!.id,
+        client_email: userEmail
+      })
       .eq('id', quoteId)
       .eq('secure_token', token)
       .is('client_user_id', null);
