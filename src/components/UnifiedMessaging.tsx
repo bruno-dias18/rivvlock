@@ -463,6 +463,10 @@ const UnifiedMessagingComponent = ({
         ref={footerMeasureRef}
         className="border-t p-3 shrink-0 bg-background" 
         style={isMobile ? { 
+          position: 'sticky',
+          bottom: 0,
+          transform: keyboardInset ? `translateY(-${keyboardInset}px)` : undefined,
+          willChange: 'transform',
           paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
           flexShrink: 0 
         } : undefined}
