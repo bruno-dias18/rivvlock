@@ -480,8 +480,7 @@ const UnifiedMessagingComponent = ({
             height: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             top: 'env(safe-area-inset-top, 0px)',
-            transform: `translate(-50%, calc(-50% - ${keyboardInset / 2}px))`,
-            transition: 'transform 0.3s ease-out',
+            paddingBottom: `${keyboardInset}px`,
             overscrollBehavior: 'contain',
           } : {
             height: '85vh',
