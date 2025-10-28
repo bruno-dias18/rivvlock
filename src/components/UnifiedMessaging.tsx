@@ -323,8 +323,13 @@ const UnifiedMessagingComponent = ({
 
       <div 
         ref={messagesContainerRef}
-        className="flex-1 min-h-0 max-h-full overflow-y-scroll overflow-x-hidden p-4 bg-background"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-4 bg-background"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehaviorY: 'contain',
+          touchAction: 'pan-y',
+          maxHeight: '100%'
+        }}
       >
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -419,7 +424,10 @@ const UnifiedMessagingComponent = ({
       </div>
 
       <div className="border-t p-3 shrink-0 bg-background" 
-        style={isMobile ? { paddingBottom: '12px' } : undefined}
+        style={isMobile ? { 
+          paddingBottom: '12px',
+          flexShrink: 0 
+        } : undefined}
       >
         <div className="flex gap-2 items-end">
           <Textarea
@@ -469,9 +477,11 @@ const UnifiedMessagingComponent = ({
           [&>button]:hidden"
         style={{
           ...(isMobile ? {
-            height: `calc(100dvh - ${keyboardInset}px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
+            height: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             top: 'env(safe-area-inset-top, 0px)',
+            transform: `translate(-50%, calc(-50% - ${keyboardInset / 2}px))`,
+            transition: 'transform 0.3s ease-out',
             overscrollBehavior: 'contain',
           } : {
             height: '85vh',
