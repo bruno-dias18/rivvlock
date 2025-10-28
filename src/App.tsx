@@ -34,6 +34,7 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
+const ContactWorldline = lazy(() => import("./pages/ContactWorldline"));
 const SellerVerification = lazy(() => import("./pages/SellerVerification"));
 const AdminKycVerification = lazy(() => import("./pages/AdminKycVerification"));
 const AdminAdyenPayouts = lazy(() => import("./pages/AdminAdyenPayouts"));
@@ -80,6 +81,7 @@ const App: React.FC = () => {
                React.createElement(Route, { path: "/contact", element: React.createElement(ContactPage) }),
                React.createElement(Route, { path: "/faq", element: React.createElement(FAQPage) }),
                React.createElement(Route, { path: "/api-docs", element: React.createElement(ApiDocsPage) }),
+               React.createElement(Route, { path: "/contact-worldline", element: React.createElement(ContactWorldline) }),
                React.createElement(Route, { path: "/join/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/join-transaction/:token", element: React.createElement(PaymentLinkPage) }),
                React.createElement(Route, { path: "/payment-link/:token", element: React.createElement(PaymentLinkPage) }),

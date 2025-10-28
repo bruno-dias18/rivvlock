@@ -258,6 +258,9 @@ verify_jwt = false
 [functions.send-validation-reminders]
 verify_jwt = false
 
+[functions.send-worldline-contact]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 
