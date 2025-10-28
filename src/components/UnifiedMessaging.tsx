@@ -463,7 +463,7 @@ const UnifiedMessagingComponent = ({
         ref={footerMeasureRef}
         className="border-t p-3 shrink-0 bg-background" 
         style={isMobile ? { 
-          paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${Math.max(12, keyboardInset)}px)`,
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
           flexShrink: 0 
         } : undefined}
       >
@@ -519,6 +519,7 @@ const UnifiedMessagingComponent = ({
             maxHeight: `calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
             top: 'env(safe-area-inset-top, 0px)',
             overscrollBehavior: 'contain',
+            paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${keyboardInset}px)`,
           } : {
             height: '85vh',
             maxHeight: '85vh'
