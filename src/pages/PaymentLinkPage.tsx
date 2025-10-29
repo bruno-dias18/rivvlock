@@ -37,7 +37,7 @@ export default function PaymentLinkPage() {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | 'twint' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | null>(null);
   const [showBankInstructions, setShowBankInstructions] = useState(false);
   const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
   const [autoAttachAttempted, setAutoAttachAttempted] = useState(false);
@@ -754,7 +754,6 @@ export default function PaymentLinkPage() {
                 transaction={transaction}
                 selectedMethod={selectedPaymentMethod}
                 onMethodSelect={setSelectedPaymentMethod}
-                paymentProvider="stripe"
               />
             </div>
             
@@ -820,8 +819,6 @@ export default function PaymentLinkPage() {
                         ? 'Préparation...'
                         : selectedPaymentMethod === 'bank_transfer' 
                           ? 'Payer — voir les instructions de virement'
-                          : selectedPaymentMethod === 'twint'
-                          ? 'Payer avec Twint'
                           : 'Payer par carte'
                 }
               </Button>
@@ -829,7 +826,7 @@ export default function PaymentLinkPage() {
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Paiement sécurisé par Stripe • Vos données sont protégées
+            Paiement sécurisé • Vos données sont protégées
           </p>
         </div>
         </div>
