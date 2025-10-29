@@ -85,6 +85,7 @@ export interface Transaction {
   stripe_transfer_id: string | null;
   shared_link_token: string | null;
   shared_link_expires_at: string | null;
+  payment_reference: string | null; // Swiss QR-Invoice 27-digit reference
   funds_released_at: string | null;
   seller_validated_at: string | null;
   buyer_validated_at: string | null;

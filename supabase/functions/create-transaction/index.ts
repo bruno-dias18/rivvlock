@@ -67,7 +67,18 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
   const shareToken = tokenData as string;
   const shareExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
-  // Insert transaction with share token
+  // Generate QR payment reference for Swiss bank transfers
+  const { data: qrReference, error: qrError } = await adminClient!
+    .rpc('generate_qr_reference');
+  
+  if (qrError) {
+    logger.error('[CREATE-TRANSACTION] QR reference generation error:', qrError);
+    throw new Error('Failed to generate QR reference');
+  }
+
+  logger.log('[CREATE-TRANSACTION] QR reference generated:', qrReference);
+
+  // Insert transaction with share token and QR reference
   const { data: transaction, error: insertError } = await supabaseClient!
     .from('transactions')
     .insert({
@@ -87,6 +98,7 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       fee_ratio_client: fee_ratio_client || null,
       shared_link_token: shareToken,
       shared_link_expires_at: shareExpiresAt.toISOString(),
+      payment_reference: qrReference as string,
     })
     .select()
     .single();

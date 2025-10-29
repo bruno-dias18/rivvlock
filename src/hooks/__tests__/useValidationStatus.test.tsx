@@ -21,6 +21,7 @@ describe('useValidationStatus', () => {
     validation_deadline: null,
     stripe_payment_intent_id: null,
     stripe_transfer_id: null,
+    payment_reference: null,
     shared_link_token: null,
     shared_link_expires_at: null,
     funds_released_at: null,

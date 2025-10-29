@@ -6,8 +6,8 @@ import { Loader2, AlertCircle, CreditCard, Users, Calendar, ArrowLeft } from 'lu
 import { Button } from '@/components/ui/button';
 import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
-import { PaymentProviderSelector } from '@/components/PaymentProviderSelector';
 import { BankTransferInstructions } from '@/components/BankTransferInstructions';
+import { SwissQRInvoice } from '@/components/SwissQRInvoice';
 import { Transaction } from '@/types';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
@@ -38,7 +38,6 @@ export default function PaymentLinkPage() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [debugMode] = useState<boolean>(() => new URLSearchParams(window.location.search).get('debug') === '1');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'card' | 'bank_transfer' | 'twint' | null>(null);
-  const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<'stripe' | 'adyen'>('stripe');
   const [showBankInstructions, setShowBankInstructions] = useState(false);
   const [virtualIBAN, setVirtualIBAN] = useState<any>(null);
   const [autoAttachAttempted, setAutoAttachAttempted] = useState(false);
@@ -321,51 +320,23 @@ export default function PaymentLinkPage() {
       return;
     }
 
-    // ✅ ADYEN FLOW: Route to create-adyen-payment
-    if (selectedPaymentProvider === 'adyen') {
-      setProcessingPayment(true);
-      try {
-        const { data: adyenData, error: adyenError } = await supabase.functions.invoke('create-adyen-payment', {
-          body: { 
-            transactionId: transaction.id,
-            paymentMethod: selectedPaymentMethod === 'bank_transfer' 
-              ? 'bank_transfer' 
-              : selectedPaymentMethod === 'twint'
-              ? 'twint'
-              : 'card'
-          }
-        });
-
-        if (adyenError) throw adyenError;
-        if (adyenData.error) throw new Error(adyenData.error);
-
-        // Handle Adyen response (action contains redirect or 3DS challenge)
-        if (adyenData.action) {
-          // Redirect to Adyen hosted payment page
-          if (adyenData.action.url) {
-            window.location.href = adyenData.action.url;
-          } else {
-            throw new Error('Adyen action URL manquante');
-          }
-        } else if (adyenData.resultCode === 'Authorised') {
-          // Payment already authorized (rare case)
-          toast.success('Paiement autorisé !');
-          navigate('/payment-success');
-        } else {
-          throw new Error(`Adyen resultCode inattendu: ${adyenData.resultCode}`);
-        }
-      } catch (err: any) {
-        logger.error('Error initiating Adyen payment:', err);
-        setError(err.message || 'Erreur lors de la préparation du paiement Adyen');
-        setProcessingPayment(false);
-      }
-      return;
-    }
-
-    // ✅ STRIPE FLOW: Existing logic
-    // If bank transfer is selected, generate virtual IBAN and show instructions
+    // If bank transfer is selected
     if (selectedPaymentMethod === 'bank_transfer') {
-      // Check if there's enough time for bank transfer (72h minimum)
+      // ✅ CHF: Display Swiss QR-Invoice directly (no virtual IBAN needed)
+      if (transaction.currency.toUpperCase() === 'CHF') {
+        // Check payment_reference exists
+        if (!transaction.payment_reference) {
+          setError('Référence de paiement manquante. Veuillez contacter le support.');
+          return;
+        }
+        
+        // Just show the Swiss QR-Invoice
+        setShowBankInstructions(true);
+        return;
+      }
+      
+      // ✅ EUR/Other currencies: Generate Stripe virtual IBAN
+      // Check if there's enough time for bank transfer (48h minimum)
       if (transaction.payment_deadline) {
         const deadline = new Date(transaction.payment_deadline);
         const now = new Date();
@@ -379,7 +350,7 @@ export default function PaymentLinkPage() {
 
       setProcessingPayment(true);
       try {
-        // Call create-payment-intent-v2 to generate virtual IBAN
+        // Call create-payment-intent-v2 to generate virtual IBAN (for EUR)
         const { data: paymentData, error: paymentError } = await supabase.functions.invoke('create-payment-intent-v2', {
           body: { 
             transactionId: transaction.id,
@@ -658,7 +629,51 @@ export default function PaymentLinkPage() {
       );
     }
 
-    // Show bank transfer instructions if selected
+    // Show Swiss QR-Invoice for CHF bank transfers
+    if (showBankInstructions && transaction.currency.toUpperCase() === 'CHF') {
+      return (
+        <div className="min-h-screen bg-background">
+          <div className="p-4">
+            <Button
+              variant="ghost"
+              onClick={handleReturnToDashboard}
+              className="gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour au tableau de bord
+            </Button>
+          </div>
+          <div className="flex items-center justify-center min-h-[calc(100vh-80px)]">
+            <div className="max-w-2xl w-full space-y-6 p-4">
+              <div className="text-center">
+                <img 
+                  src="/assets/rivvlock-logo.webp" 
+                  alt="RIVVLOCK Logo" 
+                  className="mx-auto h-16 w-auto object-contain mb-6"
+                  loading="lazy"
+                />
+              </div>
+              <SwissQRInvoice 
+                amount={transaction.price}
+                currency={transaction.currency}
+                reference={transaction.payment_reference || ''}
+                title={transaction.title}
+                buyerName={transaction.buyer_display_name || undefined}
+              />
+              <Button 
+                variant="outline"
+                onClick={() => setShowBankInstructions(false)}
+                className="w-full"
+              >
+                Retour
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Show Stripe virtual IBAN instructions for EUR bank transfers
     if (showBankInstructions) {
       return (
         <div className="min-h-screen bg-background">
@@ -733,21 +748,13 @@ export default function PaymentLinkPage() {
           <div className="bg-card border rounded-lg p-6 space-y-4">
             <h1 className="text-2xl font-bold text-center">Paiement sécurisé</h1>
             
-            {/* Payment Provider Selector - Choose between Stripe and Adyen */}
-            <div className="bg-accent/5 border-2 border-accent/20 rounded-lg p-4">
-              <PaymentProviderSelector
-                selectedProvider={selectedPaymentProvider}
-                onProviderSelect={setSelectedPaymentProvider}
-              />
-            </div>
-
             {/* Payment Method Selector - Card or Bank Transfer */}
             <div className="bg-primary/5 border-2 border-primary/20 rounded-lg p-4">
               <PaymentMethodSelector
                 transaction={transaction}
                 selectedMethod={selectedPaymentMethod}
                 onMethodSelect={setSelectedPaymentMethod}
-                paymentProvider={selectedPaymentProvider}
+                paymentProvider="stripe"
               />
             </div>
             
@@ -785,7 +792,7 @@ export default function PaymentLinkPage() {
                   Préparation de votre paiement sécurisé...
                 </p>
                  <p className="text-xs text-muted-foreground mt-1">
-                   Vous allez être redirigé vers {selectedPaymentProvider === 'stripe' ? 'Stripe' : 'Adyen'}
+                   Vous allez être redirigé vers Stripe
                  </p>
               </div>
             ) : (
@@ -822,7 +829,7 @@ export default function PaymentLinkPage() {
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            Paiement sécurisé par {selectedPaymentProvider === 'stripe' ? 'Stripe' : 'Adyen'} • Vos données sont protégées
+            Paiement sécurisé par Stripe • Vos données sont protégées
           </p>
         </div>
         </div>

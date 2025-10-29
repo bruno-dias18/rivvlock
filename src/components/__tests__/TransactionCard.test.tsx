@@ -53,6 +53,7 @@ const mockTransaction: Transaction = {
   payment_method: 'card',
   stripe_payment_intent_id: null,
   stripe_transfer_id: null,
+  payment_reference: null,
   shared_link_token: null,
   shared_link_expires_at: null,
   seller_display_name: 'John Seller',

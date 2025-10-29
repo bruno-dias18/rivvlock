@@ -61,6 +61,7 @@ export { BankAccountRequiredDialog } from './BankAccountRequiredDialog';
 export { default as BankAccountSetupCard } from './BankAccountSetupCard';
 export { EmbeddedStripeOnboarding } from './EmbeddedStripeOnboarding';
 export { ValidateStripeAccountsButton } from './ValidateStripeAccountsButton';
+export { SwissQRInvoice } from './SwissQRInvoice';
 
 // Navigation
 export { AppSidebar } from './AppSidebar';

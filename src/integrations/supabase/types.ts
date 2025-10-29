@@ -1255,6 +1255,7 @@ export type Database = {
           payment_deadline_hours: number | null
           payment_method: string | null
           payment_provider: string | null
+          payment_reference: string | null
           price: number
           proposed_service_date: string | null
           proposed_service_end_date: string | null
@@ -1301,6 +1302,7 @@ export type Database = {
           payment_deadline_hours?: number | null
           payment_method?: string | null
           payment_provider?: string | null
+          payment_reference?: string | null
           price: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
@@ -1347,6 +1349,7 @@ export type Database = {
           payment_deadline_hours?: number | null
           payment_method?: string | null
           payment_provider?: string | null
+          payment_reference?: string | null
           price?: number
           proposed_service_date?: string | null
           proposed_service_end_date?: string | null
@@ -1470,6 +1473,7 @@ export type Database = {
         Args: { p_operation: string; p_table_name: string; p_user_id?: string }
         Returns: boolean
       }
+      generate_qr_reference: { Args: never; Returns: string }
       generate_secure_token: { Args: never; Returns: string }
       get_adyen_accounting_summary: {
         Args: never
@@ -1614,6 +1618,7 @@ export type Database = {
       }
       purge_old_activity_logs: { Args: never; Returns: undefined }
       scheduled_security_cleanup: { Args: never; Returns: undefined }
+      validate_qr_reference: { Args: { p_reference: string }; Returns: boolean }
       validate_shared_link_secure: {
         Args: {
           p_ip_address?: string

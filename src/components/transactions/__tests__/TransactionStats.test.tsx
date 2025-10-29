@@ -26,6 +26,7 @@ const createMockTransaction = (id: string, status: any, price: number): Transact
   payment_method: undefined,
   stripe_payment_intent_id: null,
   stripe_transfer_id: null,
+  payment_reference: null,
   refund_status: null,
   refund_percentage: null,
   date_change_status: null,
