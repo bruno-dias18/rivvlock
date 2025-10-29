@@ -120,7 +120,7 @@ const handleStartSetup = async () => {
             Configuration bancaire requise
           </DialogTitle>
           <DialogDescription>
-            Choisissez Stripe ou Adyen pour recevoir vos paiements.
+            Configurez Stripe pour recevoir vos paiements.
           </DialogDescription>
         </DialogHeader>
 
@@ -137,7 +137,7 @@ const handleStartSetup = async () => {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Pour créer une transaction, vous devez configurer <strong>au moins un</strong> moyen de paiement (Stripe ou Adyen).
+                  Pour créer une transaction, vous devez configurer votre compte Stripe.
                 </AlertDescription>
               </Alert>
 
@@ -155,23 +155,10 @@ const handleStartSetup = async () => {
                 <Button variant="outline" onClick={handleCancel} className="w-full">
                   Annuler
                 </Button>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button onClick={handleStartSetup} className="w-full">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Stripe
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      onOpenChange(false);
-                      window.location.href = '/seller-verification?tab=adyen';
-                    }}
-                    className="w-full"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Adyen
-                  </Button>
-                </div>
+                <Button onClick={handleStartSetup} className="w-full">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Configurer Stripe
+                </Button>
               </div>
             </>
           )}

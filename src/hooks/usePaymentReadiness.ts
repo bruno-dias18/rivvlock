@@ -1,10 +1,8 @@
 import { useStripeAccount } from '@/hooks/useStripeAccount';
-import { useAdyenPayoutAccount } from '@/hooks/useAdyenPayoutAccount';
 import { useMemo } from 'react';
 
 export const usePaymentReadiness = (userId?: string) => {
   const { data: stripeAccount, isLoading: stripeLoading } = useStripeAccount();
-  const { defaultAccount: adyenAccount, isLoading: adyenLoading } = useAdyenPayoutAccount(userId);
 
   const readiness = useMemo(() => {
     const isStripeReady = 
@@ -13,21 +11,15 @@ export const usePaymentReadiness = (userId?: string) => {
       stripeAccount?.charges_enabled && 
       stripeAccount?.details_submitted;
 
-    const isAdyenReady = 
-      adyenAccount?.is_default && 
-      adyenAccount?.iban;
-
     return {
       isStripeReady: !!isStripeReady,
-      isAdyenReady: !!isAdyenReady,
-      isAnyReady: !!(isStripeReady || isAdyenReady),
-      isLoading: stripeLoading || adyenLoading,
+      isAnyReady: !!isStripeReady,
+      isLoading: stripeLoading,
       methods: {
         stripe: !!isStripeReady,
-        adyen: !!isAdyenReady,
       }
     };
-  }, [stripeAccount, adyenAccount, stripeLoading, adyenLoading]);
+  }, [stripeAccount, stripeLoading]);
 
   return readiness;
 };

@@ -34,9 +34,6 @@ const ContactPage = lazy(() => import("./pages/ContactPage"));
 const QuoteViewPage = lazy(() => import("./pages/QuoteViewPage"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
 const ApiDocsPage = lazy(() => import("./pages/ApiDocsPage"));
-const SellerVerification = lazy(() => import("./pages/SellerVerification"));
-const AdminKycVerification = lazy(() => import("./pages/AdminKycVerification"));
-const AdminAdyenPayouts = lazy(() => import("./pages/AdminAdyenPayouts"));
 
 // Eager-loaded critical components (avoid loading screens)
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -137,18 +134,6 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/admin/settings", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminSettingsPage)))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/admin/kyc", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminKycVerification)))
-               }),
-               React.createElement(Route, { 
-                 path: "/dashboard/admin/payouts", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminAdyenPayouts)))
-               }),
-               React.createElement(Route, { 
-                 path: "/seller/verification", 
-                 element: React.createElement(ProtectedRoute, null, React.createElement(UserRoute, null, React.createElement(SellerVerification)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 

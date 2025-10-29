@@ -1,4 +1,4 @@
-import { Home, CreditCard, FileText, FileSignature, User, Users, AlertTriangle, ShieldCheck, Wallet } from 'lucide-react';
+import { Home, CreditCard, FileText, FileSignature, User, Users, AlertTriangle } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -58,16 +58,6 @@ export function BottomTabBar() {
       title: 'Litiges',
       url: '/dashboard/admin/disputes',
       icon: AlertTriangle,
-    },
-    {
-      title: 'KYC',
-      url: '/dashboard/admin/kyc',
-      icon: ShieldCheck,
-    },
-    {
-      title: 'Paiements',
-      url: '/dashboard/admin/payouts',
-      icon: Wallet,
     },
     {
       title: 'Admin',
