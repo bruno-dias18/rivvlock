@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature } from 'lucide-react';
+import { Home, CreditCard, User, Settings, BarChart3, Users, AlertTriangle, FileText, FileSignature, Wallet } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsAdmin } from '@/hooks/useIsAdmin';
@@ -56,6 +56,11 @@ const adminNavigationItems = [
     title: 'Litiges',
     url: '/dashboard/admin/disputes',
     icon: AlertTriangle,
+  },
+  {
+    title: 'Réconciliation Bancaire',
+    url: '/dashboard/admin/bank-reconciliation',
+    icon: Wallet,
   },
   {
     title: 'Admin',

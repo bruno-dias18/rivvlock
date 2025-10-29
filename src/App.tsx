@@ -28,6 +28,8 @@ const AdminProblematicTransactionsPage = lazy(() => import("./pages/AdminProblem
 const AdminLogsPage = lazy(() => import("./pages/AdminLogsPage"));
 const AdminUsersPage = lazy(() => import("./pages/AdminUsersPage"));
 const AdminSettingsPage = lazy(() => import("./pages/AdminSettingsPage"));
+const AdminBankReconciliation = lazy(() => import("./pages/AdminBankReconciliation"));
+const AdminBankReconciliationDetails = lazy(() => import("./pages/AdminBankReconciliationDetails"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const ContactPage = lazy(() => import("./pages/ContactPage"));
@@ -134,6 +136,14 @@ const App: React.FC = () => {
                React.createElement(Route, { 
                  path: "/dashboard/admin/settings", 
                  element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminSettingsPage)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/bank-reconciliation", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminBankReconciliation)))
+               }),
+               React.createElement(Route, { 
+                 path: "/dashboard/admin/bank-reconciliation/:id", 
+                 element: React.createElement(ProtectedRoute, null, React.createElement(AdminRoute, null, React.createElement(AdminBankReconciliationDetails)))
                }),
                React.createElement(Route, { 
                  path: "/activity-history", 

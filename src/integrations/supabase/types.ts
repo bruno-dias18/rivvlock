@@ -285,6 +285,159 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_reconciliations: {
+        Row: {
+          amount_difference: number | null
+          bank_amount: number
+          bank_currency: string
+          bank_debtor_iban: string | null
+          bank_debtor_name: string | null
+          bank_reference: string
+          bank_statement_id: string
+          bank_transaction_id: string | null
+          booking_date: string | null
+          created_at: string
+          id: string
+          match_confidence: number | null
+          matched_at: string | null
+          matched_by: string | null
+          matching_method: string | null
+          notes: string | null
+          reconciliation_status: string
+          transaction_id: string | null
+          updated_at: string
+          value_date: string
+        }
+        Insert: {
+          amount_difference?: number | null
+          bank_amount: number
+          bank_currency: string
+          bank_debtor_iban?: string | null
+          bank_debtor_name?: string | null
+          bank_reference: string
+          bank_statement_id: string
+          bank_transaction_id?: string | null
+          booking_date?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          matched_at?: string | null
+          matched_by?: string | null
+          matching_method?: string | null
+          notes?: string | null
+          reconciliation_status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          value_date: string
+        }
+        Update: {
+          amount_difference?: number | null
+          bank_amount?: number
+          bank_currency?: string
+          bank_debtor_iban?: string | null
+          bank_debtor_name?: string | null
+          bank_reference?: string
+          bank_statement_id?: string
+          bank_transaction_id?: string | null
+          booking_date?: string | null
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          matched_at?: string | null
+          matched_by?: string | null
+          matching_method?: string | null
+          notes?: string | null
+          reconciliation_status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          value_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliations_bank_statement_id_fkey"
+            columns: ["bank_statement_id"]
+            isOneToOne: false
+            referencedRelation: "bank_statements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_reconciliations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_statements: {
+        Row: {
+          account_iban: string
+          closing_balance: number | null
+          created_at: string
+          currency: string
+          file_name: string
+          file_size: number
+          id: string
+          notes: string | null
+          opening_balance: number | null
+          parsed_entries: Json | null
+          raw_xml: string | null
+          reconciled_count: number | null
+          reconciliation_status: string
+          statement_date: string
+          status: string
+          total_credits: number | null
+          total_debits: number | null
+          unreconciled_count: number | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          account_iban: string
+          closing_balance?: number | null
+          created_at?: string
+          currency?: string
+          file_name: string
+          file_size: number
+          id?: string
+          notes?: string | null
+          opening_balance?: number | null
+          parsed_entries?: Json | null
+          raw_xml?: string | null
+          reconciled_count?: number | null
+          reconciliation_status?: string
+          statement_date: string
+          status?: string
+          total_credits?: number | null
+          total_debits?: number | null
+          unreconciled_count?: number | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          account_iban?: string
+          closing_balance?: number | null
+          created_at?: string
+          currency?: string
+          file_name?: string
+          file_size?: number
+          id?: string
+          notes?: string | null
+          opening_balance?: number | null
+          parsed_entries?: Json | null
+          raw_xml?: string | null
+          reconciled_count?: number | null
+          reconciliation_status?: string
+          statement_date?: string
+          status?: string
+          total_credits?: number | null
+          total_debits?: number | null
+          unreconciled_count?: number | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       conversation_reads: {
         Row: {
           conversation_id: string
@@ -1232,6 +1385,9 @@ export type Database = {
       transactions: {
         Row: {
           adyen_psp_reference: string | null
+          bank_reconciled: boolean | null
+          bank_reconciled_at: string | null
+          bank_reconciled_by: string | null
           buyer_display_name: string | null
           buyer_id: string | null
           buyer_validated: boolean | null
@@ -1279,6 +1435,9 @@ export type Database = {
         }
         Insert: {
           adyen_psp_reference?: string | null
+          bank_reconciled?: boolean | null
+          bank_reconciled_at?: string | null
+          bank_reconciled_by?: string | null
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
@@ -1326,6 +1485,9 @@ export type Database = {
         }
         Update: {
           adyen_psp_reference?: string | null
+          bank_reconciled?: boolean | null
+          bank_reconciled_at?: string | null
+          bank_reconciled_by?: string | null
           buyer_display_name?: string | null
           buyer_id?: string | null
           buyer_validated?: boolean | null
