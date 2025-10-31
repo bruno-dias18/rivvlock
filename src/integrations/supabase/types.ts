@@ -1744,6 +1744,8 @@ export type Database = {
           id: string
           is_expired: boolean
           payment_deadline: string
+          payment_deadline_bank: string
+          payment_deadline_card: string
           price: number
           seller_display_name: string
           service_date: string

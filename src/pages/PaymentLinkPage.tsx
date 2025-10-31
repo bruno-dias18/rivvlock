@@ -8,7 +8,7 @@ import { PaymentCountdown } from '@/components/PaymentCountdown';
 import { PaymentMethodSelector } from '@/components/PaymentMethodSelector';
 import { BankTransferInstructions } from '@/components/BankTransferInstructions';
 import { SwissQRInvoice } from '@/components/SwissQRInvoice';
-import { Transaction } from '@/types';
+import { Transaction, Currency, TransactionStatus } from '@/types';
 import { logger } from '@/lib/logger';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,6 +23,8 @@ interface TransactionData {
   seller_display_name: string;
   service_date: string;
   payment_deadline?: string;
+  payment_deadline_card?: string;
+  payment_deadline_bank?: string;
   status?: string;
   payment_method?: 'card' | 'bank_transfer';
   buyer_id?: string;
@@ -139,6 +141,8 @@ export default function PaymentLinkPage() {
               seller_display_name: t.seller_display_name,
               service_date: t.service_date,
               payment_deadline: t.payment_deadline,
+              payment_deadline_card: t.payment_deadline_card,
+              payment_deadline_bank: t.payment_deadline_bank,
               status: t.status,
               buyer_id: t.buyer_id,
             }};
@@ -187,6 +191,8 @@ export default function PaymentLinkPage() {
               seller_display_name: t.seller_display_name,
               service_date: t.service_date,
               payment_deadline: t.payment_deadline,
+              payment_deadline_card: t.payment_deadline_card,
+              payment_deadline_bank: t.payment_deadline_bank,
               status: t.status,
               buyer_id: t.buyer_id,
             }};
@@ -214,7 +220,47 @@ export default function PaymentLinkPage() {
             return;
           }
         }
-        setTransaction(data.transaction);
+        
+        // Map TransactionData to Transaction type with all required fields
+        const mappedTransaction: Transaction = {
+          id: data.transaction.id,
+          user_id: '',
+          buyer_id: data.transaction.buyer_id || null,
+          title: data.transaction.title,
+          description: data.transaction.description,
+          price: data.transaction.price,
+          currency: data.transaction.currency as Currency,
+          status: (data.transaction.status || 'pending') as TransactionStatus,
+          refund_status: null,
+          refund_percentage: null,
+          service_date: data.transaction.service_date,
+          service_end_date: null,
+          payment_deadline: data.transaction.payment_deadline || null,
+          payment_deadline_card: data.transaction.payment_deadline_card || null,
+          payment_deadline_bank: data.transaction.payment_deadline_bank || null,
+          validation_deadline: null,
+          payment_method: data.transaction.payment_method,
+          payment_provider: undefined,
+          stripe_payment_intent_id: null,
+          adyen_psp_reference: undefined,
+          stripe_transfer_id: null,
+          shared_link_token: null,
+          shared_link_expires_at: null,
+          payment_reference: null,
+          funds_released_at: null,
+          seller_validated_at: null,
+          buyer_validated_at: null,
+          date_change_status: null,
+          requested_service_date: null,
+          date_change_message: null,
+          renewal_count: 0,
+          conversation_id: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          seller_display_name: data.transaction.seller_display_name,
+        };
+        
+        setTransaction(mappedTransaction);
       } else {
         setError(data?.error || 'Erreur lors de la récupération de la transaction');
       }
