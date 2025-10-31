@@ -49,34 +49,68 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
     if (pendingTransactions && pendingTransactions.length > 0) {
       for (const transaction of pendingTransactions) {
         try {
-          const hoursUntilService = differenceInHours(
-            new Date(transaction.service_date),
-            new Date()
-          );
+          // Calculate effective deadlines with fallback logic
+          const now = new Date();
+          
+          // Card deadline: use payment_deadline_card or fall back to payment_deadline
+          const cardDeadline = transaction.payment_deadline_card 
+            ? new Date(transaction.payment_deadline_card)
+            : transaction.payment_deadline 
+              ? new Date(transaction.payment_deadline)
+              : null;
+
+          // Bank deadline: use payment_deadline_bank or calculate from service_date or card deadline
+          let bankDeadline: Date | null = null;
+          
+          if (transaction.payment_deadline_bank) {
+            bankDeadline = new Date(transaction.payment_deadline_bank);
+          } else if (transaction.service_date) {
+            // Calculate: service_date - 96 hours
+            const serviceDate = new Date(transaction.service_date);
+            bankDeadline = new Date(serviceDate.getTime() - 96 * 60 * 60 * 1000);
+          } else if (cardDeadline) {
+            // Calculate: card deadline - 72 hours
+            bankDeadline = new Date(cardDeadline.getTime() - 72 * 60 * 60 * 1000);
+          }
+
+          // Calculate hours until each deadline
+          const hoursUntilBankDeadline = bankDeadline ? differenceInHours(bankDeadline, now) : null;
+          const hoursUntilCardDeadline = cardDeadline ? differenceInHours(cardDeadline, now) : null;
 
           // Define reminder windows with 6h margin for cron tolerance
-          const reminderWindows: Record<string, { min: number; max: number }> = {
-            '72h': { min: 72, max: 78 },  // 72h-78h before service
-            '48h': { min: 48, max: 54 },  // 48h-54h before service
-            '24h': { min: 24, max: 30 },  // 24h-30h before service
-            '12h': { min: 12, max: 18 }   // 12h-18h before service
+          const reminderWindows: Record<string, { min: number; max: number; phase: 'bank' | 'card' }> = {
+            'bank_168h': { min: 168, max: 174, phase: 'bank' },  // J-7: "Pensez au virement"
+            'bank_120h': { min: 120, max: 126, phase: 'bank' },  // J-5: "Plus que 48h virement"
+            'bank_96h':  { min: 96, max: 102, phase: 'bank' },   // J-4: "Dernier jour virement"
+            'card_48h':  { min: 48, max: 54, phase: 'card' },    // J-2: "Virement dépassé, utilisez carte"
+            'card_24h':  { min: 24, max: 30, phase: 'card' },    // J-1: "Dernier jour carte"
+            'card_12h':  { min: 12, max: 18, phase: 'card' },    // J-1 -12h: "Dernières heures"
           };
 
           // Get existing checkpoints
           const checkpoints = (transaction.reminder_checkpoints as Record<string, boolean>) || {};
 
           // Determine which reminder to send
-          let urgencyLevel: '72h' | '48h' | '24h' | '12h' | null = null;
+          let urgencyLevel: string | null = null;
+          let paymentPhase: 'bank' | 'card' | null = null;
 
-          for (const [level, window] of Object.entries(reminderWindows)) {
-            if (!checkpoints[level] && hoursUntilService >= window.min && hoursUntilService < window.max) {
-              urgencyLevel = level as '72h' | '48h' | '24h' | '12h';
+          for (const [level, config] of Object.entries(reminderWindows)) {
+            const hoursToCheck = config.phase === 'bank' 
+              ? hoursUntilBankDeadline 
+              : hoursUntilCardDeadline;
+              
+            if (hoursToCheck && 
+                !checkpoints[level] && 
+                hoursToCheck >= config.min && 
+                hoursToCheck < config.max) {
+              urgencyLevel = level;
+              paymentPhase = config.phase;
               break;
             }
           }
 
           // Skip if not in any reminder window or already sent
-          if (!urgencyLevel) {
+          if (!urgencyLevel || !paymentPhase) {
             skipped++;
             continue;
           }
@@ -84,7 +118,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           logStep('Sending reminder', {
             transactionId: transaction.id,
             urgencyLevel,
-            hoursRemaining: Math.floor(hoursUntilService)
+            paymentPhase,
+            hoursUntilBank: hoursUntilBankDeadline ? Math.floor(hoursUntilBankDeadline) : null,
+            hoursUntilCard: hoursUntilCardDeadline ? Math.floor(hoursUntilCardDeadline) : null,
           });
 
           // Send reminder email
@@ -94,14 +130,14 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
               to: transaction.client_email,
               data: {
                 urgencyLevel,
+                paymentPhase,
                 transactionTitle: transaction.title,
                 amount: transaction.price,
                 currency: transaction.currency,
-                hoursRemaining: Math.floor(hoursUntilService),
-                paymentDeadline: new Date(transaction.service_date).toLocaleString('fr-FR', {
-                  dateStyle: 'long',
-                  timeStyle: 'short'
-                }),
+                bankDeadline: bankDeadline?.toISOString(),
+                cardDeadline: cardDeadline?.toISOString(),
+                hoursUntilBankDeadline: hoursUntilBankDeadline ? Math.floor(hoursUntilBankDeadline) : null,
+                hoursUntilCardDeadline: hoursUntilCardDeadline ? Math.floor(hoursUntilCardDeadline) : null,
                 shareLink: `https://app.rivvlock.com/join/${transaction.shared_link_token}`
               }
             }
@@ -123,7 +159,9 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
           logStep('Reminder sent successfully', { 
             transactionId: transaction.id, 
             urgencyLevel,
-            hoursUntilService: Math.floor(hoursUntilService)
+            paymentPhase,
+            hoursUntilBank: hoursUntilBankDeadline ? Math.floor(hoursUntilBankDeadline) : null,
+            hoursUntilCard: hoursUntilCardDeadline ? Math.floor(hoursUntilCardDeadline) : null,
           });
           sent++;
 

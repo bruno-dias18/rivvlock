@@ -15,55 +15,87 @@ import {
 import * as React from 'npm:react@18.3.1';
 
 interface PaymentReminderProps {
-  urgencyLevel: '72h' | '48h' | '24h' | '12h';
+  urgencyLevel: 'bank_168h' | 'bank_120h' | 'bank_96h' | 'card_48h' | 'card_24h' | 'card_12h';
+  paymentPhase: 'bank' | 'card';
   transactionTitle: string;
   amount: number;
   currency: string;
-  hoursRemaining: number;
-  paymentDeadline: string;
+  bankDeadline?: string;
+  cardDeadline?: string;
+  hoursUntilBankDeadline?: number | null;
+  hoursUntilCardDeadline?: number | null;
   shareLink: string;
 }
 
 const getUrgencyConfig = (level: string) => {
-  const configs: Record<string, { emoji: string; title: string; color: string; bgColor: string }> = {
-    '72h': {
-      emoji: '⏰',
-      title: 'Rappel : Votre paiement',
-      color: '#007BFF',
-      bgColor: '#eff6ff',
+  const configs: Record<string, { emoji: string; title: string; message: string; color: string; bgColor: string }> = {
+    'bank_168h': {
+      emoji: '💰',
+      title: 'N\'oubliez pas votre paiement',
+      message: 'Privilégiez le virement bancaire (sans frais)',
+      color: '#0891b2',
+      bgColor: '#ecfeff',
     },
-    '48h': {
+    'bank_120h': {
       emoji: '⏰',
-      title: 'Rappel : Plus que 48h',
-      color: '#2563eb',
-      bgColor: '#dbeafe',
+      title: 'Plus que 48h pour le virement',
+      message: 'Initiez votre virement dès maintenant (délai bancaire 2-3 jours)',
+      color: '#0369a1',
+      bgColor: '#e0f2fe',
     },
-    '24h': {
-      emoji: '🚨',
-      title: 'IMPORTANT : Plus que 24h',
-      color: '#c2410c',
+    'bank_96h': {
+      emoji: '⚠️',
+      title: 'Dernier jour pour le virement',
+      message: 'Après cette deadline, seul le paiement par carte sera possible',
+      color: '#ea580c',
       bgColor: '#fff7ed',
     },
-    '12h': {
-      emoji: '⚠️',
-      title: 'URGENT : Dernières 12h',
+    'card_48h': {
+      emoji: '💳',
+      title: 'Délai virement dépassé',
+      message: 'Utilisez votre carte bancaire pour payer',
       color: '#dc2626',
       bgColor: '#fef2f2',
     },
+    'card_24h': {
+      emoji: '🚨',
+      title: 'URGENT : Dernier jour',
+      message: 'Dernier jour pour régler par carte',
+      color: '#991b1b',
+      bgColor: '#fee2e2',
+    },
+    'card_12h': {
+      emoji: '⏰',
+      title: 'DERNIÈRES HEURES',
+      message: 'La transaction expire dans quelques heures',
+      color: '#7f1d1d',
+      bgColor: '#fecaca',
+    },
   };
-  return configs[level] || configs['72h'];
+  return configs[level] || configs['bank_168h'];
 };
 
 export const PaymentReminderEmail = ({
   urgencyLevel,
+  paymentPhase,
   transactionTitle,
   amount,
   currency,
-  hoursRemaining,
-  paymentDeadline,
+  bankDeadline,
+  cardDeadline,
+  hoursUntilBankDeadline,
+  hoursUntilCardDeadline,
   shareLink,
 }: PaymentReminderProps) => {
   const config = getUrgencyConfig(urgencyLevel);
+
+  const formatDeadline = (isoDate?: string) => {
+    if (!isoDate) return '';
+    return new Date(isoDate).toLocaleString('fr-FR', {
+      dateStyle: 'long',
+      timeStyle: 'short'
+    });
+  };
 
   return (
     <Html>
@@ -97,14 +129,39 @@ export const PaymentReminderEmail = ({
             Vous avez reçu une invitation à effectuer un règlement via RivvLock, mais le paiement n'a pas encore été effectué.
           </Text>
 
-          <Section style={{ ...timeBox, borderColor: config.color }}>
-            <Text style={{ ...timeText, color: config.color }}>
-              ⏳ <strong>Temps restant avant la date de service : {hoursRemaining}h</strong>
-            </Text>
-            <Text style={{ ...timeDeadline, color: config.color }}>
-              Date de service : {paymentDeadline}
+          <Section style={{ ...infoBox, borderColor: config.color, backgroundColor: config.bgColor }}>
+            <Text style={{ ...infoText, color: config.color }}>
+              💡 {config.message}
             </Text>
           </Section>
+
+          {paymentPhase === 'bank' ? (
+            <Section style={{ ...timeBox, borderColor: config.color }}>
+              <Text style={{ ...timeText, color: config.color }}>
+                ⏳ <strong>Temps restant pour virement : {hoursUntilBankDeadline}h</strong>
+              </Text>
+              <Text style={{ ...timeDeadline, color: config.color }}>
+                Deadline virement : {formatDeadline(bankDeadline)}
+              </Text>
+              {cardDeadline && (
+                <Text style={timeNote}>
+                  💳 Deadline carte (si virement impossible) : {formatDeadline(cardDeadline)}
+                </Text>
+              )}
+            </Section>
+          ) : (
+            <Section style={{ ...timeBox, borderColor: config.color }}>
+              <Text style={{ ...timeText, color: config.color }}>
+                ⏳ <strong>Temps restant pour payer par carte : {hoursUntilCardDeadline}h</strong>
+              </Text>
+              <Text style={{ ...timeDeadline, color: config.color }}>
+                Deadline carte : {formatDeadline(cardDeadline)}
+              </Text>
+              <Text style={timeWarning}>
+                ⚠️ Le délai pour virement bancaire est dépassé
+              </Text>
+            </Section>
+          )}
 
           <Section style={detailsBox}>
             <Text style={detailsTitle}>📋 Détails de la transaction</Text>
@@ -337,4 +394,31 @@ const footerSmall = {
   lineHeight: '16px',
   margin: '8px 20px',
   textAlign: 'center' as const,
+};
+
+const infoBox = {
+  border: '2px solid',
+  borderRadius: '8px',
+  margin: '24px 20px',
+  padding: '16px',
+  textAlign: 'center' as const,
+};
+
+const infoText = {
+  fontSize: '15px',
+  fontWeight: '600',
+  margin: '0',
+};
+
+const timeNote = {
+  fontSize: '13px',
+  color: '#6b7280',
+  margin: '8px 0 0',
+};
+
+const timeWarning = {
+  fontSize: '13px',
+  color: '#dc2626',
+  fontWeight: '600',
+  margin: '8px 0 0',
 };
