@@ -32,6 +32,9 @@ export const PaymentMethodSelector = ({
   const cardDeadlineExpired = cardTimeRemaining <= 0;
   const bankDeadlineExpired = bankTimeRemaining <= 0;
 
+  // Calculate Stripe fees savings (2.9% + 0.30 EUR)
+  const stripeFees = (transaction.price * 0.029 + 0.30).toFixed(2);
+
   return (
     <div className="space-y-4" data-testid="payment-method-selector">
       <div>
@@ -46,62 +49,12 @@ export const PaymentMethodSelector = ({
         onValueChange={(value) => onMethodSelect(value as 'card' | 'bank_transfer')}
         className="space-y-3"
       >
-        {/* Card payment option */}
-        <div className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
-          cardDeadlineExpired 
-            ? 'opacity-60 cursor-not-allowed bg-muted' 
-            : 'cursor-pointer hover:bg-accent'
-        }`}>
-          <RadioGroupItem value="card" id="card" disabled={cardDeadlineExpired} />
-          <Label 
-            htmlFor="card" 
-            className={`flex-1 ${cardDeadlineExpired ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-          >
-            <div className="flex items-start gap-3">
-              <CreditCard className="h-5 w-5 mt-0.5 text-primary" />
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium">💳 Paiement par Carte</p>
-                  {!cardDeadlineExpired && <Badge variant="default" className="text-xs">Instantané</Badge>}
-                  {cardDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Paiement sécurisé instantané par carte bancaire
-                </p>
-                {!cardDeadlineExpired && cardDeadline && (
-                  <div className="p-2 bg-primary/5 rounded-md border border-primary/20">
-                    <div className="flex items-center gap-2 text-xs">
-                      <Clock className="h-3 w-3 text-primary" />
-                      <span className="font-semibold text-primary">
-                        {cardHoursRemaining < 48 
-                          ? `${Math.round(cardHoursRemaining)}h restantes` 
-                          : `${Math.round(cardHoursRemaining / 24)} jours restants`}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Avant le {format(new Date(cardDeadline), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                    </p>
-                  </div>
-                )}
-                {cardDeadlineExpired && (
-                  <Alert variant="destructive" className="mt-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Le délai de paiement par carte est expiré
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </div>
-          </Label>
-        </div>
-
-        {/* Bank transfer option */}
+        {/* Bank transfer option - NOW FIRST */}
         <div 
-          className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+          className={`flex items-start space-x-3 p-4 rounded-lg transition-colors ${
             bankDeadlineExpired
-              ? 'opacity-60 cursor-not-allowed bg-muted' 
-              : 'cursor-pointer hover:bg-accent'
+              ? 'opacity-60 cursor-not-allowed bg-muted border' 
+              : 'cursor-pointer hover:bg-green-50 dark:hover:bg-green-950/20 border-2 border-green-600 dark:border-green-700'
           }`}
         >
           <RadioGroupItem 
@@ -114,16 +67,31 @@ export const PaymentMethodSelector = ({
             className={`flex-1 ${bankDeadlineExpired ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <div className="flex items-start gap-3">
-              <Building2 className="h-5 w-5 mt-0.5 text-primary" />
+              <Building2 className="h-5 w-5 mt-0.5 text-green-600 dark:text-green-500" />
               <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium">🏦 Virement Bancaire</p>
-                  {!bankDeadlineExpired && <Badge variant="secondary" className="text-xs">Gratuit</Badge>}
+                  {!bankDeadlineExpired && (
+                    <>
+                      <Badge variant="success" className="text-xs">⭐ Recommandé</Badge>
+                      <Badge variant="success" className="text-xs">💚 Gratuit</Badge>
+                    </>
+                  )}
                   {bankDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Virement SEPA (EUR) ou QR-Facture (CHF)
+                  Virement SEPA (EUR) ou QR-Facture (CHF) - Sans frais
                 </p>
+                {!bankDeadlineExpired && (
+                  <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200 dark:border-green-800">
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">
+                      💰 Économisez {stripeFees} {transaction.currency.toUpperCase()} en frais
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                      Aucun frais de transaction appliqué
+                    </p>
+                  </div>
+                )}
                 {!bankDeadlineExpired ? (
                   <>
                     <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
@@ -166,6 +134,56 @@ export const PaymentMethodSelector = ({
                           💡 Utilisez le paiement par carte pour un règlement immédiat.
                         </>
                       )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </div>
+          </Label>
+        </div>
+
+        {/* Card payment option - NOW SECOND */}
+        <div className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+          cardDeadlineExpired 
+            ? 'opacity-60 cursor-not-allowed bg-muted' 
+            : 'cursor-pointer hover:bg-accent'
+        }`}>
+          <RadioGroupItem value="card" id="card" disabled={cardDeadlineExpired} />
+          <Label 
+            htmlFor="card" 
+            className={`flex-1 ${cardDeadlineExpired ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            <div className="flex items-start gap-3">
+              <CreditCard className="h-5 w-5 mt-0.5 text-primary" />
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">💳 Paiement par Carte</p>
+                  {!cardDeadlineExpired && <Badge variant="secondary" className="text-xs">⚡ Instantané</Badge>}
+                  {cardDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Paiement sécurisé instantané par carte bancaire
+                </p>
+                {!cardDeadlineExpired && cardDeadline && (
+                  <div className="p-2 bg-primary/5 rounded-md border border-primary/20">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="h-3 w-3 text-primary" />
+                      <span className="font-semibold text-primary">
+                        {cardHoursRemaining < 48 
+                          ? `${Math.round(cardHoursRemaining)}h restantes` 
+                          : `${Math.round(cardHoursRemaining / 24)} jours restants`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Avant le {format(new Date(cardDeadline), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                    </p>
+                  </div>
+                )}
+                {cardDeadlineExpired && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Le délai de paiement par carte est expiré
                     </AlertDescription>
                   </Alert>
                 )}

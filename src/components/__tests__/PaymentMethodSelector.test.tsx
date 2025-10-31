@@ -72,16 +72,17 @@ describe('PaymentMethodSelector', () => {
     expect(screen.getByText(/100 EUR/i)).toBeInTheDocument();
   });
 
-  it('should disable bank transfer when deadline is too short', () => {
-    const shortDeadlineTransaction: Partial<Transaction> = {
+  it('should disable bank transfer when deadline is expired', () => {
+    const expiredDeadlineTransaction: Partial<Transaction> = {
       ...mockTransaction,
-      payment_deadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      payment_deadline_bank: new Date(Date.now() - 1000).toISOString(), // expired
+      payment_deadline_card: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
 
     const mockOnMethodSelect = vi.fn();
     render(
       <PaymentMethodSelector
-        transaction={shortDeadlineTransaction as Transaction}
+        transaction={expiredDeadlineTransaction as Transaction}
         selectedMethod="card"
         onMethodSelect={mockOnMethodSelect}
       />
@@ -89,7 +90,7 @@ describe('PaymentMethodSelector', () => {
 
     const bankOption = screen.getByLabelText(/virement bancaire/i);
     expect(bankOption).toBeDisabled();
-    expect(screen.getByText(/non disponible/i)).toBeInTheDocument();
+    expect(screen.getByText(/Expiré/)).toBeInTheDocument();
   });
 
   it('should allow bank transfer when deadline is sufficient', () => {
@@ -104,7 +105,7 @@ describe('PaymentMethodSelector', () => {
 
     const bankOption = screen.getByLabelText(/virement bancaire/i);
     expect(bankOption).not.toBeDisabled();
-    expect(screen.queryByText(/non disponible/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/⭐ Recommandé/)).toBeInTheDocument();
   });
 
   it('should display payment deadline information', () => {
@@ -117,6 +118,22 @@ describe('PaymentMethodSelector', () => {
       />
     );
 
-    expect(screen.getByText(/paiement requis avant/i)).toBeInTheDocument();
+    // Check for time remaining display
+    expect(screen.getByText(/jours restants/i)).toBeInTheDocument();
+  });
+
+  it('should display savings message for bank transfer', () => {
+    const mockOnMethodSelect = vi.fn();
+    render(
+      <PaymentMethodSelector
+        transaction={mockTransaction as Transaction}
+        selectedMethod="card"
+        onMethodSelect={mockOnMethodSelect}
+      />
+    );
+
+    // Check for savings message (2.9% + 0.30 of 100 = 3.20)
+    expect(screen.getByText(/Économisez 3\.20 EUR en frais/i)).toBeInTheDocument();
+    expect(screen.getByText(/⭐ Recommandé/)).toBeInTheDocument();
   });
 });
