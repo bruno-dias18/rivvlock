@@ -332,7 +332,13 @@ const handler: Handler = async (req) => {
     }
   }
 
-  // Whitelist-only response
+  // Whitelist-only response with deadline fallbacks
+  const deadlineCard = transaction.payment_deadline_card ?? transaction.payment_deadline;
+  const deadlineBank = transaction.payment_deadline_bank ?? 
+    (transaction.service_date 
+      ? new Date(new Date(transaction.service_date).getTime() - 96 * 60 * 60 * 1000).toISOString()
+      : (deadlineCard ? new Date(new Date(deadlineCard).getTime() - 72 * 60 * 60 * 1000).toISOString() : null));
+
   const safeTransaction = {
     id: transaction.id,
     title: transaction.title,
@@ -341,8 +347,13 @@ const handler: Handler = async (req) => {
     currency: transaction.currency,
     seller_display_name: transaction.seller_display_name,
     service_date: transaction.service_date,
+    service_end_date: transaction.service_end_date,
     payment_deadline: transaction.payment_deadline,
+    payment_deadline_card: deadlineCard,
+    payment_deadline_bank: deadlineBank,
     status: transaction.status,
+    user_id: transaction.user_id,
+    buyer_id: transaction.buyer_id,
   };
 
   return successResponse({ 
