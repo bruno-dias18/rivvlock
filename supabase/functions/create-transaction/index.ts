@@ -41,7 +41,16 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
 
   // Calculate deadlines
   const serviceDate = new Date(service_date);
-  const paymentDeadline = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+  
+  // Card payment deadline (instant processing) - 24h before service
+  const paymentDeadlineCard = new Date(serviceDate.getTime() - 24 * 60 * 60 * 1000);
+  
+  // Bank transfer deadline (2-3 day processing) - 24h + 72h before service
+  const paymentDeadlineBank = new Date(serviceDate.getTime() - (24 + 72) * 60 * 60 * 1000);
+  
+  // Default payment_deadline for backwards compatibility (use card deadline)
+  const paymentDeadline = paymentDeadlineCard;
+  
   const validationDeadline = new Date(serviceDate.getTime() + 48 * 60 * 60 * 1000);
 
   // Get seller display name
@@ -90,6 +99,8 @@ const handler: Handler = async (req, ctx: HandlerContext) => {
       service_date,
       service_end_date: service_end_date ?? null,
       payment_deadline: paymentDeadline.toISOString(),
+      payment_deadline_card: paymentDeadlineCard.toISOString(),
+      payment_deadline_bank: paymentDeadlineBank.toISOString(),
       validation_deadline: validationDeadline.toISOString(),
       status: 'pending',
       seller_display_name: sellerDisplayName,

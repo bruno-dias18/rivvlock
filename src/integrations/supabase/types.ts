@@ -1408,6 +1408,8 @@ export type Database = {
           last_reminder_sent_at: string | null
           payment_blocked_at: string | null
           payment_deadline: string | null
+          payment_deadline_bank: string | null
+          payment_deadline_card: string | null
           payment_deadline_hours: number | null
           payment_method: string | null
           payment_provider: string | null
@@ -1458,6 +1460,8 @@ export type Database = {
           last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
+          payment_deadline_bank?: string | null
+          payment_deadline_card?: string | null
           payment_deadline_hours?: number | null
           payment_method?: string | null
           payment_provider?: string | null
@@ -1508,6 +1512,8 @@ export type Database = {
           last_reminder_sent_at?: string | null
           payment_blocked_at?: string | null
           payment_deadline?: string | null
+          payment_deadline_bank?: string | null
+          payment_deadline_card?: string | null
           payment_deadline_hours?: number | null
           payment_method?: string | null
           payment_provider?: string | null

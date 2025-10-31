@@ -18,11 +18,19 @@ export const PaymentMethodSelector = ({
   onMethodSelect, 
   selectedMethod
 }: PaymentMethodSelectorProps) => {
-  const timeUntilDeadline = transaction?.payment_deadline 
-    ? new Date(transaction.payment_deadline).getTime() - new Date().getTime()
-    : 0;
-  const hoursUntilDeadline = timeUntilDeadline / (1000 * 60 * 60);
-  const bankTransferAllowed = hoursUntilDeadline >= 72;
+  // Get both deadlines from transaction
+  const cardDeadline = transaction?.payment_deadline_card || transaction?.payment_deadline;
+  const bankDeadline = transaction?.payment_deadline_bank || transaction?.payment_deadline;
+  
+  const now = new Date().getTime();
+  const cardTimeRemaining = cardDeadline ? new Date(cardDeadline).getTime() - now : 0;
+  const bankTimeRemaining = bankDeadline ? new Date(bankDeadline).getTime() - now : 0;
+  
+  const cardHoursRemaining = cardTimeRemaining / (1000 * 60 * 60);
+  const bankHoursRemaining = bankTimeRemaining / (1000 * 60 * 60);
+  
+  const cardDeadlineExpired = cardTimeRemaining <= 0;
+  const bankDeadlineExpired = bankTimeRemaining <= 0;
 
   return (
     <div className="space-y-4" data-testid="payment-method-selector">
@@ -33,44 +41,56 @@ export const PaymentMethodSelector = ({
         </p>
       </div>
 
-      {/* Payment deadline info */}
-      {transaction.payment_deadline && (
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertTitle>Paiement requis avant :</AlertTitle>
-          <AlertDescription>
-            <span className="font-medium">
-              {format(new Date(transaction.payment_deadline), 'PPp', { locale: fr })}
-            </span>
-            <br />
-            <span className="text-muted-foreground">
-              ({hoursUntilDeadline < 48 
-                ? `Dans ${Math.round(hoursUntilDeadline)} heures` 
-                : `Dans ${Math.round(hoursUntilDeadline / 24)} jours`})
-            </span>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <RadioGroup 
         value={selectedMethod || undefined} 
         onValueChange={(value) => onMethodSelect(value as 'card' | 'bank_transfer')}
         className="space-y-3"
       >
         {/* Card payment option */}
-        <div className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-accent transition-colors">
-          <RadioGroupItem value="card" id="card" />
+        <div className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
+          cardDeadlineExpired 
+            ? 'opacity-60 cursor-not-allowed bg-muted' 
+            : 'cursor-pointer hover:bg-accent'
+        }`}>
+          <RadioGroupItem value="card" id="card" disabled={cardDeadlineExpired} />
           <Label 
             htmlFor="card" 
-            className="flex-1 cursor-pointer"
+            className={`flex-1 ${cardDeadlineExpired ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <div className="flex items-start gap-3">
               <CreditCard className="h-5 w-5 mt-0.5 text-primary" />
-              <div className="flex-1">
-                <p className="font-medium">Paiement par Carte</p>
-                <p className="text-sm text-muted-foreground mt-1">
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium">💳 Paiement par Carte</p>
+                  {!cardDeadlineExpired && <Badge variant="default" className="text-xs">Instantané</Badge>}
+                  {cardDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
+                </div>
+                <p className="text-sm text-muted-foreground">
                   Paiement sécurisé instantané par carte bancaire
                 </p>
+                {!cardDeadlineExpired && cardDeadline && (
+                  <div className="p-2 bg-primary/5 rounded-md border border-primary/20">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Clock className="h-3 w-3 text-primary" />
+                      <span className="font-semibold text-primary">
+                        {cardHoursRemaining < 48 
+                          ? `${Math.round(cardHoursRemaining)}h restantes` 
+                          : `${Math.round(cardHoursRemaining / 24)} jours restants`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Avant le {format(new Date(cardDeadline), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                    </p>
+                  </div>
+                )}
+                {cardDeadlineExpired && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Le délai de paiement par carte est expiré
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             </div>
           </Label>
@@ -79,53 +99,73 @@ export const PaymentMethodSelector = ({
         {/* Bank transfer option */}
         <div 
           className={`flex items-start space-x-3 p-4 border rounded-lg transition-colors ${
-            bankTransferAllowed 
-              ? 'cursor-pointer hover:bg-accent' 
-              : 'opacity-60 cursor-not-allowed bg-muted'
+            bankDeadlineExpired
+              ? 'opacity-60 cursor-not-allowed bg-muted' 
+              : 'cursor-pointer hover:bg-accent'
           }`}
         >
           <RadioGroupItem 
             value="bank_transfer" 
             id="bank_transfer" 
-            disabled={!bankTransferAllowed}
+            disabled={bankDeadlineExpired}
           />
           <Label 
             htmlFor="bank_transfer" 
-            className={`flex-1 ${bankTransferAllowed ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+            className={`flex-1 ${bankDeadlineExpired ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
             <div className="flex items-start gap-3">
               <Building2 className="h-5 w-5 mt-0.5 text-primary" />
-              <div className="flex-1">
+              <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium">Virement Bancaire</p>
-                  {!bankTransferAllowed && (
-                    <Badge variant="destructive" className="text-xs">
-                      Non disponible
-                    </Badge>
-                  )}
+                  <p className="font-medium">🏦 Virement Bancaire</p>
+                  {!bankDeadlineExpired && <Badge variant="secondary" className="text-xs">Gratuit</Badge>}
+                  {bankDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
                 </div>
-                {bankTransferAllowed ? (
-                  <div className="mt-2 space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Virement SEPA (EUR) ou QR-Facture (CHF)
-                    </p>
-                    <div className="flex items-start gap-2 p-2 bg-primary/5 rounded-md border border-primary/20">
-                      <Zap className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <p className="text-xs text-primary">
-                        <span className="font-semibold">Délai standard :</span> 1-3 jours ouvrables pour virement SEPA
+                <p className="text-sm text-muted-foreground">
+                  Virement SEPA (EUR) ou QR-Facture (CHF)
+                </p>
+                {!bankDeadlineExpired ? (
+                  <>
+                    <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Clock className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                        <span className="font-semibold text-amber-600 dark:text-amber-400">
+                          {bankHoursRemaining < 48 
+                            ? `${Math.round(bankHoursRemaining)}h restantes` 
+                            : `${Math.round(bankHoursRemaining / 24)} jours restants`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Avant le {bankDeadline && format(new Date(bankDeadline), 'dd/MM/yyyy à HH:mm', { locale: fr })}
                       </p>
                     </div>
-                  </div>
+                    <div className="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                      <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                        <span className="font-semibold">Délai bancaire inclus :</span> 2-3 jours ouvrables pour le virement
+                      </p>
+                    </div>
+                    {bankHoursRemaining < 96 && (
+                      <Alert className="mt-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          💡 Initiez votre virement dès maintenant pour respecter le délai
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </>
                 ) : (
                   <Alert variant="destructive" className="mt-2">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="text-sm">Délai de paiement trop court</AlertTitle>
+                    <AlertTitle className="text-sm">Délai expiré</AlertTitle>
                     <AlertDescription className="text-xs">
-                      Le virement bancaire nécessite au moins 72h avant la date limite de paiement.
-                      <br />
-                      Temps restant : <strong>{Math.round(hoursUntilDeadline)} heures</strong>
-                      <br />
-                      Veuillez utiliser le paiement par carte pour un règlement immédiat.
+                      Le délai pour le virement bancaire est dépassé.
+                      {!cardDeadlineExpired && (
+                        <>
+                          <br />
+                          💡 Utilisez le paiement par carte pour un règlement immédiat.
+                        </>
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}

@@ -18,6 +18,8 @@ describe('useValidationStatus', () => {
     service_date: null,
     service_end_date: null,
     payment_deadline: null,
+    payment_deadline_card: null,
+    payment_deadline_bank: null,
     validation_deadline: null,
     stripe_payment_intent_id: null,
     stripe_transfer_id: null,

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface PaymentCountdownProps {
   paymentDeadline: string;
   className?: string;
+  label?: string;
 }
 
 interface TimeRemaining {
@@ -16,7 +17,7 @@ interface TimeRemaining {
   total: number;
 }
 
-export function PaymentCountdown({ paymentDeadline, className }: PaymentCountdownProps) {
+export function PaymentCountdown({ paymentDeadline, className, label }: PaymentCountdownProps) {
   const [timeRemaining, setTimeRemaining] = useState<TimeRemaining>({ days: 0, hours: 0, minutes: 0, seconds: 0, total: 0 });
   const [isExpired, setIsExpired] = useState(false);
 
@@ -89,7 +90,8 @@ export function PaymentCountdown({ paymentDeadline, className }: PaymentCountdow
           {formatTimeRemaining()} pour payer
         </Badge>
         <div className="text-xs text-muted-foreground">
-          Paiement requis avant le {new Date(paymentDeadline).toLocaleDateString('fr-FR')} à {new Date(paymentDeadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          {label && <span className="font-medium">{label} - </span>}
+          Avant le {new Date(paymentDeadline).toLocaleDateString('fr-FR')} à {new Date(paymentDeadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </div>
     </div>

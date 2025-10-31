@@ -41,6 +41,8 @@ const mockTransaction: Transaction = {
   service_date: '2024-02-01T10:00:00Z',
   service_end_date: null,
   payment_deadline: '2024-01-20T10:00:00Z',
+  payment_deadline_card: '2024-01-20T10:00:00Z',
+  payment_deadline_bank: '2024-01-17T10:00:00Z',
   validation_deadline: '2024-02-10T10:00:00Z',
   seller_validated_at: null,
   buyer_validated_at: null,

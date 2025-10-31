@@ -77,6 +77,8 @@ export interface Transaction {
   service_date: string | null;
   service_end_date: string | null;
   payment_deadline: string | null;
+  payment_deadline_card: string | null;
+  payment_deadline_bank: string | null;
   validation_deadline: string | null;
   payment_method?: 'card' | 'bank_transfer' | 'twint';
   payment_provider?: 'stripe' | 'adyen';

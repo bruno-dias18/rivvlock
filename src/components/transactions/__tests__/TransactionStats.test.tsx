@@ -17,6 +17,8 @@ const createMockTransaction = (id: string, status: any, price: number): Transact
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
   payment_deadline: null,
+  payment_deadline_card: null,
+  payment_deadline_bank: null,
   validation_deadline: null,
   funds_released_at: null,
   seller_validated_at: null,
