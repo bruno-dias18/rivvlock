@@ -32,8 +32,6 @@ export const PaymentMethodSelector = ({
   const cardDeadlineExpired = cardTimeRemaining <= 0;
   const bankDeadlineExpired = bankTimeRemaining <= 0;
 
-  // Calculate Stripe fees savings (2.9% + 0.30 EUR)
-  const stripeFees = (transaction.price * 0.029 + 0.30).toFixed(2);
 
   return (
     <div className="space-y-4" data-testid="payment-method-selector">
@@ -72,26 +70,13 @@ export const PaymentMethodSelector = ({
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium">🏦 Virement Bancaire</p>
                   {!bankDeadlineExpired && (
-                    <>
-                      <Badge variant="success" className="text-xs">⭐ Recommandé</Badge>
-                      <Badge variant="success" className="text-xs">💚 Gratuit</Badge>
-                    </>
+                    <Badge variant="success" className="text-xs">⭐ Recommandé</Badge>
                   )}
                   {bankDeadlineExpired && <Badge variant="destructive" className="text-xs">Expiré</Badge>}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Virement SEPA (EUR) ou QR-Facture (CHF) - Sans frais
+                  Virement SEPA (EUR) ou QR-Facture (CHF)
                 </p>
-                {!bankDeadlineExpired && (
-                  <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded-md border border-green-200 dark:border-green-800">
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">
-                      💰 Économisez {stripeFees} {transaction.currency.toUpperCase()} en frais
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                      Aucun frais de transaction appliqué
-                    </p>
-                  </div>
-                )}
                 {!bankDeadlineExpired ? (
                   <>
                     <div className="p-2 bg-amber-50 dark:bg-amber-950/20 rounded-md border border-amber-200 dark:border-amber-800">
